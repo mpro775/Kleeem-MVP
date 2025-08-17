@@ -1,0 +1,125 @@
+flowchart TB
+    %% =================== THEME / CLASSES ===================
+    classDef edge fill:#1f2937,stroke:#000,stroke-width:2px,color:#fff
+    classDef frontend fill:#0ea5e9,stroke:#000,stroke-width:2px,color:#fff
+    classDef services fill:#10b981,stroke:#000,stroke-width:2px,color:#fff
+    classDef data fill:#f59e0b,stroke:#000,stroke-width:2px,color:#000
+    classDef storage fill:#8b5cf6,stroke:#000,stroke-width:2px,color:#fff
+    classDef observ fill:#7c3aed,stroke:#000,stroke-width:2px,color:#fff
+    classDef infra fill:#6b7280,stroke:#000,stroke-width:2px,color:#fff
+    classDef external fill:#ef4444,stroke:#000,stroke-width:2px,color:#fff
+    linkStyle default stroke:#555,stroke-width:1.5px
+
+    %% =================== EXTERNAL ACCESS (TOP) ===================
+    subgraph External["🌍 External"]
+        DNS["📛 DNS / Domains"]
+        Internet["🌐 Internet Users & Webhooks"]
+    end
+    class External external
+
+    %% =================== DOCKER HOST ===================
+    subgraph DockerHost["🖥️ Docker Host (Linux VM)"]
+        subgraph Networks["🌐 Networks"]
+            FrontNet["frontnet (reverse-proxy)"]:::infra
+            BackNet["backnet (internal)"]:::infra
+        end
+
+        %% -------- Edge Layer (reverse proxy) --------
+        subgraph Edge["🧱 Edge Layer"]
+            Proxy["🔄 Reverse Proxy<br/>(Nginx/Traefik)<br/>:80/:443"]:::edge
+        end
+
+        %% -------- Frontend Layer (apps exposed via proxy) --------
+        subgraph Frontend["🖥️ Application Layer"]
+            API["🔧 api<br/>Backend API<br/>:3000 (internal)"]:::frontend
+            N8N["🤖 n8n<br/>Orchestrator<br/>:5678 (internal)"]:::frontend
+            Workers["⚙️ workers<br/>Background Jobs<br/>no external port"]:::frontend
+        end
+
+        %% -------- Services Layer --------
+        subgraph Services["🧠 Services Layer"]
+            Embed["🧩 embed<br/>Embedding Service<br/>:8000"]:::services
+            Extractor["🕷️ extractor<br/>Extraction Service<br/>:8001"]:::services
+        end
+
+        %% -------- Data Layer --------
+        subgraph DataLayer["🗄️ Data Layer"]
+            MongoDB["🗄️ mongodb<br/>MongoDB<br/>:27017"]:::data
+            Redis["⚡ redis<br/>Redis<br/>:6379"]:::data
+            Qdrant["🔍 qdrant<br/>Vector DB<br/>:6333 HTTP / :6334 gRPC"]:::data
+            RabbitMQ["📨 rabbitmq<br/>Broker<br/>:5672 AMQP / :15672 mgmt / :15692 metrics"]:::data
+        end
+
+        %% -------- Storage Layer --------
+        subgraph Storage["📦 Storage Layer"]
+            MinIO["📦 minio<br/>Object Storage<br/>:9000 S3 / :9001 Console"]:::storage
+        end
+
+        %% -------- Observability (optional but recommended) --------
+        subgraph Observability["📈 Observability (Recommended)"]
+            Prom["📊 Prometheus<br/>:9090"]:::observ
+            Graf["📈 Grafana<br/>:3001 (avoid clash)"]:::observ
+            Alert["🚨 Alertmanager<br/>:9093"]:::observ
+            Cad["🧩 cAdvisor<br/>:8080"]:::observ
+            Loki["🧾 Loki (logs)<br/>:3100"]:::observ
+            Jae["🧭 Jaeger UI<br/>:16686"]:::observ
+        end
+    end
+    class DockerHost,Networks,Edge,Frontend,Services,DataLayer,Storage,Observability infra
+
+    %% =================== FLOWS & ATTACHMENTS ===================
+    %% External -> Proxy
+    DNS --> Internet
+    Internet --> Proxy
+
+    %% Proxy publishes only API & n8n (no direct DB exposure)
+    Proxy --> API
+    Proxy --> N8N
+
+    %% App layer access to services
+    API -->|"REST"| N8N
+    API -->|"HTTP"| Extractor
+    API -->|"HTTP"| Embed
+
+    %% App layer access to data
+    API -->|"Mongo Driver"| MongoDB
+    API -->|"TCP"| Redis
+    API -->|"HTTP (search)"| Qdrant
+    API -->|"AMQP (publish)"| RabbitMQ
+    API -->|"S3 API"| MinIO
+
+    %% Workers
+    Workers -->|"AMQP (consume)"| RabbitMQ
+    Workers -->|"HTTP (upsert vectors)"| Qdrant
+    Workers -->|"Mongo Driver"| MongoDB
+    Workers -->|"S3 API"| MinIO
+
+    %% Extractor
+    Extractor -->|"AMQP (publish)"| RabbitMQ
+    Extractor -->|"S3 API"| MinIO
+
+    %% Observability wiring (conceptual)
+    Cad --> Prom
+    Prom --> Alert
+    Prom --> Graf
+    Loki --- Graf
+    API -. "metrics /logs/traces" .-> Prom
+    N8N -.-> Prom
+    Workers -.-> Prom
+    Qdrant -.-> Prom
+    RabbitMQ -.-> Prom
+    MongoDB -.-> Prom
+    Redis -.-> Prom
+    MinIO -.-> Prom
+
+    %% =================== NETWORK / SECURITY NOTES ===================
+    %% FrontNet connects Proxy to Internet; BackNet connects internal services.
+    FrontNet --- Proxy
+    BackNet --- API & BackNet --- N8N & BackNet --- Workers
+    BackNet --- Embed & BackNet --- Extractor
+    BackNet --- MongoDB & BackNet --- Redis & BackNet --- Qdrant & BackNet --- RabbitMQ & BackNet --- MinIO
+    BackNet --- Prom & BackNet --- Graf & BackNet --- Alert & BackNet --- Cad & BackNet --- Loki & BackNet --- Jae
+
+    %% Styling tweaks
+    style FrontNet stroke-dasharray: 5 5
+    style BackNet stroke-dasharray: 5 5

@@ -1,0 +1,78 @@
+%%{init: {"C4": {"theme": "base", "themeVariables": {
+  "primaryColor": "#0ea5e9",
+  "primaryTextColor": "#fff",
+  "primaryBorderColor": "#000",
+  "lineColor": "#333",
+  "secondaryColor": "#6b7280",
+  "tertiaryColor": "#10b981"
+}}}}%%
+
+C4Container
+    title Kleem — Container Diagram (Executive Lite)
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+
+    %% === TOP: Actors ===
+    Person(merchant, "Merchant", "Manages store")
+    Person(shopper, "Shopper", "Chats & buys")
+    Person(platform_admin, "Platform Admin", "Oversees platform")
+
+    %% === MIDDLE: Kleem Core (simplified) ===
+    System_Boundary(kleem, "Kleem System") {
+
+        Boundary(ui, "Client UIs (simplified)") {
+            Container(platform_admin_portal, "Admin Portal", "React / MUI", "Administration")
+            Container(merchant_portal, "Merchant Portal", "React / MUI", "Store management")
+            Container(web_customer, "Customer Interfaces", "Web Chat & Storefront", "Chat & shopping")
+        }
+
+        Boundary(core, "Core Services") {
+            Container(api, "Backend API", "NestJS", "Business APIs & Webhooks")
+            Container(workers, "Background Workers", "NestJS", "Async processing")
+        }
+
+        Boundary(data, "Data Stores") {
+            ContainerDb(mongodb, "MongoDB", "Mongo", "Operational data")
+            ContainerDb(redis, "Redis", "Redis", "Caching")
+            ContainerDb(qdrant, "Qdrant", "Qdrant", "Vectors")
+            ContainerQueue(rabbit, "RabbitMQ", "AMQP", "Events & jobs")
+            Container(minio, "MinIO", "S3-compatible", "Files")
+        }
+    }
+
+    %% === BOTTOM: External Integrations (grouped) ===
+    Boundary(ext, "External Integrations (grouped)") {
+        System_Ext(msg_channels, "Messaging Channels", "WhatsApp / Telegram")
+        System_Ext(commerce, "Commerce Platforms", "Salla / Zid / Shopify")
+        System_Ext(payments, "Payment Gateway", "Checkout & capture")
+        System_Ext(llm, "LLM Provider", "AI inference")
+        System_Ext(merchant_site, "Merchant Website", "Hosts embedded widget")
+    }
+
+    %% === Relationships (simplified) ===
+    Rel(merchant, merchant_portal, "Manage", "HTTPS")
+    Rel(platform_admin, platform_admin_portal, "Admin", "HTTPS")
+    Rel(shopper, web_customer, "Chat & buy", "HTTPS / WebSocket")
+
+    Rel(platform_admin_portal, api, "API calls", "REST / JSON")
+    Rel(merchant_portal, api, "API calls", "REST / JSON")
+    Rel(web_customer, api, "Customer flows", "REST / WebSocket")
+
+    Rel(api, mongodb, "CRUD", "Driver")
+    Rel(api, redis, "Cache", "TCP")
+    Rel(api, qdrant, "Vector search", "HTTP")
+    Rel(api, rabbit, "Publish events", "AMQP")
+    Rel(api, minio, "Files", "S3 API")
+    Rel(workers, rabbit, "Consume jobs", "AMQP")
+
+    BiRel(api, msg_channels, "Webhooks / messages", "HTTPS")
+    BiRel(api, commerce, "Sync catalog & orders", "REST")
+    Rel(api, payments, "Payments", "REST")
+    Rel(api, llm, "AI requests", "HTTPS")
+    Rel(merchant_site, web_customer, "Embed widget", "JavaScript")
+
+    UpdateElementStyle(api, $bgColor="#0ea5e9", $fontColor="white")
+    UpdateElementStyle(workers, $bgColor="#0ea5e9", $fontColor="white")
+    UpdateElementStyle(platform_admin_portal, $bgColor="#0ea5e9", $fontColor="white")
+    UpdateElementStyle(merchant_portal, $bgColor="#0ea5e9", $fontColor="white")
+    UpdateElementStyle(web_customer, $bgColor="#0ea5e9", $fontColor="white")

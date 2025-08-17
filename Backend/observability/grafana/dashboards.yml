@@ -1,0 +1,10 @@
+# ./observability/grafana/dashboards.yml
+apiVersion: 1
+providers:
+  - name: 'Provisioned Dashboards'
+    orgId: 1
+    folder: ''
+    type: file
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards

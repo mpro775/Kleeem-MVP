@@ -1,0 +1,85 @@
+%%{init: {"C4": {"theme": "base", "themeVariables": {
+  "primaryColor": "#14b8a6",
+  "primaryTextColor": "#000",
+  "primaryBorderColor": "#000",
+  "lineColor": "#333",
+  "secondaryColor": "#6b7280",
+  "tertiaryColor": "#0ea5e9"
+}}}}%%
+
+C4Component
+    title Kleem — Backend Components (Stacked Lanes)
+
+    %% One boundary per row to avoid overlaps
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+
+    Container_Boundary(api, "Backend API (NestJS)") {
+        Boundary(adapters, "Adapters / Controllers") {
+            Component(channelWebhookController, "ChannelWebhookController", "Controller", "Inbound webhooks")
+            Component(webChatController, "WebChatController", "Controller", "Web chat streaming")
+            Component(conversationsController, "ConversationsController", "Controller", "Conversations CRUD")
+            Component(knowledgeController, "KnowledgeController", "Controller", "KB ingest/search")
+            Component(productsController, "ProductsController", "Controller", "Product search/index")
+            Component(storefrontController, "StorefrontController", "Controller", "Cart & orders")
+            Component(paymentsController, "PaymentsController", "Controller", "Payments")
+            Component(integrationsController, "IntegrationsController", "Controller", "Salla/Zid/Shopify")
+            Component(adminController, "AdminController", "Controller", "Global settings")
+        }
+
+        Boundary(app, "Application / Use Cases") {
+            Component(conversationService, "ConversationService", "Service", "Routing & state")
+            Component(policyGuard, "ConversationPolicyGuard", "Policy", "Policies / quotas")
+            Component(handoffService, "HandoffService", "Service", "Human handoff")
+            Component(knowledgeService, "KnowledgeService", "Service", "KB ingest/search")
+            Component(productSearchService, "ProductSearchService", "Service", "Vector + metadata search")
+            Component(feedbackService, "FeedbackService", "Service", "Bot ratings")
+            Component(instructionService, "InstructionService", "Service", "Prompts mgmt")
+            Component(rerankerService, "RerankerService", "Service", "Re-rank")
+            Component(aiOrchestratorClient, "AIOrchestratorClient", "Client", "n8n toolchains")
+        }
+
+        Boundary(infra, "Infrastructure") {
+            Component(vectorService, "VectorService", "Infra Service", "Qdrant abstraction")
+            Component(embeddingClient, "EmbeddingClient", "Client", "Embeddings API")
+            Component(extractorClient, "ExtractorClient", "Client", "Crawler/indexer API")
+            Component(cacheService, "CacheService", "Infra", "Redis / rate limits")
+            Component(eventBus, "EventBus", "Infra", "AMQP events")
+            Component(auditLogger, "AuditLogger", "Infra", "Audit trails")
+            Component(webhookSignatureVerifier, "WebhookSignatureVerifier", "Infra", "Verify signatures")
+            Component(idempotencyStore, "IdempotencyStore", "Infra", "De-dup webhooks")
+            Component(metrics, "HttpMetricsInterceptor", "Infra", "Metrics / tracing")
+            Component(authGuards, "JwtAuthGuard / RolesGuard", "Infra", "AuthN/Z")
+        }
+
+        Boundary(persistence, "Persistence / Repositories") {
+            Component(conversationRepo, "ConversationRepository", "Repository", "Conversations")
+            Component(messageRepo, "MessageRepository", "Repository", "Messages")
+            Component(unansweredRepo, "UnansweredRepository", "Repository", "Unanswered")
+            Component(instructionRepo, "InstructionRepository", "Repository", "Instructions")
+            Component(merchantRepo, "MerchantRepository", "Repository", "Merchants")
+            Component(policyRepo, "PolicyRepository", "Repository", "Policies")
+            Component(productRepo, "ProductRepository", "Repository", "Products")
+            Component(knowledgeRepo, "KnowledgeRepository", "Repository", "Knowledge docs")
+            Component(jobRepo, "JobRepository", "Repository", "Background jobs")
+        }
+    }
+
+    %% Minimal guidance edges (omit secondary edges to reduce crossing)
+    Rel(channelWebhookController, conversationService, "Inbound")
+    Rel(webChatController, conversationService, "Stream/append")
+    Rel(knowledgeController, knowledgeService, "Ingest/search")
+    Rel(productsController, productSearchService, "Search")
+    Rel(conversationsController, policyGuard, "Apply policy")
+
+    %% External dependencies (optional add-on diagram)
+    ContainerDb_Ext(mongodb, "MongoDB", "Database")
+    ContainerDb_Ext(qdrant, "Qdrant", "Vector DB")
+    Container_Ext(redis, "Redis", "Cache")
+    Container_Ext(rabbit, "RabbitMQ", "AMQP")
+    Container_Ext(n8n, "n8n Orchestrator", "AI/Tools")
+
+    Rel(conversationRepo, mongodb, "CRUD")
+    Rel(productSearchService, qdrant, "Vectors", "HTTP")
+    Rel(cacheService, redis, "Cache")
+    Rel(eventBus, rabbit, "Events", "AMQP")
+    Rel(aiOrchestratorClient, n8n, "Workflows", "REST")

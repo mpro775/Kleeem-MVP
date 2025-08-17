@@ -1,0 +1,48 @@
+flowchart TB
+    %% A slimmer "Ops" view to show only Edge + Observability + Backups + Security gateways
+    classDef edge fill:#1f2937,stroke:#000,stroke-width:2px,color:#fff
+    classDef observ fill:#7c3aed,stroke:#000,stroke-width:2px,color:#fff
+    classDef sec fill:#0f766e,stroke:#000,stroke-width:2px,color:#fff
+    classDef backup fill:#b45309,stroke:#000,stroke-width:2px,color:#fff
+    classDef external fill:#ef4444,stroke:#000,stroke-width:2px,color:#fff
+    classDef infra fill:#6b7280,stroke:#000,stroke-width:2px,color:#fff
+
+    subgraph External["🌍 External"]
+        Internet["🌐 Internet Users & Webhooks"]:::external
+    end
+
+    subgraph DockerHost["🖥️ Docker Host (Linux VM)"]
+        subgraph Edge["🧱 Edge"]
+            Proxy["🔄 Reverse Proxy (Traefik/Nginx)<br/>TLS + HTTP/2 + Rate limiting + ACME"]:::edge
+            OAuth["🔐 OAuth2 Proxy / SSO<br/>(protect UIs: Grafana, RabbitMQ, MinIO, n8n)"]:::sec
+            WAF["🛡️ WAF rules / IP allowlist<br/>(Cloudflare/Traefik middlewares)"]:::sec
+        end
+
+        subgraph Observability["📈 Observability"]
+            Prom["📊 Prometheus"]:::observ
+            Graf["📈 Grafana"]:::observ
+            Alert["🚨 Alertmanager"]:::observ
+            Loki["🧾 Loki + Promtail"]:::observ
+            Traces["🧭 Tracing (Jaeger/Zipkin)"]:::observ
+        end
+
+        subgraph SecurityAndBackup["🔒 Security & Backup"]
+            Secrets["🔑 Docker Secrets / Vault"]:::sec
+            Gitleaks["🕵️ Gitleaks (CI)"]:::sec
+            Scanner["🧪 Trivy / Grype (images)"]:::sec
+            Backups["💾 Backup jobs (DB + MinIO)<br/>Encrypted + Retention + Offsite"]:::backup
+        end
+    end
+    class DockerHost,Edge,Observability,SecurityAndBackup infra
+
+    Internet --> Proxy
+    Proxy --> OAuth
+    OAuth --> Graf
+    OAuth --> Prom
+    OAuth --> Alert
+    OAuth --> Loki
+    OAuth --> Traces
+    OAuth -->|"protected UIs"| Proxy
+
+    Secrets --> Backups
+    Scanner --> Backups

@@ -1,0 +1,9 @@
+# Schemathesis config for Kleem
+checks:
+  - all
+stateful: links
+hypothesis:
+  max_examples: 50
+  deadline: null
+  derandomize: false
+  phases: [explicit, reuse, generate, target]

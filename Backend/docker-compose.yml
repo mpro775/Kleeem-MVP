@@ -1,0 +1,402 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:6-alpine
+    container_name: kaleem-redis
+    command: ['redis-server']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backnet
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: kaleem-qdrant
+    restart: always
+    ports:
+      - '6333:6333'
+    volumes:
+      - ./qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:6333']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - backnet
+  embedding:
+    build:
+      context: ./embedding-service
+    container_name: kaleem-embedding
+    ports:
+      - '8000:8000'
+    networks:
+      - backnet
+    restart: unless-stopped
+
+  n8n_sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile.n8n
+    container_name: kaleem-n8n-sandbox
+    env_file:
+      - .env.sandbox
+    environment:
+      - N8N_HOST=n8n2.kaleem-ai.com
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://n8n2.kaleem-ai.com
+      - N8N_EDITOR_BASE_URL=https://n8n2.kaleem-ai.com
+      - N8N_RUNNERS_ENABLED=true
+      # حدّد CORS لو تحتاج الوصول من واجهة خارجية
+      - N8N_CORS_ALLOW_ORIGIN=https://localhost:5173
+      - N8N_CORS_ALLOW_CREDENTIALS=true
+    ports:
+      - '5679:5678' # منفذ مختلف على الهوست
+    volumes:
+      - n8n_data_sandbox:/home/node/.n8n
+    networks:
+      - backnet
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5678/rest/healthz']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  structurizr:
+    image: structurizr/lite
+    container_name: kaleem-structurizr
+    ports:
+      - '18080:8080'
+    volumes:
+      - ./docs/structurizr:/usr/local/structurizr
+    networks: [backnet]
+
+  mongo:
+    image: mongo:5
+    container_name: kaleem-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: strongpassword
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'mongo --quiet --eval "db.adminCommand(''ping'')" || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backnet
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: kaleem-mongo-express
+    environment:
+      ME_CONFIG_MONGODB_SERVER: 'mongo'
+      ME_CONFIG_MONGODB_ADMINUSERNAME: '${MONGO_INITDB_ROOT_USERNAME}'
+      ME_CONFIG_MONGODB_ADMINPASSWORD: '${MONGO_INITDB_ROOT_PASSWORD}'
+      ME_CONFIG_MONGODB_AUTH_DATABASE: 'admin'
+      ME_CONFIG_MONGODB_URL: 'mongodb://admin:strongpassword@mongo:27017/admin?authSource=admin'
+    ports:
+      - '8081:8081'
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - backnet
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: kaleem-redis-commander
+    environment:
+      # استبدل <USER_FROM_RENDER> و <PASSWORD> من نفس REDIS_URL لديك
+      REDIS_HOSTS: 'render:rediss://<USER_FROM_RENDER>:<PASSWORD>@oregon-keyvalue.render.com:6379'
+      # حماية لوحة التحكم للويب
+      HTTP_USER: admin
+      HTTP_PASSWORD: '<STRONG_UI_PASS>'
+      # اختيارية عند استخدام rediss:// عبر REDIS_HOSTS (TLS ضمني)
+      REDIS_TLS: 'true'
+      # في حال مشاكل شهادة (اختياري ومؤقت)
+      # REDIS_SSL_REJECT_UNAUTHORIZED: 'false'
+    ports:
+      - '8082:8081'
+    networks:
+      - backnet
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: kaleem-minio
+    command: server --console-address ":9001" /data
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - backnet
+
+  api:
+    build: .
+    container_name: kaleem-api
+    ports:
+      - '3000:3000'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - RABBIT_URL=amqp://kaleem:supersecret@rabbitmq:5672/kleem 
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:3000/health || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backnet
+
+  extractor:
+    build:
+      context: ./extractor-service
+    container_name: kaleem-extractor
+    ports:
+      - '8001:8001'
+    networks:
+      - backnet
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl -f http://localhost:8001/extract/?url=https://example.com || exit 1',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    # docker-compose.yml (إضافات)
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: kaleem-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prom_data:/prometheus
+    ports:
+      - '9090:9090'
+    networks: [backnet]
+    restart: unless-stopped
+    depends_on:
+      - rabbitmq
+
+    # === Grafana ===
+  grafana:
+    image: grafana/grafana:10.4.5
+    container_name: kaleem-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_DEFAULT_THEME=light
+      # مهم لو خلف بروكسي أو غيرت البورت/الدومين
+      - GF_SERVER_DOMAIN=31.97.155.167
+      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:%(http_port)s/
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./observability/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - '3005:3000' # ← اختر بورت غير مستخدم على الهوست (مثال: 3005)
+    networks: [backnet]
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+    # === Node Exporter (مقاييس النظام من داخل الكونتينرات صعب؛ نستخدم cAdvisor بدلاً منه) ===
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: kaleem-cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks: [backnet]
+    restart: unless-stopped
+
+    # === Redis Exporter ===
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.61.0
+    container_name: kaleem-redis-exporter
+    environment:
+      - REDIS_ADDR=redis:6379
+    ports:
+      - '9121:9121'
+    networks: [backnet]
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+    # === MongoDB Exporter ===
+  mongodb-exporter:
+    image: bitnami/mongodb-exporter:0.40.0
+    container_name: kaleem-mongodb-exporter
+    environment:
+      - MONGODB_URI=mongodb://admin:strongpassword@mongo:27017/admin
+    ports:
+      - '9216:9216'
+    networks: [backnet]
+    restart: unless-stopped
+    depends_on:
+      - mongo
+
+    # === RabbitMQ (تفعيل الـ Prometheus plugin وفتح 15692) ===
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    volumes:
+      - ./rabbit-definitions.json:/etc/rabbitmq/rabbit-definitions.json:ro
+      - rabbitmq_data:/var/lib/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: kaleem
+      RABBITMQ_DEFAULT_PASS: supersecret
+      RABBITMQ_DEFAULT_VHOST: kleem
+      RABBITMQ_LOAD_DEFINITIONS: /etc/rabbitmq/rabbit-definitions.json
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: >
+        -rabbitmq_prometheus listener [{port,15692}]
+    command: >
+      bash -lc "rabbitmq-plugins enable --offline rabbitmq_prometheus &&
+                rabbitmq-server"
+    ports:
+      - '5672:5672'
+      - '15672:15672' # UI
+      - '15692:15692' # /metrics
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'status']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [backnet]
+    restart: unless-stopped
+
+
+
+    # اختياري: عمّال مستقلين (نفس صورة api لو عندك nest start:worker)
+  ai-reply-worker:
+    build: .
+    container_name: kaleem-ai-reply
+    command: ['node', 'dist/workers/ai-reply.worker.js']
+    env_file: [.env]
+    environment:
+      - RABBIT_URL=amqp://kaleem:supersecret@rabbitmq:5672/kleem
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      qdrant: { condition: service_started }
+      embedding: { condition: service_started }
+    networks: [backnet]
+    restart: unless-stopped
+
+  webhook-dispatcher:
+    build: .
+    container_name: kaleem-webhook-dispatcher
+    command: ['node', 'dist/workers/webhook-dispatcher.worker.js']
+    env_file: [.env]
+    environment:
+      - RABBIT_URL=amqp://kaleem:supersecret@rabbitmq:5672/kleem
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+    networks: [backnet]
+    restart: unless-stopped
+
+  indexing-worker:
+    build: ./extractor-service # أو نفس api لو الكود هناك
+    container_name: kaleem-indexing
+    command: ['python', '-m', 'workers.indexing']
+    environment:
+      - RABBIT_URL=amqp://kaleem:supersecret@rabbitmq:5672/kleem
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      qdrant: { condition: service_started }
+      minio: { condition: service_started }
+      embedding: { condition: service_started }
+    networks: [backnet]
+    restart: unless-stopped
+
+  n8n:
+    build:
+      context: .
+      dockerfile: Dockerfile.n8n
+    container_name: kaleem-n8n
+    env_file:
+      - .env
+    environment:
+      - N8N_HOST=n8n.kaleem-ai.com
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://n8n.kaleem-ai.com
+      - VUE_APP_URL_BASE_API=https://n8n.kaleem-ai.com
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_CORS_ALLOW_ORIGIN=https://localhost:5173
+      - N8N_CORS_ALLOW_CREDENTIALS=true
+
+    ports:
+      - '5678:5678'
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - n8n_data:/home/node/.n8n
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5678/rest/healthz']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - backnet
+
+volumes:
+  redis_data:
+  mongo_data:
+  qdrant_data:
+  minio_data:
+  n8n_data:
+  n8n_data_sandbox:
+  rabbitmq_data:
+  grafana_data:
+  prom_data:
+  hf_cache:
+
+networks:
+  backnet:
+    driver: bridge

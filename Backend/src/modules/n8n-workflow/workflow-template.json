@@ -1,0 +1,529 @@
+{
+  "name": "wf-686193862cab82971d21ddcf",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body.text }}",
+        "options": {
+          "systemMessage": "={{ $json.finalPromptTemplate }}",
+          "returnIntermediateSteps": false
+        }
+      },
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        480,
+        448
+      ],
+      "id": "69c8f2db-71b7-47f3-9a6b-2d86e4f915d8",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "executeOnce": true,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Get Merchant1').item.json._id }}+telegram",
+        "collectionName": "messages",
+        "databaseName": "musaidbot",
+        "contextWindowLength": 10
+      },
+      "name": "MongoDB Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryMongoDbChat",
+      "typeVersion": 1,
+      "position": [
+        416,
+        688
+      ],
+      "id": "d5947270-0b86-49b2-8281-6af76c7b04ac",
+      "credentials": {
+        "mongoDb": {
+          "id": "H2VzbziACvTN9Z5H",
+          "name": "MongoDB-musaidbot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Google Gemini Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        800,
+        1040
+      ],
+      "id": "c68e8d17-732b-4907-a0b7-8ed010e47937",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rRllztIkbkTeGDH8",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=أنت مساعد مختص بفحص الردود القادمة من الذكاء الاصطناعي:\n- إذا كان الرد التالي منطقيًا وصحيحًا ويفيد المستخدم، لا ترجع أي شيء.\n- إذا كان الرد غير واضح، أو يدل على أن الذكاء الاصطناعي لم يفهم السؤال، أعد فقط:\n{\n  \"aiAnalysis\": \"تحليل: الذكاء الاصطناعي لم يتمكن من فهم السؤال أو لا يملك بيانات كافية للإجابة.\"\n}\nأعد فقط كائن JSON بنفس الشكل المطلوب في JSON Schema، وإذا لم يوجد تحليل لا ترجع شيء.\n\nالرد الذي عليك فحصه هو: \n{{ $json.output }}"
+        }
+      },
+      "name": "AI check Responses",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        992,
+        688
+      ],
+      "id": "9b0264dc-cbe8-4b5a-94ae-74f757f71544",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        192,
+        704
+      ],
+      "id": "92ac8d1d-e781-4984-96db-baa2a43a8f0f",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rRllztIkbkTeGDH8",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"aiAnalysis\": {\n      \"type\": \"string\"\n    }\n  }\n}\n",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1136,
+        960
+      ],
+      "id": "fbee40ce-dc51-4b91-9dc9-fa9b2d2242a5",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        1216
+      ],
+      "id": "35643a5f-29fe-4c2e-b633-297b7d158737",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rRllztIkbkTeGDH8",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kaleem-ai.com/api/analytics/webhook",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "question",
+              "value": "={{$('Normalize Webhook Data').item.json.text}}"
+            },
+            {
+              "name": "botReply",
+              "value": "={{$('AI Agent').item.json.output}}"
+            },
+            {
+              "name": "merchant",
+              "value": "={{$('Get Merchant').item.json._id}}"
+            },
+            {
+              "name": "channel",
+              "value": "={{$('Normalize Webhook Data').item.json.channel}}"
+            },
+            {
+              "name": "sessionId",
+              "value": "={{$('Sent Customer\\'s Message').item.json.sessionId}}"
+            },
+            {
+              "name": "customerId",
+              "value": "={{$('Normalize Webhook Data').item.json.from}}"
+            },
+            {
+              "name": "type",
+              "value": "missing_response"
+            },
+            {
+              "name": "resolved",
+              "value": "={{ false }}"
+            },
+            {
+              "name": "aiAnalysis",
+              "value": "={{ $json.output.aiAnalysis }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1728,
+        640
+      ],
+      "id": "3ced7930-0f4d-402b-9058-2325f28f096b",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "toolDescription": "searchProducts: Search for all products and return their names, prices, and ids, based on user query.",
+        "method": "POST",
+        "url": "https://api.kaleem-ai.com/api/semantic/products",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $('Webhook').item.json.body.text }}\",\n  \"merchantId\": \"{{ $('Get Merchant1').item.json._id }}\",\n  \"topK\": 5\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        576,
+        656
+      ],
+      "id": "85c08f1f-1fc1-4b97-8e63-b41dd7f4756c",
+      "name": "searchProducts",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "maxTries": 5
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0e0ed49c-964b-42f2-93b1-7c5e754f1d7c",
+              "leftValue": "={{$json[\"output\"][\"aiAnalysis\"] !== undefined && $json[\"output\"][\"aiAnalysis\"] !== \"\"}}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1504,
+        640
+      ],
+      "id": "70967d28-a068-4830-8235-51f374da8745",
+      "name": "If6"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kaleem-ai.com/api/semantic/all",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"merchantId\": \"{{ $('Get Merchant1').item.json._id }}\",\n  \"query\": \"{{ $('Webhook').item.json.body.text }}\",\n  \"topK\": 3\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        800,
+        608
+      ],
+      "id": "7c342998-ff8a-400c-844e-df3009ac50b7",
+      "name": "search knowledge"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-agent-686193862cab82971d21ddcf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        448
+      ],
+      "id": "ec4fd756-ae06-4918-9819-10a1bae8a780",
+      "name": "Webhook",
+      "webhookId": "3566fe3e-94d1-4a9a-9a75-658034128267"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.kaleem-ai.com/api/merchants/{{ $json.body.merchantId }}",
+        "options": {}
+      },
+      "name": "Get Merchant1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        160,
+        448
+      ],
+      "id": "9868c859-d225-4c81-a323-5c20956b6e77"
+    },
+    {
+      "parameters": {
+        "toolDescription": "يرجع معلومات المتجر الأساسية فقط (العناوين، روابط التواصل، السياسات، أوقات الدوام). استخدم هذه الأداة عند سؤال المستخدم عن تفاصيل المتجر. لا تُخمن أي معلومة غير موجودة في الاستجابة",
+        "url": "=https://api.kaleem-ai.com/merchants/{{$json.merchantId}}/ai/store-context",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        784
+      ],
+      "id": "394410ca-0a7c-42be-b1e5-73c62584bc76",
+      "name": "Get Store Context"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.kaleem-ai.com/api/webhooks/bot-reply/{{ $('Get Merchant1').item.json._id }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "sessionId",
+              "value": "={{ $('Webhook').item.json.body.sessionId }}"
+            },
+            {
+              "name": "channel",
+              "value": "={{ $('Webhook').item.json.body.channel }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1136,
+        240
+      ],
+      "id": "23598f3f-51b9-4314-b9fa-5fd1d0c01b51",
+      "name": "Send To Backend"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "AI check Responses",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send To Backend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI check Responses",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI check Responses",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI check Responses": {
+      "main": [
+        [
+          {
+            "node": "If6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "searchProducts": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If6": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search knowledge": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Merchant1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Merchant1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Store Context": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "executionTimeout": 3600,
+    "errorWorkflow": "VzqKEW0ShTXA5vPj",
+    "timezone": "America/New_York",
+    "executionOrder": "v1"
+  },
+  "versionId": "43c371eb-8f8a-4bb5-a41c-e191936f852a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "23319a26f15320cb15e667927e1579ea7a30a6db7a5bedcecf473cfb153c0178"
+  },
+  "id": "kN2Y7CMXd7Ja49IH",
+  "tags": []
+}

@@ -1,0 +1,57 @@
+%%{init: {"C4": {"theme": "base", "themeVariables": {
+  "primaryColor": "#14b8a6",
+  "primaryTextColor": "#000",
+  "primaryBorderColor": "#000",
+  "lineColor": "#333",
+  "secondaryColor": "#6b7280",
+  "tertiaryColor": "#0ea5e9"
+}}}}%%
+
+C4Component
+    title Kleem — Components View 3: Persistence
+
+    UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="2")
+
+    Container_Boundary(api, "Backend API (NestJS)") {
+        Boundary(app, "Application (selected)") {
+            Component(conversationService, "ConversationService", "Service", "Message routing & state")
+            Component(knowledgeService, "KnowledgeService", "Service", "KB ingest/search")
+            Component(productSearchService, "ProductSearchService", "Service", "Vector + metadata search")
+            Component(instructionService, "InstructionService", "Service", "Prompts mgmt")
+        }
+
+        Boundary(persistence, "Persistence / Repositories") {
+            Component(conversationRepo, "ConversationRepository", "Repository", "Conversations")
+            Component(messageRepo, "MessageRepository", "Repository", "Messages")
+            Component(unansweredRepo, "UnansweredRepository", "Repository", "Unanswered")
+            Component(instructionRepo, "InstructionRepository", "Repository", "Instructions")
+            Component(merchantRepo, "MerchantRepository", "Repository", "Merchants")
+            Component(policyRepo, "PolicyRepository", "Repository", "Policies")
+            Component(productRepo, "ProductRepository", "Repository", "Products")
+            Component(knowledgeRepo, "KnowledgeRepository", "Repository", "Knowledge docs")
+            Component(jobRepo, "JobRepository", "Repository", "Background jobs")
+        }
+    }
+
+    ContainerDb_Ext(mongodb, "MongoDB", "Database")
+    ContainerDb_Ext(qdrant, "Qdrant", "Vector DB")
+
+    %% Relations
+    Rel(conversationService, conversationRepo, "Persist/query")
+    Rel(knowledgeService, knowledgeRepo, "Persist/query")
+    Rel(productSearchService, productRepo, "Query")
+    Rel(instructionService, instructionRepo, "Persist/query")
+    Rel(conversationRepo, mongodb, "CRUD")
+    Rel(messageRepo, mongodb, "CRUD")
+    Rel(unansweredRepo, mongodb, "CRUD")
+    Rel(merchantRepo, mongodb, "CRUD")
+    Rel(instructionRepo, mongodb, "CRUD")
+    Rel(policyRepo, mongodb, "CRUD")
+    Rel(productRepo, mongodb, "CRUD")
+    Rel(knowledgeRepo, mongodb, "CRUD")
+    Rel(jobRepo, mongodb, "CRUD")
+    %% Optionally, show vector writes:
+    Rel(productSearchService, qdrant, "Read-only vectors")
+    Rel(knowledgeService, qdrant, "Read-only vectors")
+
+    UpdateElementStyle(persistence, $borderColor="#f59e0b")

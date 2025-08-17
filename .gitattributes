@@ -1,0 +1,10 @@
+# ثبّت LF لكل الملفات النصية داخل المستودع
+* text=auto eol=lf
+
+# استثناءات لو احتجت:
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# سكربتات لينكس/ماك
+*.sh   text eol=lf
