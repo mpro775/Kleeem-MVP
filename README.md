@@ -278,6 +278,3 @@ pnpm lint && pnpm format && pnpm typecheck
 
 ## الترخيص
 © Kleem. جميع الحقوق محفوظة. (أدرج رخصة مناسبة لاحقًا إن لزم.)
-#   K l e e e m - M V P 
- 
- 
