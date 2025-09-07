@@ -8,8 +8,10 @@ export class ChatWidgetSettings {
   @Prop({ required: true, index: true })
   merchantId: string;
 
+  @Prop({ default: true }) useStorefrontBrand: boolean;
+
   // General
-  @Prop({ default: 'Musaid Bot' }) botName: string;
+  @Prop({ default: 'Kaleem Bot' }) botName: string;
   @Prop({ default: 'ياحيا ’ كيف ممكن اساعدك اليوم؟' }) welcomeMessage: string;
 
   // Appearance
@@ -54,9 +56,8 @@ export class ChatWidgetSettings {
   // ↳ Tags
   @Prop([String]) topicsTags: string[]; // ['Pricing','Demo',…]
   @Prop([String]) sentimentTags: string[]; // ['Positive','Negative','Neutral']
-  @Prop({ default: false }) autoTagging: boolean;
-  @Prop({ unique: true, sparse: true })
-  widgetSlug: string;
+  @Prop({ unique: false, index: true, sparse: true })
+  widgetSlug?: string;
   @Prop({
     enum: ['bubble', 'iframe', 'bar', 'conversational'],
     default: 'bubble',
@@ -66,3 +67,11 @@ export class ChatWidgetSettings {
 
 export const ChatWidgetSettingsSchema =
   SchemaFactory.createForClass(ChatWidgetSettings);
+  ChatWidgetSettingsSchema.pre('save', async function(next) {
+    try {
+      const MerchantModel = this.model('Merchant');
+      const m = await MerchantModel.findOne({ _id: (this as any).merchantId }).select('publicSlug') as any;
+      if (m?.publicSlug) (this as any).widgetSlug = m.publicSlug; // مرآة
+      next();
+    } catch (e) { next(e as any); }
+  });

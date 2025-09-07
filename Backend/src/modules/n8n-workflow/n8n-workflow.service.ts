@@ -1,4 +1,4 @@
-// src/modules/n8n-workflow/n8n-workflow.service.ts
+﻿// src/modules/n8n-workflow/n8n-workflow.service.ts
 
 import {
   Injectable,
@@ -20,13 +20,13 @@ function setWebhookPath(raw: any, merchantId: string) {
     ? raw.nodes.find((n: any) => n?.type === 'n8n-nodes-base.webhook')
     : undefined;
   if (hook?.parameters) {
-    hook.parameters.path = `ai-agent-${merchantId}`; // مسار فريد لكل تاجر
+    hook.parameters.path = `ai-agent-${merchantId}`; // ظ…ط³ط§ط± ظپط±ظٹط¯ ظ„ظƒظ„ طھط§ط¬ط±
   }
-  // لا ترسِل webhookId إطلاقًا (sanitizeTemplate يتولى عدم نسخه)
+  // ظ„ط§ طھط±ط³ظگظ„ webhookId ط¥ط·ظ„ط§ظ‚ظ‹ط§ (sanitizeTemplate ظٹطھظˆظ„ظ‰ ط¹ط¯ظ… ظ†ط³ط®ظ‡)
 }
 
 /**
- * الهيكل الكامل الذي يعيده n8n عند GET /workflows/:id
+ * ط§ظ„ظ‡ظٹظƒظ„ ط§ظ„ظƒط§ظ…ظ„ ط§ظ„ط°ظٹ ظٹط¹ظٹط¯ظ‡ n8n ط¹ظ†ط¯ GET /workflows/:id
  */
 export interface WorkflowDefinition {
   id?: string;
@@ -43,11 +43,11 @@ export interface WorkflowDefinition {
   active: boolean;
   settings: Record<string, unknown>;
   pinData: Record<string, unknown>;
-  // قد يحتوي على حقول أخرى مثل 'createdAt' و 'updatedAt'، يمكنك إضافتها إذا استعملتها
+  // ظ‚ط¯ ظٹط­طھظˆظٹ ط¹ظ„ظ‰ ط­ظ‚ظˆظ„ ط£ط®ط±ظ‰ ظ…ط«ظ„ 'createdAt' ظˆ 'updatedAt'طŒ ظٹظ…ظƒظ†ظƒ ط¥ط¶ط§ظپطھظ‡ط§ ط¥ط°ط§ ط§ط³طھط¹ظ…ظ„طھظ‡ط§
 }
 
 /**
- * الهيكل المسموح به عند POST /workflows
+ * ط§ظ„ظ‡ظٹظƒظ„ ط§ظ„ظ…ط³ظ…ظˆط­ ط¨ظ‡ ط¹ظ†ط¯ POST /workflows
  */
 interface WorkflowCreatePayload {
   name: string;
@@ -75,16 +75,21 @@ export class N8nWorkflowService {
     @Inject(forwardRef(() => MerchantsService))
     private readonly merchants: MerchantsService,
   ) {
+    // const keyName = 'X-N8N-API-KEY';
+    // const apiKey =
+    //   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4N2M4NjU2OS01ZGFmLTQyNjYtOTVhYy04OTQxY2U1YWVhZTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzU1MTk0MjE3LCJleHAiOjE3NTc3MzYwMDB9.LEFrlXhDS6E1Urrst5GMy63ebz4ZaeMP7RNylkk_Rlk';
+    // const baseUrl = 'https://n8n.kaleem-ai.com'.replace(/\/+$/, '');
     const keyName = 'X-N8N-API-KEY';
-    const apiKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4N2M4NjU2OS01ZGFmLTQyNjYtOTVhYy04OTQxY2U1YWVhZTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzU1MTk0MjE3LCJleHAiOjE3NTc3MzYwMDB9.LEFrlXhDS6E1Urrst5GMy63ebz4ZaeMP7RNylkk_Rlk';
-    const baseUrl = 'https://n8n.kaleem-ai.com'.replace(/\/+$/, '');
+    const apiKey = process.env.N8N_API_KEY!;
+    const baseUrl = (
+      process.env.N8N_API_URL || 'https://n8n.kaleem-ai.com'
+    ).replace(/\/+$/, '');
 
-    this.logger.log(`▶️ [n8n.baseURL] = ${baseUrl}`);
-    this.logger.log(`▶️ [n8n.header]  = ${keyName}: ${apiKey}`);
+    this.logger.log(`[n8n.baseURL] = ${baseUrl}`);
+    this.logger.log(`[n8n.header]  = ${keyName}: ${apiKey}`);
 
     this.api = axios.create({
-      baseURL: `${baseUrl}/api/v1`,
+      baseURL: `${baseUrl}`,
       headers: { [keyName]: apiKey },
       timeout: 5000,
     });
@@ -102,7 +107,7 @@ export class N8nWorkflowService {
     throw new HttpException(`n8n API ${action} failed: ${message}`, status);
   }
 
-  /** نظّف القالب من الحقول غير المدعومة */
+  /** ظ†ط¸ظ‘ظپ ط§ظ„ظ‚ط§ظ„ط¨ ظ…ظ† ط§ظ„ط­ظ‚ظˆظ„ ط؛ظٹط± ط§ظ„ظ…ط¯ط¹ظˆظ…ط© */
   private sanitizeTemplate(raw: unknown): WorkflowCreatePayload {
     // ---------- helpers ----------
     type NodeDef = WorkflowCreatePayload['nodes'][number];
@@ -118,7 +123,7 @@ export class N8nWorkflowService {
       isObj(v) ? v : {};
     const get = (o: unknown, k: string): unknown => {
       if (!isObj(o)) return undefined;
-      return o[k]; // ✅ بعد الـ guard صار o: Record<string, unknown>
+      return o[k];
     };
 
     const isCred = (v: unknown): v is { name: string } =>
@@ -177,8 +182,7 @@ export class N8nWorkflowService {
       ? settingsVal
       : undefined;
 
-    // ⚠️ لا نُدرج: active, pinData, staticData, id, versionId, meta, tags
-    // لأن n8n يرفضها عند POST /workflows (active read-only وقت الإنشاء)
+    // ظ„ط£ظ† n8n ظٹط±ظپط¶ظ‡ط§ ط¹ظ†ط¯ POST /workflows (active read-only ظˆظ‚طھ ط§ظ„ط¥ظ†ط´ط§ط،)
 
     const payload: WorkflowCreatePayload = {
       name,
@@ -190,13 +194,13 @@ export class N8nWorkflowService {
     return payload;
   }
 
-  /** إنشاء workflow جديد */
+  /** ط¥ظ†ط´ط§ط، workflow ط¬ط¯ظٹط¯ */
   async createForMerchant(merchantId: string): Promise<string> {
     const raw = JSON.parse(JSON.stringify(templateJson));
     raw.name = `wf-${merchantId}`;
     setWebhookPath(raw, merchantId);
 
-    const payload = this.sanitizeTemplate(raw); // ← يزيل id/webhookId/active/...
+    const payload = this.sanitizeTemplate(raw); // â†گ ظٹط²ظٹظ„ id/webhookId/active/...
     const resp = await this.api.post('/workflows', payload);
     const wfId = (resp.data as { id: string }).id;
 
@@ -218,7 +222,7 @@ export class N8nWorkflowService {
     return wfId;
   }
 
-  /** جلب الـ JSON الكامل */
+  /** ط¬ظ„ط¨ ط§ظ„ظ€ JSON ط§ظ„ظƒط§ظ…ظ„ */
   async get(workflowId: string): Promise<WorkflowDefinition> {
     try {
       const resp = await this.api.get<WorkflowDefinition>(
@@ -230,7 +234,7 @@ export class N8nWorkflowService {
     }
   }
 
-  /** تعديل الـ workflow */
+  /** طھط¹ط¯ظٹظ„ ط§ظ„ظ€ workflow */
   async update(
     workflowId: string,
     updateFn: (json: WorkflowDefinition) => WorkflowDefinition,
@@ -256,7 +260,7 @@ export class N8nWorkflowService {
     }
   }
 
-  /** استرجاع نسخة قديمة */
+  /** ط§ط³طھط±ط¬ط§ط¹ ظ†ط³ط®ط© ظ‚ط¯ظٹظ…ط© */
   async rollback(
     workflowId: string,
     version: string | number,
@@ -284,7 +288,7 @@ export class N8nWorkflowService {
     }
   }
 
-  /** استنساخ workflow */
+  /** ط§ط³طھظ†ط³ط§ط® workflow */
   async cloneToMerchant(
     sourceId: string,
     targetMerchantId: string,
@@ -296,7 +300,7 @@ export class N8nWorkflowService {
     raw.name = `wf-${targetMerchantId}`;
     setWebhookPath(raw, targetMerchantId);
 
-    const payload = this.sanitizeTemplate(raw); // ← يمنع تسريب webhookId و node.id و active...
+    const payload = this.sanitizeTemplate(raw); // â†گ ظٹظ…ظ†ط¹ طھط³ط±ظٹط¨ webhookId ظˆ node.id ظˆ active...
     const resp = await this.api.post('/workflows', payload);
     const wfId = (resp.data as { id: string }).id;
 
@@ -317,8 +321,15 @@ export class N8nWorkflowService {
     });
     return wfId;
   }
+  async delete(workflowId: string): Promise<void> {
+    try {
+      await this.api.delete(`/workflows/${workflowId}`);
+    } catch (err) {
+      this.wrapError(err, 'DELETE');
+    }
+  }
 
-  /** تفعيل/تعطيل workflow */
+  /** طھظپط¹ظٹظ„/طھط¹ط·ظٹظ„ workflow */
   async setActive(workflowId: string, active: boolean): Promise<void> {
     try {
       const action = active ? 'activate' : 'deactivate';

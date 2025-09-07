@@ -17,6 +17,14 @@ export class Lead {
 
   @Prop()
   source?: string;
+
+  @Prop({ index: true, sparse: true })
+  phoneNormalized?: string;
+
+  @Prop()
+  name?: string;
 }
 
 export const LeadSchema = SchemaFactory.createForClass(Lead);
+LeadSchema.index({ merchantId: 1, phoneNormalized: 1 });
+LeadSchema.index({ merchantId: 1, sessionId: 1 });

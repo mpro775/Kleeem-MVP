@@ -25,8 +25,12 @@ export class KleemChatService {
     private readonly events: EventEmitter2,
   ) {
     this.n8n = axios.create({
-      baseURL: process.env.N8N_BASE_URL || 'https://n8n.kaleem-ai.com',
-      timeout: 15_000,
+      baseURL: (
+        process.env.N8N_BASE_URL ||
+        process.env.N8N_API_URL ||
+        'http://n8n:5678'
+      ).replace(/\/+$/, ''),
+      timeout: 15000,
       headers: { 'Content-Type': 'application/json' },
     });
   }
@@ -62,46 +66,60 @@ export class KleemChatService {
 
     return systemPrompt;
   }
+  private typingIntervals = new Map<string, ReturnType<typeof setInterval>>();
 
+  private startTyping(sessionId: string) {
+    // أرسل إشارة فورًا
+    this.events.emit('kleem.typing', { sessionId, role: 'bot' as const });
+    // نبض كل 1.5 ثانية حتى نتوقف
+    if (this.typingIntervals.has(sessionId)) return;
+    const id = setInterval(() => {
+      this.events.emit('kleem.typing', { sessionId, role: 'bot' as const });
+    }, 1500);
+    this.typingIntervals.set(sessionId, id);
+  }
+
+  stopTyping(sessionId: string) {
+    const id = this.typingIntervals.get(sessionId);
+    if (id) clearInterval(id);
+    this.typingIntervals.delete(sessionId);
+    // (اختياري) أرسل bot_done لو تحب تستخدمه للفصل النهائي
+    // this.events.emit('kleem.bot_done', { sessionId });
+  }
   async handleUserMessage(
     sessionId: string,
     text: string,
     metadata?: Record<string, unknown>,
   ) {
-    // 1) خزّن رسالة المستخدم
     await this.chats.createOrAppend(sessionId, [
       { role: 'user', text, metadata: metadata ?? {} },
     ]);
-
-    // 2) بثّ للمشرفين
     this.events.emit('kleem.admin_new_message', {
       sessionId,
-      message: { role: 'user', text } as KleemWsMessage,
+      message: { role: 'user', text },
     });
 
-    // 3) تحليل نية + سياسة CTA
-    const high = this.intent.highIntent(text);
-    const allowCTA = this.cta.allow(sessionId, high);
+    // ✅ فعّل “يكتب الآن” فورًا
+    this.startTyping(sessionId);
 
-    // 4) ابنِ System Prompt كامل من الباك
     const systemPrompt = await this.buildSystemPrompt(text);
-
-    // 5) أرسل إلى n8n مبسّطًا
     try {
       await this.n8n.post('/webhook/webhooks/kleem/incoming', {
         bot: 'kleem',
         sessionId,
         channel: 'webchat',
         text,
-        prompt: systemPrompt, // جاهز للاستخدام مباشرة
-        // مرّر قرارات الباك إن احتجت استعمالها داخل n8n (اختياري)
-        policy: { allowCTA },
+        prompt: systemPrompt,
+        policy: {
+          allowCTA: this.cta.allow(sessionId, this.intent.highIntent(text)),
+        },
         meta: metadata ?? {},
       });
     } catch (err) {
       this.logger.error('[n8n] failed to post user message', err as Error);
+      // إن فشل، أوقف النبض بعد ثانيتين حتى لا تبقى تومض
+      setTimeout(() => this.stopTyping(sessionId), 2000);
     }
-
     return { status: 'queued' as const };
   }
 }

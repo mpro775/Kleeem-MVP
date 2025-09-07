@@ -8,17 +8,18 @@ import {
 } from '@nestjs/swagger';
 import { LeadsService } from './leads.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
-import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-
+import { Public } from '../../common/decorators/public.decorator';
 @ApiTags('العملاء المحتملين')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('merchants/:merchantId/leads')
+
 export class LeadsController {
   constructor(private readonly leadsService: LeadsService) {}
 
   @Post()
+  @Public()
   @ApiOperation({ 
     summary: 'إنشاء عميل محتمل جديد',
     description: 'إنشاء سجل عميل محتمل جديد للتاجر' 

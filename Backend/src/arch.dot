@@ -1,0 +1,27 @@
+digraph architecture {
+    rankdir=LR;
+    node [shape=box];
+
+    subgraph cluster_containers {
+        label="Docker Compose Services";
+        api;
+        n8n;
+        qdrant;
+        mongo;
+        redis;
+        minio;
+        evolution_api [label="Evolution API"];
+        redis_commander;
+        mongo_express;
+    }
+
+    api -> mongo           [label="Mongoose"];
+    api -> redis           [label="Bull queues / cache"];
+    api -> qdrant          [label="VectorService"];
+    api -> minio           [label="Documents"];
+    api -> n8n             [label="Workflow API"];
+    api -> evolution_api   [label="Integrations"];
+    n8n -> api             [label="Webhooks / HTTP"];
+    redis_commander -> redis;
+    mongo_express -> mongo;
+}

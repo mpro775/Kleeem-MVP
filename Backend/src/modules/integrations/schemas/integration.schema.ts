@@ -14,20 +14,37 @@ export class Integration {
 
   @Prop({ default: false }) active: boolean;
 
-  // أسرار/توكنات
+  // ======== أسرار/توكنات (عام) — قديمة (للتوافق الخلفي) ========
   @Prop() accessToken?: string;
   @Prop() refreshToken?: string;
   @Prop() tokenType?: string;
   @Prop() expiresIn?: number;
   @Prop() expiresAt?: Date;
 
+  // ======== توكنات ZID الحديثة (مفصولة) ========
+  // X-Manager-Token / Access-Token
+  @Prop() managerToken?: string;
+  // جاهز للاستخدام كترويسة Authorization (إن كنت تحفظه)
+  @Prop() authorizationToken?: string;
+
   // متجر خارجي
   @Prop() storeId?: string;
   @Prop() storeUrl?: string;
 
-  @Prop() scopes?: string[];
+  @Prop([String]) scopes?: string[];
   @Prop() lastSync?: Date;
 }
 
 export const IntegrationSchema = SchemaFactory.createForClass(Integration);
 IntegrationSchema.index({ merchantId: 1, provider: 1 }, { unique: true });
+
+// إخفاء الحقول الحساسة في المخرجات
+IntegrationSchema.set('toJSON', {
+  transform: (_doc: any, ret: any) => {
+    delete ret.accessToken;
+    delete ret.refreshToken;
+    delete ret.managerToken;
+    delete ret.authorizationToken;
+    return ret;
+  },
+});

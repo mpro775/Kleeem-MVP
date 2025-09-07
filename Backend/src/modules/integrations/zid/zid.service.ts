@@ -28,6 +28,31 @@ export interface ZidOAuthTokenResponse {
 @Injectable()
 export class ZidService {
   private readonly logger = new Logger(ZidService.name);
+  private async getZidCreds(merchantId: Types.ObjectId) {
+    const integ = await this.integrationModel.findOne({
+      merchantId,
+      provider: 'zid',
+    });
+    if (!integ) throw new Error('Integration not found');
+
+    // جدّد لو قارب الانتهاء
+    if (integ.expiresAt && integ.expiresAt.getTime() - Date.now() <= 60_000) {
+      await this.refreshAccessToken(merchantId);
+    }
+
+    const fresh = await this.integrationModel
+      .findOne({ merchantId, provider: 'zid' })
+      .lean();
+    if (!fresh?.managerToken) throw new Error('Missing manager token');
+
+    return {
+      managerToken: fresh.managerToken, // لـ X-Manager-Token / Access-Token
+      authorizationHeader:
+        fresh.authorizationToken || `Bearer ${fresh.managerToken}`, // fallback مؤقت إن لزم
+      storeId: fresh.storeId,
+    };
+  }
+
   constructor(
     private readonly http: HttpService,
     private readonly config: ConfigService,
@@ -170,69 +195,74 @@ export class ZidService {
   async fetchZidProducts(
     merchantId: Types.ObjectId,
   ): Promise<ExternalProduct[]> {
-    const accessToken = await this.getValidAccessToken(merchantId);
+    const { managerToken, authorizationHeader, storeId } =
+      await this.getZidCreds(merchantId);
     const results: ExternalProduct[] = [];
     let page = 1;
 
     for (;;) {
       const { data } = await firstValueFrom(
-        this.http.get<ZidProductsResponse>(
-          `https://api.zid.sa/v1/products?page=${page}`,
+        this.http.get<any>(
+          `https://api.zid.sa/v1/products/?page=${page}&page_size=100`,
           {
-            headers: { Authorization: `Bearer ${accessToken}` },
+            headers: {
+              Authorization: authorizationHeader, // Bearer ... (من Authorization token)
+              'X-Manager-Token': managerToken, // أو 'Access-Token'
+              'Store-Id': storeId,
+              Role: 'Manager',
+            },
           },
         ),
       );
 
-      const items = Array.isArray(data?.data) ? data.data : [];
+      const items = Array.isArray(data?.results) ? data.results : [];
       for (const item of items) {
-        const obj = item as Record<string, unknown>; // 👈 هنا نعرّف obj
-
-        const id = obj['id'] ?? obj['product_id'];
-        const titleRaw = obj['name'] ?? obj['title'];
-        const title = typeof titleRaw === 'string' ? titleRaw : '';
-
-        // price + currency
-        let price: number | null = null;
-        let currency: string | undefined;
-        const priceField = obj['price'];
-        if (typeof priceField === 'number') {
-          price = priceField;
-        } else if (priceField && typeof priceField === 'object') {
-          const pr = priceField as Record<string, unknown>;
-          if (typeof pr['amount'] === 'number') price = pr['amount'];
-          if (typeof pr['currency'] === 'string') currency = pr['currency'];
-        }
-
-        // stock
-        let stock: number | null = null;
-        if (typeof obj['stock'] === 'number') stock = obj['stock'];
-        else if (typeof obj['quantity'] === 'number') stock = obj['quantity'];
-
-        // updatedAt (بدون String() على كائن)
-        const updatedRaw = obj['updated_at'] ?? obj['updatedAt'];
-        const updatedAt = toDateOrNull(updatedRaw);
-
+        const name =
+          typeof item?.name === 'string'
+            ? item.name
+            : (item?.name?.ar ?? item?.name?.en ?? '');
         results.push({
-          externalId: String(id),
-          title,
-          price,
-          currency,
-          stock,
-          updatedAt,
+          externalId: String(item.id),
+          title: name,
+          price: typeof item.price === 'number' ? item.price : null,
+          currency:
+            typeof item.currency === 'string' ? item.currency : undefined,
+          stock: typeof item.quantity === 'number' ? item.quantity : null,
+          updatedAt: item.updated_at ? new Date(item.updated_at) : null,
           raw: item,
         });
       }
 
-      if (!data?.links?.next) break;
-      page++;
+      if (!data?.next) break;
+      page += 1;
     }
-
-    return results; // ✅ ليس any[]
+    return results;
   }
+
   async registerDefaultWebhooks(merchantId: Types.ObjectId) {
-    const accessToken = await this.getValidAccessToken(merchantId);
-    const targetUrl = this.config.get<string>('ZID_WEBHOOK_URL')!;
+    const { managerToken, authorizationHeader, storeId } =
+      await this.getZidCreds(merchantId);
+    const base = 'https://api.zid.sa/v1/managers/webhooks';
+    const targetUrl = this.config.get<string>('ZID_WEBHOOK_URL')!; // احرص يطابق راوت الاستقبال
+
+    // 1) اقرأ المسجّل لتفادي التكرار
+    const list = await firstValueFrom(
+      this.http.get<any>(base, {
+        headers: {
+          Authorization: authorizationHeader,
+          'X-Manager-Token': managerToken,
+          'Store-Id': storeId,
+          Role: 'Manager',
+        },
+      }),
+    );
+
+    const registered: Set<string> = new Set(
+      (list.data?.results ?? list.data ?? []).map(
+        (w: any) => `${w.event}|${w.target_url}`,
+      ),
+    );
+
     const events = [
       'product.create',
       'product.update',
@@ -241,14 +271,26 @@ export class ZidService {
       'order.update',
       'order.status.update',
     ];
+
     for (const event of events) {
+      const key = `${event}|${targetUrl}`;
+      if (registered.has(key)) continue;
+
       await firstValueFrom(
         this.http.post(
-          'https://api.zid.sa/v1/webhooks',
-          { target_url: targetUrl, event },
+          base,
+          {
+            event,
+            target_url: targetUrl,
+            subscriber: 'Kleem',
+            original_id: `kleem-${event}`,
+          },
           {
             headers: {
-              Authorization: `Bearer ${accessToken}`,
+              Authorization: authorizationHeader,
+              'X-Manager-Token': managerToken,
+              'Store-Id': storeId,
+              Role: 'Manager',
               'Content-Type': 'application/json',
             },
           },

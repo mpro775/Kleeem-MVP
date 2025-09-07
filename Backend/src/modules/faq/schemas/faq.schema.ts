@@ -4,17 +4,18 @@ import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Faq extends Document {
-  @Prop({ required: true })
-  merchantId: string;
+  @Prop({ required: true }) merchantId: string;
+  @Prop({ required: true }) question: string;
+  @Prop({ required: true }) answer: string;
 
-  @Prop({ required: true })
-  question: string;
+  // pending أثناء التضمين، completed بعد نجاح الحفظ في Qdrant، failed عند الخطأ، deleted للحذف الناعم
+  @Prop({ default: 'pending' })
+  status: 'pending' | 'completed' | 'failed' | 'deleted';
 
-  @Prop({ required: true })
-  answer: string;
-
-  @Prop({ default: 'active' })
-  status: string; // active, archived, deleted ...
+  @Prop() errorMessage?: string;
 }
 
 export const FaqSchema = SchemaFactory.createForClass(Faq);
+
+// فهارس مفيدة
+FaqSchema.index({ merchantId: 1, status: 1, createdAt: -1 });

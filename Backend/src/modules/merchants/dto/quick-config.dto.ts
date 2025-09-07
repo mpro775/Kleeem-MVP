@@ -25,58 +25,30 @@ export class QuickConfigDto {
   customInstructions?: string[];
 
   @ApiPropertyOptional({
-    description: 'ترتيب ظهور الأقسام (sections) في الـ prompt',
-    type: [String],
-    example: ['products', 'instructions', 'categories', 'policies', 'custom'],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  sectionOrder?: string[];
-
-  // —— حقول التبديل الجديدة ——
-  @ApiPropertyOptional({
-    description: 'عرض رابط المتجر في الـ prompt',
-    default: true,
-  })
-  @IsOptional()
-  @IsBoolean()
-  includeStoreUrl?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'عرض عنوان المتجر في الـ prompt',
-    default: true,
-  })
-  @IsOptional()
-  @IsBoolean()
-  includeAddress?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'عرض السياسات في الـ prompt',
-    default: true,
-  })
-  @IsOptional()
-  @IsBoolean()
-  includePolicies?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'عرض ساعات العمل في الـ prompt',
-    default: true,
-  })
-  @IsOptional()
-  @IsBoolean()
-  includeWorkingHours?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'عرض نص الخاتمة في الـ prompt',
-    default: true,
+    description: 'تضمين النص الخاتم',
+    example: true,
   })
   @IsOptional()
   @IsBoolean()
   includeClosingPhrase?: boolean;
+  @ApiPropertyOptional({
+    description: 'رقم هاتف خدمة العملاء',
+    example: '0555555555',
+  })
+  @IsOptional()
+  @IsString()
+  customerServicePhone?: string;
 
   @ApiPropertyOptional({
-    description: 'نص الخاتمة القابل للتخصيص',
+    description: 'واتساب خدمة العملاء (رابط wa.me أو رقم)',
+    example: 'https://wa.me/9665xxxxxxx',
+  })
+  @IsOptional()
+  @IsString()
+  customerServiceWhatsapp?: string;
+
+  @ApiPropertyOptional({
+    description: 'نص الخاتمة',
     example: 'هل أقدر أساعدك بشي ثاني؟ 😊',
   })
   @IsOptional()

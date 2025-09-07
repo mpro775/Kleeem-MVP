@@ -20,6 +20,7 @@ export class PublicChatWidgetController {
   @ApiResponse({ status: 200, description: 'تم العثور على إعدادات الودجة.' })
   @ApiResponse({ status: 404, description: 'لم يتم العثور على ودجة بهذا الـ slug.' })
   getByWidgetSlug(@Param('widgetSlug') widgetSlug: string) {
-    return this.svc.getSettingsByWidgetSlug(widgetSlug);
+    return this.svc.getSettingsBySlugOrPublicSlug(widgetSlug);
   }
+  
 }

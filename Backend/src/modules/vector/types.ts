@@ -1,15 +1,39 @@
 // src/vector/types.ts
 export interface EmbeddableProduct {
-  id: string; // Product._id.toString()
+  id: string;
+  merchantId: string;
   name: string;
   description?: string;
-  category?: string;
-  specsBlock?: string[];
-  keywords?: string[];
-  merchantId: string;
-  price?: number;
-  url?: string; // ← نضيفه لأننا نستخدمه في Qdrant payload
+
+  category?: string | string[];
+  categoryName?: string | null;
+  categoryId?: string | null;
+
+  specsBlock?: string[] | string;
+  keywords?: string[] | string;
+  attributes?: Record<string, any>;
+
+  images?: string[];
+  slug?: string | null;
+  storefrontSlug?: string | null;
+  domain?: string | null;
+  publicUrlStored?: string | null;
+
+  price?: number | null;
+  priceEffective?: number | null;
+  currency?: string | null;
+  hasActiveOffer?: boolean;
+  priceOld?: number | null;
+  priceNew?: number | null;
+  offerStart?: string | null;
+  offerEnd?: string | null;
+  discountPct?: number | null;
+
+  isAvailable?: boolean | null;
+  status?: string | null;
+  quantity?: number | null;
 }
+
 export type FAQData = {
   question?: string;
   answer?: string;

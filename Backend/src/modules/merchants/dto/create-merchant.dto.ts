@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsString,
   IsOptional,
@@ -12,18 +12,16 @@ import {
   IsPhoneNumber,
   MinLength,
   MaxLength,
-  IsEnum,
-  IsBoolean
+  IsBoolean,
+  Matches,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { AddressDto } from './address.dto';
 import { SubscriptionPlanDto } from './subscription-plan.dto';
 import { QuickConfigDto } from './quick-config.dto';
-import { ChannelsDto } from './channel.dto';
 import { WorkingHourDto } from './working-hours.dto';
 import { AdvancedTemplateDto } from './advanced-template.dto';
-import { LeadsSettingsDto } from './leads-settings.dto';
 
 /**
  * بيانات إنشاء تاجر جديد
@@ -35,7 +33,7 @@ export class CreateMerchantDto {
     example: 'متجر الإلكترونيات الحديث',
     minLength: 3,
     maxLength: 100,
-    required: true
+    required: true,
   })
   @IsString({ message: 'يجب أن يكون اسم التاجر نصيًا' })
   @IsNotEmpty({ message: 'اسم التاجر مطلوب' })
@@ -46,7 +44,7 @@ export class CreateMerchantDto {
   @ApiPropertyOptional({
     description: 'رابط شعار التاجر',
     example: 'https://example.com/logo.png',
-    format: 'url'
+    format: 'url',
   })
   @IsOptional()
   @IsUrl({}, { message: 'يجب إدخال رابط صحيح للشعار' })
@@ -55,7 +53,7 @@ export class CreateMerchantDto {
   @ApiPropertyOptional({
     description: 'عناوين التاجر',
     type: () => [AddressDto],
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsArray({ message: 'يجب أن تكون العناوين مصفوفة' })
@@ -66,7 +64,7 @@ export class CreateMerchantDto {
   @ApiProperty({
     description: 'تفاصيل الاشتراك',
     type: () => SubscriptionPlanDto,
-    required: true
+    required: true,
   })
   @ValidateNested()
   @Type(() => SubscriptionPlanDto)
@@ -76,7 +74,7 @@ export class CreateMerchantDto {
     description: 'فئات المنتجات/الخدمات',
     type: [String],
     example: ['إلكترونيات', 'أجهزة منزلية'],
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsArray({ message: 'يجب أن تكون الفئات مصفوفة' })
@@ -87,7 +85,7 @@ export class CreateMerchantDto {
   @ApiPropertyOptional({
     description: 'فئة مخصصة في حالة عدم وجود الفئة المطلوبة',
     example: 'منتجات فريدة من نوعها',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString({ message: 'يجب أن تكون الفئة المخصصة نصية' })
@@ -97,7 +95,7 @@ export class CreateMerchantDto {
   @ApiPropertyOptional({
     description: 'رقم هاتف التواصل',
     example: '+966501234567',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString({ message: 'يجب أن يكون رقم الهاتف نصيًا' })
@@ -107,7 +105,7 @@ export class CreateMerchantDto {
   @ApiPropertyOptional({
     description: 'نوع النشاط التجاري',
     example: 'شركة تجارية',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString({ message: 'يجب أن يكون نوع النشاط التجاري نصيًا' })
@@ -117,7 +115,7 @@ export class CreateMerchantDto {
   @ApiPropertyOptional({
     description: 'وصف النشاط التجاري',
     example: 'متخصصون في بيع الأجهزة الإلكترونية والمنزلية بجودة عالية',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString({ message: 'يجب أن يكون وصف النشاط التجاري نصيًا' })
@@ -127,7 +125,7 @@ export class CreateMerchantDto {
   @ApiPropertyOptional({
     description: 'معرف سير العمل',
     example: '60d0fe4f5311236168a109ca',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString({ message: 'يجب أن يكون معرف سير العمل نصيًا' })
@@ -136,7 +134,7 @@ export class CreateMerchantDto {
   @ApiPropertyOptional({
     description: 'إعدادات سريعة للتاجر',
     type: () => QuickConfigDto,
-    required: false
+    required: false,
   })
   @IsOptional()
   @ValidateNested()
@@ -146,7 +144,7 @@ export class CreateMerchantDto {
   @ApiProperty({
     description: 'معرف المستخدم المالك للتاجر',
     example: '60d0fe4f5311236168a109ca',
-    required: true
+    required: true,
   })
   @IsMongoId({ message: 'معرف المستخدم غير صالح' })
   @IsNotEmpty({ message: 'معرف المستخدم مطلوب' })
@@ -154,7 +152,7 @@ export class CreateMerchantDto {
   @ApiPropertyOptional({
     description: 'الإعدادات المتقدمة الحالية',
     type: () => AdvancedTemplateDto,
-    required: false
+    required: false,
   })
   @IsOptional()
   @ValidateNested()
@@ -164,27 +162,19 @@ export class CreateMerchantDto {
   @ApiPropertyOptional({
     description: 'سجل الإعدادات المتقدمة السابقة',
     type: () => [AdvancedTemplateDto],
-    required: false
+    required: false,
   })
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => AdvancedTemplateDto)
   advancedConfigHistory?: AdvancedTemplateDto[];
 
-  @ApiPropertyOptional({
-    description: 'إعدادات قنوات التواصل',
-    type: () => ChannelsDto,
-    required: false
-  })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => ChannelsDto)
-  channels?: ChannelsDto;
+ 
 
   @ApiPropertyOptional({
     description: 'ساعات العمل',
     type: () => [WorkingHourDto],
-    required: false
+    required: false,
   })
   @IsOptional()
   @ValidateNested({ each: true })
@@ -194,7 +184,7 @@ export class CreateMerchantDto {
   @ApiPropertyOptional({
     description: 'سياسة الإرجاع',
     example: 'يمكن إرجاع المنتج خلال 14 يومًا من تاريخ الشراء',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString({ message: 'يجب أن تكون سياسة الإرجاع نصية' })
@@ -206,9 +196,9 @@ export class CreateMerchantDto {
     type: Object,
     example: {
       twitter: 'https://twitter.com/example',
-      facebook: 'https://facebook.com/example'
+      facebook: 'https://facebook.com/example',
     },
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsObject({ message: 'يجب أن تكون روابط وسائل التواصل الاجتماعي كائنًا' })
@@ -217,30 +207,33 @@ export class CreateMerchantDto {
   @ApiPropertyOptional({
     description: 'سياسة الاستبدال',
     example: 'يمكن استبدال المنتج خلال 7 أيام من تاريخ الشراء',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString({ message: 'يجب أن تكون سياسة الاستبدال نصية' })
   @MaxLength(2000, { message: 'يجب أن لا تزيد سياسة الاستبدال عن 2000 حرف' })
   exchangePolicy?: string;
 
-  @ApiPropertyOptional({
-    description: 'إعدادات العملاء المحتملين',
-    type: () => LeadsSettingsDto,
-    required: false
-  })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => LeadsSettingsDto)
-  leadsSettings?: LeadsSettingsDto;
 
   @ApiPropertyOptional({
     description: 'سياسة الشحن',
     example: 'يتم الشحن خلال 3-5 أيام عمل',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString({ message: 'يجب أن تكون سياسة الشحن نصية' })
   @MaxLength(2000, { message: 'يجب أن لا تزيد سياسة الشحن عن 2000 حرف' })
   shippingPolicy?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' && value.trim() === '' ? undefined : value))
+  @Matches(/^[a-z](?:[a-z0-9-]{1,48}[a-z0-9])$/i, {
+    message: 'سلاج غير صالح (3–50، يبدأ بحرف، حروف/أرقام/شرطة، وبدون شرطة أخيرة)',
+  })
+  publicSlug?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  publicSlugEnabled?: boolean;
+
 }

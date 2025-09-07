@@ -5,23 +5,53 @@ import { Document, Types } from 'mongoose';
 
 import { QuickConfig, QuickConfigSchema } from './quick-config.schema';
 import { AdvancedConfig, AdvancedConfigSchema } from './advanced-config.schema';
-import { ChannelConfig, ChannelConfigSchema } from './channel.schema';
 import { WorkingHour, WorkingHourSchema } from './working-hours.schema';
 import { Address, AddressSchema } from './address.schema';
 import {
   SubscriptionPlan,
   SubscriptionPlanSchema,
 } from './subscription-plan.schema';
-
+function normalizeSlug(input = '') {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 50)
+    .replace(/-+$/g, '');
+}
 export interface MerchantDocument extends Merchant, Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+@Schema({ _id: false })
+export class MerchantDeletionMeta {
+  @Prop({ type: Date })
+  requestedAt?: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  requestedBy?: Types.ObjectId;
+
+  @Prop({ type: String })
+  reason?: string;
+
+  @Prop({ type: Date })
+  forcedAt?: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  forcedBy?: Types.ObjectId;
+}
+export const MerchantDeletionMetaSchema =
+  SchemaFactory.createForClass(MerchantDeletionMeta);
+
 @Schema({ timestamps: true })
 export class Merchant {
   // — Core fields —
-  @Prop({ required: true, unique: true })
-  name: string;
+  @Prop({ trim: true })
+  name?: string;
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
@@ -83,6 +113,20 @@ export class Merchant {
   @Prop({ required: false })
   workflowId?: string;
 
+  @Prop({
+    type: String,
+    unique: true,
+    index: true,
+    trim: true,
+    lowercase: true,
+    match: /^[a-z](?:[a-z0-9-]{1,48}[a-z0-9])$/,
+  })
+  publicSlug: string;
+
+  @Prop({ type: String, trim: true })
+  logoKey?: string;
+  @Prop({ default: true })
+  publicSlugEnabled: boolean; // للتحكم لاحقًا في إيقاف روابط slug العامة من لوحة الأدمن
   // — Prompt settings —
   @Prop({ type: QuickConfigSchema, default: () => ({}) })
   quickConfig: QuickConfig;
@@ -116,29 +160,17 @@ export class Merchant {
   @Prop({ default: '' })
   shippingPolicy: string;
 
-  // — Channels —
-  @Prop({
-    type: {
-      whatsapp: ChannelConfigSchema,
-      whatsappQr: ChannelConfigSchema, // لدعم QR إذا أردت الفصل
-      telegram: ChannelConfigSchema,
-      webchat: ChannelConfigSchema,
-      instagram: ChannelConfigSchema,
-      messenger: ChannelConfigSchema,
-    },
-    default: {},
-  })
-  channels: {
-    whatsapp?: ChannelConfig;
-    whatsappQr?: ChannelConfig;
-    telegram?: ChannelConfig;
-    webchat?: ChannelConfig;
-    instagram?: ChannelConfig;
-    messenger?: ChannelConfig;
-  };
+  // إيقاف الحساب والظهور
+  @Prop({ default: true, index: true })
+  active: boolean;
 
-  @Prop({ type: Array, default: [] })
-  leadsSettings?: any[];
+  // ✅ تصريح صريح بالنوع مع default=null
+  @Prop({ type: Date, default: null, index: true })
+  deletedAt: Date | null;
+
+  // ✅ Subdocument مُعرّف بسكيما
+  @Prop({ type: MerchantDeletionMetaSchema, _id: false })
+  deletion?: MerchantDeletionMeta;
 
   @Prop({ type: Types.ObjectId, ref: 'Storefront' })
   storefront?: Types.ObjectId;
@@ -149,3 +181,23 @@ export class Merchant {
 
 export const MerchantSchema = SchemaFactory.createForClass(Merchant);
 MerchantSchema.index({ userId: 1 }, { unique: true }); // واحد-لواحد
+MerchantSchema.pre('validate', function (next) {
+  const doc = this as any;
+
+  if (doc.isNew) {
+    const base = doc.publicSlug || doc.name || doc.domain || 'store';
+    let normalized = normalizeSlug(base);
+    // fallback إن طلع فاضي بسبب اسم عربي
+    if (!normalized) {
+      normalized = `s${doc._id?.toString().slice(-6) || Math.random().toString(36).slice(2, 8)}`;
+    }
+    doc.publicSlug = normalized;
+  } else if (doc.isModified('publicSlug')) {
+    doc.publicSlug = normalizeSlug(doc.publicSlug || '');
+    if (!doc.publicSlug) {
+      return next(new Error('سلاج غير صالح بعد التطبيع')); // يمنع التخزين بقيمة فاضية
+    }
+  }
+
+  next();
+});

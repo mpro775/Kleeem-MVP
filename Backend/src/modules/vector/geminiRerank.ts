@@ -9,9 +9,8 @@ export async function geminiRerankTopN({
   candidates: string[];
   topN?: number;
 }): Promise<number[]> {
-  const GEMINI_API_KEY = 'AIzaSyAFLWfWKrZpG6c4-uYYqgeYnLtvk3PijSU';
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   if (!GEMINI_API_KEY) throw new Error('Missing GEMINI_API_KEY');
-
   // تحقق من نصوص المرشحين قبل الإرسال
   const validCandidates = candidates
     .filter(Boolean)

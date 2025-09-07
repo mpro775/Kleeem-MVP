@@ -16,7 +16,9 @@ export class RabbitService implements OnModuleInit, OnModuleDestroy {
   private url: string;
 
   constructor(private cfg: ConfigService) {
-    this.url = this.cfg.get<string>('RABBIT_URL') || 'amqp://kaleem:supersecret@rabbitmq:5672/kleem';
+    this.url =
+      this.cfg.get<string>('RABBIT_URL') ||
+      'amqp://kaleem:supersecret@rabbitmq:5672/kleem';
   }
 
   async onModuleInit() {
@@ -50,6 +52,7 @@ export class RabbitService implements OnModuleInit, OnModuleDestroy {
           'chat.incoming',
           'chat.reply',
           'knowledge.index',
+          'catalog.sync',
           'commerce.sync',
           'webhook.dispatch',
           'analytics.events',
@@ -74,7 +77,50 @@ export class RabbitService implements OnModuleInit, OnModuleDestroy {
   private reconnect() {
     this.conn = undefined;
     this.ch = undefined;
-    setTimeout(() => this.connect().catch(() => { }), 3000);
+    setTimeout(() => void this.connect().catch(() => {}), 3000);
+  }
+  async subscribe(
+    exchange: string,
+    bindingKey: string,
+    onMessage: (msg: any) => Promise<void> | void,
+    opts: { queue?: string; prefetch?: number } = {},
+  ) {
+    if (!this.ch) throw new Error('Channel not ready');
+
+    await this.ch.assertExchange(exchange, 'topic', { durable: true });
+
+    let queueName: string;
+
+    if (opts.queue) {
+      // ✅ لا تعلن من جديد صفاً مسمّى — فقط تأكّد أنه موجود
+      await this.ch.checkQueue(opts.queue);
+      queueName = opts.queue;
+    } else {
+      // صف مؤقّت (يُعلن محلياً) لا يحتوي DLQ ولا يتعارض
+      const q = await this.ch.assertQueue('', {
+        exclusive: true,
+        autoDelete: true,
+      });
+      queueName = q.queue;
+    }
+
+    await this.ch.bindQueue(queueName, exchange, bindingKey);
+    if (opts.prefetch) await this.ch.prefetch(opts.prefetch);
+
+    await this.ch.consume(
+      queueName,
+      async (m) => {
+        if (!m) return;
+        try {
+          const content = JSON.parse(m.content.toString('utf8'));
+          await onMessage(content);
+          this.ch!.ack(m);
+        } catch {
+          this.ch!.nack(m, false, false); // DLQ سيتعامل
+        }
+      },
+      { noAck: false },
+    );
   }
 
   async publish(exchange: string, routingKey: string, message: any) {

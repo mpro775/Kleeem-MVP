@@ -12,3 +12,4 @@ export class SourceUrl extends Document {
 }
 
 export const SourceUrlSchema = SchemaFactory.createForClass(SourceUrl);
+SourceUrlSchema.index({ merchantId: 1, url: 1 }, { unique: true });

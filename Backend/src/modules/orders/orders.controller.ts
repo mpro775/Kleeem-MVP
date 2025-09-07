@@ -20,6 +20,11 @@ import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { 
+  ApiSuccessResponse, 
+  ApiCreatedResponse as CommonApiCreatedResponse, 
+
+} from '../../common';
 
 /**
  * وحدة تحكم الطلبات
@@ -31,16 +36,13 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 @ApiBearerAuth()
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
-
+  @Public()
   @Post()
   @ApiOperation({
     summary: 'إنشاء طلب جديد',
     description: 'ينشئ سجل طلب جديد في النظام مع البيانات المقدمة',
   })
-  @ApiResponse({
-    status: 201,
-    description: 'تم إنشاء الطلب بنجاح',
-  })
+  @CommonApiCreatedResponse(CreateOrderDto, 'تم إنشاء الطلب بنجاح')
   @ApiResponse({
     status: 400,
     description: 'بيانات الطلب غير صالحة',
@@ -85,10 +87,7 @@ export class OrdersController {
     summary: 'استرجاع جميع الطلبات',
     description: 'يعيد قائمة بجميع الطلبات مع تفاصيلها',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'تم استرجاع الطلبات بنجاح',
-  })
+  @ApiSuccessResponse(Array, 'تم استرجاع الطلبات بنجاح')
   @ApiResponse({
     status: 401,
     description: 'غير مصرح - يلزم تسجيل الدخول',
@@ -97,6 +96,14 @@ export class OrdersController {
     return this.ordersService.findAll();
   }
 
+  @Public()
+@Get('mine/:merchantId/:sessionId')
+async findMine(
+  @Param('merchantId') merchantId: string,
+  @Param('sessionId') sessionId: string,
+) {
+  return this.ordersService.findMine(merchantId, sessionId);
+}
   // جلب طلب محدد بالتفصيل
   @Public()
   @Get(':id')

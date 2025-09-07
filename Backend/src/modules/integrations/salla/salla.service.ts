@@ -154,6 +154,8 @@ export class SallaService {
     merchantId: Types.ObjectId,
   ): Promise<ExternalProduct[]> {
     const accessToken = await this.getValidAccessToken(merchantId);
+    const base =
+      this.config.get<string>('SALLA_API_BASE') || 'https://api.salla.dev';
 
     const results: ExternalProduct[] = [];
     let page = 1;
@@ -161,14 +163,13 @@ export class SallaService {
     for (;;) {
       const { data } = await firstValueFrom(
         this.http.get<SallaProductsResponse>(
-          // عدّل الـ endpoint حسب إصدار سلة لديك
-          `https://api.salla.dev/admin/v2/products?page=${page}`,
+          `${base}/admin/v2/products?page=${page}`,
           { headers: { Authorization: `Bearer ${accessToken}` } },
         ),
       );
 
       const items = Array.isArray(data?.data?.products)
-        ? data.data.products
+        ? (data.data?.products ?? [])
         : [];
 
       for (const item of items) {

@@ -1,5 +1,12 @@
-import { IsString, IsNotEmpty, IsOptional, Length } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  Length,
+  ValidateIf,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 
 export class AddressDto {
   @IsString({ message: 'يجب أن يكون اسم الشارع نصيًا' })
@@ -10,7 +17,7 @@ export class AddressDto {
     example: 'شارع الملك فهد',
     minLength: 3,
     maxLength: 200,
-    required: true
+    required: true,
   })
   street: string;
 
@@ -22,7 +29,7 @@ export class AddressDto {
     example: 'الرياض',
     minLength: 2,
     maxLength: 100,
-    required: true
+    required: true,
   })
   city: string;
 
@@ -34,31 +41,37 @@ export class AddressDto {
     example: 'المملكة العربية السعودية',
     minLength: 2,
     maxLength: 100,
-    required: true
+    required: true,
   })
   country: string;
 
-  @IsString({ message: 'يجب أن يكون اسم المنطقة/الولاية نصيًا' })
-  @IsOptional()
-  @Length(2, 100, { message: 'يجب أن يكون طول اسم المنطقة/الولاية بين 2 و 100 حرف' })
   @ApiPropertyOptional({
     description: 'المنطقة أو الولاية (اختياري)',
     example: 'منطقة الرياض',
-    minLength: 2,
-    maxLength: 100,
-    required: false
+  })
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() === '' ? undefined : value,
+  )
+  @ValidateIf(
+    (_, v) => v !== undefined && v !== null && String(v).trim() !== '',
+  )
+  @IsString({ message: 'يجب أن يكون اسم المنطقة/الولاية نصيًا' })
+  @Length(2, 100, {
+    message: 'يجب أن يكون طول اسم المنطقة/الولاية بين 2 و 100 حرف',
   })
   state?: string;
 
-  @IsString({ message: 'يجب أن يكون الرمز البريدي نصيًا' })
-  @IsOptional()
-  @Length(4, 20, { message: 'يجب أن يكون طول الرمز البريدي بين 4 و 20 حرف' })
   @ApiPropertyOptional({
     description: 'الرمز البريدي (اختياري)',
     example: '12345',
-    minLength: 4,
-    maxLength: 20,
-    required: false
   })
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() === '' ? undefined : value,
+  )
+  @ValidateIf(
+    (_, v) => v !== undefined && v !== null && String(v).trim() !== '',
+  )
+  @IsString({ message: 'يجب أن يكون الرمز البريدي نصيًا' })
+  @Length(4, 20, { message: 'يجب أن يكون طول الرمز البريدي بين 4 و 20 حرف' })
   postalCode?: string;
 }

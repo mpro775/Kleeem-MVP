@@ -7,6 +7,11 @@ import {
   Param,
   Patch,
   UseGuards,
+  Query,
+  BadRequestException,
+  UploadedFiles,
+  UseInterceptors,
+  Header,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,13 +21,23 @@ import {
   ApiParam,
   ApiBody,
   ApiExtraModels,
-  getSchemaPath,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { StorefrontService } from './storefront.service';
-import { CreateStorefrontDto, UpdateStorefrontDto, BannerDto } from './dto/create-storefront.dto';
+import {
+  CreateStorefrontDto,
+  UpdateStorefrontDto,
+  BannerDto,
+} from './dto/create-storefront.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
-
+import {
+  ApiSuccessResponse,
+  ApiCreatedResponse as CommonApiCreatedResponse,
+ 
+} from '../../common';
+import { UpdateStorefrontByMerchantDto } from './dto/update-storefront-by-merchant.dto';
+import { FilesInterceptor } from '@nestjs/platform-express';
 /**
  * واجهة تحكم المتجر
  * تتعامل مع عمليات إدارة واجهة المتجر وإعداداتها
@@ -34,7 +49,35 @@ import { Public } from '../../common/decorators/public.decorator';
 @ApiExtraModels(BannerDto)
 export class StorefrontController {
   constructor(private svc: StorefrontService) {}
+  @Public() @Get('merchant') badMerchantReq() {
+    throw new BadRequestException('merchantId is required');
+  }
+  @Public() @Get('merchant/:merchantId') async findByMerchant(
+    @Param('merchantId') merchantId: string,
+  ) {
+    return this.svc.findByMerchant(merchantId);
+  }
+  @Patch('merchant/:id') async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateStorefrontDto,
+  ) {
+    return this.svc.update(id, dto);
+  }
+  @Patch('by-merchant/:merchantId') async updateByMerchant(
+    @Param('merchantId') merchantId: string,
+    @Body() dto: UpdateStorefrontByMerchantDto,
+  ) {
+    return this.svc.updateByMerchant(merchantId, dto);
+  }
 
+  @Public()
+  @Get('slug/check')
+  @ApiOperation({ summary: 'التحقق من توفر slug' })
+  @ApiSuccessResponse(Object, 'نتيجة التحقق')
+  async checkSlug(@Query('slug') slug: string) {
+    if (!slug) throw new BadRequestException('slug مطلوب');
+    return this.svc.checkSlugAvailable(slug);
+  }
   @Get(':slugOrId')
   @Public()
   @ApiOperation({
@@ -47,10 +90,7 @@ export class StorefrontController {
     description: 'Slug أو المعرف الخاص بواجهة المتجر',
     example: 'store-slug-or-id',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'تم العثور على إعدادات واجهة المتجر',
-  })
+  @ApiSuccessResponse(Object, 'تم العثور على إعدادات واجهة المتجر')
   @ApiResponse({
     status: 404,
     description: 'لم يتم العثور على إعدادات واجهة المتجر',
@@ -63,10 +103,7 @@ export class StorefrontController {
     summary: 'إنشاء واجهة متجر جديدة',
     description: 'ينشئ إعدادات واجهة متجر جديدة مع التخصيصات المطلوبة',
   })
-  @ApiResponse({
-    status: 201,
-    description: 'تم إنشاء واجهة المتجر بنجاح',
-  })
+  @CommonApiCreatedResponse(CreateStorefrontDto, 'تم إنشاء واجهة المتجر بنجاح')
   @ApiResponse({
     status: 400,
     description: 'بيانات الطلب غير صالحة',
@@ -83,87 +120,50 @@ export class StorefrontController {
     return this.svc.create(dto);
   }
 
-  // جلب بيانات الواجهة عبر معرف التاجر
-  @Get('merchant/:merchantId')
-  @ApiOperation({
-    summary: 'البحث عن واجهة المتجر باستخدام معرف التاجر',
-    description: 'يسترد إعدادات واجهة المتجر الخاصة بتاجر معين',
-  })
-  @ApiParam({
-    name: 'merchantId',
-    required: true,
-    description: 'معرف التاجر',
-    example: '60d21b4667d0d8992e610c85',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'تم العثور على إعدادات واجهة المتجر',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'لم يتم العثور على إعدادات واجهة المتجر',
-  })
-  @Public()
-  async findByMerchant(@Param('merchantId') merchantId: string) {
-    return this.svc.findByMerchant(merchantId);
-  }
-
-  // تحديث حسب معرف واجهة المتجر
-  @Patch('merchant/:id')
-  @ApiOperation({
-    summary: 'تحديث واجهة المتجر باستخدام المعرف',
-    description: 'يقوم بتحديث إعدادات واجهة المتجر باستخدام المعرف',
-  })
-  @ApiParam({
-    name: 'id',
-    required: true,
-    description: 'معرف واجهة المتجر',
-    example: '60d21b4667d0d8992e610c86',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'تم تحديث واجهة المتجر بنجاح',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'لم يتم العثور على واجهة المتجر',
-  })
+  @Post('by-merchant/:merchantId/banners/upload')
+  @ApiOperation({ summary: 'رفع صور البنرات (≤5 بنرات إجماليًا، ≤5MP للصورة)' })
+  @ApiParam({ name: 'merchantId', required: true, description: 'معرف التاجر' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FilesInterceptor('files', 5)) // أقصى عدد بالطلب 5
   @ApiBody({
-    type: UpdateStorefrontDto,
-    description: 'بيانات التحديث لواجهة المتجر',
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'صور البنرات (PNG/JPG/WEBP)',
+        },
+      },
+      required: ['files'],
+    },
   })
-  async update(@Param('id') id: string, @Body() dto: UpdateStorefrontDto) {
-    return this.svc.update(id, dto);
-  }
-
-  // تحديث حسب معرف التاجر مباشرة (لتسهيل التكامل مع الـ Frontend)
-  @Patch('merchant/by-merchant/:merchantId')
-  @ApiOperation({
-    summary: 'تحديث واجهة المتجر باستخدام معرف التاجر',
-    description: 'يحدِّث إعدادات واجهة المتجر باستخدام معرف التاجر مباشرة',
-  })
-  @ApiParam({
-    name: 'merchantId',
-    required: true,
-    description: 'معرف التاجر',
-    example: '60d21b4667d0d8992e610c85',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'تم تحديث واجهة المتجر بنجاح',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'لم يتم العثور على واجهة المتجر لهذا التاجر',
-  })
-  @ApiBody({
-    type: UpdateStorefrontDto,
-    description: 'بيانات التحديث لواجهة المتجر',
-  })
-  async updateByMerchant(
+  async uploadBanners(
     @Param('merchantId') merchantId: string,
-    @Body() dto: UpdateStorefrontDto,
+    @UploadedFiles() files: Express.Multer.File[],
   ) {
-    return this.svc.updateByMerchant(merchantId, dto);
+    return this.svc.uploadBannerImagesToMinio(merchantId, files);
+  }
+  @Public()
+  @Get('merchant/:merchantId/my-orders')
+  @ApiOperation({ summary: 'جلب طلبات الزبون حسب الجلسة/الهاتف' })
+  @ApiParam({ name: 'merchantId', description: 'معرّف التاجر' })
+  async myOrders(
+    @Param('merchantId') merchantId: string,
+    @Query('sessionId') sessionId: string,
+    @Query('phone') phone?: string,          // ✅ دعم الهاتف مباشرة من الطلب
+    @Query('limit') limit = '50',
+  ) {
+    if (!merchantId || (!sessionId && !phone)) {
+      throw new BadRequestException('merchantId و sessionId/phone مطلوبة');
+    }
+    const lim = Math.min(parseInt(limit, 10) || 50, 200);
+    return this.svc.getMyOrdersForSession(merchantId, sessionId, phone, lim);
+  }
+
+  @Get('/public/storefront/:slug/brand.css')
+  @Header('Content-Type', 'text/css')
+  async getBrandCss(@Param('slug') slug: string) {
+    return this.svc.getBrandCssBySlug(slug);
   }
 }

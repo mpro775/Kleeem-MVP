@@ -4,11 +4,12 @@ services:
   redis:
     image: redis:6-alpine
     container_name: kaleem-redis
-    command: ['redis-server']
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf']
     ports:
       - '6379:6379'
     volumes:
       - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
@@ -55,12 +56,14 @@ services:
       - N8N_PROTOCOL=https
       - WEBHOOK_URL=https://n8n2.kaleem-ai.com
       - N8N_EDITOR_BASE_URL=https://n8n2.kaleem-ai.com
+      - N8N_ENCRYPTION_KEY=LdpU1CTJbx2QbIaxMwWus1qRkpv3D0ud
       - N8N_RUNNERS_ENABLED=true
       # حدّد CORS لو تحتاج الوصول من واجهة خارجية
       - N8N_CORS_ALLOW_ORIGIN=https://localhost:5173
       - N8N_CORS_ALLOW_CREDENTIALS=true
     ports:
       - '5679:5678' # منفذ مختلف على الهوست
+    user: '1000:1000'
     volumes:
       - n8n_data_sandbox:/home/node/.n8n
     networks:
@@ -123,19 +126,16 @@ services:
     image: rediscommander/redis-commander:latest
     container_name: kaleem-redis-commander
     environment:
-      # استبدل <USER_FROM_RENDER> و <PASSWORD> من نفس REDIS_URL لديك
-      REDIS_HOSTS: 'render:rediss://<USER_FROM_RENDER>:<PASSWORD>@oregon-keyvalue.render.com:6379'
-      # حماية لوحة التحكم للويب
-      HTTP_USER: admin
-      HTTP_PASSWORD: '<STRONG_UI_PASS>'
-      # اختيارية عند استخدام rediss:// عبر REDIS_HOSTS (TLS ضمني)
-      REDIS_TLS: 'true'
-      # في حال مشاكل شهادة (اختياري ومؤقت)
-      # REDIS_SSL_REJECT_UNAUTHORIZED: 'false'
+      - REDIS_HOSTS=local:redis:6379 # ✅ الصيغة القديمة الواضحة
+      - PORT=8081 # ✅ يتوافق مع المابنج
+      - ADDRESS=0.0.0.0 # ✅ استماع على كل الواجهات داخل الحاوية
+      - HTTP_USER=admin
+      - HTTP_PASSWORD=<STRONG_UI_PASS>
+    depends_on:
+      - redis
     ports:
-      - '8082:8081'
-    networks:
-      - backnet
+      - '8082:8081' # host:container
+    networks: [backnet]
     restart: unless-stopped
 
   minio:
@@ -151,7 +151,7 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -164,45 +164,112 @@ services:
     ports:
       - '3000:3000'
     depends_on:
-      rabbitmq:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      mongo:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    env_file:
-      - .env
+      rabbitmq: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      mongo: { condition: service_healthy }
+      minio: { condition: service_healthy }
+    env_file: [.env]
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     environment:
-      - RABBIT_URL=amqp://kaleem:supersecret@rabbitmq:5672/kleem 
+      - RABBIT_URL=amqp://kaleem:supersecret@rabbitmq:5672/kleem
+      - EVOLUTION_API_URL=http://evolution_api:8080
+      - EVOLUTION_API_KEY=any-secret-key
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318/v1/traces
+    volumes:
+      - /opt/kaleem/uploads:/app/uploads
     restart: unless-stopped
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:3000/health || exit 1']
+      test:
+        - CMD-SHELL
+        - >
+          node -e "require('http').get('http://localhost:3000/api/health',
+          r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
       interval: 15s
       timeout: 5s
       retries: 5
+    networks: [backnet]
+
+  glitchtip-postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: glitchtip
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - glitchtip_pg:/var/lib/postgresql/data
+    networks: [backnet]
+
+  glitchtip:
+    image: glitchtip/glitchtip:latest
+    environment:
+      DATABASE_URL: postgres://glitchtip:change-me@glitchtip-postgres:5432/glitchtip
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: change-this
+      GLITCHTIP_DOMAIN: https://errors.kaleem-ai.com
+      DEFAULT_FROM_EMAIL: support@kaleem-ai.com
+      EMAIL_URL: 'smtp://support@kaleem-ai.com:password@smtp.hostinger.com:465?ssl=True'
+      CELERY_WORKER_AUTOSCALE: '1,3'
+    depends_on:
+      - glitchtip-postgres
+      - redis
+    ports:
+      - '8085:8080'
+    networks:
+      - backnet
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: kaleem-node-exporter
+    restart: unless-stopped
+    ports:
+      - '9100:9100'
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
     networks:
       - backnet
 
+  glitchtip-worker:
+    image: glitchtip/glitchtip:latest
+    command: ./bin/run-celery-with-beat.sh
+    environment:
+      DATABASE_URL: postgres://glitchtip:change-me@glitchtip-postgres:5432/glitchtip
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: change-this
+      GLITCHTIP_DOMAIN: https://errors.kaleem-ai.com
+    depends_on:
+      - glitchtip-postgres
+      - redis
+    networks:
+      - backnet
+    restart: unless-stopped
   extractor:
     build:
       context: ./extractor-service
     container_name: kaleem-extractor
     ports:
       - '8001:8001'
-    networks:
-      - backnet
+    shm_size: '1gb'
+    init: true # ⬅️ هذا يوفّر init process بديلًا عن dumb-init
     healthcheck:
       test:
         [
           'CMD-SHELL',
-          'curl -f http://localhost:8001/extract/?url=https://example.com || exit 1',
+          'curl -sf http://localhost:8001/extract/?url=https://example.com >/dev/null',
         ]
       interval: 30s
       timeout: 10s
       retries: 3
+    networks: [backnet]
     restart: unless-stopped
+
     # docker-compose.yml (إضافات)
   prometheus:
     image: prom/prometheus:v2.54.1
@@ -213,6 +280,7 @@ services:
       - '--web.enable-lifecycle'
     volumes:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alerts:/etc/prometheus/alerts:ro
       - prom_data:/prometheus
     ports:
       - '9090:9090'
@@ -220,6 +288,18 @@ services:
     restart: unless-stopped
     depends_on:
       - rabbitmq
+
+  # === Alertmanager ===
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: kaleem-alertmanager
+    command: --config.file=/etc/alertmanager/alertmanager.yml --storage.path=/alertmanager
+    ports:
+      - '9093:9093'
+    volumes:
+      - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    networks: [backnet]
+    restart: unless-stopped
 
     # === Grafana ===
   grafana:
@@ -230,8 +310,8 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin123
       - GF_USERS_DEFAULT_THEME=light
       # مهم لو خلف بروكسي أو غيرت البورت/الدومين
-      - GF_SERVER_DOMAIN=31.97.155.167
-      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:%(http_port)s/
+      - GF_SERVER_DOMAIN=grafana.kaleem-ai.com
+      - GF_SERVER_ROOT_URL=https://grafana.kaleem-ai.com/
     volumes:
       - grafana_data:/var/lib/grafana
       - ./observability/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
@@ -243,7 +323,6 @@ services:
     restart: unless-stopped
     depends_on:
       - prometheus
-
     # === Node Exporter (مقاييس النظام من داخل الكونتينرات صعب؛ نستخدم cAdvisor بدلاً منه) ===
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.47.2
@@ -255,7 +334,6 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
     networks: [backnet]
     restart: unless-stopped
-
     # === Redis Exporter ===
   redis-exporter:
     image: oliver006/redis_exporter:v1.61.0
@@ -269,7 +347,7 @@ services:
     depends_on:
       - redis
 
-    # === MongoDB Exporter ===
+  # === MongoDB Exporter ===
   mongodb-exporter:
     image: bitnami/mongodb-exporter:0.40.0
     container_name: kaleem-mongodb-exporter
@@ -282,75 +360,157 @@ services:
     depends_on:
       - mongo
 
-    # === RabbitMQ (تفعيل الـ Prometheus plugin وفتح 15692) ===
-  rabbitmq:
-    image: rabbitmq:3.13-management
-    volumes:
-      - ./rabbit-definitions.json:/etc/rabbitmq/rabbit-definitions.json:ro
-      - rabbitmq_data:/var/lib/rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: kaleem
-      RABBITMQ_DEFAULT_PASS: supersecret
-      RABBITMQ_DEFAULT_VHOST: kleem
-      RABBITMQ_LOAD_DEFINITIONS: /etc/rabbitmq/rabbit-definitions.json
-      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: >
-        -rabbitmq_prometheus listener [{port,15692}]
-    command: >
-      bash -lc "rabbitmq-plugins enable --offline rabbitmq_prometheus &&
-                rabbitmq-server"
+  # === Loki ===
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: kaleem-loki
+    command: -config.file=/etc/loki/config.yml
     ports:
-      - '5672:5672'
-      - '15672:15672' # UI
-      - '15692:15692' # /metrics
-    healthcheck:
-      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'status']
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - '3100:3100'
+    volumes:
+      - ./observability/loki/config.yml:/etc/loki/config.yml:ro
+      - loki_data:/loki
     networks: [backnet]
     restart: unless-stopped
 
+  # === Promtail ===
+  promtail:
+    image: grafana/promtail:2.9.8
+    container_name: kaleem-promtail
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./observability/promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [backnet]
+    depends_on:
+      - loki
+    restart: unless-stopped
 
+  # === RabbitMQ (تفعيل الـ Prometheus plugin وفتح 15692) ===
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: kaleem-rabbitmq
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    environment:
+      - RABBITMQ_DEFAULT_USER=kaleem
+      - RABBITMQ_DEFAULT_PASS=supersecret
+      - RABBITMQ_DEFAULT_VHOST=kleem
+    command: >
+      bash -lc "rabbitmq-plugins enable --offline rabbitmq_prometheus && rabbitmq-server"
+    healthcheck:
+      test: ['CMD-SHELL', 'rabbitmq-diagnostics -q ping']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+      - '15692:15692'
+    networks: [backnet]
+    restart: unless-stopped
 
-    # اختياري: عمّال مستقلين (نفس صورة api لو عندك nest start:worker)
+  # اختياري: عمّال مستقلين
   ai-reply-worker:
     build: .
     container_name: kaleem-ai-reply
-    command: ['node', 'dist/workers/ai-reply.worker.js']
+    command: ['node', 'dist/src/workers/ai-incoming.consumer.js'] # ⬅️ كان dist/workers/ai-reply.worker.js
     env_file: [.env]
     environment:
       - RABBIT_URL=amqp://kaleem:supersecret@rabbitmq:5672/kleem
+      - METRICS_PORT=9101
+    expose: ['9101']
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget -qO- http://localhost:9101/metrics >/dev/null 2>&1 || exit 1',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     depends_on:
       rabbitmq: { condition: service_healthy }
-      qdrant: { condition: service_started }
-      embedding: { condition: service_started }
     networks: [backnet]
     restart: unless-stopped
 
   webhook-dispatcher:
     build: .
     container_name: kaleem-webhook-dispatcher
-    command: ['node', 'dist/workers/webhook-dispatcher.worker.js']
+    command: ['node', 'dist/src/workers/webhook-dispatcher.consumer.js'] # ⬅️ عدّل للاسم الصحيح لديك
     env_file: [.env]
     environment:
       - RABBIT_URL=amqp://kaleem:supersecret@rabbitmq:5672/kleem
+      - METRICS_PORT=9102
+    expose: ['9102']
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget -qO- http://localhost:9102/metrics >/dev/null 2>&1 || exit 1',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     depends_on:
       rabbitmq: { condition: service_healthy }
     networks: [backnet]
     restart: unless-stopped
 
   indexing-worker:
-    build: ./extractor-service # أو نفس api لو الكود هناك
+    build: ./extractor-service
     container_name: kaleem-indexing
+    # اختر واحدة من الطريقتين حسب شرح النقطة (1)
     command: ['python', '-m', 'workers.indexing']
+    working_dir: /app
     environment:
       - RABBIT_URL=amqp://kaleem:supersecret@rabbitmq:5672/kleem
+      - METRICS_PORT=9103
+    expose: ['9103']
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget -qO- http://localhost:9103/metrics >/dev/null 2>&1 || exit 1',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     depends_on:
       rabbitmq: { condition: service_healthy }
-      qdrant: { condition: service_started }
-      minio: { condition: service_started }
-      embedding: { condition: service_started }
     networks: [backnet]
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: kaleem-tempo
+    command: ['-config.file=/etc/tempo/tempo.yml']
+    volumes:
+      - ./observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - '3200:3200' # tempo http (querier)
+    expose:
+      - '4317'
+      - '4318'
+    networks: [backnet]
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.106.0
+    container_name: kaleem-otel-collector
+    command: ['--config=/etc/otelcol/config.yaml']
+    volumes:
+      - ./observability/otel/config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - '8889:8889' # /metrics ليشيلها Prometheus
+    networks: [backnet]
+    depends_on:
+      - tempo
     restart: unless-stopped
 
   n8n:
@@ -369,7 +529,6 @@ services:
       - N8N_RUNNERS_ENABLED=true
       - N8N_CORS_ALLOW_ORIGIN=https://localhost:5173
       - N8N_CORS_ALLOW_CREDENTIALS=true
-
     ports:
       - '5678:5678'
     depends_on:
@@ -396,6 +555,9 @@ volumes:
   grafana_data:
   prom_data:
   hf_cache:
+  loki_data:
+  glitchtip_pg: # ← مفقود
+  tempo_data: # ← مفقود
 
 networks:
   backnet:

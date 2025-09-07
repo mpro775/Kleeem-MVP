@@ -1,5 +1,4 @@
 // src/common/interceptors/http-metrics.interceptor.ts
-
 import {
   Injectable,
   NestInterceptor,
@@ -10,6 +9,7 @@ import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Histogram } from 'prom-client';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { shouldBypass } from './bypass.util';
 
 @Injectable()
 export class HttpMetricsInterceptor implements NestInterceptor {
@@ -20,10 +20,12 @@ export class HttpMetricsInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const req = context.switchToHttp().getRequest();
-    const method = req.method;
-    // نستخدم المسار الحرفي من request
-    const route = req.route?.path ?? req.url;
+    if (shouldBypass(req)) {
+      return next.handle(); // لا تسجل زمن /metrics نفسه
+    }
 
+    const method = req.method;
+    const route = req.route?.path ?? req.path ?? req.url;
     const end = this.histogram.startTimer({ method, route });
 
     return next.handle().pipe(

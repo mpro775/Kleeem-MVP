@@ -5,7 +5,12 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { AnalyticsController } from './analytics.controller';
-import { AnalyticsService, Overview, KeywordCount, TopProduct } from './analytics.service';
+import {
+  AnalyticsService,
+  Overview,
+  KeywordCount,
+  TopProduct,
+} from './analytics.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import type { Request } from 'express';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
@@ -19,16 +24,14 @@ describe('AnalyticsController', () => {
 
   // helper لإنشاء Request stub مع user.merchantId
   const makeReq = (): Request & { user: { merchantId: string } } =>
-    ({ user: { merchantId } } as any);
+    ({ user: { merchantId } }) as any;
 
   beforeEach(async () => {
     service = mockDeep<AnalyticsService>();
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AnalyticsController],
-      providers: [
-        { provide: AnalyticsService, useValue: service },
-      ],
+      providers: [{ provide: AnalyticsService, useValue: service }],
     })
       // guard bypass (لن يُستخدم فعليًا عند استدعاء الدوال مباشرة، لكن نُثبّت السلوك)
       .overrideGuard(JwtAuthGuard)
@@ -51,7 +54,10 @@ describe('AnalyticsController', () => {
         messages: 200,
         topKeywords: [{ keyword: 'تجربة', count: 5 }],
         topProducts: [{ productId: 'p1', name: 'Prod', views: 12 } as any],
-        channels: { total: 2, breakdown: [{ channel: 'whatsapp', count: 50 }] as any },
+        channels: {
+          total: 2,
+          breakdown: [{ channel: 'whatsapp', count: 50 }] as any,
+        },
       } as any;
 
       service.getOverview.mockResolvedValueOnce(overview);
@@ -81,7 +87,11 @@ describe('AnalyticsController', () => {
       service.getTopKeywords.mockResolvedValueOnce(expected);
 
       const out = await controller.topKeywords(req, period, limitStr);
-      expect(service.getTopKeywords).toHaveBeenCalledWith(merchantId, 'quarter', 7);
+      expect(service.getTopKeywords).toHaveBeenCalledWith(
+        merchantId,
+        'quarter',
+        7,
+      );
       expect(out).toBe(expected);
     });
 
@@ -89,7 +99,11 @@ describe('AnalyticsController', () => {
       const req = makeReq();
       service.getTopKeywords.mockResolvedValueOnce([] as any);
       await controller.topKeywords(req, 'week', undefined!);
-      expect(service.getTopKeywords).toHaveBeenCalledWith(merchantId, 'week', 10);
+      expect(service.getTopKeywords).toHaveBeenCalledWith(
+        merchantId,
+        'week',
+        10,
+      );
     });
   });
 
@@ -102,7 +116,11 @@ describe('AnalyticsController', () => {
       service.getMessagesTimeline.mockResolvedValueOnce(timeline as any);
 
       const out = await controller.messagesTimeline(req, period, groupBy);
-      expect(service.getMessagesTimeline).toHaveBeenCalledWith(merchantId, 'week', 'hour');
+      expect(service.getMessagesTimeline).toHaveBeenCalledWith(
+        merchantId,
+        'week',
+        'hour',
+      );
       expect(out).toBe(timeline);
     });
 
@@ -111,7 +129,11 @@ describe('AnalyticsController', () => {
       service.getMessagesTimeline.mockResolvedValueOnce([] as any);
 
       await controller.messagesTimeline(req, undefined!, undefined!);
-      expect(service.getMessagesTimeline).toHaveBeenCalledWith(merchantId, 'week', 'day');
+      expect(service.getMessagesTimeline).toHaveBeenCalledWith(
+        merchantId,
+        'week',
+        'day',
+      );
     });
   });
 
@@ -130,7 +152,11 @@ describe('AnalyticsController', () => {
     it('ينشئ المستند من الحمولة ويعيد success و id', async () => {
       const dto: any = {
         event: 'product_view',
-        data: { productId: 'prod_123', userId: 'user_456', timestamp: '2024-01-15T10:30:00Z' },
+        data: {
+          productId: 'prod_123',
+          userId: 'user_456',
+          timestamp: '2024-01-15T10:30:00Z',
+        },
         source: 'webhook',
       };
       const fakeId = faker.string.alphanumeric(24);
@@ -152,12 +178,22 @@ describe('AnalyticsController', () => {
     it('يمرر merchantId و period و limit (مع تحويل limit إلى رقم) ويعيد النتيجة', async () => {
       const req = makeReq();
       const res: TopProduct[] = [
-        { productId: 'prod_1', name: 'A', views: 10, interactions: 20, conversionRate: 0.1 } as any,
+        {
+          productId: 'prod_1',
+          name: 'A',
+          views: 10,
+          interactions: 20,
+          conversionRate: 0.1,
+        } as any,
       ];
       service.getTopProducts.mockResolvedValueOnce(res);
 
       const out = await controller.topProducts(req, 'month', '3');
-      expect(service.getTopProducts).toHaveBeenCalledWith(merchantId, 'month', 3);
+      expect(service.getTopProducts).toHaveBeenCalledWith(
+        merchantId,
+        'month',
+        3,
+      );
       expect(out).toBe(res);
     });
 
@@ -166,7 +202,11 @@ describe('AnalyticsController', () => {
       service.getTopProducts.mockResolvedValueOnce([] as any);
 
       await controller.topProducts(req, 'week', undefined!);
-      expect(service.getTopProducts).toHaveBeenCalledWith(merchantId, 'week', 5);
+      expect(service.getTopProducts).toHaveBeenCalledWith(
+        merchantId,
+        'week',
+        5,
+      );
     });
   });
 });

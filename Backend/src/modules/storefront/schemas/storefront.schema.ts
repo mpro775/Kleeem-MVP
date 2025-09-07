@@ -19,6 +19,8 @@ export class Storefront {
   @Prop({ default: '#2575fc' })
   secondaryColor: string;
   // بانرات/سلايدر
+  @Prop({ default: '#2575fc' })
+  brandDark?: string;
   @Prop({
     type: [
       {
@@ -42,7 +44,7 @@ export class Storefront {
     order?: number;
   }[];
 
-  @Prop({ required: false, unique: true, sparse: true })
+  @Prop({ type: String, index: true })
   slug?: string;
 
   @Prop({ required: false })
@@ -58,3 +60,34 @@ export class Storefront {
 }
 
 export const StorefrontSchema = SchemaFactory.createForClass(Storefront);
+function normalizeSlug(input: string): string {
+  let s = (input || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-');
+  s = s.replace(/[^a-z0-9-]/g, '');
+  s = s.replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+  if (s.length > 50) s = s.slice(0, 50).replace(/-+$/g, '');
+  return s;
+}
+
+StorefrontSchema.pre('validate', function (next) {
+  if ((this as any).slug) {
+    (this as any).slug = normalizeSlug((this as any).slug);
+  }
+  next();
+});
+StorefrontSchema.pre('save', async function (next) {
+  try {
+    // اجلب publicSlug من merchant وحدث الـ slug
+    const mId = (this as any).merchant;
+    if (mId) {
+      const MerchantModel = this.model('Merchant');
+      const m = (await MerchantModel.findById(mId).select('publicSlug')) as any;
+      if (m?.publicSlug) (this as any).slug = m.publicSlug;
+    }
+    next();
+  } catch (e) {
+    next(e as any);
+  }
+});

@@ -5,6 +5,7 @@ import {
   makeHistogramProvider,
 } from '@willsoto/nestjs-prometheus';
 import { HttpMetricsInterceptor } from '../common/interceptors/http-metrics.interceptor';
+import { BusinessMetrics, BusinessMetricsProviders } from './business.metrics';
 
 export const HttpRequestDurationProvider = makeHistogramProvider({
   name: 'http_request_duration_seconds',
@@ -17,17 +18,20 @@ export const HttpRequestDurationProvider = makeHistogramProvider({
   imports: [
     PrometheusModule.register({
       path: '/metrics',
-      defaultMetrics: { enabled: true }, // مرة وحدة فقط
+      defaultMetrics: { enabled: true },
     }),
   ],
   providers: [
-    HttpRequestDurationProvider, // ✅ مزوّد المترك
-    HttpMetricsInterceptor, // يُدار عبر DI
+    HttpRequestDurationProvider,
+    HttpMetricsInterceptor,
+    ...BusinessMetricsProviders, // ← أضف مزوّدات العدّادات هنا
+    BusinessMetrics, // ← خدمة وسيطة لسهولة الاستدعاء
   ],
   exports: [
     PrometheusModule,
-    HttpMetricsInterceptor, // لو نحتاج نجيبه من app.get(...)
-    HttpRequestDurationProvider, // ✅ تصدير المترك
+    HttpMetricsInterceptor,
+    HttpRequestDurationProvider,
+    BusinessMetrics, // ← للتصريح خارج الموديول
   ],
 })
 export class MetricsModule {}

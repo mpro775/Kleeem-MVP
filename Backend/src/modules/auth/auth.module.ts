@@ -16,6 +16,15 @@ import { MerchantsModule } from '../merchants/merchants.module';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema'; // ← استيراد الـ schema
 import { MailModule } from '../mail/mail.module';
+import { MetricsModule } from 'src/metrics/metrics.module';
+import {
+  EmailVerificationToken,
+  EmailVerificationTokenSchema,
+} from './schemas/email-verification-token.schema';
+import {
+  PasswordResetToken,
+  PasswordResetTokenSchema,
+} from './schemas/password-reset-token.schema';
 
 @Module({
   imports: [
@@ -34,11 +43,17 @@ import { MailModule } from '../mail/mail.module';
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Merchant.name, schema: MerchantSchema }, // ← إضافة هذا السطر
+      {
+        name: EmailVerificationToken.name,
+        schema: EmailVerificationTokenSchema,
+      },
+      { name: PasswordResetToken.name, schema: PasswordResetTokenSchema },
     ]),
     MailModule, // ← استيراد MailModule ليوفر MailService
 
     UsersModule,
     MerchantsModule, // لازمه ل AuthController الذي يستعمل MerchantsService
+    MetricsModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

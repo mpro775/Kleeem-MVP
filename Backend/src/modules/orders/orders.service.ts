@@ -1,7 +1,8 @@
 // src/modules/orders/orders.service.ts
 import { Injectable } from '@nestjs/common';
+import { MerchantNotFoundError } from '../../common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { Order, OrderDocument } from './schemas/order.schema';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { LeadsService } from '../leads/leads.service';
@@ -10,6 +11,8 @@ import {
   Merchant,
   MerchantDocument,
 } from '../merchants/schemas/merchant.schema';
+import { normalizePhone } from './utils/phone.util';
+const isObjectId = (v?: string) => !!v && mongoose.Types.ObjectId.isValid(v);
 
 function toOrderType(orderDoc: any): OrderType {
   return {
@@ -43,15 +46,30 @@ export class OrdersService {
   ) {}
 
   async create(dto: CreateOrderDto): Promise<Order> {
-    const created = await this.orderModel.create(dto);
-    await this.leadsService.create(dto.merchantId, {
-      sessionId: dto.sessionId,
-      data: dto.customer, // هنا تحفظ بيانات العميل (الاسم/الجوال/العنوان)
-      source: 'order', // مصدر العميل: جاء عبر الطلبات
+    const phoneNormalized = normalizePhone(dto.customer?.phone);
+
+    const products = (dto.products || []).map((p) => ({
+      ...p,
+      product: isObjectId(p.product) ? p.product : undefined, // شِل القيمة غير الصحيحة
+    }));
+
+    const created = await this.orderModel.create({
+      ...dto,
+      products,
+      source: dto.source ?? 'storefront',
+      customer: { ...dto.customer, phoneNormalized },
     });
+
+    try {
+      await this.leadsService.create(dto.merchantId, {
+        sessionId: dto.sessionId,
+        data: dto.customer,
+        source: 'order',
+      });
+    } catch (e) {}
+
     return created.toObject();
   }
-
   // جلب كل الطلبات
   async findAll(): Promise<Order[]> {
     return this.orderModel.find().sort({ createdAt: -1 }).exec();
@@ -68,41 +86,40 @@ export class OrdersService {
     return this.orderModel.findByIdAndUpdate(id, { status }, { new: true });
   }
   async upsertFromZid(storeId: string, zidOrder: any): Promise<OrderDocument> {
-    // حدد طريقة ربط storeId → merchantId حسب تصميمك
-    // مثال: استخرج merchantId من قاعدة بيانات merchants عبر storeId
     const merchant = await this.findMerchantByStoreId(storeId);
-    if (!merchant) throw new Error('Merchant not found for this store_id');
-    const merchantId = merchant._id;
+    if (!merchant) throw new MerchantNotFoundError(storeId);
+    const merchantId = merchant.id.toString();
 
-    // ابحث عن الطلب بـ externalId أو رقم الطلب من زد (غالباً zidOrder.id أو zidOrder.external_id)
     let order = await this.orderModel.findOne({
       merchantId,
       externalId: zidOrder.id,
       source: 'api',
     });
 
-    const orderData: CreateOrderDto = {
-      merchantId: merchant.id.toString(),
-      sessionId: zidOrder.session_id,
+    const phoneNormalized = normalizePhone(zidOrder.customer?.phone);
+    const products = (zidOrder.products ?? []).map((p: any) => ({
+      product: p.id || p.productId || undefined,
+      name: p.name,
+      price: Number(p.price) || 0,
+      quantity: Number(p.quantity) || 1,
+    }));
+
+    const orderData = {
+      merchantId,
+      sessionId: zidOrder.session_id ?? `zid:${zidOrder.id}`,
       source: 'api',
       externalId: zidOrder.id,
-      // أضف باقي الحقول التي تحتاجها من zidOrder
-      status: zidOrder.status,
+      status: zidOrder.status ?? 'pending',
       customer: {
         name: zidOrder.customer?.name ?? '',
         phone: zidOrder.customer?.phone ?? '',
         address: zidOrder.customer?.address ?? '',
+        phoneNormalized,
       },
-      products:
-        zidOrder.products?.map((p: any) => ({
-          name: p.name,
-          price: p.price,
-          quantity: p.quantity,
-        })) ?? [],
+      products, // ✅ نفس حقل الـSchema
       createdAt: zidOrder.created_at
         ? new Date(zidOrder.created_at)
         : new Date(),
-      // أضف باقي الحقول حسب الحاجة
     };
 
     if (order) {
@@ -112,7 +129,24 @@ export class OrdersService {
     }
     return order;
   }
-
+  async findMine(merchantId: string, sessionId: string) {
+    const phone = await this.leadsService.getPhoneBySession(
+      merchantId,
+      sessionId,
+    );
+    const or: any[] = [{ sessionId }];
+    if (phone) {
+      // داعم للحالات القديمة والجديدة
+      or.push(
+        { 'customer.phone': phone },
+        { 'customer.phoneNormalized': phone },
+      );
+    }
+    return this.orderModel
+      .find({ merchantId, $or: or })
+      .sort({ createdAt: -1 })
+      .lean();
+  }
   // Helper: جلب merchant عبر store_id من merchants collection
   async findMerchantByStoreId(storeId: string) {
     // عدّل اسم الكوليكشن أو الموديل حسب مشروعك
@@ -123,7 +157,7 @@ export class OrdersService {
     zidOrder: any,
   ): Promise<OrderDocument | null> {
     const merchant = await this.findMerchantByStoreId(storeId);
-    if (!merchant) throw new Error('Merchant not found for this store_id');
+    if (!merchant) throw new MerchantNotFoundError(storeId);
     const merchantId = merchant._id;
 
     // ابحث عن الطلب ثم حدث حالته فقط

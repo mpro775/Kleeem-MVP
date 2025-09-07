@@ -1,0 +1,60 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - img
+    - generic [ref=e4]:
+      - img [ref=e5]
+      - img [ref=e6]
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - img "Kleem" [ref=e13]
+          - heading "إنشاء حساب جديد" [level=4] [ref=e14]
+          - paragraph [ref=e15]: ابدأ رحلتك مع كليم وتمتع بتجربة ذكية وفريدة
+        - generic [ref=e16]:
+          - generic [ref=e17]:
+            - generic [ref=e18]: الاسم الكامل
+            - generic [ref=e19]:
+              - img [ref=e21]:
+                - img [ref=e22]
+              - textbox "الاسم الكامل" [ref=e24]: أحمد محمد
+              - group:
+                - generic: الاسم الكامل
+          - generic [ref=e25]:
+            - generic [ref=e26]: البريد الإلكتروني
+            - generic [ref=e27]:
+              - img [ref=e29]:
+                - img [ref=e30]
+              - textbox "البريد الإلكتروني" [ref=e32]: dup@example.com
+              - group:
+                - generic: البريد الإلكتروني
+          - generic [ref=e33]:
+            - generic [ref=e34]: كلمة المرور
+            - generic [ref=e35]:
+              - img [ref=e37]:
+                - img [ref=e38]
+              - textbox "كلمة المرور" [ref=e40]: Password123!
+              - button "إظهار كلمة المرور" [ref=e42] [cursor=pointer]:
+                - img [ref=e43] [cursor=pointer]:
+                  - img [ref=e44] [cursor=pointer]
+              - group:
+                - generic: كلمة المرور
+          - generic [ref=e46]:
+            - generic [ref=e47]: تأكيد كلمة المرور
+            - generic [ref=e48]:
+              - img [ref=e50]:
+                - img [ref=e51]
+              - textbox "تأكيد كلمة المرور" [ref=e53]: Password123!
+              - button "إظهار كلمة المرور" [ref=e55] [cursor=pointer]:
+                - img [ref=e56] [cursor=pointer]:
+                  - img [ref=e57] [cursor=pointer]
+              - group:
+                - generic: تأكيد كلمة المرور
+          - button "إنشاء حساب" [active] [ref=e60] [cursor=pointer]: إنشاء حساب
+          - paragraph [ref=e61]:
+            - text: لديك حساب بالفعل؟
+            - link "تسجيل الدخول" [ref=e62]:
+              - /url: /login
+  - region "Notifications Alt+T"
+```

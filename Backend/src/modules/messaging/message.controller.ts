@@ -26,7 +26,9 @@ import {
 } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { GeminiService } from './gemini.service';
+import { GeminiService } from '../ai/gemini.service';
+import { RateMessageDto } from './dto/rate-message.dto'; // ✅
+
 interface InstructionResult {
   badReply: string;
   instruction: string;
@@ -73,41 +75,42 @@ export class MessageController {
   @Public()
   @ApiOperation({
     summary: 'تسليم/استلام المحادثة من/إلى الوكيل البشري',
-    description: 'تحديث حالة تسليم المحادثة بين البوت والوكيل البشري'
+    description: 'تحديث حالة تسليم المحادثة بين البوت والوكيل البشري',
   })
-  @ApiParam({ 
+  @ApiParam({
     name: 'sessionId',
     description: 'معرف الجلسة (عادةً رقم الهاتف)',
-    example: '9665xxxxxxx'
+    example: '9665xxxxxxx',
   })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        handoverToAgent: { 
+        handoverToAgent: {
           type: 'boolean',
-          description: 'قيمة منطقية تحدد ما إذا كان سيتم تسليم المحادثة للوكيل البشري (true) أو استعادتها للبوت (false)',
-          example: true
-        }
+          description:
+            'قيمة منطقية تحدد ما إذا كان سيتم تسليم المحادثة للوكيل البشري (true) أو استعادتها للبوت (false)',
+          example: true,
+        },
       },
-      required: ['handoverToAgent']
-    }
+      required: ['handoverToAgent'],
+    },
   })
   @ApiOkResponse({
     description: 'تم تحديث حالة التسليم بنجاح',
     schema: {
-      example: { success: true }
-    }
+      example: { success: true },
+    },
   })
-  @ApiBadRequestResponse({ 
+  @ApiBadRequestResponse({
     description: 'بيانات الطلب غير صالحة أو ناقصة',
     schema: {
       example: {
         statusCode: 400,
         message: 'يجب توفير معرف الجلسة وقيمة التسليم',
-        error: 'Bad Request'
-      }
-    }
+        error: 'Bad Request',
+      },
+    },
   })
   @ApiNotFoundResponse({
     description: 'لم يتم العثور على الجلسة المحددة',
@@ -115,20 +118,32 @@ export class MessageController {
       example: {
         statusCode: 404,
         message: 'الجلسة غير موجودة',
-        error: 'Not Found'
-      }
-    }
+        error: 'Not Found',
+      },
+    },
   })
   async setHandover(
-    @Param('sessionId') sessionId: string,
-    @Body('handoverToAgent') handoverToAgent: boolean,
+    @Param('sessionId') s: string,
+    @Body('handoverToAgent') h: boolean,
+    @Req() req,
   ) {
-    await this.messageService.setHandover(sessionId, handoverToAgent);
+    await this.messageService.setHandover(s, h, req.user.merchantId);
     return { success: true };
+  }
+  @Public()
+  @Get('public/:widgetSlug/webchat/:sessionId')
+  findByWidgetAndSession(
+    @Param('widgetSlug') widgetSlug: string,
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.messageService.findByWidgetSlugAndSession(
+      widgetSlug,
+      sessionId,
+      'webchat',
+    );
   }
 
   @Get('session/:sessionId')
-  @Public()
   @ApiOperation({
     summary: 'جلب محادثة كاملة حسب sessionId (رقم الهاتف غالبًا)',
   })
@@ -136,8 +151,8 @@ export class MessageController {
   @ApiOkResponse({
     description: 'محادثة واحدة بجميع الرسائل',
   })
-  findBySession(@Param('sessionId') sessionId: string) {
-    return this.messageService.findBySession(sessionId);
+  findBySession(@Param('sessionId') sessionId: string, @Req() req) {
+    return this.messageService.findBySession(sessionId, req.user.merchantId);
   }
 
   @Get(':id')
@@ -198,44 +213,25 @@ export class MessageController {
   @Patch('session/:sessionId/messages/:messageId/rate')
   @ApiOperation({
     summary: 'تقييم رسالة معينة في المحادثة',
-    description: 'يسمح للمستخدم بتقييم رسالة محددة في المحادثة مع إمكانية إضافة تعليق'
+    description:
+      'يسمح للمستخدم بتقييم رسالة محددة في المحادثة مع إمكانية إضافة تعليق',
   })
   @ApiParam({
     name: 'sessionId',
     description: 'معرف الجلسة التي تحتوي على الرسالة',
-    example: '9665xxxxxxx'
+    example: '9665xxxxxxx',
   })
   @ApiParam({
     name: 'messageId',
     description: 'معرف الرسالة المراد تقييمها',
-    example: '60d0fe4f5311236168a109ca'
+    example: '60d0fe4f5311236168a109ca',
   })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        rating: {
-          type: 'number',
-          description: 'تقييم الرسالة (عادةً من 1 إلى 5)',
-          minimum: 1,
-          maximum: 5,
-          example: 4
-        },
-        feedback: {
-          type: 'string',
-          description: 'تعليق أو ملاحظات إضافية حول التقييم',
-          example: 'الرد كان مفيداً لكنه يحتوي على بعض المعلومات غير الدقيقة',
-          nullable: true
-        }
-      },
-      required: ['rating']
-    }
-  })
+  @ApiBody({ type: RateMessageDto })
   @ApiOkResponse({
     description: 'تم تقييم الرسالة بنجاح',
     schema: {
-      example: { status: 'ok' }
-    }
+      example: { status: 'ok' },
+    },
   })
   @ApiBadRequestResponse({
     description: 'بيانات التقييم غير صالحة',
@@ -243,9 +239,9 @@ export class MessageController {
       example: {
         statusCode: 400,
         message: 'يجب تقديم تقييم صالح بين 1 و 5',
-        error: 'Bad Request'
-      }
-    }
+        error: 'Bad Request',
+      },
+    },
   })
   @ApiUnauthorizedResponse({
     description: 'غير مصرح للمستخدم بتنفيذ هذه العملية',
@@ -253,31 +249,32 @@ export class MessageController {
       example: {
         statusCode: 401,
         message: 'غير مصرح',
-        error: 'Unauthorized'
-      }
-    }
+        error: 'Unauthorized',
+      },
+    },
   })
   async rateMessage(
     @Param('sessionId') sessionId: string,
     @Param('messageId') messageId: string,
-    @Body() body: { rating: number; feedback?: string },
+    @Body() body: RateMessageDto,
     @Req() req,
   ) {
-    const userId = req.user._id;
-    const { rating, feedback } = body;
+    const userId = req.user?.userId ?? req.user?._id ?? null;
+
     await this.messageService.rateMessage(
       sessionId,
       messageId,
-      userId,
-      rating,
-      feedback,
+      userId, // ← الآن يحمل 24-hex فعلاً
+      body.rating,
+      body.feedback,
+      req.user?.merchantId, // مرّره للخدمة لفلترة متعددة المستأجرين
     );
     return { status: 'ok' };
   }
   @Post('generate-instructions-from-bad-replies')
   @ApiOperation({
     summary: 'إنشاء تعليمات من الردود السيئة',
-    description: 'يقوم بتحليل الردود السيئة وإنشاء تعليمات لتحسين أداء البوت'
+    description: 'يقوم بتحليل الردود السيئة وإنشاء تعليمات لتحسين أداء البوت',
   })
   @ApiBody({
     schema: {
@@ -288,20 +285,20 @@ export class MessageController {
           items: {
             type: 'string',
             description: 'نص الرد السيء',
-            example: 'عذراً، لم أفهم سؤالك. هل يمكنك إعادة صياغته؟'
+            example: 'عذراً، لم أفهم سؤالك. هل يمكنك إعادة صياغته؟',
           },
           description: 'قائمة بالردود السيئة التي تحتاج إلى تحسين',
-          minItems: 1
+          minItems: 1,
         },
         merchantId: {
           type: 'string',
           description: 'معرف التاجر (اختياري) لربط التعليمات بتاجر معين',
           example: '60d0fe4f5311236168a109ca',
-          nullable: true
-        }
+          nullable: true,
+        },
       },
-      required: ['badReplies']
-    }
+      required: ['badReplies'],
+    },
   })
   @ApiCreatedResponse({
     description: 'تم إنشاء التعليمات بنجاح',
@@ -309,10 +306,11 @@ export class MessageController {
       example: [
         {
           badReply: 'عذراً، لم أفهم سؤالك',
-          instruction: 'عندما لا تفهم سؤال العميل، اطلب منه توضيح سؤاله بطريقة مهذبة وتقديم أمثلة للأسئلة المتوقعة.'
-        }
-      ]
-    }
+          instruction:
+            'عندما لا تفهم سؤال العميل، اطلب منه توضيح سؤاله بطريقة مهذبة وتقديم أمثلة للأسئلة المتوقعة.',
+        },
+      ],
+    },
   })
   @ApiBadRequestResponse({
     description: 'بيانات الطلب غير صالحة',
@@ -320,9 +318,9 @@ export class MessageController {
       example: {
         statusCode: 400,
         message: 'يجب تقديم قائمة بالردود السيئة',
-        error: 'Bad Request'
-      }
-    }
+        error: 'Bad Request',
+      },
+    },
   })
   async generateInstructions(
     @Body() dto: { badReplies: string[]; merchantId?: string },
@@ -341,14 +339,15 @@ export class MessageController {
   @Get('bad-bot-instructions')
   @ApiOperation({
     summary: 'الحصول على تعليمات لتحسين أداء البوت',
-    description: 'يحصل على قائمة بالردود التي تحتاج إلى تحسين مع تعليمات مقترحة'
+    description:
+      'يحصل على قائمة بالردود التي تحتاج إلى تحسين مع تعليمات مقترحة',
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     description: 'الحد الأقصى لعدد النتائج المراد إرجاعها',
     type: Number,
-    example: 10
+    example: 10,
   })
   @ApiOkResponse({
     description: 'قائمة بالتعليمات المقترحة',
@@ -356,13 +355,17 @@ export class MessageController {
       example: {
         instructions: [
           'عند سؤال العميل عن موعد التسليم، يجب أن يكون الرد دقيقاً مع ذكر المدة المتوقعة وأي شروط إضافية.',
-          'عند طلب العميل التحدث مع ممثل خدمة العملاء، يجب توجيهه إلى القسم المناسب مع رقم الهاتف وأوقات العمل.'
-        ]
-      }
-    }
+          'عند طلب العميل التحدث مع ممثل خدمة العملاء، يجب توجيهه إلى القسم المناسب مع رقم الهاتف وأوقات العمل.',
+        ],
+      },
+    },
   })
-  async getBadBotInstructions(@Query('limit') limit = 10) {
+  async getBadBotInstructions(
+    @Query('limit') limit = 10,
+    @Query('merchantId') merchantId?: string,
+  ) {
     const badReplies = await this.messageService.getFrequentBadBotReplies(
+      merchantId ?? '',
       Number(limit),
     );
     const instructions: string[] = [];
@@ -378,12 +381,13 @@ export class MessageController {
   @Get(':sessionId/ratings')
   @ApiOperation({
     summary: 'الحصول على تقييمات الرسائل في جلسة معينة',
-    description: 'يعيد قائمة بالرسائل التي تم تقييمها في جلسة محددة مع تفاصيل التقييمات'
+    description:
+      'يعيد قائمة بالرسائل التي تم تقييمها في جلسة محددة مع تفاصيل التقييمات',
   })
   @ApiParam({
     name: 'sessionId',
     description: 'معرف الجلسة المراد استعراض تقييماتها',
-    example: '9665xxxxxxx'
+    example: '9665xxxxxxx',
   })
   @ApiOkResponse({
     description: 'قائمة بالرسائل المقيّمة في الجلسة',
@@ -395,10 +399,10 @@ export class MessageController {
           rating: 4,
           feedback: 'الرد كان سريعاً لكنه عام جداً',
           ratedBy: '60d0fe4f5311236168a109cb',
-          ratedAt: '2023-05-20T10:30:00Z'
-        }
-      ]
-    }
+          ratedAt: '2023-05-20T10:30:00Z',
+        },
+      ],
+    },
   })
   @ApiNotFoundResponse({
     description: 'الجلسة غير موجودة أو لا تحتوي على تقييمات',
@@ -406,13 +410,16 @@ export class MessageController {
       example: {
         statusCode: 404,
         message: 'لم يتم العثور على الجلسة أو لا توجد تقييمات',
-        error: 'Not Found'
-      }
-    }
+        error: 'Not Found',
+      },
+    },
   })
-  async getRatedMessages(@Param('sessionId') sessionId: string) {
-    const session = await this.messageService.findBySession(sessionId);
+  async getRatedMessages(@Param('sessionId') sessionId: string, @Req() req) {
+    const session = await this.messageService.findBySession(
+      sessionId,
+      req.user.merchantId,
+    );
     if (!session) return [];
-    return session.messages.filter((msg) => msg.rating !== null);
+    return session.messages.filter((m) => m.rating !== null);
   }
 }

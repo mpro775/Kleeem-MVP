@@ -1,22 +1,23 @@
 // src/vector/vector.controller.ts
-import { 
-  Controller, 
-  Post, 
-  Body, 
-  Get, 
-  Query, 
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Query,
   HttpStatus,
   ParseIntPipe,
   DefaultValuePipe,
-  BadRequestException
+  BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
   ApiQuery,
   ApiBody,
-  ApiBearerAuth
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { VectorService } from './vector.service';
 import { SemanticRequestDto } from './dto/semantic-request.dto';
@@ -27,6 +28,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
  * واجهة تحكم البحث الدلالي
  * تتعامل مع عمليات البحث عن المنتجات باستخدام النماذج اللغوية
  */
+@UseGuards(JwtAuthGuard)
 @ApiTags('البحث الدلالي')
 @Controller('vector')
 @ApiBearerAuth()
@@ -59,13 +61,13 @@ export class VectorController {
         dto.merchantId,
         dto.topK,
       );
-      return { 
+      return {
         success: true,
         data: {
           recommendations: recs,
           count: recs.length,
-          query: dto.text
-        }
+          query: dto.text,
+        },
       };
     } catch (error) {
       throw new BadRequestException({
@@ -116,10 +118,11 @@ export class VectorController {
     @Query('text') text: string,
     @Query('merchantId') merchantId: string,
     @Query(
-      'topK', 
-      new DefaultValuePipe(5), 
-      new ParseIntPipe({ errorHttpStatusCode: HttpStatus.BAD_REQUEST })
-    ) topK = 5,
+      'topK',
+      new DefaultValuePipe(5),
+      new ParseIntPipe({ errorHttpStatusCode: HttpStatus.BAD_REQUEST }),
+    )
+    topK = 5,
   ) {
     if (!text || !merchantId) {
       throw new BadRequestException({
@@ -141,13 +144,13 @@ export class VectorController {
         merchantId,
         topK,
       );
-      return { 
+      return {
         success: true,
         data: {
           recommendations: recs,
           count: recs.length,
-          query: text
-        }
+          query: text,
+        },
       };
     } catch (error) {
       throw new BadRequestException({
@@ -221,7 +224,7 @@ export class VectorController {
         merchantId,
         k,
       );
-      
+
       return {
         success: true,
         data: {

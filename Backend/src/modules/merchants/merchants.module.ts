@@ -15,20 +15,41 @@ import { PromptPreviewService } from './services/prompt-preview.service';
 import { MerchantPromptController } from './controllers/merchant-prompt.controller';
 import { MerchantChecklistService } from './merchant-checklist.service';
 import { Product, ProductSchema } from '../products/schemas/product.schema';
-import { IntegrationsModule } from '../integrations/integrations.module';
 import {
   Category,
   CategorySchema,
 } from '../categories/schemas/category.schema';
 import { StorefrontModule } from '../storefront/storefront.module';
 import { InstructionsModule } from '../instructions/instructions.module';
+import { MetricsModule } from 'src/metrics/metrics.module';
+import { User, UserSchema } from '../users/schemas/user.schema';
+import { Channel, ChannelSchema } from '../channels/schemas/channel.schema';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { CatalogModule } from '../catalog/catalog.module';
+import { OutboxModule } from '../../common/outbox/outbox.module';
+import { SlugResolverService } from '../public/slug-resolver.service';
+import { PublicRouterController } from '../public/public-router.controller';
+import {
+  ChatWidgetSettings,
+  ChatWidgetSettingsSchema,
+} from '../chat/schema/chat-widget.schema';
+import {
+  Storefront,
+  StorefrontSchema,
+} from '../storefront/schemas/storefront.schema';
+import { ChatModule } from '../chat/chat.module';
+import { CleanupCoordinatorService } from './cleanup-coordinator.service';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Merchant.name, schema: MerchantSchema },
-      { name: Product.name, schema: ProductSchema }, // ← هنا
+      { name: Product.name, schema: ProductSchema },
       { name: Category.name, schema: CategorySchema },
+      { name: User.name, schema: UserSchema },
+      { name: Channel.name, schema: ChannelSchema },
+      { name: ChatWidgetSettings.name, schema: ChatWidgetSettingsSchema },
+      { name: Storefront.name, schema: StorefrontSchema },
     ]),
     StorefrontModule,
     forwardRef(() => AuthModule),
@@ -36,22 +57,33 @@ import { InstructionsModule } from '../instructions/instructions.module';
     forwardRef(() => InstructionsModule),
     HttpModule,
     forwardRef(() => N8nWorkflowModule),
-    IntegrationsModule,
+    MetricsModule,
+    NotificationsModule,
+    CatalogModule,
+    forwardRef(() => ChatModule),
+    OutboxModule,
   ],
   providers: [
     MerchantsService,
     PromptBuilderService,
     PromptVersionService,
     PromptPreviewService,
+    CleanupCoordinatorService,
     MerchantChecklistService,
+    SlugResolverService,
   ],
-  controllers: [MerchantsController, MerchantPromptController],
+  controllers: [
+    MerchantsController,
+    MerchantPromptController,
+    PublicRouterController,
+  ],
   exports: [
     MerchantsService,
     PromptVersionService,
     PromptPreviewService,
     PromptBuilderService,
     MerchantChecklistService,
+    SlugResolverService,
   ],
 })
 export class MerchantsModule {}

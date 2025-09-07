@@ -1,5 +1,5 @@
 // src/integrations/salla/salla.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -12,6 +12,7 @@ import {
   MerchantSchema,
 } from '../../merchants/schemas/merchant.schema';
 import { Integration, IntegrationSchema } from '../schemas/integration.schema';
+import { CatalogModule } from '../../catalog/catalog.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { Integration, IntegrationSchema } from '../schemas/integration.schema';
       { name: Merchant.name, schema: MerchantSchema },
       { name: Integration.name, schema: IntegrationSchema },
     ]),
+    forwardRef(() => CatalogModule),
   ],
   controllers: [SallaController],
   providers: [SallaService],

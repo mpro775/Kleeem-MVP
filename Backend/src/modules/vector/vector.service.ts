@@ -19,9 +19,13 @@ import { HttpService } from '@nestjs/axios';
 import { v5 as uuidv5 } from 'uuid';
 import { ProductsService } from '../products/products.service';
 import { geminiRerankTopN } from './geminiRerank';
+import { ConfigService } from '@nestjs/config';
 const PRODUCT_NAMESPACE = 'd94a5f5a-2bfc-4c2d-9f10-1234567890ab';
 const FAQ_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 const NAMESPACE = '6ba7b811-9dad-11d1-80b4-00c04fd430c8';
+
+const qdrantIdFor = (mongoId: any) =>
+  uuidv5(String(mongoId), PRODUCT_NAMESPACE);
 
 @Injectable()
 export class VectorService implements OnModuleInit {
@@ -31,16 +35,104 @@ export class VectorService implements OnModuleInit {
   public readonly faqCollection = 'faqs';
   private readonly documentCollection = 'documents';
   private readonly botFaqCollection = 'bot_faqs'; // 👈 كولكشن منفصل لقاعدة معرفة كليم
+  private readonly embeddingBase: string;
 
   private readonly webCollection = 'web_knowledge'; // 👈 مجموعات جديدة
   private readonly logger = new Logger(VectorService.name);
+  // استبدل النسخة القديمة بالكامل بهذه
+  private toStringList(
+    val: any,
+    seen: WeakSet<any> = new WeakSet(),
+    depth = 0,
+  ): string[] {
+    const MAX_DEPTH = 4;
+
+    const pushSafeJson = (v: any) => {
+      try {
+        return [JSON.stringify(v).slice(0, 200)];
+      } catch {
+        return [String(v)];
+      }
+    };
+
+    // بدالات خاصة لبعض الأنواع الشائعة
+    const isBufferLike = (v: any) =>
+      v?.type === 'Buffer' && Array.isArray(v?.data);
+    const isMongoObjectIdHex = (s: string) => /^[a-f0-9]{24}$/i.test(s);
+
+    if (val == null) return [];
+    const t = typeof val;
+
+    // primitives
+    if (t === 'string' || t === 'number' || t === 'boolean')
+      return [String(val)];
+
+    // حد أقصى للعمق
+    if (depth >= MAX_DEPTH) return pushSafeJson(val);
+
+    // arrays
+    if (Array.isArray(val)) {
+      const out: string[] = [];
+      for (const item of val)
+        out.push(...this.toStringList(item, seen, depth + 1));
+      return out;
+    }
+
+    // objects
+    if (t === 'object') {
+      // حارس الدوائر
+      if (seen.has(val)) return ['[Circular]'];
+      seen.add(val);
+
+      // حالات خاصة
+      if (val instanceof Date) return [val.toISOString()];
+      if (typeof (val as any).toHexString === 'function')
+        return [(val as any).toHexString()];
+      if (isBufferLike(val)) return [`[Buffer:${val.data.length}]`];
+
+      // أحيانًا toString يرجّع ObjectId كسلسلة 24 hex
+      if (typeof (val as any).toString === 'function') {
+        const s = (val as any).toString();
+        if (isMongoObjectIdHex(s)) return [s];
+      }
+
+      const values = Object.values(val);
+      if (!values.length) return pushSafeJson(val);
+
+      const out: string[] = [];
+      for (const v of values)
+        out.push(...this.toStringList(v, seen, depth + 1));
+      return out;
+    }
+
+    // fallback
+    return [String(val)];
+  }
+
+  private safeJoin(val: any, sep = '/'): string {
+    const list = this.toStringList(val)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return list.join(sep);
+  }
+  private safeJoinComma(val: any): string {
+    return this.safeJoin(val, ', ');
+  }
 
   constructor(
     private readonly http: HttpService,
     @Inject(forwardRef(() => ProductsService)) // ← أضف هذه السطر
     private readonly productsService: ProductsService,
+    private config: ConfigService,
     // 👈 وأيضًا هذا لو استخدمته
-  ) {}
+  ) {
+    this.embeddingBase = (
+      this.config.get<string>('EMBEDDING_BASE_URL') || ''
+    ).replace(/\/+$/, '');
+    if (!this.embeddingBase) {
+      throw new Error('EMBEDDING_BASE_URL is required');
+    }
+  }
   public async onModuleInit(): Promise<void> {
     this.qdrant = new QdrantClient({ url: process.env.QDRANT_URL });
     console.log('[VectorService] Qdrant URL is', process.env.QDRANT_URL);
@@ -82,9 +174,25 @@ export class VectorService implements OnModuleInit {
     return this.qdrant.upsert(this.botFaqCollection, { wait: true, points });
   }
 
+  async deleteWebKnowledgeByFilter(filter: any) {
+    // @qdrant/js-client-rest يدعم:
+    // client.delete(collection, { filter })
+    return this.qdrant.delete(this.webCollection, { filter });
+  }
+
+  async deleteFaqsByFilter(filter: any) {
+    return this.qdrant.delete(this.faqCollection, { filter });
+  }
+
+  // حذف نقطة FAQ واحدة بواسطة faqId (Mongo) باستخدام generateFaqId
+  async deleteFaqPointByFaqId(faqMongoId: string) {
+    const id = this.generateFaqId(faqMongoId);
+    return this.qdrant.delete(this.faqCollection, { points: [id] });
+  }
+
   // vector.service.ts
   public async embed(text: string): Promise<number[]> {
-    const embeddingUrl = 'http://31.97.155.167:8000'; // تأكد من إزالة المسافة الأولى قبل http
+    const embeddingUrl = this.embeddingBase; // تأكد من إزالة المسافة الأولى قبل http
     try {
       console.log('🔤 Embedding text length:', text.length);
       console.log('🌐 Sending to Embedding URL:', `${embeddingUrl}/embed`);
@@ -200,85 +308,186 @@ export class VectorService implements OnModuleInit {
   }
   public async upsertProducts(products: EmbeddableProduct[]) {
     const points = await Promise.all(
-      products.map(async (p) => ({
-        id: uuidv5(p.id, PRODUCT_NAMESPACE), // ← UUID ثابت لكل منتج
-        vector: await this.embed(this.buildTextForEmbedding(p)), // ← تحويل المنتج إلى متجه
-        payload: {
-          mongoId: p.id,
-          merchantId: p.merchantId,
-          name: p.name,
-          description: p.description,
-          category: p.category,
-          specsBlock: p.specsBlock ?? [],
-          keywords: p.keywords ?? [],
-        },
-      })),
+      products.map(async (p) => {
+        // احذف أي نقاط سابقة بهذا mongoId (سواء نفس الـid أو قديم)
+        await this.qdrant
+          .delete(this.collection, {
+            filter: { must: [{ key: 'mongoId', match: { value: p.id } }] },
+          })
+          .catch(() => {});
+
+        const discountPct =
+          p.priceOld && p.priceNew && p.priceOld > 0
+            ? Math.max(
+                0,
+                Math.round(((p.priceOld - p.priceNew) / p.priceOld) * 100),
+              )
+            : null;
+
+        const vectorText = this.buildTextForEmbedding({
+          ...p,
+          discountPct: discountPct ?? undefined,
+        });
+
+        return {
+          id: qdrantIdFor(p.id), // 👈 ثابت 100%
+          vector: await this.embed(vectorText),
+          payload: {
+            mongoId: p.id,
+            merchantId: p.merchantId,
+            // معلومات كاملة للبوت
+            name: p.name,
+            description: p.description ?? '',
+            categoryId: p.categoryId ?? null,
+            categoryName: p.categoryName ?? null,
+            specsBlock: p.specsBlock ?? [],
+            keywords: p.keywords ?? [],
+            images: p.images ?? [],
+            // روابط وسلاج
+            slug: p.slug ?? null,
+            storefrontSlug: p.storefrontSlug ?? null,
+            domain: p.domain ?? null,
+            publicUrlStored: p.publicUrlStored ?? null,
+            // أسعار وعروض
+            price: Number.isFinite(p.price as number)
+              ? (p.price as number)
+              : null,
+            priceEffective: Number.isFinite(p.priceEffective as number)
+              ? (p.priceEffective as number)
+              : null,
+            currency: p.currency ?? null,
+            hasOffer: !!p.hasActiveOffer,
+            priceOld: p.priceOld ?? null,
+            priceNew: p.priceNew ?? null,
+            offerStart: p.offerStart ?? null,
+            offerEnd: p.offerEnd ?? null,
+            discountPct,
+            // حالة
+            isAvailable:
+              typeof p.isAvailable === 'boolean' ? p.isAvailable : null,
+            status: p.status ?? null,
+            quantity: p.quantity ?? null,
+          },
+        };
+      }),
     );
 
     return this.qdrant.upsert(this.collection, { wait: true, points });
+  }
+  private resolveProductUrl(p: any): string | undefined {
+    const base = (
+      process.env.PUBLIC_WEB_BASE_URL || 'https://kaleem-ai.com'
+    ).replace(/\/+$/, '');
+    const clean = (s: string) => s.replace(/^https?:\/\//, '');
+    if (p?.domain && p?.slug) {
+      return `https://${clean(p.domain)}/product/${encodeURIComponent(p.slug)}`;
+    }
+    if (p?.storefrontSlug && p?.slug) {
+      return `${base}/store/${encodeURIComponent(p.storefrontSlug)}/product/${encodeURIComponent(p.slug)}`;
+    }
+    if (p?.publicUrlStored) {
+      try {
+        return new URL(p.publicUrlStored, base).toString();
+      } catch {
+        return p.publicUrlStored;
+      }
+    }
+    if (p?.storefrontSlug && p?.mongoId) {
+      return `${base}/store/${encodeURIComponent(p.storefrontSlug)}/product/${encodeURIComponent(p.mongoId)}`;
+    }
+    return undefined;
   }
 
   public async querySimilarProducts(
     text: string,
     merchantId: string,
     topK = 5,
-  ): Promise<
-    {
-      id: string;
-      name?: string;
-      price?: number;
-      url?: string;
-      score: number;
-    }[]
-  > {
-    // 1. استخرج embedding للسؤال
+  ) {
+    // 1) Embed للاستعلام
     const vector = await this.embed(text);
 
-    // 2. استخرج المنتجات من Qdrant
+    // 2) بحث في Qdrant
     const rawResults = await this.qdrant.search(this.collection, {
       vector,
-      limit: topK * 4, // عدد أكبر لأن Gemini سيعيد ترتيبهم!
-      with_payload: {
-        include: ['mongoId', 'name', 'price', 'url'],
-      },
-      filter: {
-        must: [{ key: 'merchantId', match: { value: merchantId } }],
-      },
+      limit: topK * 4,
+      // خذ كل شيء أو على الأقل أضف الحقول الجديدة
+      with_payload: true, // 👈 أسهل حل
+      filter: { must: [{ key: 'merchantId', match: { value: merchantId } }] },
     });
 
     if (!rawResults.length) return [];
 
-    // 3. حضّر المرشحين للنموذج
+    // 3) نصوص المرشحين لإعادة الترتيب (اختياري)
     const candidates = rawResults.map((item) => {
       const p = item.payload as any;
-      // يمكنك إضافة تفاصيل إضافية (سعر/وصف) لو أردت زيادة دقة Gemini
+      // نص بسيط يكفي لإعادة الترتيب
       return `اسم المنتج: ${p.name ?? ''}${p.price ? ` - السعر: ${p.price}` : ''}`;
     });
 
-    // 4. استعمل Gemini لترتيب النتائج
-    const geminiResult = await geminiRerankTopN({
-      query: text,
-      candidates,
-      topN: topK,
-    });
+    // 4) إعادة ترتيب عبر Gemini (إن متاح). الدالة قد تعيد:
+    //    - مصفوفة فهارس [2,0,1,...] أو
+    //    - مصفوفة كائنات { index, score }
+    let rerankedIdx: number[] | null = null;
+    try {
+      const geminiResult = await geminiRerankTopN({
+        query: text,
+        candidates,
+        topN: topK,
+      });
 
-    // 5. أرجع أفضل نتيجة واحدة أو عدة (يمكن تعديل البرومبت لإرجاع Top N)
-    if (geminiResult.length > 0) {
-      const bestItem = rawResults[geminiResult[0]];
-      const payload = bestItem.payload as any;
-      return [
-        {
-          id: payload.mongoId as string,
-          name: payload.name,
-          price: payload.price,
-          url: payload.url,
-          score: 1, // يمكنك إضافة سكّور ثابت أو تركه 1 للتمييز فقط
-        },
-      ];
+      if (Array.isArray(geminiResult) && geminiResult.length) {
+        if (typeof geminiResult[0] === 'number') {
+          rerankedIdx = geminiResult as number[];
+        } else if (
+          typeof geminiResult[0] === 'object' &&
+          'index' in (geminiResult[0] as any)
+        ) {
+          rerankedIdx = (
+            geminiResult as unknown as Array<{ index: number; score?: number }>
+          )
+            .map((r) => r.index)
+            .slice(0, topK);
+        }
+      }
+    } catch {
+      // لو فشل إعادة الترتيب، نكمل بالترتيب الأصلي القادم من Qdrant
     }
 
-    // إذا لم يجد Gemini جوابًا مناسبًا
-    return [];
+    // 5) إبراز أفضل Top K
+    const pick = (i: number) => {
+      const item = rawResults[i];
+      const p = item.payload as any;
+
+      // ابنِ رابطًا مطلقًا للبوت
+      const url = this.resolveProductUrl(p); // 👈 أنشئها تحت (3)
+
+      return {
+        id: String(p.mongoId),
+        name: p.name,
+        price:
+          typeof p.priceEffective === 'number' ? p.priceEffective : p.price,
+        url,
+        score: item.score ?? 0,
+        // وزّع بقية الحقول للبوت
+        currency: p.currency ?? undefined,
+        categoryName: p.categoryName ?? undefined,
+        images: p.images ?? undefined,
+        hasOffer: p.hasOffer ?? undefined,
+        priceOld: p.priceOld ?? undefined,
+        priceNew: p.priceNew ?? undefined,
+        discountPct: p.discountPct ?? undefined,
+      };
+    };
+
+    if (rerankedIdx && rerankedIdx.length) {
+      return rerankedIdx
+        .filter((i) => i >= 0 && i < rawResults.length)
+        .slice(0, topK)
+        .map(pick);
+    }
+
+    // بدون إعادة ترتيب: خذ الأوائل حسب مسافة المتجه
+    return rawResults.slice(0, topK).map((_, index) => pick(index));
   }
 
   public async upsertFaqs(points: any[]) {
@@ -403,13 +612,44 @@ export class VectorService implements OnModuleInit {
   }
   private buildTextForEmbedding(product: EmbeddableProduct): string {
     const parts: string[] = [];
+
     if (product.name) parts.push(`Name: ${product.name}`);
     if (product.description) parts.push(`Description: ${product.description}`);
-    if (product.category) parts.push(`Category: ${product.category}`);
-    if (product.specsBlock?.length)
-      parts.push(`Specs: ${product.specsBlock.join(', ')}`);
-    if (product.keywords?.length)
-      parts.push(`Keywords: ${product.keywords.join(', ')}`);
+
+    // 👇 fallback لاسم الفئة
+    if (product.category || product.categoryName) {
+      parts.push(
+        `Category: ${this.safeJoin(product.category ?? product.categoryName)}`,
+      );
+    }
+
+    if (product.specsBlock && this.toStringList(product.specsBlock).length) {
+      parts.push(`Specs: ${this.safeJoinComma(product.specsBlock)}`);
+    }
+
+    if (product.attributes) {
+      const attrs = Object.entries(product.attributes).map(
+        ([k, v]) => `${k}: ${this.safeJoin(v, '/')}`,
+      );
+      if (attrs.length) parts.push(`Attributes: ${attrs.join('; ')}`);
+    }
+
+    if (product.keywords && this.toStringList(product.keywords).length) {
+      parts.push(`Keywords: ${this.safeJoinComma(product.keywords)}`);
+    }
+
+    if (
+      product.hasActiveOffer &&
+      product.priceOld != null &&
+      product.priceNew != null
+    ) {
+      parts.push(`Offer: from ${product.priceOld} to ${product.priceNew}`);
+    }
+
+    if (product.price != null) {
+      parts.push(`Price: ${product.price} ${product.currency || ''}`.trim());
+    }
+
     return parts.join('. ');
   }
 }

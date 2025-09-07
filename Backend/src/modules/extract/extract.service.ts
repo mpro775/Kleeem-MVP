@@ -24,17 +24,12 @@ export class ExtractService {
 
   async extractFromUrl(url: string): Promise<ExtractResult> {
     try {
-      // هنا نعرّف أن الـ GET سيُعيد ExtractApiResponse
+      const base = (process.env.EXTRACTOR_BASE_URL || 'http://extractor:8001').replace(/\/+$/, '');
       const resp: AxiosResponse<ExtractApiResponse> = await firstValueFrom(
-        this.http.get<ExtractApiResponse>(
-          'http://extractor-service:8001/extract/',
-          { params: { url } },
-        ),
+        this.http.get<ExtractApiResponse>(`${base}/extract/`, { params: { url }, timeout: 10000 }),
       );
-
-      // الآن resp.data.data مصنّف بدقّة كـ ExtractResult
-      return resp.data.data;
-    } catch (err) {
+      return resp.data?.data || {};
+    } catch (err: any) {
       this.logger.error(`Extract failed for ${url}: ${err.message}`);
       return {};
     }

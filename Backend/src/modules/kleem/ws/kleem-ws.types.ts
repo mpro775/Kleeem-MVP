@@ -18,22 +18,31 @@ export interface UserMessagePayload {
 
 export interface TypingPayload {
   sessionId: string;
-  role: KleemRole; // غالباً 'user'
+  role: KleemRole; // 'user' | 'bot'
 }
 
 /** ما يرسله السيرفر للعميل */
 export interface ServerToClientEvents {
-  bot_reply: KleemWsMessage; // ردّ البوت
-  message: KleemWsMessage; // استخدام عام
-  typing: TypingPayload; // مؤشر "يكتب..."
-  admin_new_message: { sessionId: string; message: KleemWsMessage }; // بث للمشرفين
+  // محادثة
+  bot_reply: KleemWsMessage;
+  message: KleemWsMessage;
+  typing: TypingPayload;
+  bot_chunk: { sessionId: string; delta: string };
+  bot_done: { sessionId: string };
+
+  // إشعارات
+  notification: any; // للمستخدم/التاجر
+  'admin:notification': any; // للأدمن/الوكلاء
+  admin_new_message: { sessionId: string; message: KleemWsMessage };
 }
 
 /** ما يرسله العميل للسيرفر */
 export interface ClientToServerEvents {
   user_message: UserMessagePayload;
   typing: TypingPayload;
-  join?: { sessionId: string; role?: KleemAdminRole; token?: string };
+  join?: { sessionId?: string; merchantId?: string; rooms?: string[] };
+  leave?: { sessionId?: string; merchantId?: string; rooms?: string[] };
+  'admin:subscribe'?: void;
 }
 
 export interface SocketData {

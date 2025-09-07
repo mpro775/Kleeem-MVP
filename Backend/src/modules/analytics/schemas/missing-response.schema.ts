@@ -1,38 +1,40 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 
-@Schema({ timestamps: true })
+export type MissingResponseDocument = HydratedDocument<MissingResponse>;
+
+@Schema({ timestamps: true, collection: 'missing_responses' })
 export class MissingResponse {
-  @Prop({ type: Types.ObjectId, ref: 'Merchant', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'Merchant', required: true, index: true })
   merchant: Types.ObjectId;
-  @Prop({ required: true, enum: ['telegram', 'whatsapp', 'webchat'] })
-  channel: string;
-  @Prop({ required: true })
-  question: string;
-  @Prop()
-  botReply: string;
-  @Prop()
-  sessionId?: string;
-  @Prop()
-  customerId?: string;
+
+  @Prop({ enum: ['telegram', 'whatsapp', 'webchat'], required: true })
+  channel: 'telegram' | 'whatsapp' | 'webchat';
+
+  @Prop({ required: true }) question: string;
+  @Prop({ required: true }) botReply: string;
+
+  @Prop() sessionId?: string;
+  @Prop() aiAnalysis?: string;
+  @Prop() customerId?: string;
 
   @Prop({
-    default: 'missing_response',
     enum: ['missing_response', 'unavailable_product'],
+    default: 'missing_response',
   })
-  type: string;
-  @Prop({ default: false })
+  type: 'missing_response' | 'unavailable_product';
+
+  @Prop({ default: false, index: true })
   resolved: boolean;
-  @Prop()
-  manualReply?: string;
-  @Prop()
-  category?: string;
-  @Prop()
-  aiAnalysis?: string;
+
+  @Prop() resolvedAt?: Date;
+  @Prop() resolvedBy?: string; // userId أو الإيميل الذي أنهى المهمة
 }
 
 export const MissingResponseSchema =
   SchemaFactory.createForClass(MissingResponse);
 
-// هذا هو الحل الأهم (أضف هذا السطر!)
-export type MissingResponseDocument = MissingResponse & Document;
+MissingResponseSchema.index({ merchant: 1, createdAt: -1 });
+MissingResponseSchema.index({ merchant: 1, resolved: 1, createdAt: -1 });
+MissingResponseSchema.index({ merchant: 1, channel: 1, createdAt: -1 });
+MissingResponseSchema.index({ merchant: 1, type: 1, createdAt: -1 });

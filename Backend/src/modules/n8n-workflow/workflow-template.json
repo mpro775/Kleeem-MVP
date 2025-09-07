@@ -1,12 +1,12 @@
 {
-  "name": "wf-686193862cab82971d21ddcf",
+  "name": "wf-68a3addee395b1a94f9fcf87",
   "nodes": [
     {
       "parameters": {
         "promptType": "define",
         "text": "={{ $('Webhook').item.json.body.text }}",
         "options": {
-          "systemMessage": "={{ $json.finalPromptTemplate }}",
+          "systemMessage": "={{ $json.data.finalPromptTemplate }}",
           "returnIntermediateSteps": false
         }
       },
@@ -14,19 +14,15 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2,
       "position": [
-        480,
-        448
+        576,
+        400
       ],
-      "id": "69c8f2db-71b7-47f3-9a6b-2d86e4f915d8",
-      "alwaysOutputData": true,
-      "retryOnFail": true,
-      "executeOnce": true,
-      "waitBetweenTries": 3000
+      "id": "28b47a97-f2ba-4047-9032-acf188f9dc10"
     },
     {
       "parameters": {
         "sessionIdType": "customKey",
-        "sessionKey": "={{ $('Get Merchant1').item.json._id }}+telegram",
+        "sessionKey": "={{ $('Get Merchant').item.json.data._id }}+chat",
         "collectionName": "messages",
         "databaseName": "musaidbot",
         "contextWindowLength": 10
@@ -35,14 +31,14 @@
       "type": "@n8n/n8n-nodes-langchain.memoryMongoDbChat",
       "typeVersion": 1,
       "position": [
-        416,
-        688
+        512,
+        624
       ],
-      "id": "d5947270-0b86-49b2-8281-6af76c7b04ac",
+      "id": "e4e91673-ef07-4c8c-8cca-fdec74684956",
       "credentials": {
         "mongoDb": {
-          "id": "H2VzbziACvTN9Z5H",
-          "name": "MongoDB-musaidbot"
+          "id": "9DK8Xkw5TM1lkNTq",
+          "name": "MongoDB account"
         }
       }
     },
@@ -54,35 +50,16 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        800,
-        1040
+        992,
+        784
       ],
-      "id": "c68e8d17-732b-4907-a0b7-8ed010e47937",
+      "id": "87a50548-29d3-404a-88eb-3751104c9a38",
       "credentials": {
         "googlePalmApi": {
-          "id": "rRllztIkbkTeGDH8",
+          "id": "Wl0dS8d0UuLkzCyp",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "={{ $('Webhook').item.json.body.text }}",
-        "hasOutputParser": true,
-        "options": {
-          "systemMessage": "=أنت مساعد مختص بفحص الردود القادمة من الذكاء الاصطناعي:\n- إذا كان الرد التالي منطقيًا وصحيحًا ويفيد المستخدم، لا ترجع أي شيء.\n- إذا كان الرد غير واضح، أو يدل على أن الذكاء الاصطناعي لم يفهم السؤال، أعد فقط:\n{\n  \"aiAnalysis\": \"تحليل: الذكاء الاصطناعي لم يتمكن من فهم السؤال أو لا يملك بيانات كافية للإجابة.\"\n}\nأعد فقط كائن JSON بنفس الشكل المطلوب في JSON Schema، وإذا لم يوجد تحليل لا ترجع شيء.\n\nالرد الذي عليك فحصه هو: \n{{ $json.output }}"
-        }
-      },
-      "name": "AI check Responses",
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 2,
-      "position": [
-        992,
-        688
-      ],
-      "id": "9b0264dc-cbe8-4b5a-94ae-74f757f71544",
-      "retryOnFail": true
     },
     {
       "parameters": {
@@ -92,112 +69,22 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        192,
-        704
+        384,
+        624
       ],
-      "id": "92ac8d1d-e781-4984-96db-baa2a43a8f0f",
+      "id": "1fcdecd8-67d8-4dba-80b7-e5d9920dfaf3",
       "credentials": {
         "googlePalmApi": {
-          "id": "rRllztIkbkTeGDH8",
+          "id": "Wl0dS8d0UuLkzCyp",
           "name": "Google Gemini(PaLM) Api account"
         }
       }
-    },
-    {
-      "parameters": {
-        "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"aiAnalysis\": {\n      \"type\": \"string\"\n    }\n  }\n}\n",
-        "autoFix": true
-      },
-      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-      "typeVersion": 1.3,
-      "position": [
-        1136,
-        960
-      ],
-      "id": "fbee40ce-dc51-4b91-9dc9-fa9b2d2242a5",
-      "name": "Structured Output Parser"
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1,
-      "position": [
-        1056,
-        1216
-      ],
-      "id": "35643a5f-29fe-4c2e-b633-297b7d158737",
-      "name": "Google Gemini Chat Model2",
-      "credentials": {
-        "googlePalmApi": {
-          "id": "rRllztIkbkTeGDH8",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.kaleem-ai.com/api/analytics/webhook",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "question",
-              "value": "={{$('Normalize Webhook Data').item.json.text}}"
-            },
-            {
-              "name": "botReply",
-              "value": "={{$('AI Agent').item.json.output}}"
-            },
-            {
-              "name": "merchant",
-              "value": "={{$('Get Merchant').item.json._id}}"
-            },
-            {
-              "name": "channel",
-              "value": "={{$('Normalize Webhook Data').item.json.channel}}"
-            },
-            {
-              "name": "sessionId",
-              "value": "={{$('Sent Customer\\'s Message').item.json.sessionId}}"
-            },
-            {
-              "name": "customerId",
-              "value": "={{$('Normalize Webhook Data').item.json.from}}"
-            },
-            {
-              "name": "type",
-              "value": "missing_response"
-            },
-            {
-              "name": "resolved",
-              "value": "={{ false }}"
-            },
-            {
-              "name": "aiAnalysis",
-              "value": "={{ $json.output.aiAnalysis }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1728,
-        640
-      ],
-      "id": "3ced7930-0f4d-402b-9058-2325f28f096b",
-      "name": "HTTP Request"
     },
     {
       "parameters": {
         "toolDescription": "searchProducts: Search for all products and return their names, prices, and ids, based on user query.",
         "method": "POST",
-        "url": "https://api.kaleem-ai.com/api/semantic/products",
+        "url": "https://api.kaleem-ai.com/api/vector/products",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -209,125 +96,71 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"text\": \"{{ $('Webhook').item.json.body.text }}\",\n  \"merchantId\": \"{{ $('Get Merchant1').item.json._id }}\",\n  \"topK\": 5\n}",
+        "jsonBody": "={\n  \"text\": \"{{ $('Webhook').item.json.body.text }}\",\n  \"merchantId\": \"{{ $('Get Merchant').item.json.data._id }}\",\n  \"topK\": 5\n}",
         "options": {}
       },
+      "name": "searchProducts",
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.2,
       "position": [
-        576,
-        656
+        640,
+        624
       ],
-      "id": "85c08f1f-1fc1-4b97-8e63-b41dd7f4756c",
-      "name": "searchProducts",
-      "alwaysOutputData": true,
-      "executeOnce": true,
-      "retryOnFail": true,
-      "waitBetweenTries": 5000,
-      "maxTries": 5
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "0e0ed49c-964b-42f2-93b1-7c5e754f1d7c",
-              "leftValue": "={{$json[\"output\"][\"aiAnalysis\"] !== undefined && $json[\"output\"][\"aiAnalysis\"] !== \"\"}}",
-              "rightValue": "true",
-              "operator": {
-                "type": "string",
-                "operation": "equals",
-                "name": "filter.operator.equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "looseTypeValidation": true,
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1504,
-        640
-      ],
-      "id": "70967d28-a068-4830-8235-51f374da8745",
-      "name": "If6"
+      "id": "90135c4e-efe5-4326-b1f4-b7da0c9352ac"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.kaleem-ai.com/api/semantic/all",
+        "url": "https://api.kaleem-ai.com/api/vector/unified-search",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"merchantId\": \"{{ $('Get Merchant1').item.json._id }}\",\n  \"query\": \"{{ $('Webhook').item.json.body.text }}\",\n  \"topK\": 3\n} ",
+        "jsonBody": "={\n  \"merchantId\": \"{{ $('Get Merchant').item.json.data._id }}\",\n  \"query\": \"{{ $('Webhook').item.json.body.text }}\",\n  \"topK\": 3\n} ",
         "options": {}
       },
+      "name": "search knowledge",
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.2,
       "position": [
-        800,
-        608
+        768,
+        624
       ],
-      "id": "7c342998-ff8a-400c-844e-df3009ac50b7",
-      "name": "search knowledge"
+      "id": "abd85f2f-f6ec-4f03-b296-843c74b65bfe"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "ai-agent-686193862cab82971d21ddcf",
+        "path": "ai-agent-68a3addee395b1a94f9fcf87",
         "options": {}
       },
+      "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
         -64,
-        448
+        400
       ],
-      "id": "ec4fd756-ae06-4918-9819-10a1bae8a780",
-      "name": "Webhook",
-      "webhookId": "3566fe3e-94d1-4a9a-9a75-658034128267"
-    },
-    {
-      "parameters": {
-        "url": "=https://api.kaleem-ai.com/api/merchants/{{ $json.body.merchantId }}",
-        "options": {}
-      },
-      "name": "Get Merchant1",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [
-        160,
-        448
-      ],
-      "id": "9868c859-d225-4c81-a323-5c20956b6e77"
+      "id": "73ffd713-6e60-4135-90e4-7ac6ac7661e1",
+      "webhookId": "70268da0-f6b5-4df1-af33-e8c6e93c854c"
     },
     {
       "parameters": {
         "toolDescription": "يرجع معلومات المتجر الأساسية فقط (العناوين، روابط التواصل، السياسات، أوقات الدوام). استخدم هذه الأداة عند سؤال المستخدم عن تفاصيل المتجر. لا تُخمن أي معلومة غير موجودة في الاستجابة",
-        "url": "=https://api.kaleem-ai.com/merchants/{{$json.merchantId}}/ai/store-context",
+        "url": "=https://api.kaleem-ai.com/api/merchants/{{ $('Get Merchant').item.json.data._id}}/ai/store-context",
         "options": {}
       },
+      "name": "Get Store Context",
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.2,
       "position": [
-        672,
-        784
+        944,
+        608
       ],
-      "id": "394410ca-0a7c-42be-b1e5-73c62584bc76",
-      "name": "Get Store Context"
+      "id": "00ccb2cb-b094-4e98-ad1d-0b84f0eaedc9"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.kaleem-ai.com/api/webhooks/bot-reply/{{ $('Get Merchant1').item.json._id }}",
+        "url": "=https://api.kaleem-ai.com/api/webhooks/{{ $('Webhook').item.json.body.channel=== 'dashboard-test'\n  ? 'test-bot-reply'\n  : 'bot-reply' }}/{{ $('Get Merchant').item.json.data._id }}\n",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -347,28 +180,178 @@
         },
         "options": {}
       },
+      "name": "Send To Backend",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1136,
+        1168,
         240
       ],
-      "id": "23598f3f-51b9-4314-b9fa-5fd1d0c01b51",
-      "name": "Send To Backend"
+      "id": "aee27a7c-af66-475f-98ca-14d7f58ab931"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.kaleem-ai.com/api/merchants/{{ $json.body.merchantId }}",
+        "options": {}
+      },
+      "name": "Get Merchant",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        160,
+        400
+      ],
+      "id": "a5db7f74-6b2f-400e-9966-db19bc669aff"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body.text }}",
+        "options": {
+          "systemMessage": "أنت مساعد مختص بفحص الردود القادمة من الذكاء الاصطناعي:\n- إذا كان الرد غير واضح، أو يدل على أن الذكاء لم يفهم السؤال او عجز عن اجابتة قم بتفسيرة وتحليل الامر واخرجه\nاريد منك تحويل هذا الكلام الى توصيه للتاجر نفسه لكي يدرب كليم بشكل افضل عن طريق اضافة السؤال هذا الى قاعده معرفة كليم بطريقة ذكية بالاوت بوت بشكل عادي وثم \nواذا الرد سليم ولم يعجز عنه لا ترجع شئ\nاختصر النصيحه والرد بشكل مبسط وقصير\nالرد الذي عليك فحصه هو: \n{{ $json.output }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        464
+      ],
+      "id": "33f4ede2-e9f9-4eb9-9bef-9b402a53cfbf",
+      "name": "AI Agent1",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f300fd32-b914-4e52-9f42-354ced92042d",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "string",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1408,
+        464
+      ],
+      "id": "c32e41e9-264e-4985-b060-f8c108ab974b",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kaleem-ai.com/api/analytics/webhook",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "question",
+              "value": "={{ $('Webhook').item.json.body.text }}"
+            },
+            {
+              "name": "botReply",
+              "value": "={{ $('AI Agent').item.json.output }}"
+            },
+            {
+              "name": "merchant",
+              "value": "={{ $('Get Merchant').item.json.data._id }}"
+            },
+            {
+              "name": "channel",
+              "value": "={{ $('Webhook').item.json.body.channel }}"
+            },
+            {
+              "name": "sessionId",
+              "value": "={{ $('Webhook').item.json.body.sessionId }}"
+            },
+            {
+              "name": "customerId",
+              "value": "={{ $('Webhook').item.json.body.sessionId }}"
+            },
+            {
+              "name": "type",
+              "value": "missing_response"
+            },
+            {
+              "name": "resolved",
+              "value": "={{ false }}"
+            },
+            {
+              "name": "aiAnalysis",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1808,
+        480
+      ],
+      "id": "ebda6011-42db-4127-99e0-bd1ca47ad470",
+      "name": "HTTP Request"
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.kaleem-ai.com",
+            "x-real-ip": "5.255.15.139",
+            "x-forwarded-for": "5.255.15.139",
+            "connection": "upgrade",
+            "content-length": "174",
+            "accept": "application/json, text/plain, */*",
+            "content-type": "application/json",
+            "user-agent": "axios/1.9.0",
+            "accept-encoding": "gzip, compress, deflate, br"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "merchantId": "68a3addee395b1a94f9fcf87",
+            "sessionId": "d3171508-6fc5-48c0-b422-b5679aa4fa8c",
+            "channel": "webchat",
+            "text": "جميل وسياسة الشحن والتوصيل ؟"
+          },
+          "webhookUrl": "https://n8n.kaleem-ai.com/webhook/ai-agent-68a3addee395b1a94f9fcf87",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
   "connections": {
     "AI Agent": {
       "main": [
         [
           {
-            "node": "AI check Responses",
+            "node": "Send To Backend",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Send To Backend",
+            "node": "AI Agent1",
             "type": "main",
             "index": 0
           }
@@ -390,7 +373,7 @@
       "ai_languageModel": [
         [
           {
-            "node": "AI check Responses",
+            "node": "AI Agent1",
             "type": "ai_languageModel",
             "index": 0
           }
@@ -408,56 +391,12 @@
         ]
       ]
     },
-    "Structured Output Parser": {
-      "ai_outputParser": [
-        [
-          {
-            "node": "AI check Responses",
-            "type": "ai_outputParser",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Gemini Chat Model2": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Structured Output Parser",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "AI check Responses": {
-      "main": [
-        [
-          {
-            "node": "If6",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "searchProducts": {
       "ai_tool": [
         [
           {
             "node": "AI Agent",
             "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If6": {
-      "main": [
-        [
-          {
-            "node": "HTTP Request",
-            "type": "main",
             "index": 0
           }
         ]
@@ -478,18 +417,7 @@
       "main": [
         [
           {
-            "node": "Get Merchant1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Merchant1": {
-      "main": [
-        [
-          {
-            "node": "AI Agent",
+            "node": "Get Merchant",
             "type": "main",
             "index": 0
           }
@@ -506,9 +434,43 @@
           }
         ]
       ]
+    },
+    "Get Merchant": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "saveExecutionProgress": true,
     "saveManualExecutions": true,
@@ -519,11 +481,11 @@
     "timezone": "America/New_York",
     "executionOrder": "v1"
   },
-  "versionId": "43c371eb-8f8a-4bb5-a41c-e191936f852a",
+  "versionId": "0397b516-4fbd-4d04-949c-44d5704fbf6a",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "23319a26f15320cb15e667927e1579ea7a30a6db7a5bedcecf473cfb153c0178"
+    "instanceId": "2902d9329eddfcc318793e18e641e55e8b973cdfbcfab6ef4f45c4496b52dcf3"
   },
-  "id": "kN2Y7CMXd7Ja49IH",
+  "id": "MlPrOG6HQi2BNrmb",
   "tags": []
 }

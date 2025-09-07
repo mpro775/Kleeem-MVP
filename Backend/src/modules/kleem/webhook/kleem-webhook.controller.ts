@@ -14,81 +14,84 @@ import { KleemWsMessage } from '../ws/kleem-ws.types';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { Public } from 'src/common/decorators/public.decorator';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiParam, 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
   ApiBody,
   ApiBearerAuth,
   ApiExcludeEndpoint,
   ApiProperty,
-  ApiPropertyOptional
+  ApiPropertyOptional,
 } from '@nestjs/swagger';
+import { KleemChatService } from '../chat/kleem-chat.service';
 
 // DTOs for request/response schemas
 class MessageDto {
-  @ApiProperty({ 
-    description: 'دور المرسل (user أو bot أو agent)', 
+  @ApiProperty({
+    description: 'دور المرسل (user أو bot أو agent)',
     example: 'user',
-    enum: ['user', 'bot', 'agent']
+    enum: ['user', 'bot', 'agent'],
   })
   role: 'user' | 'bot' | 'agent';
-  
-  @ApiProperty({ 
-    description: 'نص الرسالة', 
+
+  @ApiProperty({
+    description: 'نص الرسالة',
     example: 'مرحباً، كيف يمكنني المساعدة؟',
-    type: String
+    type: String,
   })
   text: string;
-  
-  @ApiPropertyOptional({ 
+
+  @ApiPropertyOptional({
     description: 'بيانات إضافية',
     type: Object,
     additionalProperties: true,
-    example: {}
+    example: {},
   })
   metadata?: Record<string, unknown>;
-  
-  @ApiPropertyOptional({ 
-    description: 'طابع زمني للرسالة', 
+
+  @ApiPropertyOptional({
+    description: 'طابع زمني للرسالة',
     type: String,
     format: 'date-time',
-    example: '2023-01-01T00:00:00.000Z' 
+    example: '2023-01-01T00:00:00.000Z',
   })
   timestamp?: string;
 }
 
 class ConversationRequestDto {
-  @ApiProperty({ 
-    description: 'مصفوفة من الرسائل', 
+  @ApiProperty({
+    description: 'مصفوفة من الرسائل',
     type: [MessageDto],
-    example: [{
-      role: 'user',
-      text: 'مرحباً، كيف يمكنني المساعدة؟',
-      metadata: {}
-    }]
+    example: [
+      {
+        role: 'user',
+        text: 'مرحباً، كيف يمكنني المساعدة؟',
+        metadata: {},
+      },
+    ],
   })
   messages: MessageDto[];
 }
 
 class BotReplyRequestDto {
-  @ApiProperty({ 
-    description: 'نص الرد الآلي', 
+  @ApiProperty({
+    description: 'نص الرد الآلي',
     type: String,
     example: 'مرحباً! كيف يمكنني مساعدتك اليوم؟',
-    required: true
+    required: true,
   })
   text: string;
-  
-  @ApiPropertyOptional({ 
-    description: 'بيانات إضافية', 
+
+  @ApiPropertyOptional({
+    description: 'بيانات إضافية',
     type: Object,
     additionalProperties: true,
-    example: { 
+    example: {
       source: 'bot_engine',
-      confidence: 0.95
-    }
+      confidence: 0.95,
+    },
   })
   metadata?: Record<string, unknown>;
 }
@@ -96,7 +99,7 @@ class BotReplyRequestDto {
 class BotReplyResponseDto {
   @ApiProperty({ description: 'معرف الجلسة', example: 'session-12345' })
   sessionId: string;
-  
+
   @ApiProperty({ description: 'فهرس الرسالة في المحادثة', example: 0 })
   msgIdx: number;
 }
@@ -113,6 +116,7 @@ export class KleemWebhookController {
   constructor(
     private readonly chatsSvc: BotChatsService,
     private readonly events: EventEmitter2,
+    private readonly kleemChat: KleemChatService, // ✅ أضِف هذا
   ) {}
 
   /**
@@ -121,14 +125,14 @@ export class KleemWebhookController {
    */
   @Post('conversation/:sessionId')
   @Public()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'إضافة رسائل إلى محادثة',
-    description: 'إضافة رسائل جديدة إلى محادثة موجودة أو إنشاء محادثة جديدة'
+    description: 'إضافة رسائل جديدة إلى محادثة موجودة أو إنشاء محادثة جديدة',
   })
   @ApiParam({
     name: 'sessionId',
     description: 'معرف الجلسة الفريد',
-    example: 'session-12345'
+    example: 'session-12345',
   })
   @ApiBody({
     description: 'بيانات الرسائل المطلوب إضافتها',
@@ -155,36 +159,16 @@ export class KleemWebhookController {
    */
   @Post('bot-reply/:sessionId')
   @Public()
-  @ApiOperation({ 
-    summary: 'إضافة رد آلي',
-    description: 'إضافة رد آلي إلى محادثة معينة وإرسال إشعارات للمستخدمين المتصلين'
-  })
-  @ApiParam({
-    name: 'sessionId',
-    description: 'معرف الجلسة المستهدفة',
-    example: 'session-12345'
-  })
-  @ApiBody({
-    description: 'بيانات الرد الآلي',
-    type: BotReplyRequestDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'تمت إضافة الرد الآلي بنجاح',
-    type: BotReplyResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'معرف الجلسة أو نص الرسالة غير موجود',
-  })
   async botReply(
     @Param('sessionId') sessionId: string,
     @Body() body: { text?: string; metadata?: Record<string, unknown> },
   ) {
     const text = body?.text ?? '';
-    if (!sessionId || !text) {
+    if (!sessionId || !text)
       throw new BadRequestException('sessionId and text are required');
-    }
+
+    // ✅ أوقف مؤشر “يكتب” مباشرة قبل بث الرد
+    this.kleemChat.stopTyping(sessionId);
 
     const saved = await this.chatsSvc.createOrAppend(sessionId, [
       { role: 'bot', text, metadata: body.metadata ?? {} },

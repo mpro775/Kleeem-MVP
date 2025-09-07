@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 لوحة تحكم اختبارات كليم</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .chart-card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.3rem;
+        }
+
+        .performance-timeline {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .performance-timeline h3 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.3rem;
+        }
+
+        .timeline-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .timeline-item .test-name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .timeline-item .time {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .timeline-item .improvement {
+            color: #28a745;
+            font-size: 0.9rem;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            margin: 50px 0;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 لوحة تحكم اختبارات كليم</h1>
+            <p>مراقبة وتحليل أداء الاختبارات في الوقت الفعلي</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="refreshData()">🔄 تحديث البيانات</button>
+            <button class="btn" onclick="runPerformanceTest()">🧪 تشغيل اختبار الأداء</button>
+            <button class="btn" onclick="exportReport()">📥 تصدير التقرير</button>
+        </div>
+
+        <div id="loading" class="loading">
+            جاري تحميل البيانات... ⏳
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="dashboard" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>إجمالي الاختبارات</h3>
+                    <div class="value" id="totalTests">0</div>
+                    <div class="label">اختبار</div>
+                </div>
+                <div class="stat-card">
+                    <h3>الوقت الإجمالي</h3>
+                    <div class="value" id="totalTime">0s</div>
+                    <div class="label">ثانية</div>
+                </div>
+                <div class="stat-card">
+                    <h3>متوسط وقت الاختبار</h3>
+                    <div class="value" id="averageTime">0ms</div>
+                    <div class="label">مللي ثانية</div>
+                </div>
+                <div class="stat-card">
+                    <h3>درجة الأداء</h3>
+                    <div class="value" id="performanceScore">0</div>
+                    <div class="label">من 100</div>
+                </div>
+            </div>
+
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>توزيع الاختبارات حسب السرعة</h3>
+                    <canvas id="distributionChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>أبطأ الاختبارات</h3>
+                    <canvas id="slowTestsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="performance-timeline">
+                <h3>جدول زمني للأداء</h3>
+                <div id="timeline"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let distributionChart, slowTestsChart;
+        let currentData = null;
+
+        // تهيئة الرسوم البيانية
+        function initCharts() {
+            // رسم توزيع الاختبارات
+            const distributionCtx = document.getElementById('distributionChart').getContext('2d');
+            distributionChart = new Chart(distributionCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['سريع (<100ms)', 'متوسط (100-500ms)', 'بطيء (500-1000ms)', 'بطيء جداً (>1000ms)'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: ['#28a745', '#ffc107', '#fd7e14', '#dc3545'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // رسم أبطأ الاختبارات
+            const slowTestsCtx = document.getElementById('slowTestsChart').getContext('2d');
+            slowTestsChart = new Chart(slowTestsCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'الوقت (ms)',
+                        data: [],
+                        backgroundColor: '#667eea',
+                        borderColor: '#5a6fd8',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'الوقت (مللي ثانية)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'اسم الاختبار'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // تحديث البيانات
+        function updateDashboard(data) {
+            currentData = data;
+            
+            // تحديث الإحصائيات
+            document.getElementById('totalTests').textContent = data.totalTests || 0;
+            document.getElementById('totalTime').textContent = ((data.totalTime || 0) / 1000).toFixed(1) + 's';
+            document.getElementById('averageTime').textContent = (data.averageTime || 0) + 'ms';
+            document.getElementById('performanceScore').textContent = data.performanceScore || 0;
+
+            // تحديث رسم التوزيع
+            if (data.testDistribution) {
+                distributionChart.data.datasets[0].data = [
+                    data.testDistribution.fast || 0,
+                    data.testDistribution.medium || 0,
+                    data.testDistribution.slow || 0,
+                    data.testDistribution.verySlow || 0
+                ];
+                distributionChart.update();
+            }
+
+            // تحديث رسم أبطأ الاختبارات
+            if (data.slowestTests && data.slowestTests.length > 0) {
+                const labels = data.slowestTests.slice(0, 8).map(test => 
+                    test.name.length > 20 ? test.name.substring(0, 20) + '...' : test.name
+                );
+                const values = data.slowestTests.slice(0, 8).map(test => test.duration);
+
+                slowTestsChart.data.labels = labels;
+                slowTestsChart.data.datasets[0].data = values;
+                slowTestsChart.update();
+            }
+
+            // تحديث الجدول الزمني
+            updateTimeline(data);
+        }
+
+        // تحديث الجدول الزمني
+        function updateTimeline(data) {
+            const timeline = document.getElementById('timeline');
+            timeline.innerHTML = '';
+
+            if (data.slowestTests && data.slowestTests.length > 0) {
+                data.slowestTests.forEach((test, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'timeline-item';
+                    
+                    const testName = document.createElement('div');
+                    testName.className = 'test-name';
+                    testName.textContent = `${index + 1}. ${test.name}`;
+                    
+                    const time = document.createElement('div');
+                    time.className = 'time';
+                    time.textContent = `${test.duration}ms`;
+                    
+                    const improvement = document.createElement('div');
+                    improvement.className = 'improvement';
+                    improvement.textContent = test.duration > 1000 ? '⚠️ يحتاج تحسين' : '✅ جيد';
+                    
+                    item.appendChild(testName);
+                    item.appendChild(time);
+                    item.appendChild(improvement);
+                    timeline.appendChild(item);
+                });
+            }
+        }
+
+        // تحميل البيانات
+        async function loadData() {
+            try {
+                const response = await fetch('./test-performance/dashboard-data.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.length > 0) {
+                        const latestData = data[data.length - 1];
+                        updateDashboard(latestData);
+                    }
+                }
+            } catch (error) {
+                console.log('لا توجد بيانات سابقة، سيتم إنشاء بيانات تجريبية');
+                createSampleData();
+            }
+        }
+
+        // إنشاء بيانات تجريبية
+        function createSampleData() {
+            const sampleData = {
+                totalTests: 45,
+                totalTime: 9876,
+                averageTime: 219,
+                performanceScore: 85,
+                testDistribution: {
+                    fast: 25,
+                    medium: 15,
+                    slow: 3,
+                    verySlow: 2
+                },
+                slowestTests: [
+                    { name: 'LoginPage > handles form input and submission', duration: 1233 },
+                    { name: 'LoginPage > shows loading state and maintains form data', duration: 1108 },
+                    { name: 'LoginPage > prevents rapid submissions', duration: 1029 },
+                    { name: 'WhyChooseKaleem > أزرار التصفح موجودة وتغيّر الحالة بالضغط', duration: 380 },
+                    { name: 'WhyChooseKaleem > التمرير التلقائي يعمل ويتوقف ثم يستأنف', duration: 247 }
+                ]
+            };
+            updateDashboard(sampleData);
+        }
+
+        // تحديث البيانات
+        function refreshData() {
+            loadData();
+        }
+
+        // تشغيل اختبار الأداء
+        async function runPerformanceTest() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('dashboard').style.display = 'none';
+                
+                // محاكاة تشغيل الاختبار
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                // تحديث البيانات
+                loadData();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+            } catch (error) {
+                showError('خطأ في تشغيل اختبار الأداء: ' + error.message);
+            }
+        }
+
+        // تصدير التقرير
+        function exportReport() {
+            if (!currentData) {
+                showError('لا توجد بيانات للتصدير');
+                return;
+            }
+
+            const report = generateReport(currentData);
+            const blob = new Blob([report], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `test-performance-report-${new Date().toISOString().split('T')[0]}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // إنشاء التقرير
+        function generateReport(data) {
+            const date = new Date().toLocaleDateString('ar-SA');
+            return `# 📊 تقرير أداء الاختبارات - ${date}
+
+## 📈 الإحصائيات
+- **إجمالي الاختبارات:** ${data.totalTests}
+- **الوقت الإجمالي:** ${data.totalTime}ms (${(data.totalTime / 1000).toFixed(1)}s)
+- **متوسط وقت الاختبار:** ${data.averageTime}ms
+- **درجة الأداء:** ${data.performanceScore}/100
+
+## 📊 توزيع الاختبارات
+- ⚡ سريع (<100ms): ${data.testDistribution.fast}
+- 🟡 متوسط (100-500ms): ${data.testDistribution.medium}
+- 🟠 بطيء (500-1000ms): ${data.testDistribution.slow}
+- 🔴 بطيء جداً (>1000ms): ${data.testDistribution.verySlow}
+
+## 🐌 أبطأ الاختبارات
+${data.slowestTests.map((test, index) => 
+  `${index + 1}. **${test.name}**: ${test.duration}ms`
+).join('\n')}
+
+---
+*تم إنشاء هذا التقرير بواسطة لوحة تحكم الاختبارات* ⚡
+`;
+        }
+
+        // عرض الخطأ
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // تهيئة لوحة التحكم
+        function initDashboard() {
+            initCharts();
+            loadData();
+            
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+        }
+
+        // تشغيل عند تحميل الصفحة
+        window.addEventListener('load', initDashboard);
+    </script>
+</body>
+</html>

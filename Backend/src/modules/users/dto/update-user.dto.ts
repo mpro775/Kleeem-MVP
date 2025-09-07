@@ -5,6 +5,7 @@ import {
   MinLength,
   IsOptional,
   IsBoolean,
+  Matches,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -17,6 +18,13 @@ export class UpdateUserDto {
   @IsEmail()
   email?: string;
 
+
+  @ApiPropertyOptional({ description: 'رقم الهاتف (بصيغة دولية)', example: '+9665xxxxxxxx' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\+?[0-9]{7,15}$/,{ message: 'صيغة رقم هاتف غير صحيحة'})
+  phone?: string;
+  
   @ApiPropertyOptional({
     description: 'الاسم الجديد للمستخدم',
     example: 'Saleh Saeed',

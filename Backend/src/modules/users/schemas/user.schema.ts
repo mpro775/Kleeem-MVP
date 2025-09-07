@@ -5,6 +5,29 @@ import * as bcrypt from 'bcrypt';
 
 export type UserDocument = HydratedDocument<User>;
 
+export interface NotificationsChannels {
+  inApp: boolean;
+  email: boolean;
+  telegram?: boolean;
+  whatsapp?: boolean;
+}
+export type MissingResponsesDigest = 'off' | 'daily' | 'weekly';
+
+export interface NotificationsTopics {
+  syncFailed: boolean;
+  syncCompleted: boolean;
+  webhookFailed: boolean;
+  embeddingsCompleted: boolean;
+  missingResponsesDigest: MissingResponsesDigest;
+}
+
+export interface QuietHours {
+  enabled: boolean;
+  start?: string; // "22:00"
+  end?: string; // "08:00"
+  timezone?: string; // "Asia/Aden"
+}
+
 export enum UserRole {
   MERCHANT = 'MERCHANT',
   ADMIN = 'ADMIN',
@@ -61,6 +84,48 @@ export class User {
 
   @Prop({ type: Types.ObjectId, ref: 'Merchant' })
   merchantId?: Types.ObjectId;
+
+  @Prop()
+  passwordChangedAt?: Date;
+  // ⬇️ جديد: تفضيلات الإشعارات
+  @Prop({
+    type: {
+      channels: {
+        inApp: { type: Boolean, default: true },
+        email: { type: Boolean, default: true },
+        telegram: { type: Boolean, default: false },
+        whatsapp: { type: Boolean, default: false },
+      },
+      topics: {
+        syncFailed: { type: Boolean, default: true },
+        syncCompleted: { type: Boolean, default: true },
+        webhookFailed: { type: Boolean, default: true },
+        embeddingsCompleted: { type: Boolean, default: true },
+        missingResponsesDigest: {
+          type: String,
+          enum: ['off', 'daily', 'weekly'],
+          default: 'daily',
+        },
+      },
+      quietHours: {
+        enabled: { type: Boolean, default: false },
+        start: { type: String, default: '22:00' },
+        end: { type: String, default: '08:00' },
+        timezone: { type: String, default: 'Asia/Aden' },
+      },
+    },
+    default: {},
+  })
+  notificationsPrefs?: {
+    channels: NotificationsChannels;
+    topics: NotificationsTopics;
+    quietHours: QuietHours;
+  };
+  @Prop({ default: true, index: true }) active: boolean;
+
+  // (اختياري) دعم حذف ناعم
+  @Prop()
+  deletedAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

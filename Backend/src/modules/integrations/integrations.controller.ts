@@ -53,7 +53,10 @@ export class IntegrationsController {
   ) {}
 
   @Get('status')
-  @ApiOperation({ summary: 'الحصول على حالة التكاملات', description: 'استرجاع حالة التكاملات المتاحة (سلة، زد) للتاجر' })
+  @ApiOperation({
+    summary: 'الحصول على حالة التكاملات',
+    description: 'استرجاع حالة التكاملات المتاحة (سلة، زد) للتاجر',
+  })
   @ApiResponse({ status: 200, description: 'تم استرجاع حالة التكاملات بنجاح' })
   @ApiResponse({ status: 404, description: 'لم يتم العثور على التاجر' })
   async status(@Req() req): Promise<StatusResp> {
@@ -72,6 +75,14 @@ export class IntegrationsController {
     if (source === 'internal') {
       return { productSource: 'internal', skipped: true };
     }
+    const isConnected = (integ?: Integration) => {
+      if (!integ) return false;
+      // Zid: المعيار الأساسي managerToken (أو accessToken كـ fallback)
+      const anyToken = integ.managerToken || integ.accessToken;
+      if (!anyToken) return false;
+      if (!integ.expiresAt) return true;
+      return integ.expiresAt > now;
+    };
 
     // غير داخلي → نحسب حالة سلة/زد
     const [sallaInteg, zidInteg] = await Promise.all([
@@ -84,14 +95,8 @@ export class IntegrationsController {
     ]);
 
     const now = new Date();
-    const sallaConnected =
-      !!sallaInteg?.accessToken &&
-      (!sallaInteg?.expiresAt || sallaInteg.expiresAt > now);
-
-    const zidConnected =
-      !!zidInteg?.accessToken &&
-      (!zidInteg?.expiresAt || zidInteg.expiresAt > now);
-
+    const sallaConnected = isConnected(sallaInteg as any);
+    const zidConnected = isConnected(zidInteg as any);
     return {
       productSource: source,
       salla: {

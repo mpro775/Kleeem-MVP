@@ -13,16 +13,58 @@ export class WebhooksService {
     private readonly messageService: MessageService,
     @InjectModel(Webhook.name)
     private readonly webhookModel: Model<WebhookDocument>,
-    @InjectConnection() private readonly conn: Connection, // NEW
-    private readonly outbox: OutboxService, // NEW
+    @InjectConnection() private readonly conn: Connection,
+    private readonly outbox: OutboxService,
   ) {}
 
+  private async appendAndEnqueue(
+    merchantId: string,
+    sessionId: string,
+    channel: string,
+    message: { role: 'customer' | 'bot' | 'agent'; text: string; metadata?: any },
+    outboxEvent:
+      | { type: 'chat.incoming'; routingKey: string }
+      | { type: 'chat.reply'; routingKey: string },
+    dbSession?: any,
+  ) {
+    await this.messageService.createOrAppend(
+      {
+        merchantId,
+        sessionId,
+        channel,
+        messages: [
+          { role: message.role, text: message.text, metadata: message.metadata || {} },
+        ],
+      },
+      dbSession,
+    );
+
+    await this.outbox.enqueueEvent(
+      {
+        aggregateType: 'conversation',
+        aggregateId: sessionId,
+        eventType: outboxEvent.type,
+        payload: {
+          merchantId,
+          sessionId,
+          channel,
+          text: message.text,
+          metadata: message.metadata || {},
+        },
+        exchange: outboxEvent.type,
+        routingKey: outboxEvent.routingKey,
+      },
+      dbSession,
+    );
+  }
+
   async handleEvent(eventType: string, payload: any) {
-    const { merchantId, from, messageText, metadata } = payload;
+    const { merchantId, from, messageText, metadata } = payload || {};
     if (!merchantId || !from || !messageText)
       throw new BadRequestException(`Invalid payload`);
 
     const channel = eventType.replace('_incoming', '');
+
     const session = await this.conn.startSession();
     try {
       await session.withTransaction(async () => {
@@ -37,33 +79,12 @@ export class WebhooksService {
           { session },
         );
 
-        await this.messageService.createOrAppend(
-          {
-            merchantId,
-            sessionId: from,
-            channel,
-            messages: [
-              { role: 'customer', text: messageText, metadata: metadata || {} },
-            ],
-          },
-          session,
-        );
-
-        await this.outbox.enqueueEvent(
-          {
-            aggregateType: 'conversation',
-            aggregateId: from,
-            eventType: 'chat.incoming',
-            payload: {
-              merchantId,
-              sessionId: from,
-              channel,
-              text: messageText,
-              metadata: metadata || {},
-            },
-            exchange: 'chat.incoming',
-            routingKey: channel,
-          },
+        await this.appendAndEnqueue(
+          merchantId,
+          from,
+          channel,
+          { role: 'customer', text: messageText, metadata },
+          { type: 'chat.incoming', routingKey: channel },
           session,
         );
       });
@@ -77,38 +98,19 @@ export class WebhooksService {
     merchantId: string,
     dto: BotReplyDto,
   ): Promise<{ sessionId: string; status: 'accepted' }> {
-    const { sessionId, text, metadata } = dto;
+    const { sessionId, text, metadata } = dto || {};
     if (!sessionId || !text)
       throw new BadRequestException('sessionId و text مطلوبة');
 
     const session = await this.conn.startSession();
     try {
       await session.withTransaction(async () => {
-        await this.messageService.createOrAppend(
-          {
-            merchantId,
-            sessionId,
-            channel: 'webchat',
-            messages: [{ role: 'bot', text, metadata: metadata || {} }],
-          },
-          session,
-        );
-
-        await this.outbox.enqueueEvent(
-          {
-            aggregateType: 'conversation',
-            aggregateId: sessionId,
-            eventType: 'chat.reply',
-            payload: {
-              merchantId,
-              sessionId,
-              channel: 'webchat',
-              text,
-              metadata,
-            },
-            exchange: 'chat.reply',
-            routingKey: 'web', // مسار الرد لقناة الويب
-          },
+        await this.appendAndEnqueue(
+          merchantId,
+          sessionId,
+          'webchat',
+          { role: 'bot', text, metadata },
+          { type: 'chat.reply', routingKey: 'webchat' },
           session,
         );
       });

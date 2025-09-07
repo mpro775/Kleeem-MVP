@@ -1,33 +1,33 @@
-// src/modules/categories/dto/create-category.dto.ts
-
+// create-category.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsMongoId } from 'class-validator';
+import { IsString, IsOptional, IsMongoId, IsInt, Min } from 'class-validator';
 
 export class CreateCategoryDto {
-  @ApiProperty({ description: 'اسم الفئة', example: 'ملابس' })
-  @IsString()
-  name: string;
+  @ApiProperty() @IsString() name: string;
 
-  @ApiProperty({ description: 'معرف التاجر', example: 'm_12345' })
-  @IsString()
-  merchantId: string;
+  @ApiProperty() @IsMongoId() merchantId: string;
 
-  @ApiProperty({ description: 'معرف الفئة الأصل (اختياري)', required: false, example: '60f8f8f8f8f8f8f8f8f8f8f8' })
-  @IsOptional()
-  @IsMongoId()
-  parent?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsMongoId() parent?: string;
 
-  @ApiProperty({ description: 'وصف الفئة (اختياري)', required: false, example: 'قسم الملابس الرجالية' })
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   description?: string;
 
-  @ApiProperty({ description: 'رابط صورة الفئة (اختياري)', required: false, example: 'https://example.com/image.png' })
-  @IsOptional()
-  @IsString()
-  image?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() image?: string;
 
-  @ApiProperty({ description: 'الكلمات المفتاحية للفئة (اختياري)', required: false, type: [String], example: ['صيف', 'قطن'] })
+  @ApiProperty({ required: false, type: [String] })
   @IsOptional()
   keywords?: string[];
+
+  @ApiProperty({ required: false }) @IsOptional() @IsString() slug?: string;
+
+  @ApiProperty({ required: false, example: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  order?: number;
 }
+
+// move-category.dto.ts
+

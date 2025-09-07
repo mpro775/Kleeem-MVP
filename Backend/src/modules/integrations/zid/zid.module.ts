@@ -15,6 +15,8 @@ import { Integration, IntegrationSchema } from '../schemas/integration.schema';
 
 import { ProductsModule } from '../../products/products.module';
 import { OrdersModule } from '../../orders/orders.module';
+import { RabbitModule } from 'src/infra/rabbit/rabbit.module';
+import { CatalogModule } from 'src/modules/catalog/catalog.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { OrdersModule } from '../../orders/orders.module';
     ]),
     forwardRef(() => ProductsModule),
     forwardRef(() => OrdersModule),
+    forwardRef(() => CatalogModule),
+    RabbitModule,
   ],
   controllers: [ZidController],
   providers: [ZidService],

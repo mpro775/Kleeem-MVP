@@ -4,9 +4,9 @@ import { Types, Document } from 'mongoose';
 
 export type OrderDocument = Order & Document;
 
-@Schema({ timestamps: true })
+@Schema({ _id: false, timestamps: false })
 export class OrderProduct {
-  @Prop({ type: Types.ObjectId, ref: 'Product', required: false }) // productId قد لا يكون متاح دائمًا
+  @Prop({ type: Types.ObjectId, ref: 'Product', required: false })
   product?: Types.ObjectId;
 
   @Prop({ required: true })
@@ -18,6 +18,7 @@ export class OrderProduct {
   @Prop({ required: true })
   quantity: number;
 }
+export const OrderProductSchema = SchemaFactory.createForClass(OrderProduct);
 
 @Schema({ timestamps: true })
 export class Order {
@@ -27,14 +28,14 @@ export class Order {
   @Prop({ required: true })
   sessionId: string;
 
+  // اتركها مرنة لكن احرص أن تضيف phoneNormalized لاحقًا بالخدمة
   @Prop({ required: true, type: Object })
   customer: Record<string, any>;
 
-  @Prop({ type: [OrderProduct], required: true })
+  // ✅ استخدم الـSchema الفرعي بدل class مباشرة
+  @Prop({ type: [OrderProductSchema], required: true })
   products: OrderProduct[];
 
-  
-  
   @Prop({
     default: 'pending',
     enum: ['pending', 'paid', 'canceled', 'shipped', 'delivered', 'refunded'],
@@ -44,11 +45,16 @@ export class Order {
   @Prop()
   externalId?: string;
 
-  @Prop({ default: 'manual', enum: ['manual', 'api', 'imported'] })
+  @Prop({
+    default: 'storefront',
+    enum: ['manual', 'api', 'imported', 'mini-store', 'widget', 'storefront'],
+  })
   source?: string;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);
+OrderSchema.index({ merchantId: 1, sessionId: 1 });
+OrderSchema.index({ merchantId: 1, 'customer.phoneNormalized': 1 });
 OrderSchema.index(
   { merchantId: 1, externalId: 1 },
   { unique: true, sparse: true },

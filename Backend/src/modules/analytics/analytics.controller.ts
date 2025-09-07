@@ -1,14 +1,17 @@
-import { Public } from 'src/common/decorators/public.decorator';
 // src/analytics/analytics.controller.ts
+import { Public } from 'src/common/decorators/public.decorator';
 
 import {
   Body,
   Controller,
   Get,
+  Param,
+  Patch,
   Post,
   Query,
-  Req,
   UseGuards,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   AnalyticsService,
@@ -18,7 +21,6 @@ import {
 } from './analytics.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
-import { Request } from 'express';
 import { CreateMissingResponseDto } from './dto/create-missing-response.dto';
 import {
   ApiTags,
@@ -29,6 +31,8 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { CreateKleemMissingResponseDto } from './dto/create-kleem-missing-response.dto';
+import { AddToKnowledgeDto } from './dto/add-to-knowledge.dto';
+import { CurrentMerchantId, CurrentUserId } from 'src/common';
 
 @ApiTags('التحليلات')
 @ApiBearerAuth()
@@ -37,335 +41,199 @@ import { CreateKleemMissingResponseDto } from './dto/create-kleem-missing-respon
 export class AnalyticsController {
   constructor(private readonly analytics: AnalyticsService) {}
 
-  /**
-   * الحصول على نظرة عامة على التحليلات للتاجر
-   * يُرجع بيانات تحليلات شاملة تتضمن الجلسات، الرسائل، الكلمات المفتاحية، المنتجات، والقنوات
-   */
+  /** نظرة عامة */
   @Get('overview')
-  @ApiOperation({
-    summary: 'الحصول على نظرة عامة على التحليلات',
-    description:
-      'استرداد نظرة عامة شاملة على التحليلات للتاجر الموثّق بما في ذلك الجلسات، الرسائل، أبرز الكلمات المفتاحية، أبرز المنتجات، وتوزيع القنوات',
-  })
+  @ApiOperation({ summary: 'الحصول على نظرة عامة على التحليلات' })
   @ApiQuery({
     name: 'period',
-    description: 'الفترة الزمنية لبيانات التحليلات',
     required: false,
     enum: ['week', 'month', 'quarter'],
     example: 'week',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'تم استرداد النظرة العامة على التحليلات بنجاح',
-    schema: {
-      type: 'object',
-      properties: {
-        sessions: {
-          type: 'object',
-          properties: {
-            count: { type: 'number', example: 1250 },
-            changePercent: { type: 'number', example: 15.5 },
-          },
-        },
-        messages: { type: 'number', example: 3420 },
-        topKeywords: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              keyword: { type: 'string', example: 'تسوق' },
-              count: { type: 'number', example: 45 },
-            },
-          },
-        },
-        topProducts: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              productId: { type: 'string', example: 'prod_123' },
-              name: { type: 'string', example: 'منتج رائج' },
-              views: { type: 'number', example: 89 },
-            },
-          },
-        },
-        channels: {
-          type: 'object',
-          properties: {
-            total: { type: 'number', example: 5 },
-            breakdown: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  channel: { type: 'string', example: 'whatsapp' },
-                  count: { type: 'number', example: 1250 },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'غير مصرح به - رمز JWT غير صالح أو مفقود',
-  })
-  @ApiResponse({ status: 500, description: 'خطأ داخلي في الخادم' })
+  @ApiResponse({ status: 200, description: 'OK' })
   async overview(
-    @Req() req: Request & { user: { merchantId: string } },
+    @CurrentMerchantId() merchantId: string | null,
     @Query('period') period: 'week' | 'month' | 'quarter' = 'week',
   ): Promise<Overview> {
-    const merchantId = req.user.merchantId;
-    const result = await this.analytics.getOverview(merchantId, period);
-    return result;
+    if (!merchantId) throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
+    return this.analytics.getOverview(merchantId, period);
   }
 
-  /**
-   * الحصول على أبرز الكلمات المفتاحية المستخدمة من قبل العملاء
-   * يُرجع الكلمات المفتاحية الأكثر استخدامًا في تفاعلات العملاء
-   */
+  /** أبرز الكلمات المفتاحية */
   @Get('top-keywords')
-  @ApiOperation({
-    summary: 'الحصول على أبرز الكلمات المفتاحية',
-    description:
-      'استرداد الكلمات المفتاحية الأكثر استخدامًا في تفاعلات العملاء للتاجر الموثّق',
-  })
+  @ApiOperation({ summary: 'الحصول على أبرز الكلمات المفتاحية' })
   @ApiQuery({
     name: 'period',
-    description: 'الفترة الزمنية لتحليل الكلمات المفتاحية',
     required: false,
     enum: ['week', 'month', 'quarter'],
     example: 'week',
   })
   @ApiQuery({
     name: 'limit',
-    description: 'العدد الأقصى للكلمات المفتاحية المُراد إرجاعها',
     required: false,
     type: Number,
     example: 10,
   })
-  @ApiResponse({
-    status: 200,
-    description: 'تم استرداد أبرز الكلمات المفتاحية بنجاح',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          keyword: { type: 'string', example: 'تسوق' },
-          count: { type: 'number', example: 45 },
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'غير مصرح به - رمز JWT غير صالح أو مفقود',
-  })
-  @ApiResponse({ status: 500, description: 'خطأ داخلي في الخادم' })
+  @ApiResponse({ status: 200, description: 'OK' })
   async topKeywords(
-    @Req() req: Request & { user: { merchantId: string } },
+    @CurrentMerchantId() merchantId: string | null,
     @Query('period') period: 'week' | 'month' | 'quarter' = 'week',
     @Query('limit') limit = '10',
   ): Promise<KeywordCount[]> {
-    const merchantId = req.user.merchantId;
-    const kws = await this.analytics.getTopKeywords(merchantId, period, +limit);
-    return kws;
+    if (!merchantId) throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
+    const n = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100);
+    return this.analytics.getTopKeywords(merchantId, period, n);
   }
-  /**
-   * الحصول على بيانات الخط الزمني للرسائل
-   * يُرجع عدد الرسائل مجمّعة حسب اليوم أو الساعة لعرضها على الخط الزمني
-   */
+
+  /** الخط الزمني للرسائل */
   @Get('messages-timeline')
-  @ApiOperation({
-    summary: 'الحصول على الخط الزمني للرسائل',
-    description:
-      'استرداد عدد الرسائل مجمّعة حسب اليوم أو الساعة لعرضها على الخط الزمني',
-  })
+  @ApiOperation({ summary: 'الحصول على الخط الزمني للرسائل' })
   @ApiQuery({
     name: 'period',
-    description: 'الفترة الزمنية لبيانات الخط الزمني',
     required: false,
     enum: ['week', 'month', 'quarter'],
     example: 'week',
   })
   @ApiQuery({
     name: 'groupBy',
-    description: 'فاصل التجميع لبيانات الخط الزمني',
     required: false,
     enum: ['day', 'hour'],
     example: 'day',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'تم استرداد الخط الزمني للرسائل بنجاح',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          date: { type: 'string', example: '2024-01-15' },
-          count: { type: 'number', example: 125 },
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'غير مصرح به - رمز JWT غير صالح أو مفقود',
-  })
-  @ApiResponse({ status: 500, description: 'خطأ داخلي في الخادم' })
+  @ApiResponse({ status: 200, description: 'OK' })
   async messagesTimeline(
-    @Req() req: Request & { user: { merchantId: string } },
+    @CurrentMerchantId() merchantId: string | null,
     @Query('period') period: 'week' | 'month' | 'quarter' = 'week',
     @Query('groupBy') groupBy: 'day' | 'hour' = 'day',
   ) {
-    return this.analytics.getMessagesTimeline(
-      req.user.merchantId,
-      period,
-      groupBy,
-    );
+    if (!merchantId) throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
+    return this.analytics.getMessagesTimeline(merchantId, period, groupBy);
   }
 
-  /**
-   * الحصول على العدد الإجمالي للمنتجات
-   * يُرجع العدد الإجمالي لمنتجات التاجر
-   */
+  /** عدد المنتجات */
   @Get('products-count')
-  @ApiOperation({
-    summary: 'الحصول على عدد المنتجات',
-    description: 'يُرجع العدد الإجمالي للمنتجات للتاجر الموثّق',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'تم استرداد عدد المنتجات بنجاح',
-    schema: {
-      type: 'object',
-      properties: {
-        total: { type: 'number', example: 156 },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'غير مصرح به - رمز JWT غير صالح أو مفقود',
-  })
-  @ApiResponse({ status: 500, description: 'خطأ داخلي في الخادم' })
-  async productsCount(@Req() req: Request & { user: { merchantId: string } }) {
-    return {
-      total: await this.analytics.getProductsCount(req.user.merchantId),
-    };
+  @ApiOperation({ summary: 'الحصول على عدد المنتجات' })
+  @ApiResponse({ status: 200, description: 'OK' })
+  async productsCount(
+    @CurrentMerchantId() merchantId: string | null,
+  ): Promise<{ total: number }> {
+    if (!merchantId) throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
+    return { total: await this.analytics.getProductsCount(merchantId) };
   }
-  /**
-   * نقطة نهاية Webhook لأحداث التحليلات
-   * نقطة نهاية عامة لاستقبال بيانات التحليلات من مصادر خارجية
-   */
+
+  /** Webhook عام */
   @Post('webhook')
   @Public()
-  @ApiOperation({
-    summary: 'Webhook للتحليلات',
-    description:
-      'نقطة نهاية webhook عامة لاستقبال بيانات التحليلات من مصادر وخدمات خارجية',
-  })
-  @ApiBody({
-    description: 'بيانات حدث التحليلات',
-    type: CreateMissingResponseDto,
-    examples: {
-      example1: {
-        summary: 'مثال على حمولة webhook',
-        value: {
-          event: 'product_view',
-          data: {
-            productId: 'prod_123',
-            userId: 'user_456',
-            timestamp: '2024-01-15T10:30:00Z',
-          },
-          source: 'webhook',
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'تمت معالجة بيانات Webhook بنجاح',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        id: { type: 'string', example: '507f1f77bcf86cd799439011' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'طلب غير صالح - تنسيق الحمولة غير صالح',
-  })
-  @ApiResponse({ status: 500, description: 'خطأ داخلي في الخادم' })
+  @ApiOperation({ summary: 'Webhook للتحليلات' })
+  @ApiBody({ type: CreateMissingResponseDto })
   async webhook(@Body() body: CreateMissingResponseDto) {
     const doc = await this.analytics.createFromWebhook(body);
-    return { success: true, id: doc._id };
+    return { success: true, id: (doc as any)._id };
   }
-  /**
-   * الحصول على أبرز المنتجات حسب المشاهدات/التفاعلات
-   * يُرجع المنتجات الأكثر شيوعًا بناءً على تفاعلات العملاء
-   */
-  @Get('top-products')
+
+  /** الرسائل المنسيّة / غير المجاب عنها */
+  @Get('missing-responses')
+  @ApiOperation({ summary: 'جلب الرسائل المنسية / غير المجاب عنها' })
+  async list(
+    @CurrentMerchantId() merchantId: string | null,
+    @Query() query: any,
+  ) {
+    if (!merchantId) throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
+    return this.analytics.listMissingResponses({
+      merchantId,
+      page: Number(query.page ?? 1),
+      limit: Number(query.limit ?? 20),
+      resolved: query.resolved ?? 'all',
+      channel: query.channel ?? 'all',
+      type: query.type ?? 'all',
+      search: query.search ?? '',
+      from: query.from,
+      to: query.to,
+    });
+  }
+
+  /** تحديد رسالة كمُعالجة */
+  @Patch('missing-responses/:id/resolve')
+  @ApiOperation({ summary: 'تحديد رسالة كمُعالجة' })
+  async resolveOne(@CurrentUserId() userId: string, @Param('id') id: string) {
+    const doc = await this.analytics.markResolved(id, userId);
+    return { success: true, item: doc };
+  }
+
+  /** تحديد عدة رسائل كمُعالجة */
+  @Patch('missing-responses/resolve')
+  @ApiOperation({ summary: 'تحديد عدة رسائل كمُعالجة' })
+  async resolveBulk(@Body() body: { ids: string[] }) {
+    const r = await this.analytics.bulkResolve(body.ids);
+    return { success: true, ...r };
+  }
+
+  /** تحويل رسالة منسية إلى معرفة (FAQ) */
+  @Post('missing-responses/:id/add-to-knowledge')
   @ApiOperation({
-    summary: 'الحصول على أبرز المنتجات',
-    description:
-      'استرداد المنتجات الأكثر شيوعًا بناءً على تفاعلات العملاء ومشاهداتهم للتاجر الموثّق',
+    summary: 'تحويل الرسالة المنسيّة إلى معرفة (FAQ) + وضعها مُعالجة',
   })
+  @ApiBody({ type: AddToKnowledgeDto })
+  async addToKnowledge(
+    @CurrentMerchantId() merchantId: string | null,
+    @CurrentUserId() userId: string, // ✅ ديكوريتر صحيح
+    @Param('id') id: string,
+    @Body() body: AddToKnowledgeDto,
+  ) {
+    if (!merchantId) throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
+    return this.analytics.addToKnowledge({
+      merchantId,
+      missingId: id,
+      payload: body,
+      userId,
+    });
+  }
+
+  /** إحصاءات الرسائل المنسية */
+  @Get('missing-responses/stats')
+  @ApiOperation({ summary: 'إحصاءات الرسائل المنسية' })
+  async stats(
+    @CurrentMerchantId() merchantId: string | null,
+    @CurrentUserId() userId: string,
+    @Query('days') days?: string,
+    @Query('notify') notify?: 'true' | 'false',
+  ) {
+    if (!merchantId) throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
+    const d = Math.min(Math.max(Number(days ?? 7), 1), 90);
+    const result = await this.analytics.stats(merchantId, d);
+
+    if (notify === 'true' && userId) {
+      await this.analytics.notifyMissingStatsToUser({
+        merchantId,
+        userId,
+        days: d,
+      });
+    }
+    return result;
+  }
+
+  /** أبرز المنتجات */
+  @Get('top-products')
+  @ApiOperation({ summary: 'الحصول على أبرز المنتجات' })
   @ApiQuery({
     name: 'period',
-    description: 'الفترة الزمنية لتحليل المنتجات',
     required: false,
     enum: ['week', 'month', 'quarter'],
     example: 'week',
   })
-  @ApiQuery({
-    name: 'limit',
-    description: 'العدد الأقصى للمنتجات المُراد إرجاعها',
-    required: false,
-    type: Number,
-    example: 5,
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'تم استرداد أبرز المنتجات بنجاح',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          productId: { type: 'string', example: 'prod_123456' },
-          name: { type: 'string', example: 'منتج رائج' },
-          views: { type: 'number', example: 89 },
-          interactions: { type: 'number', example: 156 },
-          conversionRate: { type: 'number', example: 0.12 },
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'غير مصرح به - رمز JWT غير صالح أو مفقود',
-  })
-  @ApiResponse({ status: 500, description: 'خطأ داخلي في الخادم' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 5 })
+  @ApiResponse({ status: 200, description: 'OK' })
   async topProducts(
-    @Req() req: Request & { user: { merchantId: string } },
+    @CurrentMerchantId() merchantId: string | null,
     @Query('period') period: 'week' | 'month' | 'quarter' = 'week',
     @Query('limit') limit = '5',
   ): Promise<TopProduct[]> {
-    const merchantId = req.user.merchantId;
-    const prods = await this.analytics.getTopProducts(
-      merchantId,
-      period,
-      +limit,
-    );
-    return prods;
+    if (!merchantId) throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
+    const n = Math.min(Math.max(parseInt(limit, 10) || 5, 1), 50);
+    return this.analytics.getTopProducts(merchantId, period, n);
   }
+
+  /** Webhook عام (Kleem) */
   @Post('webhook/kleem')
   @Public()
   async kleemWebhook(@Body() body: CreateKleemMissingResponseDto) {

@@ -17,13 +17,14 @@ export class InstructionsService {
     relatedReplies?: string[];
     type?: 'auto' | 'manual';
   }) {
+    const { merchantId, ...rest } = instruction;
     return this.instructionModel.create({
-      ...instruction,
+      ...rest,
+      merchantId: merchantId ? new Types.ObjectId(merchantId) : undefined,
       type: instruction.type || 'auto',
       active: true,
     });
   }
-
   async findAll({
     merchantId,
     active,
@@ -44,6 +45,10 @@ export class InstructionsService {
       .skip((page - 1) * limit)
       .sort({ updatedAt: -1 })
       .lean();
+  }
+
+  async findOne(id: string) {
+    return this.instructionModel.findById(id).lean();
   }
 
   async update(id: string, data: Partial<Instruction>) {

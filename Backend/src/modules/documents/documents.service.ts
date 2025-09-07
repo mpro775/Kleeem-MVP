@@ -58,7 +58,6 @@ export class DocumentsService {
         storageKey,
         status: 'pending',
       });
-      await this.queue.add('process', { docId: doc.id.toString(), merchantId });
       this.logger.log('✅ تم إنشاء السجل في MongoDB:', doc.id);
 
       await this.queue.add('process', { docId: doc.id.toString(), merchantId });

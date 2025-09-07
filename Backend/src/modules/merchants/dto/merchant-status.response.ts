@@ -14,12 +14,7 @@ export class MerchantStatusResponse {
     endDate?: Date;
   };
 
-  @ApiProperty()
-  channels: {
-    whatsapp: { enabled: boolean; connected: boolean };
-    telegram: { enabled: boolean; connected: boolean };
-    webchat: { enabled: boolean; connected: boolean };
-  };
+ 
 
   @ApiProperty({ required: false })
   lastActivity?: Date;

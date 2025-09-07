@@ -1,0 +1,1742 @@
+{
+  "config": {
+    "configFile": "D:\\kaleem\\Front-end\\playwright.config.ts",
+    "rootDir": "D:/kaleem/Front-end/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 3600000,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 4
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "test-results/e2e-results.xml"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/e2e-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "D:/kaleem/Front-end/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/kaleem/Front-end/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.e2e.spec.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "D:/kaleem/Front-end/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "D:/kaleem/Front-end/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.e2e.spec.ts"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "D:/kaleem/Front-end/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "D:/kaleem/Front-end/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.e2e.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.55.0",
+    "workers": 4,
+    "webServer": {
+      "command": "npm run dev -- --port 5173",
+      "url": "http://localhost:5173",
+      "reuseExistingServer": true,
+      "timeout": 120000,
+      "stdout": "pipe",
+      "stderr": "pipe"
+    }
+  },
+  "suites": [
+    {
+      "title": "auth\\signup.e2e.spec.ts",
+      "file": "auth/signup.e2e.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "📝 صفحة التسجيل",
+          "file": "auth/signup.e2e.spec.ts",
+          "line": 95,
+          "column": 6,
+          "specs": [
+            {
+              "title": "✅ تعرض عناصر النموذج الأساسية",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10221,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:22.125Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-dc7c982f9de260c67a55",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 101,
+              "column": 3
+            },
+            {
+              "title": "🔗 رابط “تسجيل الدخول” يعمل",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 10134,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:22.223Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-fafbf3c9be66bdc38c24",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 117,
+              "column": 3
+            },
+            {
+              "title": "❌ إرسال فارغ يُظهر أخطاء",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 10620,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:22.192Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-73e620f3423920eb18cc",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 127,
+              "column": 3
+            },
+            {
+              "title": "📧 بريد غير صالح",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 21680,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n\n    at expectFieldHasError (D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:53:37)\n    at D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:143:5",
+                        "location": {
+                          "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                          "column": 37,
+                          "line": 53
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 51 |\u001b[39m     \u001b[32m\"[role='alert'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error\"\u001b[39m\n \u001b[90m 52 |\u001b[39m   )\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 53 |\u001b[39m   \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 54 |\u001b[39m   \u001b[36mif\u001b[39m (opts\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mmessageRe) {\n \u001b[90m 55 |\u001b[39m     \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoHaveText(opts\u001b[33m.\u001b[39mmessageRe)\u001b[33m;\u001b[39m\n \u001b[90m 56 |\u001b[39m   }\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                            "column": 37,
+                            "line": 53
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n\n\n\u001b[0m \u001b[90m 51 |\u001b[39m     \u001b[32m\"[role='alert'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error\"\u001b[39m\n \u001b[90m 52 |\u001b[39m   )\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 53 |\u001b[39m   \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 54 |\u001b[39m   \u001b[36mif\u001b[39m (opts\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mmessageRe) {\n \u001b[90m 55 |\u001b[39m     \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoHaveText(opts\u001b[33m.\u001b[39mmessageRe)\u001b[33m;\u001b[39m\n \u001b[90m 56 |\u001b[39m   }\u001b[0m\n\u001b[2m    at expectFieldHasError (D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:53:37)\u001b[22m\n\u001b[2m    at D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:143:5\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:22.110Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-التسجيل-📧-بريد-غير-صالح-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-التسجيل-📧-بريد-غير-صالح-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-التسجيل-📧-بريد-غير-صالح-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                        "column": 37,
+                        "line": 53
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-701bf68b676936ac1c80",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 137,
+              "column": 3
+            },
+            {
+              "title": "🔒 كلمة مرور قصيرة",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10354,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:32.811Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-199c7c445d9c2ede1c59",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 149,
+              "column": 3
+            },
+            {
+              "title": "🧼 أمان: المدخلات الخبيثة تُنظّف (بدلاً من توقع invalid)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 10399,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:32.868Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-8c14e5328975a84ed5f1",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 158,
+              "column": 3
+            },
+            {
+              "title": "👁️ إظهار/إخفاء كلمة المرور يغيّر النوع",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 9076,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:33.128Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-2b7f67ff4011e8f21a44",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 175,
+              "column": 3
+            },
+            {
+              "title": "✅ نجاح التسجيل → /verify-email إذا emailVerified=false أو لا يوجد توكن",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 8073,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:42.247Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-6cccfab8df9c7a05f77c",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 191,
+              "column": 3
+            },
+            {
+              "title": "❌ بريد مستخدم مسبقًا (409): نبقى في /signup ويظهر خطأ",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 19144,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n\n    at expectFieldHasError (D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:53:37)\n    at D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:242:7",
+                        "location": {
+                          "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                          "column": 37,
+                          "line": 53
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 51 |\u001b[39m     \u001b[32m\"[role='alert'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error\"\u001b[39m\n \u001b[90m 52 |\u001b[39m   )\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 53 |\u001b[39m   \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 54 |\u001b[39m   \u001b[36mif\u001b[39m (opts\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mmessageRe) {\n \u001b[90m 55 |\u001b[39m     \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoHaveText(opts\u001b[33m.\u001b[39mmessageRe)\u001b[33m;\u001b[39m\n \u001b[90m 56 |\u001b[39m   }\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                            "column": 37,
+                            "line": 53
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n\n\n\u001b[0m \u001b[90m 51 |\u001b[39m     \u001b[32m\"[role='alert'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error\"\u001b[39m\n \u001b[90m 52 |\u001b[39m   )\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 53 |\u001b[39m   \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 54 |\u001b[39m   \u001b[36mif\u001b[39m (opts\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mmessageRe) {\n \u001b[90m 55 |\u001b[39m     \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoHaveText(opts\u001b[33m.\u001b[39mmessageRe)\u001b[33m;\u001b[39m\n \u001b[90m 56 |\u001b[39m   }\u001b[0m\n\u001b[2m    at expectFieldHasError (D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:53:37)\u001b[22m\n\u001b[2m    at D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:242:7\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:43.244Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-ال-4163b-09-نبقى-في-signup-ويظهر-خطأ-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-ال-4163b-09-نبقى-في-signup-ويظهر-خطأ-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-ال-4163b-09-نبقى-في-signup-ويظهر-خطأ-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                        "column": 37,
+                        "line": 53
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-78ba78c45729c1106f4d",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 221,
+              "column": 3
+            },
+            {
+              "title": "📱 تجاوب الواجهة",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 7876,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:43.333Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-b69c2ef1658b8086b464",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 249,
+              "column": 3
+            },
+            {
+              "title": "🎨 RTL/Lang موجودة",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 7315,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:47.621Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-3a64e50d12e389d14401",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 262,
+              "column": 3
+            },
+            {
+              "title": "⏱️ أداء أساسي",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 10736,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:50.374Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-f3c8507c2415ac5174df",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 268,
+              "column": 3
+            },
+            {
+              "title": "🧵 تتبّع Playwright (trace) لسيناريو التسجيل",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 12230,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:51.277Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-5488f32e10cc3333ae4d",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 275,
+              "column": 3
+            },
+            {
+              "title": "✅ تعرض عناصر النموذج الأساسية",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 25382,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:36:58.598Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-e58f4e5e6d21532217f7",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 101,
+              "column": 3
+            },
+            {
+              "title": "🔗 رابط “تسجيل الدخول” يعمل",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 28613,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:37:05.013Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-9776ee6a377bb4823c1a",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 117,
+              "column": 3
+            },
+            {
+              "title": "❌ إرسال فارغ يُظهر أخطاء",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 28768,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:37:04.905Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-a7968dc468a3ed42b165",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 127,
+              "column": 3
+            },
+            {
+              "title": "📧 بريد غير صالح",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 1,
+                      "status": "timedOut",
+                      "duration": 30855,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                            "column": 37,
+                            "line": 53
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n\n\n\u001b[0m \u001b[90m 51 |\u001b[39m     \u001b[32m\"[role='alert'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error\"\u001b[39m\n \u001b[90m 52 |\u001b[39m   )\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 53 |\u001b[39m   \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 54 |\u001b[39m   \u001b[36mif\u001b[39m (opts\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mmessageRe) {\n \u001b[90m 55 |\u001b[39m     \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoHaveText(opts\u001b[33m.\u001b[39mmessageRe)\u001b[33m;\u001b[39m\n \u001b[90m 56 |\u001b[39m   }\u001b[0m\n\u001b[2m    at expectFieldHasError (D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:53:37)\u001b[22m\n\u001b[2m    at D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:143:5\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:37:07.992Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-التسجيل-📧-بريد-غير-صالح-firefox\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-التسجيل-📧-بريد-غير-صالح-firefox\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-التسجيل-📧-بريد-غير-صالح-firefox\\error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-ab0040d342f40fd6f1cb",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 137,
+              "column": 3
+            },
+            {
+              "title": "🔒 كلمة مرور قصيرة",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 22885,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:37:25.587Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-b73815927fe64a30b0da",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 149,
+              "column": 3
+            },
+            {
+              "title": "🧼 أمان: المدخلات الخبيثة تُنظّف (بدلاً من توقع invalid)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 22785,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:37:35.729Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-21ff6bcfeabe73f1ab21",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 158,
+              "column": 3
+            },
+            {
+              "title": "👁️ إظهار/إخفاء كلمة المرور يغيّر النوع",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 24488,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:37:37.609Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-c02f2b80ba71316ec961",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 175,
+              "column": 3
+            },
+            {
+              "title": "✅ نجاح التسجيل → /verify-email إذا emailVerified=false أو لا يوجد توكن",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 28808,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:37:49.793Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-623d7372d57807f05ffe",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 191,
+              "column": 3
+            },
+            {
+              "title": "❌ بريد مستخدم مسبقًا (409): نبقى في /signup ويظهر خطأ",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 3,
+                      "status": "timedOut",
+                      "duration": 30405,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                            "column": 37,
+                            "line": 53
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n\n\n\u001b[0m \u001b[90m 51 |\u001b[39m     \u001b[32m\"[role='alert'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error\"\u001b[39m\n \u001b[90m 52 |\u001b[39m   )\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 53 |\u001b[39m   \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 54 |\u001b[39m   \u001b[36mif\u001b[39m (opts\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mmessageRe) {\n \u001b[90m 55 |\u001b[39m     \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoHaveText(opts\u001b[33m.\u001b[39mmessageRe)\u001b[33m;\u001b[39m\n \u001b[90m 56 |\u001b[39m   }\u001b[0m\n\u001b[2m    at expectFieldHasError (D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:53:37)\u001b[22m\n\u001b[2m    at D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:242:7\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:37:48.507Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-ال-4163b-09-نبقى-في-signup-ويظهر-خطأ-firefox\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-ال-4163b-09-نبقى-في-signup-ويظهر-خطأ-firefox\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-ال-4163b-09-نبقى-في-signup-ويظهر-خطأ-firefox\\error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-da9a91d13929943f4b37",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 221,
+              "column": 3
+            },
+            {
+              "title": "📱 تجاوب الواجهة",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 25255,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:37:58.952Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-43ddcadcb350e0bc630e",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 249,
+              "column": 3
+            },
+            {
+              "title": "🎨 RTL/Lang موجودة",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 24162,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:38:02.160Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-db9264092cdc662713cb",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 262,
+              "column": 3
+            },
+            {
+              "title": "⏱️ أداء أساسي",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 1,
+                      "status": "timedOut",
+                      "duration": 37300,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                            "column": 16,
+                            "line": 270
+                          },
+                          "message": "Error: page.goto: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/signup\", waiting until \"load\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 268 |\u001b[39m   test(\u001b[32m\"⏱️ أداء أساسي\"\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m 269 |\u001b[39m     \u001b[36mconst\u001b[39m t0 \u001b[33m=\u001b[39m \u001b[33mDate\u001b[39m\u001b[33m.\u001b[39mnow()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 270 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/signup\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 271 |\u001b[39m     \u001b[36mawait\u001b[39m expect(formLocator(page))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 272 |\u001b[39m     expect(\u001b[33mDate\u001b[39m\u001b[33m.\u001b[39mnow() \u001b[33m-\u001b[39m t0)\u001b[33m.\u001b[39mtoBeLessThan(\u001b[35m5000\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 273 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:270:16\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:38:20.161Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-التسجيل-⏱️-أداء-أساسي-firefox\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-التسجيل-⏱️-أداء-أساسي-firefox\\error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-45392db8fb99287d75ce",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 268,
+              "column": 3
+            },
+            {
+              "title": "🧵 تتبّع Playwright (trace) لسيناريو التسجيل",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox",
+                  "projectName": "firefox",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 3,
+                      "status": "timedOut",
+                      "duration": 36519,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                            "column": 16,
+                            "line": 297
+                          },
+                          "message": "Error: page.goto: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5173/signup\", waiting until \"load\"\u001b[22m\n\n\n\u001b[0m \u001b[90m 295 |\u001b[39m     })\u001b[33m;\u001b[39m\n \u001b[90m 296 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 297 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgoto(\u001b[32m\"/signup\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 298 |\u001b[39m     \u001b[36mawait\u001b[39m expect(formLocator(page))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 299 |\u001b[39m     \u001b[36mawait\u001b[39m fillSignupForm(page)\u001b[33m;\u001b[39m\n \u001b[90m 300 |\u001b[39m     \u001b[36mawait\u001b[39m formLocator(page)\u001b[0m\n\u001b[2m    at D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:297:16\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:38:25.485Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-ال-29b65-ight-trace-لسيناريو-التسجيل-firefox\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-ال-29b65-ight-trace-لسيناريو-التسجيل-firefox\\error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-08bd4e1a0aa4fbdad524",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 275,
+              "column": 3
+            },
+            {
+              "title": "✅ تعرض عناصر النموذج الأساسية",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10724,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:38:31.163Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-8bf35b2c7caab7cee965",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 101,
+              "column": 3
+            },
+            {
+              "title": "🔗 رابط “تسجيل الدخول” يعمل",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 12308,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:38:32.330Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-5c29152dd82bffb9ea78",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 117,
+              "column": 3
+            },
+            {
+              "title": "❌ إرسال فارغ يُظهر أخطاء",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9726,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:38:42.061Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-9fd362c94ace4d8ab1a7",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 127,
+              "column": 3
+            },
+            {
+              "title": "📧 بريد غير صالح",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 2,
+                      "status": "failed",
+                      "duration": 17735,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n\n    at expectFieldHasError (D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:53:37)\n    at D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:143:5",
+                        "location": {
+                          "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                          "column": 37,
+                          "line": 53
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 51 |\u001b[39m     \u001b[32m\"[role='alert'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error\"\u001b[39m\n \u001b[90m 52 |\u001b[39m   )\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 53 |\u001b[39m   \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 54 |\u001b[39m   \u001b[36mif\u001b[39m (opts\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mmessageRe) {\n \u001b[90m 55 |\u001b[39m     \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoHaveText(opts\u001b[33m.\u001b[39mmessageRe)\u001b[33m;\u001b[39m\n \u001b[90m 56 |\u001b[39m   }\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                            "column": 37,
+                            "line": 53
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n\n\n\u001b[0m \u001b[90m 51 |\u001b[39m     \u001b[32m\"[role='alert'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error\"\u001b[39m\n \u001b[90m 52 |\u001b[39m   )\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 53 |\u001b[39m   \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 54 |\u001b[39m   \u001b[36mif\u001b[39m (opts\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mmessageRe) {\n \u001b[90m 55 |\u001b[39m     \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoHaveText(opts\u001b[33m.\u001b[39mmessageRe)\u001b[33m;\u001b[39m\n \u001b[90m 56 |\u001b[39m   }\u001b[0m\n\u001b[2m    at expectFieldHasError (D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:53:37)\u001b[22m\n\u001b[2m    at D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:143:5\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:38:44.910Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-التسجيل-📧-بريد-غير-صالح-webkit\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-التسجيل-📧-بريد-غير-صالح-webkit\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-التسجيل-📧-بريد-غير-صالح-webkit\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                        "column": 37,
+                        "line": 53
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-88e09b5846d0ae8f743d",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 137,
+              "column": 3
+            },
+            {
+              "title": "🔒 كلمة مرور قصيرة",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 7843,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:38:51.872Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-440670a8bcde466e96e5",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 149,
+              "column": 3
+            },
+            {
+              "title": "🧼 أمان: المدخلات الخبيثة تُنظّف (بدلاً من توقع invalid)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 13,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5784,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:39:00.764Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-603de339a2319aaff28c",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 158,
+              "column": 3
+            },
+            {
+              "title": "👁️ إظهار/إخفاء كلمة المرور يغيّر النوع",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5223,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:38:59.755Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-1e1a077794e566f7e8e9",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 175,
+              "column": 3
+            },
+            {
+              "title": "✅ نجاح التسجيل → /verify-email إذا emailVerified=false أو لا يوجد توكن",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 7408,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:39:04.607Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-0a7cc1927a406307cdc0",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 191,
+              "column": 3
+            },
+            {
+              "title": "❌ بريد مستخدم مسبقًا (409): نبقى في /signup ويظهر خطأ",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 16914,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n\n    at expectFieldHasError (D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:53:37)\n    at D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:242:7",
+                        "location": {
+                          "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                          "column": 37,
+                          "line": 53
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 51 |\u001b[39m     \u001b[32m\"[role='alert'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error\"\u001b[39m\n \u001b[90m 52 |\u001b[39m   )\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 53 |\u001b[39m   \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 54 |\u001b[39m   \u001b[36mif\u001b[39m (opts\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mmessageRe) {\n \u001b[90m 55 |\u001b[39m     \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoHaveText(opts\u001b[33m.\u001b[39mmessageRe)\u001b[33m;\u001b[39m\n \u001b[90m 56 |\u001b[39m   }\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                            "column": 37,
+                            "line": 53
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('form').getByRole('textbox', { name: /^(?:البريد الإلكتروني|Email)$/i }).locator('xpath=ancestor::div[contains(@class,\\'MuiFormControl-root\\')][1]').locator('[role=\\'alert\\'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error').first()\u001b[22m\n\n\n\u001b[0m \u001b[90m 51 |\u001b[39m     \u001b[32m\"[role='alert'], .MuiFormHelperText-root.Mui-error, .error-text, .helper-text-error\"\u001b[39m\n \u001b[90m 52 |\u001b[39m   )\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 53 |\u001b[39m   \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 54 |\u001b[39m   \u001b[36mif\u001b[39m (opts\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mmessageRe) {\n \u001b[90m 55 |\u001b[39m     \u001b[36mawait\u001b[39m expect(fallbackErr\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoHaveText(opts\u001b[33m.\u001b[39mmessageRe)\u001b[33m;\u001b[39m\n \u001b[90m 56 |\u001b[39m   }\u001b[0m\n\u001b[2m    at expectFieldHasError (D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:53:37)\u001b[22m\n\u001b[2m    at D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts:242:7\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:39:05.028Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-ال-4163b-09-نبقى-في-signup-ويظهر-خطأ-webkit\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-ال-4163b-09-نبقى-في-signup-ويظهر-خطأ-webkit\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "D:\\kaleem\\Front-end\\test-results\\auth-signup.e2e-📝-صفحة-ال-4163b-09-نبقى-في-signup-ويظهر-خطأ-webkit\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "D:\\kaleem\\Front-end\\tests\\e2e\\auth\\signup.e2e.spec.ts",
+                        "column": 37,
+                        "line": 53
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-8d764738068e45132563",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 221,
+              "column": 3
+            },
+            {
+              "title": "📱 تجاوب الواجهة",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 13,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 4804,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:39:06.830Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-83a6e5daa8f83ab26258",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 249,
+              "column": 3
+            },
+            {
+              "title": "🎨 RTL/Lang موجودة",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 15,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 5223,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:39:09.886Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-e6ba967ea682837075fa",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 262,
+              "column": 3
+            },
+            {
+              "title": "⏱️ أداء أساسي",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 13,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 7035,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:39:11.671Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-af2eeebea9243948743b",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 268,
+              "column": 3
+            },
+            {
+              "title": "🧵 تتبّع Playwright (trace) لسيناريو التسجيل",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit",
+                  "projectName": "webkit",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 10562,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-04T16:39:12.262Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "bc9520a7291672f66c39-6635d6a712758878df89",
+              "file": "auth/signup.e2e.spec.ts",
+              "line": 275,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-09-04T16:36:17.208Z",
+    "duration": 185863.194,
+    "expected": 31,
+    "skipped": 0,
+    "unexpected": 8,
+    "flaky": 0
+  }
+}

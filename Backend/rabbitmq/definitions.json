@@ -1,0 +1,251 @@
+{
+  "rabbit_version": "3.13",
+  "users": [
+    {
+      "name": "kaleem",
+      "password_hash": "xwd48Z5IXsSP48A7vdDabVYw8WiMGUHpgDcISg3EWv1nLS6m",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": ["administrator"]
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "kleem"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "kaleem",
+      "vhost": "kleem",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "policies": [
+    {
+      "vhost": "kleem",
+      "name": "dlq-ttl",
+      "pattern": ".*\\.dlq$",
+      "apply-to": "queues",
+      "definition": {
+        "message-ttl": 604800000
+      },
+      "priority": 0
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "chat.incoming",
+      "vhost": "kleem",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "chat.reply",
+      "vhost": "kleem",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "knowledge.index",
+      "vhost": "kleem",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "commerce.sync",
+      "vhost": "kleem",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "webhook.dispatch",
+      "vhost": "kleem",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "analytics.events",
+      "vhost": "kleem",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "ai.reply-worker.q",
+      "vhost": "kleem",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "ai.reply-worker.q.dlq"
+      }
+    },
+    {
+      "name": "ai.reply-worker.q.dlq",
+      "vhost": "kleem",
+      "durable": true
+    },
+    {
+      "name": "whatsapp.out.q",
+      "vhost": "kleem",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "whatsapp.out.q.dlq"
+      }
+    },
+    {
+      "name": "whatsapp.out.q.dlq",
+      "vhost": "kleem",
+      "durable": true
+    },
+    {
+      "name": "telegram.out.q",
+      "vhost": "kleem",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "telegram.out.q.dlq"
+      }
+    },
+    {
+      "name": "telegram.out.q.dlq",
+      "vhost": "kleem",
+      "durable": true
+    },
+    {
+      "name": "webchat.out.q",
+      "vhost": "kleem",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "webchat.out.q.dlq"
+      }
+    },
+    {
+      "name": "webchat.out.q.dlq",
+      "vhost": "kleem",
+      "durable": true
+    },
+    {
+      "name": "indexing.q",
+      "vhost": "kleem",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "indexing.q.dlq"
+      }
+    },
+    {
+      "name": "indexing.q.dlq",
+      "vhost": "kleem",
+      "durable": true
+    },
+    {
+      "name": "commerce.sync.q",
+      "vhost": "kleem",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "commerce.sync.q.dlq"
+      }
+    },
+    {
+      "name": "commerce.sync.q.dlq",
+      "vhost": "kleem",
+      "durable": true
+    },
+    {
+      "name": "webhook.dispatch.q",
+      "vhost": "kleem",
+      "durable": true,
+      "arguments": {
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "webhook.dispatch.q.dlq"
+      }
+    },
+    {
+      "name": "webhook.dispatch.q.dlq",
+      "vhost": "kleem",
+      "durable": true
+    }
+  ],
+  "bindings": [
+    {
+      "vhost": "kleem",
+      "source": "chat.incoming",
+      "destination": "ai.reply-worker.q",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    },
+    {
+      "vhost": "kleem",
+      "source": "chat.reply",
+      "destination": "whatsapp.out.q",
+      "destination_type": "queue",
+      "routing_key": "whatsapp",
+      "arguments": {}
+    },
+    {
+      "vhost": "kleem",
+      "source": "chat.reply",
+      "destination": "telegram.out.q",
+      "destination_type": "queue",
+      "routing_key": "telegram",
+      "arguments": {}
+    },
+    {
+      "vhost": "kleem",
+      "source": "chat.reply",
+      "destination": "webchat.out.q",
+      "destination_type": "queue",
+      "routing_key": "webchat",
+      "arguments": {}
+    },
+    {
+      "vhost": "kleem",
+      "source": "knowledge.index",
+      "destination": "indexing.q",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    },
+    {
+      "vhost": "kleem",
+      "source": "commerce.sync",
+      "destination": "commerce.sync.q",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    },
+    {
+      "vhost": "kleem",
+      "source": "webhook.dispatch",
+      "destination": "webhook.dispatch.q",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    }
+  ]
+}

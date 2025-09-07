@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import {
   WhatsappDeleteInstanceResponse,
   WhatsappInstanceCreateResponse,
   WhatsappSetWebhookResponse,
+  WhatsappInstanceInfo,
 } from '../merchants/types/evolution.types';
 
 interface EvolutionWebhookResponse {
@@ -20,18 +21,27 @@ interface EvolutionWebhookResponse {
   };
   [key: string]: any;
 }
+
 @Injectable()
 export class EvolutionService {
   private readonly logger = new Logger(EvolutionService.name);
-  private readonly baseUrl = 'http://31.97.155.167:8080';
-  private readonly apiKey = 'any-secret-key';
+  private readonly baseUrl = (
+    process.env.EVOLUTION_API_URL || 'http://evolution_api:8080'
+  ).replace(/\/+$/, '');
+  private readonly apiKey = process.env.EVOLUTION_API_KEY || '';
+  private readonly http: AxiosInstance;
 
-  private getHeaders() {
-    return {
-      apikey: this.apiKey,
-      'Content-Type': 'application/json',
-      accept: 'application/json',
-    };
+  constructor() {
+    this.http = axios.create({
+      baseURL: this.baseUrl,
+      timeout: 20_000,
+      headers: {
+        apikey: this.apiKey,
+        accept: 'application/json',
+        'content-type': 'application/json',
+      },
+      // validateStatus: () => true, // لو تحب تتعامل مع كل الحالات يدويًا
+    });
   }
 
   /** حذف الجلسة إذا كانت موجودة ثم إنشاء جديدة بتوكن جديد */
@@ -43,7 +53,7 @@ export class EvolutionService {
       this.logger.log(`Instance ${instanceName} already exists. Deleting...`);
       await this.deleteInstance(instanceName);
     } catch (err: any) {
-      if (err.response?.status !== 404) throw err;
+      if (err?.response?.status !== 404) throw err;
     }
     const token = uuidv4();
     const { qr } = await this.startSession(instanceName, token);
@@ -53,20 +63,18 @@ export class EvolutionService {
   async deleteInstance(
     instanceName: string,
   ): Promise<WhatsappDeleteInstanceResponse> {
-    const url = `${this.baseUrl}/instance/delete/${instanceName}`;
     try {
-      const res = await axios.delete<WhatsappDeleteInstanceResponse>(url, {
-        headers: this.getHeaders(),
-      });
+      const { data } = await this.http.delete<WhatsappDeleteInstanceResponse>(
+        `/instance/delete/${instanceName}`,
+      );
       this.logger.log(`Instance ${instanceName} deleted successfully.`);
-      return res.data;
+      return data;
     } catch (err: any) {
       this.logger.error(
         'deleteInstance failed',
-        err.response?.data || err.message,
+        err?.response?.data || err.message,
       );
-      if (err.response?.status !== 404) throw err;
-      // يمكن أن تعيد قيمة افتراضية عند عدم الوجود
+      if (err?.response?.status !== 404) throw err;
       return {
         status: 'NOT_FOUND',
         error: true,
@@ -79,36 +87,33 @@ export class EvolutionService {
     instanceName: string,
     token: string,
   ): Promise<{ qr: string; token: string; instanceId: string }> {
-    const url = `${this.baseUrl}/instance/create`;
     try {
-      const res = await axios.post<WhatsappInstanceCreateResponse>(
-        url,
+      const { data } = await this.http.post<WhatsappInstanceCreateResponse>(
+        `/instance/create`,
         { instanceName, token, qrcode: true },
-        { headers: this.getHeaders() },
       );
-      const base64Qr = res.data?.qrcode?.base64 || '';
-      const instanceId = res.data?.instance?.instanceId || '';
-      return {
-        qr: base64Qr,
-        token,
-        instanceId,
-      };
+      const base64Qr = data?.qrcode?.base64 || '';
+      const instanceId = data?.instance?.instanceId || '';
+      return { qr: base64Qr, token, instanceId };
     } catch (err: any) {
       this.logger.error(
         'startSession failed',
-        err.response?.data || err.message,
+        err?.response?.data || err.message,
       );
       throw err;
     }
   }
 
-  async getStatus(instanceName: string): Promise<any> {
-    const url = `${this.baseUrl}/instance/fetchInstances?instanceName=${instanceName}`;
+  async getStatus(instanceName: string): Promise<WhatsappInstanceInfo> {
     try {
-      const res = await axios.get(url, { headers: this.getHeaders() });
-      return res.data?.instance; // مباشرة يرجع الـ object instance
+      const { data } = await this.http.get(`/instance/fetchInstances`, {
+        params: { instanceName },
+      });
+      if (!data?.instance)
+        throw { response: { status: 404 }, message: 'Instance not found' };
+      return data.instance as WhatsappInstanceInfo;
     } catch (err: any) {
-      this.logger.error('getStatus failed', err.response?.data || err.message);
+      this.logger.error('getStatus failed', err?.response?.data || err.message);
       throw err;
     }
   }
@@ -118,18 +123,17 @@ export class EvolutionService {
     to: string,
     message: string,
   ): Promise<any> {
-    const url = `${this.baseUrl}/message/sendText`;
     try {
-      const res = await axios.post(
-        url,
-        { instanceName, to, message },
-        { headers: this.getHeaders() },
-      );
-      return res.data;
+      const { data } = await this.http.post(`/message/sendText`, {
+        instanceName,
+        to,
+        message,
+      });
+      return data;
     } catch (err: any) {
       this.logger.error(
         'sendMessage failed',
-        err.response?.data || err.message,
+        err?.response?.data || err.message,
       );
       throw err;
     }
@@ -143,26 +147,27 @@ export class EvolutionService {
     webhook_by_events = true,
     webhook_base64 = true,
   ): Promise<WhatsappSetWebhookResponse> {
-    const endpoint = `${this.baseUrl}/webhook/set/${instanceName}`;
     try {
-      const res = await axios.post<WhatsappSetWebhookResponse>(
-        endpoint,
+      const { data } = await this.http.post<WhatsappSetWebhookResponse>(
+        `/webhook/set/${instanceName}`,
         {
           url,
           events,
           webhook_by_events,
           webhook_base64,
         },
-        { headers: this.getHeaders() },
       );
-      this.logger.log('Webhook set successfully', res.data);
-      return res.data;
+      this.logger.log(`Webhook set successfully on ${instanceName} -> ${url}`);
+      return data;
     } catch (err: any) {
-      this.logger.error('setWebhook failed', err.response?.data || err.message);
+      this.logger.error(
+        'setWebhook failed',
+        err?.response?.data || err.message,
+      );
       throw err;
     }
   }
-  // دالة تحديث الويبهوك
+
   async updateWebhook(
     instanceName: string,
     webhookUrl: string,
@@ -170,13 +175,12 @@ export class EvolutionService {
     webhook_by_events = false,
     webhook_base64 = false,
   ): Promise<EvolutionWebhookResponse> {
-    // هنا النوع مضبوط ولن يظهر التحذير
     return this.setWebhook(
       instanceName,
       webhookUrl,
       events,
       webhook_by_events,
       webhook_base64,
-    );
+    ) as any;
   }
 }

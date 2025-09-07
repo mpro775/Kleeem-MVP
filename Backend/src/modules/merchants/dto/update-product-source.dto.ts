@@ -1,21 +1,31 @@
-import { IsIn } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsEnum,
+  IsIn,
+  IsOptional,
+  IsString,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
 
-export type ProductSource = 'internal' | 'salla' | 'zid';
+export enum ProductSource {
+  INTERNAL = 'internal',
+  SALLA = 'salla',
+  ZID = 'zid',
+}
 
-/**
- * تحديث مصدر منتجات التاجر
- * @description يحدد مصدر بيانات المنتجات الذي سيقوم النظام بالاستيراد منه
- */
 export class UpdateProductSourceDto {
-  @ApiProperty({
-    description: 'مصدر المنتجات',
-    enum: ['internal', 'salla', 'zid'],
-    example: 'salla',
-    required: true
-  })
-  @IsIn(['internal', 'salla', 'zid'], {
-    message: 'يجب أن يكون مصدر المنتجات إما internal أو salla أو zid'
-  })
-  source: ProductSource;
+  @IsEnum(ProductSource)
+  source!: ProductSource;
+
+  @IsOptional()
+  @IsIn(['immediate', 'background', 'none'])
+  syncMode?: 'immediate' | 'background' | 'none';
+
+  // اطلب كلمة المرور فقط إذا نغيّر لمصدر خارجي أو نريد مزامنة فورية
+  @ValidateIf(
+    (o) => o.source !== ProductSource.INTERNAL || o.syncMode === 'immediate',
+  )
+  @IsString()
+  @MinLength(6)
+  confirmPassword?: string;
 }

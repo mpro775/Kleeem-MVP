@@ -1,21 +1,25 @@
+// plans.controller.ts
 import {
   Controller,
   Get,
   Post,
   Put,
   Delete,
+  Patch,
   Param,
   Body,
   UseGuards,
   Request,
-  HttpException,
-  HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { PlansService } from './plans.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RequestWithUser } from 'src/common/interfaces/request-with-user.interface';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { ParseObjectIdPipe } from '../../common/pipes/parse-objectid.pipe';
+import { QueryPlansDto } from './dto/query-plans.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -27,6 +31,7 @@ import {
   ApiBadRequestResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
 @ApiTags('الخطط')
@@ -35,96 +40,116 @@ export class PlansController {
   constructor(private readonly plansService: PlansService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'إنشاء خطة اشتراك جديدة (ADMIN فقط)' })
-  @ApiBody({
-    type: CreatePlanDto,
-    description: 'بيانات الخطة: الاسم، السعر، المدة بالأيام',
+  @ApiBody({ type: CreatePlanDto })
+  @ApiCreatedResponse({
+    description: 'تم إنشاء الخطة',
+    schema: {
+      example: {
+        _id: '...',
+        name: 'Pro Monthly',
+        priceCents: 2900,
+        currency: 'USD',
+        durationDays: 30,
+      },
+    },
   })
-  @ApiCreatedResponse({ description: 'تم إنشاء الخطة بنجاح' })
-  @ApiForbiddenResponse({ description: 'ممنوع: فقط ADMIN يمكنه إنشاء الخطط' })
-  @ApiBadRequestResponse({
-    description: 'طلب غير صالح: بيانات مفقودة أو تنسيق خاطئ',
-  })
-  async create(
-    @Body() createDto: CreatePlanDto,
-    @Request() req: RequestWithUser,
-  ) {
-    const user = req.user;
-    if (user.role !== 'ADMIN') {
-      throw new HttpException('ممنوع', HttpStatus.FORBIDDEN);
-    }
-    return this.plansService.create(createDto);
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({ description: 'Insufficient role' })
+  @ApiBadRequestResponse({ description: 'Invalid payload' })
+  create(@Body() dto: CreatePlanDto) {
+    return this.plansService.create(dto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'جلب جميع الخطط المتاحة (عام)' })
+  @ApiOperation({ summary: 'قائمة الخطط مع ترقيم/فرز/فلترة' })
   @ApiOkResponse({
-    description: 'تم إرجاع قائمة الخطط بنجاح',
-    type: CreatePlanDto,
-    isArray: true,
+    description: 'قائمة الخطط',
+    schema: {
+      example: {
+        items: [
+          {
+            _id: '...',
+            name: 'Pro',
+            priceCents: 2900,
+            currency: 'USD',
+            durationDays: 30,
+            isActive: true,
+          },
+        ],
+        total: 1,
+        page: 1,
+        limit: 20,
+        pages: 1,
+      },
+    },
   })
-  async findAll() {
-    return this.plansService.findAll();
+  findAll(@Query() q: QueryPlansDto) {
+    return this.plansService.findAllPaged(q);
   }
 
   @Get(':id')
-  @ApiParam({ name: 'id', type: 'string', description: 'معرّف الخطة' })
-  @ApiOperation({ summary: 'جلب خطة واحدة حسب المعرّف' })
-  @ApiOkResponse({
-    description: 'تم إرجاع بيانات الخطة بنجاح',
-    type: CreatePlanDto,
-  })
-  @ApiNotFoundResponse({ description: 'الخطة غير موجودة' })
-  async findOne(@Param('id') id: string) {
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiOperation({ summary: 'جلب خطة حسب المعرّف' })
+  @ApiOkResponse({ description: 'تم الإرجاع' })
+  @ApiNotFoundResponse({ description: 'Plan not found' })
+  findOne(@Param('id', ParseObjectIdPipe) id: string) {
     return this.plansService.findOne(id);
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @ApiBearerAuth()
-  @ApiParam({ name: 'id', type: 'string', description: 'معرّف الخطة' })
+  @ApiParam({ name: 'id', type: 'string' })
   @ApiOperation({ summary: 'تحديث خطة (ADMIN فقط)' })
-  @ApiBody({
-    type: UpdatePlanDto,
-    description: 'الحقول المراد تحديثها: الاسم، السعر، المدة',
-  })
-  @ApiOkResponse({ description: 'تم تحديث الخطة بنجاح' })
-  @ApiForbiddenResponse({ description: 'ممنوع: فقط ADMIN يمكنه التحديث' })
-  @ApiNotFoundResponse({ description: 'الخطة غير موجودة' })
-  async update(
-    @Param('id') id: string,
-    @Body() updateDto: UpdatePlanDto,
-    @Request() req: RequestWithUser,
+  @ApiBody({ type: UpdatePlanDto })
+  @ApiOkResponse({ description: 'تم التحديث' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({ description: 'Insufficient role' })
+  @ApiNotFoundResponse({ description: 'Plan not found' })
+  update(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: UpdatePlanDto,
   ) {
-    const user = req.user;
-    if (user.role !== 'ADMIN') {
-      throw new HttpException('ممنوع', HttpStatus.FORBIDDEN);
-    }
-    return this.plansService.update(id, updateDto);
+    return this.plansService.update(id, dto);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @ApiBearerAuth()
-  @ApiParam({ name: 'id', type: 'string', description: 'معرّف الخطة' })
+  @ApiParam({ name: 'id', type: 'string' })
   @ApiOperation({ summary: 'حذف خطة (ADMIN فقط)' })
-  @ApiOkResponse({ description: 'تم حذف الخطة بنجاح' })
-  @ApiForbiddenResponse({ description: 'ممنوع: فقط ADMIN يمكنه الحذف' })
-  @ApiNotFoundResponse({ description: 'الخطة غير موجودة' })
-  async remove(@Param('id') id: string, @Request() req: RequestWithUser) {
-    const user = req.user;
-    if (user.role !== 'ADMIN') {
-      throw new HttpException('ممنوع', HttpStatus.FORBIDDEN);
-    }
+  @ApiOkResponse({ description: 'تم الحذف' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiForbiddenResponse({ description: 'Insufficient role' })
+  @ApiNotFoundResponse({ description: 'Plan not found' })
+  remove(@Param('id', ParseObjectIdPipe) id: string) {
     return this.plansService.remove(id);
   }
-}
 
-/**
- * النواقص:
- * - يمكن إضافة أمثلة في @ApiCreatedResponse و@ApiOkResponse باستخدام schema.example.
- * - إضافة @ApiUnauthorizedResponse لتغطية حالة التوكن المفقود أو غير الصالح.
- * - توثيق دقيق لحقول CreatePlanDto وUpdatePlanDto (مثل القيم المحتملة للمدة).
- */
+  @Patch(':id/active')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'تفعيل/تعطيل خطة' })
+  setActive(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body('isActive') isActive: boolean,
+  ) {
+    return this.plansService.toggleActive(id, isActive);
+  }
+
+  @Patch(':id/archive')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'أرشفة خطة (soft delete)' })
+  archive(@Param('id', ParseObjectIdPipe) id: string) {
+    return this.plansService.archive(id);
+  }
+}

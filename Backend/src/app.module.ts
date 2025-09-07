@@ -51,6 +51,23 @@ import { RabbitModule } from './infra/rabbit/rabbit.module';
 import { OutboxModule } from './common/outbox/outbox.module';
 import { OutboxDispatcher } from './common/outbox/outbox.dispatcher';
 import { MetricsModule } from './metrics/metrics.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { InstructionsModule } from './modules/instructions/instructions.module';
+import { AiModule } from './modules/ai/ai.module';
+import { SupportModule } from './modules/support/support.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
+import { SystemModule } from './modules/system/system.module';
+import { ChannelsModule } from './modules/channels/channels.module';
+import { OffersModule } from './modules/offers/offers.module';
+import { CommonModule, AppConfig, ErrorManagementModule } from './common';
+import { PublicModule } from './modules/public/public.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { DispatchersModule } from './infra/dispatchers/dispatchers.module';
+import { WebhookDispatcherWorkerModule } from './workers/webhook-dispatcher.worker.module';
+import { AiReplyWorkerModule } from './workers/ai-reply.worker.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -60,7 +77,20 @@ import { MetricsModule } from './metrics/metrics.module';
         level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
       },
     }),
+    ThrottlerModule.forRoot([{ ttl: 60, limit: 20 }]),
     MetricsModule,
+    SystemModule,
+    CommonModule,
+    ErrorManagementModule, // إضافة وحدة إدارة الأخطاء
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+      newListener: false,
+      removeListener: false,
+      maxListeners: 10,
+      verboseMemoryLeak: false,
+      ignoreErrors: false,
+    }),
     // فعّل Passport و JWT هنا
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
@@ -121,7 +151,10 @@ import { MetricsModule } from './metrics/metrics.module';
     ProductsModule,
     MessagingModule,
     MerchantsModule,
+    SupportModule,
     PlansModule,
+    AiReplyWorkerModule,
+    WebhookDispatcherWorkerModule,
     VectorModule,
     ChatModule,
     DocumentsModule,
@@ -138,8 +171,18 @@ import { MetricsModule } from './metrics/metrics.module';
     IntegrationsModule,
     ScraperModule,
     KleemModule,
+    InstructionsModule,
+    OffersModule,
+    AiModule,
+    ChannelsModule,
+    NotificationsModule,
+    CatalogModule,
+    OffersModule,
+    PublicModule,
+    DispatchersModule,
   ],
   providers: [
+    AppService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     ...AmqpMetricsProviders,
     AmqpMetrics,
@@ -147,8 +190,10 @@ import { MetricsModule } from './metrics/metrics.module';
     { provide: APP_GUARD, useClass: RolesGuard },
     RedisConfig,
     OutboxDispatcher,
+
     // 3) Interceptor لجمع المقاييس على كل طلب HTTP
   ],
   exports: [AmqpMetrics],
+  controllers: [AppController],
 })
-export class AppModule {}
+export class AppModule extends AppConfig {}

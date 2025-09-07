@@ -6,34 +6,51 @@ import {
   CallHandler,
   Logger,
 } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { RequestWithUser } from '../interfaces/request-with-user.interface';
+import type { Request, Response } from 'express';
+import { shouldBypass } from './bypass.util';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  private logger = new Logger('HTTP');
+  private readonly logger = new Logger(LoggingInterceptor.name);
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const http = context.switchToHttp();
-    const req = http.getRequest<RequestWithUser>();
-    const { method, url } = req;
+    const request = context
+      .switchToHttp()
+      .getRequest<Request & { requestId?: string }>();
+    const response = context.switchToHttp().getResponse<Response>();
+    if (shouldBypass(request)) {
+      return next.handle(); // لا لوج طويل لمسار المقاييس
+    }
+    const { method, url, body, requestId } = request;
+    const userAgent = request.get('User-Agent') || '';
+    const startTime = Date.now();
 
-    // 1) أنشئ requestId جديد لكل طلب
-    const requestId = uuidv4();
-    // 2) أضف requestId وmerchantId إلى الميتاداتا
+    // تسجيل بداية الطلب
     this.logger.log(
-      `[${requestId}] → ${method} ${url} (merchant=${req.user?.merchantId || 'anon'})`,
+      `[${requestId}] ${method} ${url} - User-Agent: ${userAgent}`,
     );
 
-    const now = Date.now();
+    if (Object.keys(body || {}).length > 0) {
+      this.logger.debug(`[${requestId}] Request Body: ${JSON.stringify(body)}`);
+    }
+
     return next.handle().pipe(
-      tap(() => {
-        const ms = Date.now() - now;
-        this.logger.log(
-          `[${requestId}] ← ${method} ${url} ${ms}ms (merchant=${req.user?.merchantId || 'anon'})`,
-        );
+      tap({
+        next: () => {
+          const duration = Date.now() - startTime;
+          this.logger.log(
+            `[${requestId}] ${method} ${url} - ${response.statusCode} - ${duration}ms`,
+          );
+        },
+        error: (error) => {
+          const duration = Date.now() - startTime;
+          this.logger.error(
+            `[${requestId}] ${method} ${url} - ERROR - ${duration}ms`,
+            error.stack,
+          );
+        },
       }),
     );
   }

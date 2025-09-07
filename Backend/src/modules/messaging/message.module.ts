@@ -6,8 +6,8 @@ import { MessageService } from './message.service';
 import { MessageController } from './message.controller';
 import { ChatLinksController } from './chat-links.controller';
 import { ChatModule } from '../chat/chat.module';
-import { GeminiService } from './gemini.service';
 import { InstructionsModule } from 'src/modules/instructions/instructions.module';
+import { AiModule } from '../ai/ai.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -15,9 +15,10 @@ import { InstructionsModule } from 'src/modules/instructions/instructions.module
     ]),
     forwardRef(() => ChatModule), // أهم نقطة
     forwardRef(() => InstructionsModule), // أهم نقطة
+    forwardRef(() => AiModule),
   ],
-  providers: [MessageService, GeminiService],
+  providers: [MessageService],
   controllers: [MessageController, ChatLinksController],
-  exports: [MessageService, GeminiService],
+  exports: [MessageService],
 })
 export class MessagingModule {}
