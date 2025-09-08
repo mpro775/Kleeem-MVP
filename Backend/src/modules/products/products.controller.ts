@@ -38,6 +38,7 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
+import { GetProductsDto } from './dto/get-products.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import {
@@ -103,9 +104,49 @@ export class ProductsController {
     });
   }
 
-  @Public()
   @Get()
-  @ApiOperation({ summary: 'جلب جميع المنتجات للتاجر الحالي' })
+  @ApiOperation({ summary: 'جلب المنتجات مع cursor pagination' })
+  @ApiOkResponse({
+    description: 'قائمة المنتجات مع معلومات الـ pagination',
+    schema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/ProductResponseDto' },
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            nextCursor: { type: 'string', nullable: true },
+            hasMore: { type: 'boolean' },
+            count: { type: 'number' },
+          },
+        },
+      },
+    },
+  })
+  async getProducts(
+    @Query() dto: GetProductsDto,
+    @CurrentMerchantId() merchantId: string,
+  ) {
+    if (!merchantId) {
+      throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
+    }
+
+    const result = await this.productsService.getProducts(merchantId, dto);
+
+    return {
+      items: plainToInstance(ProductResponseDto, result.items, {
+        excludeExtraneousValues: true,
+      }),
+      meta: result.meta,
+    };
+  }
+
+  @Public()
+  @Get('legacy')
+  @ApiOperation({ summary: 'جلب جميع المنتجات للتاجر (طريقة قديمة)' })
   @ApiOkResponse({ type: ProductResponseDto, isArray: true })
   async findAll(@Query('merchantId') merchantId: string) {
     if (!merchantId) throw new BadRequestException('merchantId is required');
@@ -114,6 +155,38 @@ export class ProductsController {
     return plainToInstance(ProductResponseDto, docs, {
       excludeExtraneousValues: true,
     });
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'البحث في المنتجات' })
+  @ApiOkResponse({
+    description: 'نتائج البحث مع معلومات الـ pagination',
+  })
+  async searchProducts(
+    @Query('q') query: string,
+    @Query() dto: GetProductsDto,
+    @CurrentMerchantId() merchantId: string,
+  ) {
+    if (!merchantId) {
+      throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
+    }
+
+    if (!query) {
+      throw new BadRequestException('البحث مطلوب');
+    }
+
+    const result = await this.productsService.searchProducts(
+      merchantId,
+      query,
+      dto,
+    );
+
+    return {
+      items: plainToInstance(ProductResponseDto, result.items, {
+        excludeExtraneousValues: true,
+      }),
+      meta: result.meta,
+    };
   }
 
   @Post(':id/images')

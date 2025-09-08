@@ -1,65 +1,90 @@
-// src/common/dto/pagination.dto.ts
-import { IsOptional, IsPositive, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsInt, Min, Max } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
-/** DTO للترقيم */
-export class PaginationDto {
+/**
+ * DTO موحد للـ Cursor Pagination
+ */
+export class CursorDto {
   @ApiPropertyOptional({
-    description: 'رقم الصفحة',
-    minimum: 1,
-    default: 1,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsPositive()
-  page?: number = 1;
-
-  @ApiPropertyOptional({
-    description: 'عدد العناصر في الصفحة',
+    description: 'عدد العناصر المطلوبة (1-100)',
     minimum: 1,
     maximum: 100,
-    default: 10,
+    default: 20,
   })
   @IsOptional()
-  @Type(() => Number)
+  @Transform(({ value }) => parseInt(value))
+  @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 10;
+  limit?: number = 20;
 
   @ApiPropertyOptional({
-    description: 'حقل الترتيب',
+    description: 'Cursor للصفحة التالية (base64 encoded)',
+    example:
+      'eyJ0IjoxNjk5ODg4ODAwMDAwLCJpZCI6IjY1NGY5YzAwMTIzNDU2Nzg5YWJjZGVmMCJ9',
   })
   @IsOptional()
-  sortBy?: string;
-
-  @ApiPropertyOptional({
-    description: 'اتجاه الترتيب (asc/desc)',
-    enum: ['asc', 'desc'],
-    default: 'desc',
-  })
-  @IsOptional()
-  sortOrder?: 'asc' | 'desc' = 'desc';
-
-  @ApiPropertyOptional({
-    description: 'كلمة البحث',
-  })
-  @IsOptional()
-  search?: string;
+  cursor?: string;
 }
 
-/** استجابة الترقيم */
-export class PaginatedResponseDto<T> {
-  @ApiPropertyOptional()
-  data: T[];
-
-  @ApiPropertyOptional()
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
+/**
+ * نتيجة الـ Pagination
+ */
+export interface PaginationResult<T> {
+  items: T[];
+  meta: {
+    nextCursor?: string;
+    hasMore: boolean;
+    count: number;
   };
+}
+
+/**
+ * تشفير الـ cursor
+ */
+export function encodeCursor(timestamp: number, id: string): string {
+  return Buffer.from(JSON.stringify({ t: timestamp, id })).toString('base64');
+}
+
+/**
+ * فك تشفير الـ cursor
+ */
+export function decodeCursor(
+  cursor?: string,
+): { t: number; id: string } | null {
+  if (!cursor) return null;
+  try {
+    const decoded = JSON.parse(Buffer.from(cursor, 'base64').toString());
+    if (typeof decoded.t === 'number' && typeof decoded.id === 'string') {
+      return decoded;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * إنشاء filter للـ cursor pagination
+ */
+export function createCursorFilter(
+  baseFilter: any,
+  cursor?: string,
+  sortField: string = 'createdAt',
+): any {
+  const filter = { ...baseFilter };
+  const decodedCursor = decodeCursor(cursor);
+
+  if (decodedCursor) {
+    filter.$or = [
+      { [sortField]: { $lt: new Date(decodedCursor.t) } },
+      {
+        [sortField]: new Date(decodedCursor.t),
+        _id: { $lt: decodedCursor.id },
+      },
+    ];
+  }
+
+  return filter;
 }

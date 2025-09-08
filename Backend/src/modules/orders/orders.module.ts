@@ -8,6 +8,7 @@ import { LeadsModule } from '../leads/leads.module';
 import { ZidModule } from '../integrations/zid/zid.module';
 import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
 import { forwardRef } from '@nestjs/common';
+import { PaginationService } from '../../common/services/pagination.service';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -17,7 +18,7 @@ import { forwardRef } from '@nestjs/common';
     LeadsModule,
     forwardRef(() => ZidModule),
   ],
-  providers: [OrdersService],
+  providers: [OrdersService, PaginationService],
   controllers: [OrdersController],
   exports: [OrdersService],
 })

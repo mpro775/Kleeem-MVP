@@ -7,10 +7,16 @@ import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { NotificationsPrefsDto } from './dto/notifications-prefs.dto';
+import { GetUsersDto } from './dto/get-users.dto';
+import { PaginationService } from '../../common/services/pagination.service';
+import { PaginationResult } from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private paginationService: PaginationService,
+  ) {}
 
   async create(createDto: CreateUserDto) {
     const user = new this.userModel(createDto);
@@ -109,5 +115,86 @@ export class UsersService {
       .lean();
     if (!user) throw new NotFoundException('User not found');
     return user.notificationsPrefs;
+  }
+
+  // ✅ طرق جديدة للـ Cursor Pagination
+
+  /**
+   * جلب المستخدمين مع cursor pagination
+   */
+  async getUsers(dto: GetUsersDto): Promise<PaginationResult<any>> {
+    // بناء الـ filter
+    const baseFilter: any = {};
+
+    if (dto.search) {
+      baseFilter.$text = { $search: dto.search };
+    }
+
+    if (dto.role) {
+      baseFilter.role = dto.role;
+    }
+
+    if (dto.merchantId) {
+      baseFilter.merchantId = new Types.ObjectId(dto.merchantId);
+    }
+
+    if (dto.active !== undefined) {
+      baseFilter.active = dto.active;
+    }
+
+    if (dto.emailVerified !== undefined) {
+      baseFilter.emailVerified = dto.emailVerified;
+    }
+
+    // تحديد حقل الترتيب
+    const sortField = dto.sortBy || 'createdAt';
+    const sortOrder = dto.sortOrder === 'asc' ? 1 : -1;
+
+    // استخدام خدمة الـ pagination
+    const result = await this.paginationService.paginate(
+      this.userModel,
+      dto,
+      baseFilter,
+      {
+        sortField,
+        sortOrder,
+        select: '-password -__v', // إخفاء كلمة المرور
+        lean: true,
+      },
+    );
+
+    // معالجة النتائج
+    const processedItems = result.items.map((item: any) => ({
+      ...item,
+      _id: item._id?.toString(),
+      merchantId: item.merchantId?.toString(),
+    }));
+
+    return {
+      ...result,
+      items: processedItems,
+    };
+  }
+
+  /**
+   * البحث في المستخدمين مع cursor pagination
+   */
+  async searchUsers(
+    query: string,
+    dto: GetUsersDto,
+  ): Promise<PaginationResult<any>> {
+    const searchDto = { ...dto, search: query };
+    return this.getUsers(searchDto);
+  }
+
+  /**
+   * جلب المستخدمين حسب التاجر
+   */
+  async getUsersByMerchant(
+    merchantId: string,
+    dto: GetUsersDto,
+  ): Promise<PaginationResult<any>> {
+    const merchantDto = { ...dto, merchantId };
+    return this.getUsers(merchantDto);
   }
 }

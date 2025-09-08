@@ -44,4 +44,52 @@ export class Plan {
   archived?: boolean;
 }
 export const PlanSchema = SchemaFactory.createForClass(Plan);
-PlanSchema.index({ isActive: 1, priceCents: 1 });
+
+// ✅ فهارس محسّنة للـ Cursor Pagination
+// فهرس فريد للاسم
+PlanSchema.index({ name: 1 }, { unique: true, background: true });
+
+// فهرس للحالة النشطة
+PlanSchema.index(
+  {
+    isActive: 1,
+    archived: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للتجربة المجانية
+PlanSchema.index(
+  {
+    isTrial: 1,
+    isActive: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للعملة وفترة الفوترة
+PlanSchema.index(
+  {
+    currency: 1,
+    billingPeriod: 1,
+    isActive: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للسعر
+PlanSchema.index(
+  {
+    priceCents: 1,
+    currency: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);

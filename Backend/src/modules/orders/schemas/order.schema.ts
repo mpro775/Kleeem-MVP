@@ -53,9 +53,53 @@ export class Order {
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);
-OrderSchema.index({ merchantId: 1, sessionId: 1 });
-OrderSchema.index({ merchantId: 1, 'customer.phoneNormalized': 1 });
+
+// ✅ فهارس محسّنة للـ Cursor Pagination
+// فهرس أساسي للـ pagination مع merchantId
+OrderSchema.index(
+  {
+    merchantId: 1,
+    status: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للجلسة
+OrderSchema.index(
+  {
+    sessionId: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للعميل (البحث بالهاتف)
+OrderSchema.index(
+  {
+    'customer.phone': 1,
+    merchantId: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true, sparse: true },
+);
+
+// فهرس للمصدر
+OrderSchema.index(
+  {
+    merchantId: 1,
+    source: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس فريد للـ externalId مع merchantId
 OrderSchema.index(
   { merchantId: 1, externalId: 1 },
-  { unique: true, sparse: true },
+  { unique: true, sparse: true, background: true },
 );

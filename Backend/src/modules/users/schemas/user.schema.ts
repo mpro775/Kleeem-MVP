@@ -129,7 +129,54 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
-UserSchema.index({ email: 1 }, { unique: true });
+
+// ✅ فهارس محسّنة للـ Cursor Pagination
+// فهرس فريد للـ email
+UserSchema.index({ email: 1 }, { unique: true, background: true });
+
+// فهرس للـ pagination العام
+UserSchema.index(
+  {
+    role: 1,
+    active: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للـ merchantId
+UserSchema.index(
+  {
+    merchantId: 1,
+    active: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true, sparse: true },
+);
+
+// فهرس للبحث النصي
+UserSchema.index(
+  { name: 'text', email: 'text' },
+  {
+    weights: { name: 3, email: 2 },
+    background: true,
+  },
+);
+
+// فهرس للحالة النشطة
+UserSchema.index({ active: 1, createdAt: -1, _id: -1 }, { background: true });
+
+// فهرس للتحقق من البريد الإلكتروني
+UserSchema.index(
+  {
+    emailVerified: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
 
 // هاش لكلمة المرور قبل الحفظ
 UserSchema.pre('save', async function (next) {

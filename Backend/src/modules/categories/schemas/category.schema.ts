@@ -44,14 +44,67 @@ export class Category {
 
 export const CategorySchema = SchemaFactory.createForClass(Category);
 
-// فهارس مهمّة
+// ✅ فهارس محسّنة للـ Cursor Pagination
+// فهرس أساسي للـ pagination مع merchantId
+CategorySchema.index(
+  {
+    merchantId: 1,
+    parent: 1,
+    order: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس فريد للـ slug ضمن نفس الـ merchant والـ parent
 CategorySchema.index(
   { merchantId: 1, parent: 1, slug: 1 },
-  { unique: true, name: 'uniq_sibling_slug' },
+  { unique: true, background: true },
 );
-CategorySchema.index({ merchantId: 1, path: 1 });
-CategorySchema.index({ merchantId: 1, ancestors: 1 });
-CategorySchema.index({ merchantId: 1, depth: 1 });
+
+// فهرس للبحث النصي
+CategorySchema.index(
+  { name: 'text', description: 'text' },
+  {
+    weights: { name: 5, description: 1 },
+    background: true,
+  },
+);
+
+// فهرس للـ path للبحث الهرمي
+CategorySchema.index(
+  {
+    merchantId: 1,
+    path: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للعمق
+CategorySchema.index(
+  {
+    merchantId: 1,
+    depth: 1,
+    order: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للأجداد
+CategorySchema.index(
+  {
+    merchantId: 1,
+    ancestors: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
 
 // مولّد slug تلقائيًا إن لم يُمرّر
 CategorySchema.pre('validate', function (next) {

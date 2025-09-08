@@ -180,7 +180,62 @@ export class Merchant {
 }
 
 export const MerchantSchema = SchemaFactory.createForClass(Merchant);
-MerchantSchema.index({ userId: 1 }, { unique: true }); // واحد-لواحد
+
+// ✅ فهارس محسّنة للـ Cursor Pagination
+// فهرس فريد للـ userId
+MerchantSchema.index({ userId: 1 }, { unique: true, background: true });
+
+// فهرس فريد للـ publicSlug
+MerchantSchema.index({ publicSlug: 1 }, { unique: true, background: true });
+
+// فهرس للـ pagination العام
+MerchantSchema.index(
+  {
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للبحث النصي
+MerchantSchema.index(
+  { name: 'text', businessDescription: 'text' },
+  {
+    weights: { name: 5, businessDescription: 1 },
+    background: true,
+  },
+);
+
+// فهرس للفئات
+MerchantSchema.index(
+  {
+    categories: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس لنوع المنتج
+MerchantSchema.index(
+  {
+    productSource: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للاشتراك
+MerchantSchema.index(
+  {
+    'subscription.status': 1,
+    'subscription.expiresAt': 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
 MerchantSchema.pre('validate', function (next) {
   const doc = this as any;
 

@@ -56,5 +56,71 @@ export class SupportTicket {
   createdBy?: Types.ObjectId;
 }
 export const SupportTicketSchema = SchemaFactory.createForClass(SupportTicket);
-SupportTicketSchema.index({ createdAt: -1 });
-SupportTicketSchema.index({ email: 1, createdAt: -1 });
+
+// ✅ فهارس محسّنة للـ Cursor Pagination
+// فهرس فريد لرقم التذكرة
+SupportTicketSchema.index(
+  { ticketNumber: 1 },
+  { unique: true, background: true },
+);
+
+// فهرس أساسي للـ pagination
+SupportTicketSchema.index(
+  {
+    status: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للتاجر
+SupportTicketSchema.index(
+  {
+    merchantId: 1,
+    status: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true, sparse: true },
+);
+
+// فهرس للموضوع
+SupportTicketSchema.index(
+  {
+    topic: 1,
+    status: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للبحث النصي
+SupportTicketSchema.index(
+  { subject: 'text', message: 'text', name: 'text' },
+  {
+    weights: { subject: 5, name: 3, message: 1 },
+    background: true,
+  },
+);
+
+// فهرس للبريد الإلكتروني
+SupportTicketSchema.index(
+  {
+    email: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس لمنشئ التذكرة
+SupportTicketSchema.index(
+  {
+    createdBy: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true, sparse: true },
+);

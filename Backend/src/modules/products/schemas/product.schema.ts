@@ -197,9 +197,80 @@ ProductSchema.post('find', function (docs) {
 ProductSchema.post('findOne', function (doc) {
   if (doc) computeDerived(doc);
 });
-ProductSchema.index({
-  'offer.enabled': 1,
-  'offer.startAt': 1,
-  'offer.endAt': 1,
-});
-ProductSchema.index({ merchantId: 1, category: 1, status: 1, isAvailable: 1 });
+// ✅ فهارس محسّنة للـ Cursor Pagination
+// فهرس أساسي للـ pagination مع merchantId
+ProductSchema.index(
+  {
+    merchantId: 1,
+    status: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للبحث النصي
+ProductSchema.index(
+  { name: 'text', description: 'text' },
+  {
+    weights: { name: 5, description: 1 },
+    background: true,
+  },
+);
+
+// فهرس للفئات والحالة
+ProductSchema.index(
+  {
+    merchantId: 1,
+    category: 1,
+    status: 1,
+    isAvailable: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للعروض
+ProductSchema.index(
+  {
+    merchantId: 1,
+    'offer.enabled': 1,
+    'offer.startAt': 1,
+    'offer.endAt': 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للمصدر
+ProductSchema.index(
+  {
+    merchantId: 1,
+    source: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للسعر (للترتيب حسب السعر)
+ProductSchema.index(
+  {
+    merchantId: 1,
+    price: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس فريد للـ uniqueKey
+ProductSchema.index(
+  { uniqueKey: 1 },
+  { unique: true, sparse: true, background: true },
+);
+
+// فهرس للـ slug
+ProductSchema.index({ slug: 1 }, { sparse: true, background: true });

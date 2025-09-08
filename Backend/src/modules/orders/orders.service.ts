@@ -1,11 +1,14 @@
 // src/modules/orders/orders.service.ts
 import { Injectable } from '@nestjs/common';
-import { MerchantNotFoundError } from '../../common';
+import { MerchantNotFoundError } from '../../common/errors/business-errors';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import { Order, OrderDocument } from './schemas/order.schema';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { GetOrdersDto } from './dto/get-orders.dto';
 import { LeadsService } from '../leads/leads.service';
+import { PaginationService } from '../../common/services/pagination.service';
+import { PaginationResult } from '../../common/dto/pagination.dto';
 import { Order as OrderType } from '../webhooks/helpers/order';
 import {
   Merchant,
@@ -43,6 +46,7 @@ export class OrdersService {
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     @InjectModel(Merchant.name) private merchantModel: Model<MerchantDocument>,
     private leadsService: LeadsService,
+    private paginationService: PaginationService,
   ) {}
 
   async create(dto: CreateOrderDto): Promise<Order> {
@@ -180,5 +184,119 @@ export class OrdersService {
         'customer.phone': phone, // أو أي key آخر يحفظ رقم العميل
       })
       .sort({ createdAt: -1 });
+  }
+
+  // ✅ طرق جديدة للـ Cursor Pagination
+
+  /**
+   * جلب الطلبات مع cursor pagination
+   */
+  async getOrders(
+    merchantId: string,
+    dto: GetOrdersDto,
+  ): Promise<PaginationResult<any>> {
+    // بناء الـ filter
+    const baseFilter: any = { merchantId };
+
+    if (dto.search) {
+      baseFilter.$or = [
+        { sessionId: { $regex: dto.search, $options: 'i' } },
+        { 'customer.name': { $regex: dto.search, $options: 'i' } },
+        { 'customer.phone': { $regex: dto.search, $options: 'i' } },
+      ];
+    }
+
+    if (dto.status) {
+      baseFilter.status = dto.status;
+    }
+
+    if (dto.source) {
+      baseFilter.source = dto.source;
+    }
+
+    if (dto.sessionId) {
+      baseFilter.sessionId = dto.sessionId;
+    }
+
+    // تحديد حقل الترتيب
+    const sortField = dto.sortBy || 'createdAt';
+    const sortOrder = dto.sortOrder === 'asc' ? 1 : -1;
+
+    // استخدام خدمة الـ pagination
+    const result = await this.paginationService.paginate(
+      this.orderModel,
+      dto,
+      baseFilter,
+      {
+        sortField,
+        sortOrder,
+        select: '-__v',
+        lean: true,
+      },
+    );
+
+    // معالجة النتائج
+    const processedItems = result.items.map((item: any) => ({
+      ...item,
+      _id: item._id?.toString(),
+      merchantId: item.merchantId?.toString(),
+    }));
+
+    return {
+      ...result,
+      items: processedItems,
+    };
+  }
+
+  /**
+   * البحث في الطلبات مع cursor pagination
+   */
+  async searchOrders(
+    merchantId: string,
+    query: string,
+    dto: GetOrdersDto,
+  ): Promise<PaginationResult<any>> {
+    const searchDto = { ...dto, search: query };
+    return this.getOrders(merchantId, searchDto);
+  }
+
+  /**
+   * جلب الطلبات حسب العميل مع cursor pagination
+   */
+  async getOrdersByCustomer(
+    merchantId: string,
+    phone: string,
+    dto: GetOrdersDto,
+  ): Promise<PaginationResult<any>> {
+    const baseFilter: any = {
+      merchantId,
+      'customer.phone': phone,
+    };
+
+    const sortField = dto.sortBy || 'createdAt';
+    const sortOrder = dto.sortOrder === 'asc' ? 1 : -1;
+
+    const result = await this.paginationService.paginate(
+      this.orderModel,
+      dto,
+      baseFilter,
+      {
+        sortField,
+        sortOrder,
+        select: '-__v',
+        lean: true,
+      },
+    );
+
+    const processedItems = result.items.map((item: any) => ({
+      ...item,
+      _id: item._id?.toString(),
+      merchantId: item.merchantId?.toString(),
+    }));
+
+    return {
+      ...result,
+      items: processedItems,
+    };
   }
 }

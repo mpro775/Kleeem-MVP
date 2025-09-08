@@ -30,6 +30,8 @@ import * as Minio from 'minio';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ProductsCron } from './products.cron';
 import { ErrorManagementModule } from '../../common/error-management.module';
+import { PaginationService } from '../../common/services/pagination.service';
+import { CacheModule } from '../../common/cache/cache.module';
 
 @Module({
   imports: [
@@ -48,11 +50,13 @@ import { ErrorManagementModule } from '../../common/error-management.module';
     forwardRef(() => ZidModule),
     forwardRef(() => StorefrontModule),
     ErrorManagementModule, // إضافة وحدة إدارة الأخطاء
+    CacheModule, // إضافة وحدة الكاش
   ],
   providers: [
     ProductsService,
     ProductSetupConfigService,
     ProductsCron,
+    PaginationService,
     {
       provide: 'MINIO_CLIENT',
       useFactory: () => {

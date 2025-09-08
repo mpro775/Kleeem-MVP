@@ -11,7 +11,11 @@ import { Product, ProductDocument } from './schemas/product.schema';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 import { CreateProductDto, ProductSource } from './dto/create-product.dto';
+import { GetProductsDto } from './dto/get-products.dto';
 import { VectorService } from '../vector/vector.service';
+import { PaginationService } from '../../common/services/pagination.service';
+import { PaginationResult } from '../../common/dto/pagination.dto';
+import { CacheService } from '../../common/cache/cache.service';
 import { forwardRef, Inject } from '@nestjs/common';
 import { ExternalProduct } from '../integrations/types';
 import {
@@ -151,6 +155,8 @@ export class ProductsService {
     private readonly storefrontModel: Model<StorefrontDocument>,
     @InjectModel(Category.name)
     private readonly categoryModel: Model<CategoryDocument>, // 👈 جديد
+    private readonly paginationService: PaginationService,
+    private readonly cacheService: CacheService,
     @Inject('MINIO_CLIENT') private readonly minio: Minio.Client,
   ) {}
 
@@ -483,6 +489,18 @@ export class ProductsService {
     } catch (e) {
       // لا تكسر الطلب بسبب فهرسة المتجهات
       console.warn('vector upsert (create) failed', e as any);
+    }
+
+    // إبطال الكاش بعد إنشاء المنتج
+    try {
+      await this.cacheService.invalidate(
+        `v1:products:list:${dto.merchantId}:*`,
+      );
+      await this.cacheService.invalidate(
+        `v1:products:popular:${dto.merchantId}:*`,
+      );
+    } catch (e) {
+      console.warn('cache invalidation (create) failed', e);
     }
 
     return product;
@@ -923,5 +941,190 @@ export class ProductsService {
     });
     // (اختياري) احذف من الفيكتور أيضا
     // await this.vectorService.removeProductEmbedding(externalId);
+  }
+
+  // ✅ طرق جديدة للـ Cursor Pagination
+
+  /**
+   * جلب المنتجات مع cursor pagination
+   */
+  async getProducts(
+    merchantId: string,
+    dto: GetProductsDto,
+  ): Promise<PaginationResult<any>> {
+    // إنشاء مفتاح الكاش
+    const cacheKey = CacheService.createKey(
+      'v1',
+      'products',
+      'list',
+      merchantId,
+      dto.status || 'all',
+      dto.categoryId || 'all',
+      dto.search || 'all',
+      dto.sortBy || 'createdAt',
+      dto.sortOrder || 'desc',
+      dto.limit || 20,
+      dto.cursor || '0',
+    );
+
+    // البحث في الكاش أولاً
+    return this.cacheService.getOrSet(cacheKey, 300, async () => {
+      const merchantObjectId = new Types.ObjectId(merchantId);
+
+      // بناء الـ filter
+      const baseFilter: any = { merchantId: merchantObjectId };
+
+      if (dto.search) {
+        baseFilter.$text = { $search: dto.search };
+      }
+
+      if (dto.categoryId) {
+        baseFilter.category = new Types.ObjectId(dto.categoryId);
+      }
+
+      if (dto.status) {
+        baseFilter.status = dto.status;
+      }
+
+      if (dto.source) {
+        baseFilter.source = dto.source;
+      }
+
+      if (dto.isAvailable !== undefined) {
+        baseFilter.isAvailable = dto.isAvailable;
+      }
+
+      if (dto.hasOffer) {
+        baseFilter['offer.enabled'] = true;
+      }
+
+      // تحديد حقل الترتيب
+      const sortField = dto.sortBy || 'createdAt';
+      const sortOrder = dto.sortOrder === 'asc' ? 1 : -1;
+
+      // استخدام خدمة الـ pagination
+      const result = await this.paginationService.paginate(
+        this.productModel,
+        dto,
+        baseFilter,
+        {
+          sortField,
+          sortOrder,
+          populate: 'category',
+          select: '-__v',
+          lean: true,
+        },
+      );
+
+      // معالجة النتائج
+      const processedItems = result.items.map((item: any) => ({
+        ...item,
+        _id: item._id?.toString(),
+        merchantId: item.merchantId?.toString(),
+        category: item.category?._id?.toString() || item.category,
+        categoryName: item.category?.name,
+        ...computePricing(item),
+      }));
+
+      return {
+        ...result,
+        items: processedItems,
+      };
+    });
+  }
+
+  /**
+   * جلب المنتجات للمتجر العام مع cursor pagination
+   */
+  async getPublicProducts(
+    storeSlug: string,
+    dto: GetProductsDto,
+  ): Promise<PaginationResult<any>> {
+    // البحث عن المتجر
+    const storefront = await this.storefrontModel
+      .findOne({ slug: storeSlug })
+      .lean();
+
+    if (!storefront) {
+      throw new NotFoundException('Storefront not found');
+    }
+
+    // بناء الـ filter للمنتجات العامة
+    const baseFilter: any = {
+      merchantId: storefront.merchant,
+      status: 'active',
+      isAvailable: true,
+    };
+
+    if (dto.search) {
+      baseFilter.$text = { $search: dto.search };
+    }
+
+    if (dto.categoryId) {
+      baseFilter.category = new Types.ObjectId(dto.categoryId);
+    }
+
+    if (dto.hasOffer) {
+      baseFilter['offer.enabled'] = true;
+    }
+
+    const sortField = dto.sortBy || 'createdAt';
+    const sortOrder = dto.sortOrder === 'asc' ? 1 : -1;
+
+    const result = await this.paginationService.paginate(
+      this.productModel,
+      dto,
+      baseFilter,
+      {
+        sortField,
+        sortOrder,
+        populate: 'category',
+        select: '-__v',
+        lean: true,
+      },
+    );
+
+    // معالجة النتائج للمتجر العام
+    const processedItems = result.items.map((item: any) => ({
+      ...item,
+      _id: item._id?.toString(),
+      merchantId: item.merchantId?.toString(),
+      category: item.category?._id?.toString() || item.category,
+      categoryName: item.category?.name,
+      ...computePricing(item),
+      // إضافة الـ public URL
+      publicUrl: this.buildPublicUrl(item, storefront),
+    }));
+
+    return {
+      ...result,
+      items: processedItems,
+    };
+  }
+
+  /**
+   * بناء الـ URL العام للمنتج
+   */
+  private buildPublicUrl(product: any, storefront: any): string {
+    const productSlug = product.slug || product._id;
+
+    if (storefront.domain) {
+      return `https://${storefront.domain}/product/${productSlug}`;
+    }
+
+    const baseUrl = process.env.STORE_PUBLIC_ORIGIN || '';
+    return `${baseUrl}/store/${storefront.slug}/product/${productSlug}`;
+  }
+
+  /**
+   * البحث في المنتجات مع cursor pagination
+   */
+  async searchProducts(
+    merchantId: string,
+    query: string,
+    dto: GetProductsDto,
+  ): Promise<PaginationResult<any>> {
+    const searchDto = { ...dto, search: query };
+    return this.getProducts(merchantId, searchDto);
   }
 }
