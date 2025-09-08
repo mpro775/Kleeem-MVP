@@ -25,6 +25,7 @@ export * from './interceptors/performance-tracking.interceptor';
 // Services
 export * from './services/error-management.service';
 export * from './services/sentry.service';
+export * from './services/environment-validator.service';
 
 // Decorators
 export * from './decorators/api-response.decorator';
@@ -39,6 +40,7 @@ export * from './middlewares/request-id.middleware';
 // Config
 export * from './config/common.module';
 export * from './config/app.config';
+export { AppConfig } from './config/app.config';
 
 // Modules
 export * from './error-management.module';

@@ -8,7 +8,6 @@ import {
   useMediaQuery,
   useTheme,
   Tooltip,
-  Chip,
   Avatar,
   Divider,
 } from "@mui/material";

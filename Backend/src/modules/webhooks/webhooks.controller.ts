@@ -13,7 +13,10 @@ import {
   Get,
   Res,
   HttpCode,
+  Inject,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { MessageService } from '../messaging/message.service';
 import { Public } from 'src/common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -52,7 +55,11 @@ import {
 import * as bcrypt from 'bcrypt';
 
 // NEW: القنوات الجديدة + فك التشفير
-import { Channel, ChannelDocument, ChannelProvider } from '../channels/schemas/channel.schema';
+import {
+  Channel,
+  ChannelDocument,
+  ChannelProvider,
+} from '../channels/schemas/channel.schema';
 import { decryptSecret, hashSecret } from '../channels/utils/secrets.util';
 
 // ================= Utils =================
@@ -91,20 +98,25 @@ function verifyMetaSig(appSecret: string, raw: Buffer, sig?: string) {
 }
 async function tryWithTx<T>(
   conn: Connection,
-  work: (session?: ClientSession) => Promise<T>
+  work: (session?: ClientSession) => Promise<T>,
 ): Promise<T> {
   let session: ClientSession | undefined;
   try {
     session = await conn.startSession();
     return await session.withTransaction(() => work(session));
   } catch (e: any) {
-    if (e?.code === 20 || /Transaction numbers are only allowed/i.test(e?.message)) {
+    if (
+      e?.code === 20 ||
+      /Transaction numbers are only allowed/i.test(e?.message)
+    ) {
       // Mongo بدون Replica Set → كمل بدون Transaction
       return await work(undefined);
     }
     throw e;
   } finally {
-    try { await session?.endSession(); } catch {}
+    try {
+      await session?.endSession();
+    } catch {}
   }
 }
 @ApiTags('Webhooks')
@@ -127,6 +139,7 @@ export class WebhooksController {
     // NEW: مجموعة القنوات
     @InjectModel(Channel.name)
     private readonly channelModel: Model<ChannelDocument>,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
   // ================= Helpers (قناة افتراضية/تحقق/إرسال) =================
@@ -143,8 +156,6 @@ export class WebhooksController {
       deletedAt: null,
     });
   }
-
- 
 
   /** تحقّق إذا البوت مفعّل على القناة الافتراضية للمزوّد */
   private async isBotEnabled(
@@ -223,24 +234,34 @@ export class WebhooksController {
     throw new Error('WhatsApp not configured');
   }
 
-  private async verifyMetaSignature(merchantId: string, req: any): Promise<boolean> {
+  private async verifyMetaSignature(
+    merchantId: string,
+    req: any,
+  ): Promise<boolean> {
     const sig = req.headers['x-hub-signature-256']; // format: sha256=...
     if (!sig || !sig.startsWith('sha256=')) return false;
 
     // جيب قناة WA Cloud الافتراضية + فكّ appSecret
-    const ch = await this.channelModel.findOne({
-      merchantId: new Types.ObjectId(merchantId),
-      provider: ChannelProvider.WHATSAPP_CLOUD,
-      isDefault: true,
-      deletedAt: null,
-    }).select('+appSecretEnc').lean();
+    const ch = await this.channelModel
+      .findOne({
+        merchantId: new Types.ObjectId(merchantId),
+        provider: ChannelProvider.WHATSAPP_CLOUD,
+        isDefault: true,
+        deletedAt: null,
+      })
+      .select('+appSecretEnc')
+      .lean();
 
-    const appSecret = ch?.appSecretEnc ? decryptSecret(ch.appSecretEnc) : undefined;
+    const appSecret = ch?.appSecretEnc
+      ? decryptSecret(ch.appSecretEnc)
+      : undefined;
     if (!appSecret || !req['rawBody']) return false;
 
     const theirs = Buffer.from(sig.split('=')[1], 'hex');
-    const ours = createHmac('sha256', appSecret).update(req['rawBody']).digest();
-    return (theirs.length === ours.length) && timingSafeEqual(theirs, ours);
+    const ours = createHmac('sha256', appSecret)
+      .update(req['rawBody'])
+      .digest();
+    return theirs.length === ours.length && timingSafeEqual(theirs, ours);
   }
 
   // ================= End Helpers =================
@@ -256,15 +277,19 @@ export class WebhooksController {
     const token = String(req.query['hub.verify_token'] || '');
     const challenge = req.query['hub.challenge'];
 
-    if (mode !== 'subscribe' || !token) return res.status(400).send('Bad Request');
+    if (mode !== 'subscribe' || !token)
+      return res.status(400).send('Bad Request');
 
     // قارن verify_token مع المخزّن (hashed)
-    const ch = await this.channelModel.findOne({
-      merchantId: new Types.ObjectId(merchantId),
-      provider: ChannelProvider.WHATSAPP_CLOUD,
-      isDefault: true,
-      deletedAt: null,
-    }).select('+verifyTokenHash').lean();
+    const ch = await this.channelModel
+      .findOne({
+        merchantId: new Types.ObjectId(merchantId),
+        provider: ChannelProvider.WHATSAPP_CLOUD,
+        isDefault: true,
+        deletedAt: null,
+      })
+      .select('+verifyTokenHash')
+      .lean();
 
     if (!ch?.verifyTokenHash) return res.status(404).send('Channel not found');
 
@@ -280,7 +305,6 @@ export class WebhooksController {
   @Public()
   @Post('incoming/:merchantId')
   @HttpCode(200)
-
   @ApiOperation({ summary: 'معالجة الرسائل الواردة من القنوات' })
   @ApiParam({ name: 'merchantId', description: 'معرّف التاجر' })
   @ApiBody({
@@ -304,20 +328,31 @@ export class WebhooksController {
     @Body() body: any,
     @Req() req: any, // نحتاجه للـ rawBody + headers
   ) {
-
+    // ✅ B1: توقيع Meta صارم - فشل التوقيع = 403
     if (req.headers['x-hub-signature-256']) {
       const ok = await this.verifyMetaSignature(merchantId, req);
-      if (!ok) return { status: 'invalid_signature' };
-    } 
+      if (!ok) {
+        throw new ForbiddenException('Invalid signature');
+      }
+    }
 
     // 1) طبّع الحمولة
     const normalized = normalizeIncomingMessage(body, merchantId);
 
-    // (اختياري) Idempotency: لو أضفت index فريد لـ sourceMessageId
-    // if (normalized?.metadata?.sourceMessageId) {
-    //   const exists = await this.messageService.existsBySourceId(normalized.metadata.sourceMessageId);
-    //   if (exists) return { status: 'duplicate_ignored' };
-    // }
+    // ✅ B4: Idempotency عام لكل مزوّد باستخدام sourceMessageId
+    if (normalized?.metadata?.sourceMessageId) {
+      const sourceId = normalized.metadata.sourceMessageId;
+      const channel = normalized.metadata?.channel || 'unknown';
+      const idempotencyKey = `idem:webhook:${channel}:${sourceId}`;
+
+      const existing = await this.cacheManager.get(idempotencyKey);
+      if (existing) {
+        return { status: 'duplicate_ignored', sourceMessageId: sourceId };
+      }
+
+      // تخزين في الكاش لمدة 24 ساعة
+      await this.cacheManager.set(idempotencyKey, true, 24 * 60 * 60 * 1000);
+    }
 
     // 2) ملفات
     if (normalized.fileId || normalized.fileUrl) {
@@ -406,13 +441,13 @@ export class WebhooksController {
           );
         });
         const uiMsg = {
-          _id: undefined,                 // لو تقدر استرجع الـ _id من service أفضل (انظر ملاحظة 2 بالأسفل)
+          _id: undefined, // لو تقدر استرجع الـ _id من service أفضل (انظر ملاحظة 2 بالأسفل)
           role: 'customer' as const,
           text: normalized.text || '[تم استقبال ملف]',
           timestamp: normalized.timestamp,
           rating: null,
           feedback: null,
-          merchantId,                     // مفيد للبث لغرفة التاجر إن أردت
+          merchantId, // مفيد للبث لغرفة التاجر إن أردت
           metadata: {
             ...normalized.metadata,
             mediaUrl: presignedUrl,
@@ -458,9 +493,9 @@ export class WebhooksController {
               },
             ],
           },
-          tx
+          tx,
         );
-      
+
         await this.outbox.enqueueEvent(
           {
             aggregateType: 'conversation',
@@ -476,12 +511,12 @@ export class WebhooksController {
             exchange: 'chat.incoming',
             routingKey: normalized.channel,
           },
-          tx as any
+          tx as any,
         );
-      
+
         return doc;
       });
-      
+
       // 6) Intents (كما هو)
       const intent = detectOrderIntent(normalized.text);
 
@@ -613,32 +648,35 @@ export class WebhooksController {
           role: normalized.role,
         };
       }
-      const last = Array.isArray(sessionDoc?.messages) && sessionDoc.messages.length
-      ? sessionDoc.messages[sessionDoc.messages.length - 1]
-      : null;
-    
-    const uiMsg = last ? {
-      _id: String(last._id),
-      role: last.role,
-      text: last.text,
-      timestamp: last.timestamp,
-      rating: last.rating ?? null,
-      feedback: last.feedback ?? null,
-      merchantId: normalized.merchantId,
-      metadata: last.metadata ?? normalized.metadata,
-    } : {
-      _id: undefined,
-      role: 'customer' as const,
-      text: normalized.text,
-      timestamp: normalized.timestamp,
-      rating: null,
-      feedback: null,
-      merchantId: normalized.merchantId,
-      metadata: normalized.metadata,
-    };
-    
-    // ✅ بث فوري للموظفين في لوحة التحكم
-    this.chatGateway.sendMessageToSession(normalized.sessionId, uiMsg);
+      const last =
+        Array.isArray(sessionDoc?.messages) && sessionDoc.messages.length
+          ? sessionDoc.messages[sessionDoc.messages.length - 1]
+          : null;
+
+      const uiMsg = last
+        ? {
+            _id: String(last._id),
+            role: last.role,
+            text: last.text,
+            timestamp: last.timestamp,
+            rating: last.rating ?? null,
+            feedback: last.feedback ?? null,
+            merchantId: normalized.merchantId,
+            metadata: last.metadata ?? normalized.metadata,
+          }
+        : {
+            _id: undefined,
+            role: 'customer' as const,
+            text: normalized.text,
+            timestamp: normalized.timestamp,
+            rating: null,
+            feedback: null,
+            merchantId: normalized.merchantId,
+            metadata: normalized.metadata,
+          };
+
+      // ✅ بث فوري للموظفين في لوحة التحكم
+      this.chatGateway.sendMessageToSession(normalized.sessionId, uiMsg);
       // 7) handover
       const messages = sessionDoc.messages;
       const lastRole = messages.length
@@ -669,13 +707,14 @@ export class WebhooksController {
           this.config.get<string>('N8N_BASE_URL')?.replace(/\/+$/, '') ||
           this.config.get<string>('N8N_BASE')?.replace(/\/+$/, '') ||
           '';
-      
+
         const pathTpl =
           this.config.get<string>('N8N_INCOMING_PATH') ||
           '/webhook/ai-agent-{merchantId}';
-      
-        const url = base + pathTpl.replace('{merchantId}', normalized.merchantId);
-      
+
+        const url =
+          base + pathTpl.replace('{merchantId}', normalized.merchantId);
+
         await axios.post(url, {
           merchantId: normalized.merchantId,
           sessionId: normalized.sessionId,
@@ -683,7 +722,6 @@ export class WebhooksController {
           text: normalized.text,
         });
       }
-      
 
       return {
         sessionId: normalized.sessionId,
@@ -691,23 +729,27 @@ export class WebhooksController {
         handoverToAgent: false,
         role: normalized.role,
       };
-      
     } catch (err: any) {
-      await this.outbox.enqueueEvent({
-        exchange: 'analytics.events',
-        routingKey: 'webhook.error',
-        eventType: 'webhook.error',
-        aggregateType: 'webhook',
-        aggregateId: merchantId,
-        payload: { merchantId, error: err?.message, stack: err?.stack?.slice(0,1000) },
-      }).catch(()=>{});
+      await this.outbox
+        .enqueueEvent({
+          exchange: 'analytics.events',
+          routingKey: 'webhook.error',
+          eventType: 'webhook.error',
+          aggregateType: 'webhook',
+          aggregateId: merchantId,
+          payload: {
+            merchantId,
+            error: err?.message,
+            stack: err?.stack?.slice(0, 1000),
+          },
+        })
+        .catch(() => {});
       console.error('Webhook error:', err);
       return {
         sessionId: normalized.sessionId,
         status: 'received_with_error',
         error: err.message,
       };
-      
     } finally {
       await tx.endSession();
     }

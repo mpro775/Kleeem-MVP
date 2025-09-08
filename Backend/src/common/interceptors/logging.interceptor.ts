@@ -10,6 +10,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import type { Request, Response } from 'express';
 import { shouldBypass } from './bypass.util';
+import { sanitizeBody } from '../utils/logger.utils';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -32,8 +33,12 @@ export class LoggingInterceptor implements NestInterceptor {
       `[${requestId}] ${method} ${url} - User-Agent: ${userAgent}`,
     );
 
+    // ✅ G1: تسجيل Body مع إخفاء البيانات الحساسة
     if (Object.keys(body || {}).length > 0) {
-      this.logger.debug(`[${requestId}] Request Body: ${JSON.stringify(body)}`);
+      const sanitizedBody = sanitizeBody(body);
+      this.logger.debug(
+        `[${requestId}] Request Body: ${JSON.stringify(sanitizedBody)}`,
+      );
     }
 
     return next.handle().pipe(

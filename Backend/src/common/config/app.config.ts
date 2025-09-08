@@ -1,48 +1,89 @@
 // src/common/config/app.config.ts
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import compression from 'compression';
+import { MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { RequestIdMiddleware } from '../middlewares/request-id.middleware';
+import { corsOptions } from './cors.config';
 
-/** تكوين التطبيق مع المكونات المشتركة */
-export class AppConfig implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(RequestIdMiddleware)
-      .forRoutes('*');
-  }
-}
-
-/** دالة مساعدة لإعداد التطبيق */
 export function setupApp(app: any) {
-  // إعداد CORS
-  app.enableCors({
-    origin: [
-      'http://localhost:5173', // الواجهة الأمامية (Vite)
-      'http://127.0.0.1:5173',
-      'https://app.kaleem-ai.com',
-      'https://kaleem-ai.com',
-    ],
-    credentials: true,
+  // CORS متقدم
+  app.enableCors(corsOptions);
+
+  // ينفع مع CDN: تضمن عدم تلوّث الكاش
+  app.use((_req, res, next) => {
+    res.vary('Origin'); // احترازيًا
+    next();
   });
 
-  // إعداد Helmet للأمان
-  app.use(require('helmet')());
+  app.use(
+    helmet({
+      // CSP للإنتاج فقط مع السماح للـ CDN المطلوب
+      contentSecurityPolicy:
+        process.env.NODE_ENV === 'production'
+          ? {
+              useDefaults: true,
+              directives: {
+                'default-src': ["'self'"],
+                'img-src': ["'self'", 'data:', 'https:'],
+                'script-src': [
+                  "'self'",
+                  "'unsafe-inline'", // مطلوب للـ Swagger
+                  'https://cdnjs.cloudflare.com', // CDN للـ Swagger
+                ],
+                'style-src': [
+                  "'self'",
+                  "'unsafe-inline'", // مطلوب للـ Swagger
+                  'https://cdnjs.cloudflare.com', // CDN للـ Swagger
+                ],
+                'font-src': ["'self'", 'https://cdnjs.cloudflare.com'],
+                'connect-src': ["'self'"],
+              },
+            }
+          : false,
+      // إعدادات الأمان المحسّنة
+      referrerPolicy: { policy: 'no-referrer' },
+      crossOriginResourcePolicy: { policy: 'same-site' },
+      hsts: {
+        maxAge: 31536000, // سنة واحدة
+        includeSubDomains: true,
+        preload: true,
+      },
+      // إطفاء x-powered-by لإخفاء معلومات الخادم
+      xPoweredBy: false,
+      // إعدادات إضافية للأمان
+      frameguard: { action: 'deny' },
+      noSniff: true,
+      xssFilter: true,
+    }),
+  );
 
-  // إعداد Rate Limiting
-  const rateLimit = require('express-rate-limit');
   app.use(
     rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 دقيقة
-      max: 500, // حد أقصى 100 طلب لكل IP
+      windowMs: 15 * 60 * 1000,
+      max: 500, // (ملاحظة: التعليق في كودك يقول 100، هنا مضبوط 500 فعليًا)
       message: {
         status: 429,
         code: 'RATE_LIMIT_EXCEEDED',
         message: 'تم تجاوز حد الطلبات، الرجاء المحاولة لاحقاً',
       },
-    })
+      standardHeaders: true,
+      legacyHeaders: false,
+    }),
   );
 
-  // إعداد Compression
-  app.use(require('compression')());
+  app.use(compression());
 
   return app;
+}
+
+/**
+ * AppConfig class that configures middleware for the application
+ * This class should be extended by AppModule to automatically apply RequestIdMiddleware
+ */
+export class AppConfig implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // تطبيق RequestIdMiddleware على جميع المسارات
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
 }

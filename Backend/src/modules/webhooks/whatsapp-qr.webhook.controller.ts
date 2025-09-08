@@ -7,7 +7,10 @@ import {
   Param,
   Post,
   Req,
+  Inject,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { Public } from 'src/common/decorators/public.decorator';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -19,6 +22,7 @@ import {
 } from '../channels/schemas/channel.schema';
 import { WebhooksController } from './webhooks.controller'; // لإعادة استخدام المعالجة الموحّدة
 import { mapEvoStatus } from '../channels/utils/evo-status.util';
+import { timingSafeEqual } from 'crypto';
 
 // src/modules/webhooks/whatsapp-qr.webhook.controller.ts
 @Public()
@@ -29,6 +33,7 @@ export class WhatsappQrWebhookController {
     private readonly channelModel: Model<ChannelDocument>,
     private readonly config: ConfigService,
     private readonly webhooksController: WebhooksController,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
   // يلتقط: POST /webhooks/whatsapp_qr/:channelId
@@ -68,12 +73,25 @@ export class WhatsappQrWebhookController {
     body: any,
     evt?: string,
   ) {
+    // ✅ B3: إلزام X-Evolution-ApiKey + timing-safe comparison
     const got = req.headers['apikey'] || req.headers['x-evolution-apikey'];
     const expected =
       this.config.get<string>('EVOLUTION_APIKEY') ||
       this.config.get<string>('EVOLUTION_API_KEY');
-    if (got && expected && got !== expected) {
-      throw new ForbiddenException('Bad apikey');
+
+    if (!got || !expected) {
+      throw new ForbiddenException('Missing API key');
+    }
+
+    // استخدام timing-safe comparison لمنع timing attacks
+    const gotBuffer = Buffer.from(got);
+    const expectedBuffer = Buffer.from(expected);
+
+    if (
+      gotBuffer.length !== expectedBuffer.length ||
+      !timingSafeEqual(gotBuffer, expectedBuffer)
+    ) {
+      throw new ForbiddenException('Invalid API key');
     }
 
     const ch = await this.channelModel.findById(channelId);
@@ -94,6 +112,24 @@ export class WhatsappQrWebhookController {
 
     // Evolution كثيرًا ما يغلف الرسالة داخل body.data .. افردها لو موجودة
     const effective = Array.isArray(body?.data?.messages) ? body.data : body;
+
+    // ✅ B3: Idempotency باستخدام messages[0].key.id
+    const messages = effective?.messages;
+    if (Array.isArray(messages) && messages.length > 0) {
+      const messageId = messages[0]?.key?.id || messages[0]?.id;
+      if (messageId) {
+        const idempotencyKey = `idem:webhook:whatsapp_qr:${messageId}`;
+        const existing = await this.cacheManager.get(idempotencyKey);
+
+        if (existing) {
+          // إرجاع نفس الاستجابة المخزنة مسبقاً
+          return { status: 'duplicate_ignored', messageId };
+        }
+
+        // تخزين في الكاش لمدة 24 ساعة
+        await this.cacheManager.set(idempotencyKey, true, 24 * 60 * 60 * 1000);
+      }
+    }
 
     // مرّر إلى المعالج الموحد (سيقوم normalize بتحويلها)
     return this.webhooksController.handleIncoming(

@@ -8,8 +8,12 @@ import {
   Query,
   Get,
   Req,
+  Res,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
+import { CookieService } from './services/cookie.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -40,7 +44,10 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 @ApiTags('المصادقة')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly cookieService: CookieService,
+  ) {}
   @Public()
   @Post('register')
   @Throttle({ default: { ttl: 60, limit: 5 } }) // 5 requests per minute
@@ -58,12 +65,40 @@ export class AuthController {
   @Public()
   @Post('login')
   @Throttle({ default: { ttl: 60, limit: 5 } }) // 5 requests per minute
-  @ApiOperation({ summary: 'تسجيل الدخول وإرجاع توكن JWT' })
+  @ApiOperation({
+    summary: 'تسجيل الدخول وإرجاع access + refresh tokens مع كوكيز آمنة',
+  })
   @ApiBody({ type: LoginDto })
   @ApiSuccessResponse(Object, 'تم تسجيل الدخول بنجاح')
   @ApiUnauthorizedResponse({ description: 'بيانات الاعتماد غير صحيحة' })
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const sessionInfo = {
+      userAgent: req.headers['user-agent'],
+      ip: req.ip,
+    };
+
+    const result = await this.authService.login(loginDto, sessionInfo);
+
+    // ✅ C4: تعيين كوكيز آمنة
+    const accessTokenTTL = 15 * 60; // 15 minutes
+    const refreshTokenTTL = 7 * 24 * 60 * 60; // 7 days
+
+    this.cookieService.setAccessTokenCookie(
+      res,
+      result.accessToken,
+      accessTokenTTL,
+    );
+    this.cookieService.setRefreshTokenCookie(
+      res,
+      result.refreshToken,
+      refreshTokenTTL,
+    );
+
+    return result;
   }
   @Public()
   @Post('resend-verification')
@@ -123,5 +158,114 @@ export class AuthController {
   async change(@Req() req: any, @Body() dto: ChangePasswordDto) {
     await this.authService.changePassword(req.user?.userId, dto);
     return { status: 'ok' };
+  }
+
+  // ✅ C2: نقاط التحكم الجديدة للتوكنات
+  @Public()
+  @Post('refresh')
+  @Throttle({ default: { ttl: 60, limit: 10 } }) // 10 requests per minute
+  @ApiOperation({
+    summary: 'تدوير التوكنات باستخدام refresh token مع تحديث الكوكيز',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        refreshToken: {
+          type: 'string',
+          description: 'Refresh token (اختياري إذا كان في الكوكيز)',
+        },
+      },
+    },
+  })
+  @ApiSuccessResponse(Object, 'تم تدوير التوكنات بنجاح')
+  @ApiUnauthorizedResponse({ description: 'Refresh token غير صالح أو منتهي' })
+  async refresh(
+    @Body('refreshToken') bodyRefreshToken: string,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const sessionInfo = {
+      userAgent: req.headers['user-agent'],
+      ip: req.ip,
+    };
+
+    // استخدام refresh token من الكوكيز أو من الـ body
+    const refreshToken = bodyRefreshToken || req.cookies?.refreshToken;
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token not provided');
+    }
+
+    const result = await this.authService.refreshTokens(
+      refreshToken,
+      sessionInfo,
+    );
+
+    // ✅ C4: تحديث الكوكيز الآمنة
+    const accessTokenTTL = 15 * 60; // 15 minutes
+    const refreshTokenTTL = 7 * 24 * 60 * 60; // 7 days
+
+    this.cookieService.setAccessTokenCookie(
+      res,
+      result.accessToken,
+      accessTokenTTL,
+    );
+    this.cookieService.setRefreshTokenCookie(
+      res,
+      result.refreshToken,
+      refreshTokenTTL,
+    );
+
+    return result;
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'تسجيل الخروج - إبطال الجلسة الحالية وحذف الكوكيز' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        refreshToken: {
+          type: 'string',
+          description: 'Refresh token للإبطال (اختياري إذا كان في الكوكيز)',
+        },
+      },
+    },
+  })
+  @ApiSuccessResponse(Object, 'تم تسجيل الخروج بنجاح')
+  async logout(
+    @Body('refreshToken') bodyRefreshToken: string,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    // استخدام refresh token من الكوكيز أو من الـ body
+    const refreshToken = bodyRefreshToken || req.cookies?.refreshToken;
+
+    if (refreshToken) {
+      await this.authService.logout(refreshToken);
+    }
+
+    // ✅ C4: حذف الكوكيز الآمنة
+    this.cookieService.clearAuthCookies(res);
+
+    return { message: 'تم تسجيل الخروج بنجاح' };
+  }
+
+  @Post('logout-all')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'تسجيل الخروج من جميع الأجهزة وحذف الكوكيز' })
+  @ApiSuccessResponse(Object, 'تم تسجيل الخروج من جميع الأجهزة بنجاح')
+  async logoutAll(
+    @CurrentUser('userId') userId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.authService.logoutAll(userId);
+
+    // ✅ C4: حذف الكوكيز الآمنة
+    this.cookieService.clearAuthCookies(res);
+
+    return { message: 'تم تسجيل الخروج من جميع الأجهزة بنجاح' };
   }
 }

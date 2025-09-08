@@ -9,6 +9,7 @@ import {
   LoggingInterceptor,
   AuthGuard,
 } from '../index';
+import { EnvironmentValidatorService } from '../services/environment-validator.service';
 
 @Global()
 @Module({
@@ -28,7 +29,7 @@ import {
       provide: APP_FILTER,
       useClass: WsAllExceptionsFilter,
     },
-    
+
     // Global Interceptors
     {
       provide: APP_INTERCEPTOR,
@@ -38,15 +39,16 @@ import {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
     },
-    
+
+    // Services
+    EnvironmentValidatorService,
+
     // Global Guards (اختياري - يمكن إزالته إذا كنت تريد تطبيقه يدوياً)
     // {
     //   provide: APP_GUARD,
     //   useClass: AuthGuard,
     // },
   ],
-  exports: [
-    JwtModule,
-  ],
+  exports: [JwtModule],
 })
 export class CommonModule {}

@@ -103,14 +103,18 @@ function attachNormalizedToResponse(
   // نكتب payload داخل data حتى كل الصفحات التي تستعمل res.data تعمل مباشرة
   (res as any).data = normalized.payload;
 }
-function collectConstraints(err: any, path = '') {
+function collectConstraints(err: any, path = "") {
   const lines: string[] = [];
   const fields: Record<string, string[]> = {};
   const arr = Array.isArray(err) ? err : [err];
 
   const walk = (node: any, basePath: string) => {
-    const prop = node?.property ? (basePath ? `${basePath}.${node.property}` : node.property) : basePath;
-    if (node?.constraints && typeof node.constraints === 'object') {
+    const prop = node?.property
+      ? basePath
+        ? `${basePath}.${node.property}`
+        : node.property
+      : basePath;
+    if (node?.constraints && typeof node.constraints === "object") {
       const msgs = Object.values(node.constraints).filter(Boolean) as string[];
       if (msgs.length) {
         if (prop) fields[prop] = (fields[prop] || []).concat(msgs);
@@ -123,43 +127,64 @@ function collectConstraints(err: any, path = '') {
   };
 
   for (const item of arr) {
-    if (typeof item === 'string') lines.push(item);
-    else if (item && typeof item === 'object') {
-      if (typeof item.message === 'string') lines.push(item.message);
+    if (typeof item === "string") lines.push(item);
+    else if (item && typeof item === "object") {
+      if (typeof item.message === "string") lines.push(item.message);
       walk(item, path);
     }
   }
   return { lines, fields };
 }
 
-function normalizeServerError(data: any, fallback = 'حدث خطأ غير متوقع') {
-  if (typeof data?.message === 'string') {
-    return { message: data.message as string, fields: undefined as Record<string, string[]> | undefined };
+function normalizeServerError(data: any, fallback = "حدث خطأ غير متوقع") {
+  if (typeof data?.message === "string") {
+    return {
+      message: data.message as string,
+      fields: undefined as Record<string, string[]> | undefined,
+    };
   }
   if (Array.isArray(data?.message)) {
     const { lines, fields } = collectConstraints(data.message);
-    const message = lines.length ? lines.join(' • ') : 'بيانات غير صحيحة - يرجى مراجعة المدخلات';
+    const message = lines.length
+      ? lines.join(" • ")
+      : "بيانات غير صحيحة - يرجى مراجعة المدخلات";
     return { message, fields: Object.keys(fields).length ? fields : undefined };
   }
-  if (typeof data?.error === 'string') return { message: data.error, fields: undefined };
-  if (typeof data === 'string') return { message: data, fields: undefined };
+  if (typeof data?.error === "string")
+    return { message: data.error, fields: undefined };
+  if (typeof data === "string") return { message: data, fields: undefined };
   return { message: fallback, fields: undefined };
 }
 
 const axiosInstance = axios.create({
   baseURL: API_BASE,
   withCredentials: false,
-  headers: {
-    Accept: "application/json, text/plain, */*",
-  },
+  headers: { Accept: "application/json, text/plain, */*" },
 });
 
 // قبل كل طلب: أضف التوكن لو وجد
 axiosInstance.interceptors.request.use((config) => {
+  // Request ID موحّد (لو الفرونت يرسل واحد، الباك إما يقبله أو ينشئ بديل)
+  const rid =
+    (globalThis.crypto?.randomUUID?.() as string | undefined) ||
+    `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  config.headers.set("X-Request-Id", rid);
+  config.headers.set("Accept-Language", navigator.language || "ar");
+  config.headers.set("X-Client", "kaleem-web");
+
+  // ⛔️ لا تضع withCredentials هنا؛ نحن على Bearer
   const token = localStorage.getItem("token");
-  if (token && config.headers) {
-    config.headers["Authorization"] = `Bearer ${token}`;
+  if (token) config.headers.set("Authorization", `Bearer ${token}`);
+
+  // ☂️ Idempotency للمسارات المعدِّلة
+  const m = (config.method || "get").toLowerCase();
+  if (["post", "put", "patch", "delete"].includes(m)) {
+    if (!config.headers.has("X-Idempotency-Key")) {
+      config.headers.set("X-Idempotency-Key", rid);
+    }
   }
+
   return config;
 });
 
@@ -191,47 +216,45 @@ axiosInstance.interceptors.response.use(
   },
   (err) => {
     const token = localStorage.getItem("token");
-  
+
     if (err.response?.status === 401 && token) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/login";
     }
-  
+
     const status = err.response?.status as number | undefined;
     const data = err.response?.data;
     const headRequestId = err.response?.headers?.["x-request-id"];
     const bodyRequestId = data?.requestId;
     const requestId = bodyRequestId || headRequestId;
-  
+
     const { message, fields } = normalizeServerError(
       data,
       err.message || "خطأ في الاتصال بالخادم"
     );
-  
+
     const code =
-      (typeof data?.code === 'string' && data.code) ||
+      (typeof data?.code === "string" && data.code) ||
       (status ? `API_${status}` : "NETWORK_ERROR");
-  
+
     const appError = new AppError({
-      message,           // دائماً string الآن
+      message, // دائماً string الآن
       status,
       code,
       requestId,
-      fields,            // Record<string, string[]> | undefined
+      fields, // Record<string, string[]> | undefined
     });
-  
+
     errorLogger.log(appError, {
       url: err.config?.url,
       method: err.config?.method,
       requestData: err.config?.data,
       responseData: data,
     });
-  
+
     return Promise.reject(appError);
   }
-  
-  
 );
 
 export default axiosInstance;

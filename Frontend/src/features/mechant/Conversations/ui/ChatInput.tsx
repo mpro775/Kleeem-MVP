@@ -26,16 +26,8 @@ import PictureAsPdfRoundedIcon from "@mui/icons-material/PictureAsPdfRounded";
 import InsertDriveFileRoundedIcon from "@mui/icons-material/InsertDriveFileRounded";
 import GraphicEqRoundedIcon from "@mui/icons-material/GraphicEqRounded";
 import EmojiPicker, { type EmojiClickData, Theme } from "emoji-picker-react";
-import twemoji from "twemoji";
 
-const EmojiText = ({ text }: { text: string }) => (
-  <span
-    dangerouslySetInnerHTML={{
-      __html: twemoji.parse(text, { folder: "svg", ext: ".svg" }),
-    }}
-    style={{ lineHeight: 1.5 }}
-  />
-);
+
 
 interface Props {
   onSend: (payload: {

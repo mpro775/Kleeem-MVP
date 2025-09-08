@@ -43,6 +43,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { toStr } from './utils/id';
 import { CreateMerchantDto } from '../merchants/dto/create-merchant.dto';
+import { TokenService } from './services/token.service';
 
 @Injectable()
 export class AuthService {
@@ -60,6 +61,7 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly businessMetrics: BusinessMetrics,
     private readonly config: ConfigService,
+    private readonly tokenService: TokenService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -121,8 +123,11 @@ export class AuthService {
       throw new InternalServerErrorException('Failed to register');
     }
   }
-  // AuthService.login(...)
-  async login(loginDto: LoginDto) {
+  // ✅ C1: AuthService.login(...) مع TokenService
+  async login(
+    loginDto: LoginDto,
+    sessionInfo?: { userAgent?: string; ip?: string },
+  ) {
     const { email, password } = loginDto;
 
     const userDoc = await this.userModel
@@ -160,14 +165,21 @@ export class AuthService {
       }
     }
 
+    // ✅ استخدام TokenService لإنشاء زوج التوكنات
     const payload = {
-      userId: userDoc._id,
+      userId: String(userDoc._id),
       role: userDoc.role,
-      merchantId: userDoc.merchantId ?? null,
+      merchantId: userDoc.merchantId ? String(userDoc.merchantId) : null,
     };
 
+    const tokens = await this.tokenService.createTokenPair(
+      payload,
+      sessionInfo,
+    );
+
     return {
-      accessToken: this.jwtService.sign(payload),
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
       user: {
         id: userDoc._id,
         name: userDoc.name,
@@ -178,6 +190,34 @@ export class AuthService {
         emailVerified: userDoc.emailVerified,
       },
     };
+  }
+
+  // ✅ C2: تدوير التوكنات
+  async refreshTokens(
+    refreshToken: string,
+    sessionInfo?: { userAgent?: string; ip?: string },
+  ) {
+    return this.tokenService.refreshTokens(refreshToken, sessionInfo);
+  }
+
+  // ✅ C2: تسجيل الخروج - إبطال الجلسة الحالية
+  async logout(refreshToken: string): Promise<{ message: string }> {
+    try {
+      const decoded = this.jwtService.decode(refreshToken) as any;
+      if (decoded?.jti) {
+        await this.tokenService.revokeRefreshToken(decoded.jti);
+      }
+      return { message: 'تم تسجيل الخروج بنجاح' };
+    } catch (error) {
+      // حتى لو فشل، نعتبره نجح
+      return { message: 'تم تسجيل الخروج بنجاح' };
+    }
+  }
+
+  // ✅ C2: تسجيل الخروج من جميع الأجهزة
+  async logoutAll(userId: string): Promise<{ message: string }> {
+    await this.tokenService.revokeAllUserSessions(userId);
+    return { message: 'تم تسجيل الخروج من جميع الأجهزة بنجاح' };
   }
 
   // auth.service.ts

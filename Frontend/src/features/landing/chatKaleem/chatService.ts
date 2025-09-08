@@ -1,8 +1,9 @@
 // src/features/landing/chatKaleem/chatService.ts
-import { io, Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
 import { fetchKleemSession } from "@/features/kaleem/api";
 import { getKleemSessionId } from "@/features/kaleem/helper";
 import type { ChatMessage } from "./types";
+import { createChatSocket } from "@/shared/lib/ws";
 
 class ChatService {
   private socket: Socket | null = null;
@@ -10,18 +11,10 @@ class ChatService {
   private onTypingCallback: ((isTyping: boolean) => void) | null = null;
 
   connect() {
-    if (this.socket) return; // منع الاتصال المتعدد
-
-    const origin =
-      import.meta.env.VITE_WS_ORIGIN ?? "https://api.kaleem-ai.com";
-    const path = import.meta.env.VITE_WS_PATH ?? "/api/kaleem/ws";
+    if (this.socket) return;
     const sessionId = getKleemSessionId();
 
-    this.socket = io(origin, {
-      path,
-      transports: ["websocket"],
-      query: { sessionId, role: "guest" },
-    });
+    this.socket = createChatSocket({ sessionId, role: "guest" });
 
     this.socket.on("connect", () => {
       console.log("Socket connected!");
@@ -40,12 +33,8 @@ class ChatService {
     });
 
     this.socket.on("typing", (p: { role: "bot" | "user" }) => {
-      if (p.role === "bot") {
-        this.onTypingCallback?.(true);
-      }
+      if (p.role === "bot") this.onTypingCallback?.(true);
     });
-
-    // يمكنك إضافة معالجة للأخطاء هنا
   }
 
   async fetchInitialMessages() {

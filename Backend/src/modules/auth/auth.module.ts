@@ -9,6 +9,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { TokenService } from './services/token.service';
+import { CookieService } from './services/cookie.service';
 
 import { UsersModule } from '../users/users.module';
 import { MerchantsModule } from '../merchants/merchants.module';
@@ -56,7 +58,7 @@ import {
     MetricsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  providers: [AuthService, JwtStrategy, TokenService, CookieService],
+  exports: [AuthService, TokenService, CookieService],
 })
 export class AuthModule {}

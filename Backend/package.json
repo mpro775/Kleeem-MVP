@@ -22,7 +22,11 @@
     "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/seed-admin.ts",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:security": "powershell -ExecutionPolicy Bypass -File test/e2e/run-security-tests.ps1",
+    "test:security:bash": "bash test/e2e/run-security-tests.sh",
+    "test:webhooks": "jest test/e2e/webhooks --verbose",
+    "test:auth": "jest test/e2e/auth --verbose"
   },
   "dependencies": {
     "@express-rate-limit/tsconfig": "^1.0.2",

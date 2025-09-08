@@ -1,6 +1,6 @@
-// useChatSocket.ts
 import { useEffect, useRef } from "react";
-import { io, Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
+import { createChatSocket, type ChatRole } from "@/shared/lib/ws";
 import type { ChatMessage } from "@/features/mechant/Conversations/type";
 
 type OnMessageHandler = (msg: ChatMessage) => void;
@@ -8,7 +8,7 @@ type OnMessageHandler = (msg: ChatMessage) => void;
 export function useChatSocket(
   sessionId: string | undefined,
   onMessage: OnMessageHandler,
-  role: "customer" | "agent", // ✅ مرّر الدور
+  role: ChatRole,
   merchantId?: string
 ) {
   const socketRef = useRef<Socket | null>(null);
@@ -21,28 +21,28 @@ export function useChatSocket(
   useEffect(() => {
     if (!sessionId) return;
 
-    const socket: Socket = io("https://api.kaleem-ai.com", {
-      path: "/api/chat", // ✅ نفس الـ path للجميع
-      transports: ["websocket"],
-      withCredentials: true,
-      query: { sessionId, role, merchantId }, // ✅ مرّر الدور الصحيح
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelayMax: 5000,
-    });
+    const socket = createChatSocket({ sessionId, role, merchantId });
 
+    // سنوحّد الاستقبال على حدث "message"
     const onMsg = (m: ChatMessage) => handlerRef.current?.(m);
 
-    socket.on("connect", () => console.log("socket.io: Connected!", socket.id));
+    socket.on("connect", () =>
+      console.log("socket.io: Connected!", (socket as any).id)
+    );
     socket.on("disconnect", () => console.log("socket.io: Disconnected!"));
     socket.on("connect_error", (e) =>
       console.warn("socket.io: connect_error", e?.message)
     );
-    socket.on("message", onMsg); // ✅ اسم الحدث الموحّد
+
+    // 🔗 دعم كلا الاسمين إن كان الباك يُرسل حدثين مختلفين
+    socket.on("message", onMsg);
+    socket.on("bot_reply", onMsg);
 
     socketRef.current = socket;
+
     return () => {
       socket.off("message", onMsg);
+      socket.off("bot_reply", onMsg);
       socket.disconnect();
       socketRef.current = null;
     };

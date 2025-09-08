@@ -71,10 +71,55 @@ import { AppService } from './app.service';
 
 @Module({
   imports: [
-    // Logger (Pino)
+    // Logger (Pino) مع Redaction للبيانات الحساسة
     LoggerModule.forRoot({
       pinoHttp: {
         level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
+        // ✅ G1: إخفاء البيانات الحساسة من السجلات
+        redact: {
+          paths: [
+            // Headers حساسة
+            'req.headers.authorization',
+            'req.headers.cookie',
+            'req.headers["x-hub-signature-256"]',
+            'req.headers["x-telegram-bot-api-secret-token"]',
+            'req.headers["x-evolution-apikey"]',
+            'req.headers.apikey',
+            'req.headers["x-timestamp"]',
+            'req.headers["x-idempotency-key"]',
+            'req.headers["set-cookie"]',
+            // Body fields حساسة
+            'req.body.password',
+            'req.body.confirmPassword',
+            'req.body.refreshToken',
+            'req.body.accessToken',
+            'req.body.token',
+            'req.body.secret',
+            'req.body.apikey',
+            'req.body.appSecret',
+            'req.body.verifyToken',
+            // Response fields حساسة
+            'res.headers["set-cookie"]',
+            'responseTime',
+          ],
+          censor: '[REDACTED]',
+        },
+        // تحسين الأداء
+        autoLogging: {
+          ignore: (req: any) => {
+            // تجاهل مسارات المراقبة والصحة
+            const ignoredRoutes = ['/metrics', '/health', '/api/health'];
+            return ignoredRoutes.some((route) => req.url === route);
+          },
+        },
+        customLogLevel: (req: any, res: any, err: any) => {
+          if (res.statusCode >= 400 && res.statusCode < 500) {
+            return 'warn';
+          } else if (res.statusCode >= 500 || err) {
+            return 'error';
+          }
+          return 'info';
+        },
       },
     }),
     ThrottlerModule.forRoot([{ ttl: 60, limit: 20 }]),

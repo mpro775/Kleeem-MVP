@@ -35,7 +35,7 @@ import type {
   ChatMessage as EntityChatMessage,
   ChannelType,
 } from "@/features/mechant/Conversations/type";
-import { useChatSocket } from "@/features/mechant/Conversations/socket/useChatSocket";
+import { useChatSocket } from "@/shared/hooks/useChatWebSocket";
 
 import Header from "@/features/mechant/Conversations/ui/Header";
 import Sidebar from "@/features/mechant/Conversations/ui/ConversationsSidebar";

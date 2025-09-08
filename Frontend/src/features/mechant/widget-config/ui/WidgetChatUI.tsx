@@ -24,14 +24,13 @@ import {
   sendMessage,
 } from "@/features/mechant/Conversations/api/messages";
 import type { ChatMessage, Role } from "@/features/mechant/Conversations/type";
-import { useChatWebSocket } from "../hooks";
-
 /* 👇 المهم: توحيد اللون + المتغيرات */
 import {
   ensureAllowedBrandHex,
   applyBrandCssVars,
 } from "@/features/shared/brandPalette";
 import Picker, { type EmojiClickData } from "emoji-picker-react";
+import { useChatSocket } from "@/shared/hooks/useChatWebSocket";
 
 type WidgetSettings = {
   merchantId: string;
@@ -132,10 +131,15 @@ export default function WidgetChatUI({
   const handleEmojiClick = useCallback((emojiData: EmojiClickData) => {
     setInput((prev) => prev + emojiData.emoji);
   }, []);
-  useChatWebSocket(sessionId, (msg) => {
-    setWaitingReply(false);
-    setMessages((prev) => [...prev, msg]);
-  });
+  useChatSocket(
+    sessionId,
+    (msg: ChatMessage) => {
+      setWaitingReply(false);
+      setMessages((prev) => [...prev, msg]);
+    },
+    "customer",
+    settings.merchantId
+  );
 
   useEffect(() => {
     let mounted = true;
