@@ -1,0 +1,74 @@
+{
+  "products": {
+    "errors": {
+      "notFound": "Product not found",
+      "outOfStock": "Product is currently out of stock",
+      "invalidPrice": "Invalid price",
+      "duplicateName": "Product name already exists",
+      "invalidCategory": "Invalid category",
+      "insufficientStock": "Insufficient stock quantity",
+      "invalidVariant": "Invalid variant",
+      "maxVariantsExceeded": "Maximum variants limit exceeded"
+    },
+    "messages": {
+      "created": "Product created successfully",
+      "updated": "Product updated successfully",
+      "deleted": "Product deleted successfully",
+      "activated": "Product activated successfully",
+      "deactivated": "Product deactivated successfully",
+      "stockUpdated": "Stock updated successfully",
+      "priceUpdated": "Price updated successfully",
+      "configSaved": "Product configuration saved successfully",
+      "imagesUploaded": "Images uploaded successfully",
+      "availabilityUpdated": "Product availability updated successfully"
+    },
+    "operations": {
+      "create": {
+        "summary": "Create new product (for merchant)",
+        "description": "Create a new product in the system"
+      },
+      "update": {
+        "summary": "Update product (owner only)",
+        "description": "Update the specified product details"
+      },
+      "delete": {
+        "summary": "Delete product",
+        "description": "Permanently delete the product from the system"
+      },
+      "get": {
+        "summary": "Get single product by ID",
+        "description": "Get details of the specified product"
+      },
+      "list": {
+        "summary": "Get products with cursor pagination",
+        "description": "Get list of products with pagination info"
+      },
+      "search": {
+        "summary": "Search products",
+        "description": "Search products based on text query"
+      },
+      "setup": {
+        "summary": "Setup product configuration for merchant",
+        "description": "Setup basic product settings for merchant"
+      },
+      "upload": {
+        "summary": "Upload product images",
+        "description": "Upload images for specified product"
+      },
+      "availability": {
+        "summary": "Update product availability",
+        "description": "Update product availability status"
+      }
+    },
+    "fields": {
+      "name": "Product name",
+      "description": "Product description",
+      "price": "Price",
+      "category": "Category",
+      "stock": "Stock",
+      "sku": "SKU",
+      "images": "Images",
+      "variants": "Variants"
+    }
+  }
+}

@@ -19,4 +19,4 @@ storage:
       path: /var/tempo/blocks
 compactor:
   compaction:
-    block_retention: 48h
+    block_retention: 168h

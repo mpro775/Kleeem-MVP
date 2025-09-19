@@ -1,0 +1,103 @@
+{
+  "merchants": {
+    "errors": {
+      "notFound": "Merchant not found",
+      "invalidSlug": "Invalid slug",
+      "fileNotSupported": "Image format not supported (PNG/JPG/WEBP)",
+      "fileTooLarge": "Maximum size is 2MB",
+      "noFileAttached": "No file attached",
+      "unauthorized": "Unauthorized",
+      "subscriptionExpired": "Subscription expired",
+      "insufficientPermissions": "Insufficient permissions",
+      "invalidData": "Invalid data",
+      "alreadyExists": "Merchant already exists"
+    },
+    "messages": {
+      "created": "Merchant created successfully",
+      "updated": "Merchant updated successfully",
+      "deleted": "Merchant deleted successfully",
+      "logoUploaded": "Logo uploaded successfully",
+      "subscriptionValid": "Subscription is valid",
+      "softDeleted": "Merchant soft deleted",
+      "restored": "Merchant restored",
+      "permanentlyDeleted": "Merchant permanently deleted"
+    },
+    "operations": {
+      "create": {
+        "summary": "Create new merchant",
+        "description": "Create a new merchant with initial settings"
+      },
+      "update": {
+        "summary": "Update merchant data",
+        "description": "Update merchant data completely"
+      },
+      "delete": {
+        "summary": "Soft delete merchant",
+        "description": "Soft delete merchant (disable + mark as deleted)"
+      },
+      "restore": {
+        "summary": "Restore merchant",
+        "description": "Restore merchant after soft delete"
+      },
+      "permanentDelete": {
+        "summary": "Permanent delete",
+        "description": "Permanent delete + complete cleanup (admin only)"
+      },
+      "list": {
+        "summary": "Get all merchants",
+        "description": "Get list of all merchants"
+      },
+      "get": {
+        "summary": "Get single merchant",
+        "description": "Get single merchant data by ID"
+      },
+      "checklist": {
+        "summary": "Checklist items",
+        "description": "Get checklist items"
+      },
+      "uploadLogo": {
+        "summary": "Upload merchant logo",
+        "description": "Upload merchant logo file (MinIO + soft delete)"
+      },
+      "verifySubscription": {
+        "summary": "Verify subscription",
+        "description": "Verify current subscription validity"
+      },
+      "skipChecklistItem": {
+        "summary": "Skip checklist item",
+        "description": "Skip checklist item"
+      }
+    },
+    "fields": {
+      "name": "Merchant name",
+      "slug": "Slug",
+      "logo": "Logo",
+      "description": "Description",
+      "phone": "Phone number",
+      "email": "Email",
+      "address": "Address",
+      "subscription": "Subscription",
+      "categories": "Categories",
+      "workingHours": "Working hours",
+      "socialLinks": "Social media links",
+      "returnPolicy": "Return policy",
+      "exchangePolicy": "Exchange policy",
+      "shippingPolicy": "Shipping policy"
+    },
+    "checklist": {
+      "items": {
+        "profile": "Complete profile",
+        "logo": "Upload merchant logo",
+        "categories": "Define product categories",
+        "workingHours": "Set working hours",
+        "socialLinks": "Add social media links",
+        "policies": "Add policies",
+        "subscription": "Activate subscription"
+      },
+      "messages": {
+        "itemSkipped": "Item skipped successfully",
+        "itemCompleted": "Item completed successfully"
+      }
+    }
+  }
+}

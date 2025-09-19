@@ -1,0 +1,55 @@
+{
+  "operations": {
+    "dashboard": {
+      "summary": "لوحة التحليلات",
+      "description": "عرض لوحة التحليلات الرئيسية مع المقاييس الأساسية"
+    },
+    "metrics": {
+      "summary": "المقاييس التفصيلية",
+      "description": "عرض مقاييس الأداء المفصلة"
+    },
+    "reports": {
+      "summary": "التقارير",
+      "description": "إنشاء وتصدير التقارير"
+    },
+    "trends": {
+      "summary": "الاتجاهات",
+      "description": "تحليل الاتجاهات والتغييرات"
+    },
+    "performance": {
+      "summary": "الأداء",
+      "description": "مقاييس أداء النظام"
+    },
+    "export": {
+      "summary": "تصدير البيانات",
+      "description": "تصدير بيانات التحليلات بتنسيق CSV/Excel"
+    }
+  },
+  "responses": {
+    "success": {
+      "generated": "تم إنشاء التقرير بنجاح",
+      "exported": "تم تصدير البيانات بنجاح",
+      "found": "تم العثور على البيانات"
+    },
+    "error": {
+      "noData": "لا توجد بيانات متاحة",
+      "invalidDateRange": "نطاق التاريخ غير صالح",
+      "exportFailed": "فشل في تصدير البيانات"
+    }
+  },
+  "fields": {
+    "dateRange": "نطاق التاريخ",
+    "metrics": "المقاييس",
+    "reports": "التقارير",
+    "exportFormat": "تنسيق التصدير",
+    "period": "الفترة الزمنية"
+  },
+  "metrics": {
+    "totalOrders": "إجمالي الطلبات",
+    "totalRevenue": "إجمالي الإيرادات",
+    "totalCustomers": "إجمالي العملاء",
+    "conversionRate": "معدل التحويل",
+    "averageOrderValue": "متوسط قيمة الطلب",
+    "activeUsers": "المستخدمين النشطين"
+  }
+}

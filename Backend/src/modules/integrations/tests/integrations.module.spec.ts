@@ -4,11 +4,7 @@ import { HttpModule } from '@nestjs/axios';
 import { IntegrationsModule } from '../integrations.module';
 import { IntegrationsController } from '../integrations.controller';
 import { EvolutionService } from '../evolution.service';
-import { Integration, IntegrationSchema } from '../schemas/integration.schema';
-import {
-  Merchant,
-  MerchantSchema,
-} from '../../merchants/schemas/merchant.schema';
+
 import { MerchantsModule } from '../../merchants/merchants.module';
 import { SallaModule } from '../salla/salla.module';
 import { ZidModule } from '../zid/zid.module';

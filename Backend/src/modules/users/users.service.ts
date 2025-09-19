@@ -1,200 +1,120 @@
-// src/modules/users/users.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { UserNotFoundError } from '../../common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { User, UserDocument } from './schemas/user.schema';
+import { Injectable, Inject } from '@nestjs/common';
+import { Types } from 'mongoose';
+import { UsersRepository } from './repositories/users.repository';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { NotificationsPrefsDto } from './dto/notifications-prefs.dto';
 import { GetUsersDto } from './dto/get-users.dto';
-import { PaginationService } from '../../common/services/pagination.service';
 import { PaginationResult } from '../../common/dto/pagination.dto';
+import { UserNotFoundError } from '../../common/errors/business-errors';
+import { TranslationService } from '../../common/services/translation.service';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private paginationService: PaginationService,
+    @Inject('UsersRepository')
+    private readonly repo: UsersRepository,
+    private readonly translationService: TranslationService,
   ) {}
 
   async create(createDto: CreateUserDto) {
-    const user = new this.userModel(createDto);
-    return await user.save();
+    return this.repo.create(createDto);
   }
 
   async findAll() {
-    return await this.userModel.find().exec();
+    return this.repo.findAll();
   }
 
   async findOne(id: string): Promise<CreateUserDto> {
-    const user = await this.userModel.findById(id).lean();
+    const _id = new Types.ObjectId(id);
+    const user = await this.repo.findByIdLean(_id);
     if (!user) throw new UserNotFoundError(id);
 
-    // امكانيّة 1: استخدام toHexString() على ObjectId
-    const objectId = user._id as Types.ObjectId;
-
+    // خرّج DTO موحّد (للواجهات التي تتوقع CreateUserDto)
     const dto: CreateUserDto = {
-      id: objectId.toHexString(),
+      id: _id.toHexString(),
       email: user.email,
       name: user.name,
-      merchantId: user.merchantId?.toString() ?? null,
+      merchantId: user.merchantId?.toString?.() ?? null,
       firstLogin: user.firstLogin,
       role: user.role,
-      phone: user.phone, // إذا أضفت phone في DTO
+      phone: user.phone,
     };
-
     return dto;
   }
 
   async update(id: string, updateDto: UpdateUserDto) {
-    const user = await this.userModel.findByIdAndUpdate(id, updateDto, {
-      new: true,
-    });
-    if (!user) throw new UserNotFoundError(id);
-    return user;
+    const _id = new Types.ObjectId(id);
+    const updated = await this.repo.updateById(_id, updateDto);
+    if (!updated) throw new UserNotFoundError(id);
+    return updated;
   }
 
   async remove(id: string) {
-    const user = await this.userModel.findByIdAndUpdate(
-      id,
-      { deletedAt: new Date(), active: false },
-      { new: true },
-    );
+    const _id = new Types.ObjectId(id);
+    const user = await this.repo.softDeleteById(_id);
     if (!user) throw new UserNotFoundError(id);
-
-    // TODO: جدولة حذف صلب بعد 30 يوم (job/queue) + حذف RefreshTokens/جلسات
-    return { message: 'User deactivated (soft deleted)' };
-  }
-
-  async setFirstLoginFalse(userId: string): Promise<void> {
-    const updated = await this.userModel.findByIdAndUpdate(
-      userId,
-      { firstLogin: false },
-      { new: true },
-    );
-    if (!updated) {
-      throw new UserNotFoundError(userId);
-    }
-  }
-  async getNotificationsPrefs(id: string) {
-    const user = await this.userModel.findById(id).lean();
-    if (!user) throw new NotFoundException('User not found');
-    return (
-      user.notificationsPrefs ?? {
-        channels: {
-          inApp: true,
-          email: true,
-          telegram: false,
-          whatsapp: false,
-        },
-        topics: {
-          syncFailed: true,
-          syncCompleted: true,
-          webhookFailed: true,
-          embeddingsCompleted: true,
-          missingResponsesDigest: 'daily',
-        },
-        quietHours: {
-          enabled: false,
-          start: '22:00',
-          end: '08:00',
-          timezone: 'Asia/Aden',
-        },
-      }
-    );
-  }
-
-  async updateNotificationsPrefs(id: string, dto: NotificationsPrefsDto) {
-    const user = await this.userModel
-      .findByIdAndUpdate(
-        id,
-        { notificationsPrefs: dto },
-        { new: true, projection: { notificationsPrefs: 1 } },
-      )
-      .lean();
-    if (!user) throw new NotFoundException('User not found');
-    return user.notificationsPrefs;
-  }
-
-  // ✅ طرق جديدة للـ Cursor Pagination
-
-  /**
-   * جلب المستخدمين مع cursor pagination
-   */
-  async getUsers(dto: GetUsersDto): Promise<PaginationResult<any>> {
-    // بناء الـ filter
-    const baseFilter: any = {};
-
-    if (dto.search) {
-      baseFilter.$text = { $search: dto.search };
-    }
-
-    if (dto.role) {
-      baseFilter.role = dto.role;
-    }
-
-    if (dto.merchantId) {
-      baseFilter.merchantId = new Types.ObjectId(dto.merchantId);
-    }
-
-    if (dto.active !== undefined) {
-      baseFilter.active = dto.active;
-    }
-
-    if (dto.emailVerified !== undefined) {
-      baseFilter.emailVerified = dto.emailVerified;
-    }
-
-    // تحديد حقل الترتيب
-    const sortField = dto.sortBy || 'createdAt';
-    const sortOrder = dto.sortOrder === 'asc' ? 1 : -1;
-
-    // استخدام خدمة الـ pagination
-    const result = await this.paginationService.paginate(
-      this.userModel,
-      dto,
-      baseFilter,
-      {
-        sortField,
-        sortOrder,
-        select: '-password -__v', // إخفاء كلمة المرور
-        lean: true,
-      },
-    );
-
-    // معالجة النتائج
-    const processedItems = result.items.map((item: any) => ({
-      ...item,
-      _id: item._id?.toString(),
-      merchantId: item.merchantId?.toString(),
-    }));
-
+    // TODO: جدولة حذف صلب بعد 30 يوم + تنظيف الجلسات/الرموز
     return {
-      ...result,
-      items: processedItems,
+      message: this.translationService.translate('users.messages.userDeleted'),
     };
   }
 
-  /**
-   * البحث في المستخدمين مع cursor pagination
-   */
+  async setFirstLoginFalse(userId: string): Promise<void> {
+    const _id = new Types.ObjectId(userId);
+    const updated = await this.repo.setFirstLoginFalse(_id);
+    if (!updated) throw new UserNotFoundError(userId);
+  }
+
+  private defaultPrefs() {
+    return {
+      channels: { inApp: true, email: true, telegram: false, whatsapp: false },
+      topics: {
+        syncFailed: true,
+        syncCompleted: true,
+        webhookFailed: true,
+        embeddingsCompleted: true,
+        missingResponsesDigest: 'daily',
+      },
+      quietHours: {
+        enabled: false,
+        start: '22:00',
+        end: '08:00',
+        timezone: 'Asia/Aden',
+      },
+    };
+  }
+
+  async getNotificationsPrefs(id: string) {
+    const _id = new Types.ObjectId(id);
+    const prefs = await this.repo.getNotificationsPrefs(_id);
+    if (!prefs) return this.defaultPrefs();
+    return prefs;
+  }
+
+  async updateNotificationsPrefs(id: string, dto: NotificationsPrefsDto) {
+    const _id = new Types.ObjectId(id);
+    const prefs = await this.repo.updateNotificationsPrefs(_id, dto);
+    if (!prefs) throw new UserNotFoundError(id);
+    return prefs;
+  }
+
+  // ===== Cursor Pagination =====
+  async getUsers(dto: GetUsersDto): Promise<PaginationResult<any>> {
+    return this.repo.list(dto);
+  }
+
   async searchUsers(
     query: string,
     dto: GetUsersDto,
   ): Promise<PaginationResult<any>> {
-    const searchDto = { ...dto, search: query };
-    return this.getUsers(searchDto);
+    return this.repo.list({ ...dto, search: query });
   }
 
-  /**
-   * جلب المستخدمين حسب التاجر
-   */
   async getUsersByMerchant(
     merchantId: string,
     dto: GetUsersDto,
   ): Promise<PaginationResult<any>> {
-    const merchantDto = { ...dto, merchantId };
-    return this.getUsers(merchantDto);
+    return this.repo.list({ ...dto, merchantId });
   }
 }

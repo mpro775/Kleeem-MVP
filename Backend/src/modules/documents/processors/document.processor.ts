@@ -117,7 +117,7 @@ export class DocumentProcessor {
         );
         try {
           // 6. الحصول على الـ embedding لكل قطعة
-          const embedding = await this.vectorService.embed(chunk);
+          const embedding = await this.vectorService.embedText(chunk);
           this.logger.log(`✅ Embedding generated for chunk ${i + 1}`);
 
           // 7. إنشاء الـ payload

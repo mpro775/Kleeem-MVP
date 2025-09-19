@@ -1,0 +1,122 @@
+{
+  "errors": {
+    "general": {
+      "internalServerError": "خطأ داخلي في الخادم",
+      "badRequest": "طلب غير صحيح",
+      "unauthorized": "غير مصرح لك بالوصول",
+      "forbidden": "ممنوع",
+      "notFound": "غير موجود",
+      "methodNotAllowed": "الطريقة غير مسموحة",
+      "conflict": "تعارض في البيانات",
+      "unprocessableEntity": "لا يمكن معالجة البيانات",
+      "tooManyRequests": "تم تجاوز الحد المسموح من الطلبات",
+      "serviceUnavailable": "الخدمة غير متاحة حالياً",
+      "gatewayTimeout": "انتهت مهلة البوابة"
+    },
+
+    "business": {
+      "insufficientPermissions": "صلاحيات غير كافية",
+      "resourceNotFound": "المورد غير موجود",
+      "resourceAlreadyExists": "المورد موجود بالفعل",
+      "invalidOperation": "عملية غير صحيحة",
+      "operationFailed": "فشلت العملية",
+      "quotaExceeded": "تم تجاوز الحد المسموح",
+      "rateLimitExceeded": "تم تجاوز الحد المسموح من الطلبات",
+      "maintenanceMode": "النظام في وضع الصيانة"
+    },
+
+    "validation": {
+      "invalidInput": "البيانات المدخلة غير صحيحة",
+      "missingRequiredFields": "حقول مطلوبة مفقودة",
+      "invalidFormat": "تنسيق البيانات غير صحيح",
+      "fieldTooLong": "الحقل طويل جداً",
+      "fieldTooShort": "الحقل قصير جداً",
+      "invalidValue": "قيمة غير صحيحة",
+      "duplicateEntry": "مدخل مكرر"
+    },
+
+    "authentication": {
+      "invalidCredentials": "بيانات الاعتماد غير صحيحة",
+      "tokenExpired": "انتهت صلاحية الرمز المميز",
+      "tokenInvalid": "الرمز المميز غير صحيح",
+      "accountLocked": "الحساب مقفل",
+      "accountDisabled": "الحساب معطل",
+      "passwordExpired": "انتهت صلاحية كلمة المرور",
+      "sessionExpired": "انتهت صلاحية الجلسة",
+      "invalidSession": "جلسة غير صحيحة",
+      "tooManyFailedAttempts": "عدد كبير من المحاولات الفاشلة"
+    },
+
+    "authorization": {
+      "accessDenied": "تم رفض الوصول",
+      "insufficientPrivileges": "صلاحيات غير كافية",
+      "roleRequired": "مطلوب دور معين",
+      "permissionDenied": "تم رفض الإذن",
+      "scopeNotAllowed": "النطاق غير مسموح",
+      "resourceAccessDenied": "تم رفض الوصول للمورد"
+    },
+
+    "system": {
+      "databaseError": "خطأ في قاعدة البيانات",
+      "cacheError": "خطأ في نظام التخزين المؤقت",
+      "queueError": "خطأ في نظام الطوابير",
+      "storageError": "خطأ في نظام التخزين",
+      "networkError": "خطأ في الشبكة",
+      "timeoutError": "انتهت المهلة الزمنية",
+      "configurationError": "خطأ في التكوين",
+      "dependencyError": "خطأ في التبعيات"
+    },
+
+    "external": {
+      "apiError": "خطأ في API خارجي",
+      "webhookError": "خطأ في webhook",
+      "integrationError": "خطأ في التكامل",
+      "paymentError": "خطأ في الدفع",
+      "smsError": "خطأ في إرسال الرسائل النصية",
+      "emailError": "خطأ في إرسال البريد الإلكتروني",
+      "thirdPartyError": "خطأ في خدمة طرف ثالث",
+      "telegramApiError": "خطأ في API تيليجرام",
+      "whatsappApiError": "خطأ في API واتساب",
+      "emailSendFailed": "فشل في إرسال البريد الإلكتروني",
+      "notificationSendFailed": "فشل في إرسال الإشعار"
+    },
+
+    "file": {
+      "uploadFailed": "فشل في رفع الملف",
+      "fileNotFound": "الملف غير موجود",
+      "fileTooLarge": "الملف كبير جداً",
+      "invalidFileType": "نوع الملف غير صحيح",
+      "fileCorrupted": "الملف تالف",
+      "storageLimitExceeded": "تم تجاوز حد التخزين",
+      "fileAccessDenied": "تم رفض الوصول للملف"
+    },
+
+    "network": {
+      "connectionFailed": "فشل في الاتصال",
+      "dnsError": "خطأ في DNS",
+      "sslError": "خطأ في SSL",
+      "certificateError": "خطأ في الشهادة",
+      "proxyError": "خطأ في البروكسي",
+      "firewallError": "خطأ في جدار الحماية",
+      "vpnError": "خطأ في VPN"
+    },
+
+    "performance": {
+      "slowResponse": "استجابة بطيئة",
+      "highLatency": "تأخير عالي",
+      "memoryError": "خطأ في الذاكرة",
+      "cpuError": "خطأ في المعالج",
+      "diskError": "خطأ في القرص",
+      "loadError": "خطأ في الحمل",
+      "resourceExhausted": "تم استنفاد الموارد"
+    },
+
+    "userFriendly": {
+      "somethingWentWrong": "حدث خطأ ما، يرجى المحاولة لاحقاً",
+      "pleaseTryAgain": "يرجى المحاولة مرة أخرى",
+      "contactSupport": "يرجى الاتصال بالدعم الفني",
+      "serviceMaintenance": "الخدمة في الصيانة حالياً",
+      "temporaryIssue": "مشكلة مؤقتة، سيتم حلها قريباً"
+    }
+  }
+}

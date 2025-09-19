@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # ===================== API (تطوير) =====================
+  api:
+    # لو عندك Proxy قدّامه، اتركه. وإلا اترك المنفذ كما هو.
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+      # استخدم Mailpit في التطوير
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_SECURE: 'false'
+    # للتطوير قد تحتاج الكتابة على النظام
+    read_only: false
+    # (اختياري) ماب الكود الحي - فقط إذا Dockerfile عندك يدعم start:dev
+    # volumes:
+    #   - ./:/app
+    # command: npm run start:dev
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  # ===================== MongoDB (فتح منفذ محلي) =====================
+  mongo:
+    ports:
+      - '127.0.0.1:27017:27017'
+
+  # ===================== Redis (فتح منفذ محلي) =====================
+  redis:
+    ports:
+      - '127.0.0.1:6379:6379'
+
+  # ===================== RabbitMQ (لوحة الإدارة + AMQP محليًا) =====================
+  rabbitmq:
+    ports:
+      - '127.0.0.1:5672:5672' # AMQP
+      - '127.0.0.1:15672:15672' # Management UI
+      - '127.0.0.1:15692:15692' # Prometheus metrics
+
+  # ===================== Mongo Express (Dev فقط) =====================
+  mongo-express:
+    image: mongo-express:latest
+    container_name: kaleem-mongo-express-dev
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+      ME_CONFIG_BASICAUTH_USERNAME: ${DEV_UI_USER:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${DEV_UI_PASS:-admin}
+    ports:
+      - '127.0.0.1:8081:8081'
+    networks: [kaleem-net]
+
+  # ===================== Redis Commander (Dev فقط) =====================
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: kaleem-redis-commander-dev
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      - HTTP_USER=${DEV_UI_USER:-admin}
+      - HTTP_PASSWORD=${DEV_UI_PASS:-admin}
+      - ADDRESS=0.0.0.0
+      - PORT=8081
+    depends_on:
+      - redis
+    ports:
+      - '127.0.0.1:8082:8081'
+    networks: [kaleem-net]
+    restart: unless-stopped
+
+  # ===================== Mailpit (SMTP وهمي + UI) =====================
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: kaleem-mailpit
+    ports:
+      - '127.0.0.1:1025:1025' # SMTP
+      - '127.0.0.1:8025:8025' # UI
+    networks: [kaleem-net]
+    restart: unless-stopped

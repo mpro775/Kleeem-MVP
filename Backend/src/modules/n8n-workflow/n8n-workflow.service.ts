@@ -1,6 +1,4 @@
-﻿// src/modules/n8n-workflow/n8n-workflow.service.ts
-
-import {
+﻿import {
   Injectable,
   HttpException,
   HttpStatus,
@@ -8,206 +6,127 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import axios, { AxiosInstance } from 'axios';
 
 import templateJson from './workflow-template.json';
 
 import { WorkflowHistoryService } from '../workflow-history/workflow-history.service';
 import { MerchantsService } from '../merchants/merchants.service';
+import { N8N_CLIENT } from './tokens';
+import {
+  N8nClientRepository,
+  WorkflowCreatePayload,
+} from './repositories/n8n-client.repository';
+import { WorkflowDefinition } from './types';
 
 function setWebhookPath(raw: any, merchantId: string) {
   const hook = Array.isArray(raw?.nodes)
     ? raw.nodes.find((n: any) => n?.type === 'n8n-nodes-base.webhook')
     : undefined;
   if (hook?.parameters) {
-    hook.parameters.path = `ai-agent-${merchantId}`; // ظ…ط³ط§ط± ظپط±ظٹط¯ ظ„ظƒظ„ طھط§ط¬ط±
+    hook.parameters.path = `ai-agent-${merchantId}`;
   }
-  // ظ„ط§ طھط±ط³ظگظ„ webhookId ط¥ط·ظ„ط§ظ‚ظ‹ط§ (sanitizeTemplate ظٹطھظˆظ„ظ‰ ط¹ط¯ظ… ظ†ط³ط®ظ‡)
 }
 
-/**
- * ط§ظ„ظ‡ظٹظƒظ„ ط§ظ„ظƒط§ظ…ظ„ ط§ظ„ط°ظٹ ظٹط¹ظٹط¯ظ‡ n8n ط¹ظ†ط¯ GET /workflows/:id
- */
-export interface WorkflowDefinition {
-  id?: string;
-  name: string;
-  nodes: Array<{
-    name: string;
-    type: string;
-    typeVersion: number;
-    position: [number, number];
-    parameters: Record<string, unknown>;
-    credentials?: Record<string, { name: string }>;
-  }>;
-  connections: Record<string, unknown>;
-  active: boolean;
-  settings: Record<string, unknown>;
-  pinData: Record<string, unknown>;
-  // ظ‚ط¯ ظٹط­طھظˆظٹ ط¹ظ„ظ‰ ط­ظ‚ظˆظ„ ط£ط®ط±ظ‰ ظ…ط«ظ„ 'createdAt' ظˆ 'updatedAt'طŒ ظٹظ…ظƒظ†ظƒ ط¥ط¶ط§ظپطھظ‡ط§ ط¥ط°ط§ ط§ط³طھط¹ظ…ظ„طھظ‡ط§
-}
+/** تنظيف قالب الـ JSON قبل الإرسال إلى n8n */
+function sanitizeTemplate(raw: unknown): WorkflowCreatePayload {
+  type NodeDef = WorkflowCreatePayload['nodes'][number];
 
-/**
- * ط§ظ„ظ‡ظٹظƒظ„ ط§ظ„ظ…ط³ظ…ظˆط­ ط¨ظ‡ ط¹ظ†ط¯ POST /workflows
- */
-interface WorkflowCreatePayload {
-  name: string;
-  nodes: Array<{
-    name: string;
-    type: string;
-    typeVersion: number;
-    position: [number, number];
-    parameters: Record<string, unknown>;
-    credentials?: Record<string, { name: string }>;
-  }>;
-  connections: Record<string, unknown>;
-  active?: boolean;
-  settings?: Record<string, unknown>;
-  staticData?: Record<string, unknown>;
+  const isObj = (v: unknown): v is Record<string, unknown> =>
+    typeof v === 'object' && v !== null && !Array.isArray(v);
+  const isStr = (v: unknown): v is string => typeof v === 'string';
+  const isNum = (v: unknown): v is number =>
+    typeof v === 'number' && Number.isFinite(v);
+  const isPos = (v: unknown): v is [number, number] =>
+    Array.isArray(v) && v.length === 2 && isNum(v[0]) && isNum(v[1]);
+  const asRecord = (v: unknown): Record<string, unknown> => (isObj(v) ? v : {});
+  const get = (o: unknown, k: string): unknown => (isObj(o) ? o[k] : undefined);
+  const isCred = (v: unknown): v is { name: string } =>
+    isObj(v) && isStr(v.name);
+
+  const toNodeDef = (rawNode: unknown): NodeDef | null => {
+    if (!isObj(rawNode)) return null;
+
+    const nameRaw = get(rawNode, 'name');
+    const typeRaw = get(rawNode, 'type');
+    const verRaw = get(rawNode, 'typeVersion');
+
+    if (!isStr(nameRaw) || !isStr(typeRaw) || !isNum(verRaw)) return null;
+
+    const posRaw = get(rawNode, 'position');
+    const parametersRaw = get(rawNode, 'parameters');
+    const credsRaw = get(rawNode, 'credentials');
+
+    const position: [number, number] = isPos(posRaw) ? posRaw : [0, 0];
+    const parameters: Record<string, unknown> = asRecord(parametersRaw);
+
+    let credentials: Record<string, { name: string }> | undefined;
+    if (isObj(credsRaw)) {
+      const entries = Object.entries(credsRaw)
+        .filter(([, v]) => isCred(v))
+        .map(([k, v]) => [k, { name: (v as { name: string }).name }]);
+      if (entries.length) credentials = Object.fromEntries(entries);
+    }
+
+    return {
+      name: nameRaw,
+      type: typeRaw,
+      typeVersion: verRaw,
+      position,
+      parameters,
+      ...(credentials && { credentials }),
+    };
+  };
+
+  const nameVal = get(raw, 'name');
+  const nodesVal = get(raw, 'nodes');
+  const connectionsVal = get(raw, 'connections');
+  const settingsVal = get(raw, 'settings');
+
+  const name = isStr(nameVal) ? nameVal : 'Untitled Workflow';
+  const nodes: NodeDef[] = Array.isArray(nodesVal)
+    ? nodesVal.map(toNodeDef).filter((n): n is NodeDef => n !== null)
+    : [];
+  const connections: Record<string, unknown> = asRecord(connectionsVal);
+  const settings: Record<string, unknown> | undefined = isObj(settingsVal)
+    ? settingsVal
+    : undefined;
+
+  return { name, nodes, connections, ...(settings && { settings }) };
 }
 
 @Injectable()
 export class N8nWorkflowService {
-  private api: AxiosInstance;
   private readonly logger = new Logger(N8nWorkflowService.name);
 
   constructor(
     private readonly history: WorkflowHistoryService,
     @Inject(forwardRef(() => MerchantsService))
     private readonly merchants: MerchantsService,
-  ) {
-    // const keyName = 'X-N8N-API-KEY';
-    // const apiKey =
-    //   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4N2M4NjU2OS01ZGFmLTQyNjYtOTVhYy04OTQxY2U1YWVhZTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzU1MTk0MjE3LCJleHAiOjE3NTc3MzYwMDB9.LEFrlXhDS6E1Urrst5GMy63ebz4ZaeMP7RNylkk_Rlk';
-    // const baseUrl = 'https://n8n.kaleem-ai.com'.replace(/\/+$/, '');
-    const keyName = 'X-N8N-API-KEY';
-    const apiKey = process.env.N8N_API_KEY!;
-    const baseUrl = (
-      process.env.N8N_API_URL || 'https://n8n.kaleem-ai.com'
-    ).replace(/\/+$/, '');
-
-    this.logger.log(`[n8n.baseURL] = ${baseUrl}`);
-    this.logger.log(`[n8n.header]  = ${keyName}: ${apiKey}`);
-
-    this.api = axios.create({
-      baseURL: `${baseUrl}`,
-      headers: { [keyName]: apiKey },
-      timeout: 5000,
-    });
-  }
+    @Inject(N8N_CLIENT)
+    private readonly n8n: N8nClientRepository,
+  ) {}
 
   private wrapError(err: any, action: string): never {
-    this.logger.error(`n8n API ${action} raw error`, {
-      status: err.response?.status,
-      data: err.response?.data,
-      msg: err.message,
-    });
-    const status = err.response?.status || HttpStatus.INTERNAL_SERVER_ERROR;
-    const message =
-      err.response?.data?.message || err.message || 'Unknown error';
+    // أخلي الرسالة موحدة كما كانت
+    const status =
+      err?.status ?? err?.response?.status ?? HttpStatus.INTERNAL_SERVER_ERROR;
+    const message = err?.message ?? 'Unknown error';
     throw new HttpException(`n8n API ${action} failed: ${message}`, status);
   }
 
-  /** ظ†ط¸ظ‘ظپ ط§ظ„ظ‚ط§ظ„ط¨ ظ…ظ† ط§ظ„ط­ظ‚ظˆظ„ ط؛ظٹط± ط§ظ„ظ…ط¯ط¹ظˆظ…ط© */
-  private sanitizeTemplate(raw: unknown): WorkflowCreatePayload {
-    // ---------- helpers ----------
-    type NodeDef = WorkflowCreatePayload['nodes'][number];
-
-    const isObj = (v: unknown): v is Record<string, unknown> =>
-      typeof v === 'object' && v !== null && !Array.isArray(v);
-    const isStr = (v: unknown): v is string => typeof v === 'string';
-    const isNum = (v: unknown): v is number =>
-      typeof v === 'number' && Number.isFinite(v);
-    const isPos = (v: unknown): v is [number, number] =>
-      Array.isArray(v) && v.length === 2 && isNum(v[0]) && isNum(v[1]);
-    const asRecord = (v: unknown): Record<string, unknown> =>
-      isObj(v) ? v : {};
-    const get = (o: unknown, k: string): unknown => {
-      if (!isObj(o)) return undefined;
-      return o[k];
-    };
-
-    const isCred = (v: unknown): v is { name: string } =>
-      isObj(v) && isStr(v.name);
-
-    const toNodeDef = (rawNode: unknown): NodeDef | null => {
-      if (!isObj(rawNode)) return null;
-
-      const nameRaw = get(rawNode, 'name');
-      const typeRaw = get(rawNode, 'type');
-      const verRaw = get(rawNode, 'typeVersion');
-
-      if (!isStr(nameRaw) || !isStr(typeRaw) || !isNum(verRaw)) {
-        return null;
-      }
-
-      const posRaw = get(rawNode, 'position');
-      const parametersRaw = get(rawNode, 'parameters');
-      const credsRaw = get(rawNode, 'credentials');
-
-      const position: [number, number] = isPos(posRaw) ? posRaw : [0, 0];
-      const parameters: Record<string, unknown> = asRecord(parametersRaw);
-
-      let credentials: Record<string, { name: string }> | undefined;
-      if (isObj(credsRaw)) {
-        const entries = Object.entries(credsRaw)
-          .filter(([, v]) => isCred(v))
-          .map(([k, v]) => [k, { name: (v as { name: string }).name }]);
-        if (entries.length) credentials = Object.fromEntries(entries);
-      }
-
-      return {
-        name: nameRaw,
-        type: typeRaw,
-        typeVersion: verRaw,
-        position,
-        parameters,
-        ...(credentials && { credentials }),
-      };
-    };
-
-    // ---------- pick only allowed top-level fields ----------
-    const nameVal = get(raw, 'name');
-    const nodesVal = get(raw, 'nodes');
-    const connectionsVal = get(raw, 'connections');
-    const settingsVal = get(raw, 'settings');
-
-    const name = isStr(nameVal) ? nameVal : 'Untitled Workflow';
-
-    const nodes: NodeDef[] = Array.isArray(nodesVal)
-      ? nodesVal.map(toNodeDef).filter((n): n is NodeDef => n !== null)
-      : [];
-
-    const connections: Record<string, unknown> = asRecord(connectionsVal);
-    const settings: Record<string, unknown> | undefined = isObj(settingsVal)
-      ? settingsVal
-      : undefined;
-
-    // ظ„ط£ظ† n8n ظٹط±ظپط¶ظ‡ط§ ط¹ظ†ط¯ POST /workflows (active read-only ظˆظ‚طھ ط§ظ„ط¥ظ†ط´ط§ط،)
-
-    const payload: WorkflowCreatePayload = {
-      name,
-      nodes,
-      connections,
-      ...(settings && { settings }),
-    };
-
-    return payload;
-  }
-
-  /** ط¥ظ†ط´ط§ط، workflow ط¬ط¯ظٹط¯ */
+  /** إنشاء workflow جديد للتاجر */
   async createForMerchant(merchantId: string): Promise<string> {
     const raw = JSON.parse(JSON.stringify(templateJson));
     raw.name = `wf-${merchantId}`;
     setWebhookPath(raw, merchantId);
 
-    const payload = this.sanitizeTemplate(raw); // â†گ ظٹط²ظٹظ„ id/webhookId/active/...
-    const resp = await this.api.post('/workflows', payload);
-    const wfId = (resp.data as { id: string }).id;
+    const payload = sanitizeTemplate(raw);
+    const wfId = await this.n8n.createWorkflow(payload);
 
     try {
-      await this.setActive(wfId, true);
+      await this.n8n.setActive(wfId, true);
     } catch (e) {
-      this.logger.warn(`activate failed`, e);
+      this.logger.warn(`activate failed`, e as any);
     }
 
     await this.merchants.update(merchantId, { workflowId: wfId });
@@ -219,22 +138,20 @@ export class N8nWorkflowService {
       updatedBy: 'system',
       isRollback: false,
     });
+
     return wfId;
   }
 
-  /** ط¬ظ„ط¨ ط§ظ„ظ€ JSON ط§ظ„ظƒط§ظ…ظ„ */
+  /** جلب الـ JSON الكامل */
   async get(workflowId: string): Promise<WorkflowDefinition> {
     try {
-      const resp = await this.api.get<WorkflowDefinition>(
-        `/workflows/${workflowId}`,
-      );
-      return resp.data;
+      return await this.n8n.getWorkflow(workflowId);
     } catch (err) {
       this.wrapError(err, 'GET');
     }
   }
 
-  /** طھط¹ط¯ظٹظ„ ط§ظ„ظ€ workflow */
+  /** تعديل الـ workflow */
   async update(
     workflowId: string,
     updateFn: (json: WorkflowDefinition) => WorkflowDefinition,
@@ -246,7 +163,7 @@ export class N8nWorkflowService {
       const nextVer = prev.length ? prev[0].version + 1 : 1;
       const newJson = updateFn(current);
 
-      await this.api.patch(`/workflows/${workflowId}`, newJson);
+      await this.n8n.patchWorkflow(workflowId, newJson);
       await this.history.create({
         merchantId: current.name.replace('wf-', ''),
         workflowId,
@@ -260,7 +177,7 @@ export class N8nWorkflowService {
     }
   }
 
-  /** ط§ط³طھط±ط¬ط§ط¹ ظ†ط³ط®ط© ظ‚ط¯ظٹظ…ط© */
+  /** استرجاع نسخة قديمة */
   async rollback(
     workflowId: string,
     version: string | number,
@@ -274,7 +191,7 @@ export class N8nWorkflowService {
           HttpStatus.NOT_FOUND,
         );
       }
-      await this.api.patch(`/workflows/${workflowId}`, hist.workflowJson);
+      await this.n8n.patchWorkflow(workflowId, hist.workflowJson);
       await this.history.create({
         merchantId: hist.merchantId,
         workflowId,
@@ -288,7 +205,7 @@ export class N8nWorkflowService {
     }
   }
 
-  /** ط§ط³طھظ†ط³ط§ط® workflow */
+  /** استنساخ workflow */
   async cloneToMerchant(
     sourceId: string,
     targetMerchantId: string,
@@ -300,14 +217,13 @@ export class N8nWorkflowService {
     raw.name = `wf-${targetMerchantId}`;
     setWebhookPath(raw, targetMerchantId);
 
-    const payload = this.sanitizeTemplate(raw); // â†گ ظٹظ…ظ†ط¹ طھط³ط±ظٹط¨ webhookId ظˆ node.id ظˆ active...
-    const resp = await this.api.post('/workflows', payload);
-    const wfId = (resp.data as { id: string }).id;
+    const payload = sanitizeTemplate(raw);
+    const wfId = await this.n8n.createWorkflow(payload);
 
     try {
-      await this.setActive(wfId, true);
+      await this.n8n.setActive(wfId, true);
     } catch (e) {
-      this.logger.warn(`activate failed`, e);
+      this.logger.warn(`activate failed`, e as any);
     }
 
     await this.merchants.update(targetMerchantId, { workflowId: wfId });
@@ -321,19 +237,19 @@ export class N8nWorkflowService {
     });
     return wfId;
   }
+
   async delete(workflowId: string): Promise<void> {
     try {
-      await this.api.delete(`/workflows/${workflowId}`);
+      await this.n8n.deleteWorkflow(workflowId);
     } catch (err) {
       this.wrapError(err, 'DELETE');
     }
   }
 
-  /** طھظپط¹ظٹظ„/طھط¹ط·ظٹظ„ workflow */
+  /** تفعيل/تعطيل workflow */
   async setActive(workflowId: string, active: boolean): Promise<void> {
     try {
-      const action = active ? 'activate' : 'deactivate';
-      await this.api.post(`/workflows/${workflowId}/${action}`);
+      await this.n8n.setActive(workflowId, active);
     } catch (err) {
       this.wrapError(err, 'SET ACTIVE');
     }

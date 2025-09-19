@@ -1,0 +1,70 @@
+{
+  "operations": {
+    "create": {
+      "summary": "إنشاء سجل تاريخي",
+      "description": "إنشاء سجل جديد في تاريخ سير العمل"
+    },
+    "findAll": {
+      "summary": "استرجاع تاريخ سير العمل",
+      "description": "جلب قائمة بسجلات تاريخ سير العمل"
+    },
+    "findOne": {
+      "summary": "استرجاع سجل محدد",
+      "description": "جلب تفاصيل سجل تاريخي محدد"
+    },
+    "findByWorkflow": {
+      "summary": "سجلات سير عمل محدد",
+      "description": "جلب تاريخ سير عمل محدد"
+    },
+    "export": {
+      "summary": "تصدير التاريخ",
+      "description": "تصدير سجلات التاريخ بتنسيق محدد"
+    },
+    "cleanup": {
+      "summary": "تنظيف السجلات القديمة",
+      "description": "حذف السجلات التاريخية القديمة"
+    },
+    "analytics": {
+      "summary": "تحليلات التاريخ",
+      "description": "إحصائيات وتحليلات لسجلات التاريخ"
+    }
+  },
+  "responses": {
+    "success": {
+      "created": "تم إنشاء السجل التاريخي بنجاح",
+      "found": "تم العثور على السجلات",
+      "exported": "تم التصدير بنجاح",
+      "cleaned": "تم التنظيف بنجاح",
+      "archived": "تم الأرشفة بنجاح"
+    },
+    "error": {
+      "notFound": "السجل غير موجود",
+      "badRequest": "بيانات الطلب غير صالحة",
+      "unauthorized": "غير مصرح بالوصول",
+      "forbidden": "ممنوع الوصول",
+      "exportFailed": "فشل في التصدير",
+      "cleanupFailed": "فشل في التنظيف"
+    }
+  },
+  "fields": {
+    "workflowId": "معرف سير العمل",
+    "status": "الحالة",
+    "startTime": "وقت البداية",
+    "endTime": "وقت النهاية",
+    "duration": "المدة الزمنية",
+    "error": "خطأ",
+    "result": "النتيجة",
+    "executionId": "معرف التنفيذ"
+  },
+  "status": {
+    "success": "نجح",
+    "failed": "فشل",
+    "running": "قيد التشغيل",
+    "pending": "في الانتظار",
+    "cancelled": "ملغي",
+    "timeout": "انتهت المهلة"
+  },
+  "messages": {
+    "archived": "تم أرشفة السجلات القديمة بنجاح"
+  }
+}

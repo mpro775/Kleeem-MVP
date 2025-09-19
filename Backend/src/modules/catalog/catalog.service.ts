@@ -1,26 +1,21 @@
-// src/catalog/catalog.service.ts (مبسط)
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import {
-  Merchant,
-  MerchantDocument,
-} from '../merchants/schemas/merchant.schema';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { ZidService } from '../integrations/zid/zid.service';
 import { SallaService } from '../integrations/salla/salla.service';
 import { ProductsService } from '../products/products.service';
+import { CatalogRepository } from './repositories/catalog.repository';
 
 @Injectable()
 export class CatalogService {
   constructor(
-    @InjectModel(Merchant.name) private merchantModel: Model<MerchantDocument>,
+    @Inject('CatalogRepository') private readonly repo: CatalogRepository,
     private readonly zid: ZidService,
     private readonly salla: SallaService,
     private readonly products: ProductsService,
   ) {}
 
   async syncForMerchant(merchantId: string) {
-    const m = await this.merchantModel.findById(merchantId).lean();
+    const m = await this.repo.findMerchantLean(merchantId);
     if (!m) throw new NotFoundException('Merchant not found');
 
     let imported = 0,
@@ -53,7 +48,7 @@ export class CatalogService {
         else updated++;
       }
     } else {
-      // internal → ما في جلب خارجي (يمكن تهيئة كتالوج فارغ)
+      // internal: لا مزامنة خارجية
     }
 
     return { imported, updated };

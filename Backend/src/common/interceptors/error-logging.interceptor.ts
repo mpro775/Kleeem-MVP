@@ -36,7 +36,7 @@ export class ErrorLoggingInterceptor implements NestInterceptor {
     const userAgent = request.headers['user-agent'] as string | undefined;
     const requestId =
       (request as any).requestId ||
-      (request.headers['x-request-id'] as string | undefined) ||
+      (request.headers['X-Request-Id'] as string | undefined) ||
       undefined;
 
     // نفضّل بيانات الحُرّاس (authUser) ثم JWT payload

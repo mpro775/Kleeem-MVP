@@ -5,13 +5,14 @@ import { APP_GUARD } from '@nestjs/core';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-ioredis';
 import { BullModule, BullModuleOptions } from '@nestjs/bull';
+import { I18nModule, I18nJsonLoader } from 'nestjs-i18n';
 
 import { LoggerModule } from 'nestjs-pino';
 
 import configuration from './configuration';
+import varsConfig from './common/config/vars.config';
 import { DatabaseConfigModule } from './config/database.config';
 
 import { AuthModule } from './modules/auth/auth.module';
@@ -32,7 +33,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
+import path, { join } from 'path';
 import { VectorModule } from './modules/vector/vector.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { LeadsModule } from './modules/leads/leads.module';
@@ -60,7 +61,12 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { SystemModule } from './modules/system/system.module';
 import { ChannelsModule } from './modules/channels/channels.module';
 import { OffersModule } from './modules/offers/offers.module';
-import { CommonModule, AppConfig, ErrorManagementModule } from './common';
+import {
+  CommonModule,
+  AppConfig,
+  ErrorManagementModule,
+  CommonServicesModule,
+} from './common';
 import { PublicModule } from './modules/public/public.module';
 import { CacheModule } from './common/cache/cache.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -69,6 +75,27 @@ import { WebhookDispatcherWorkerModule } from './workers/webhook-dispatcher.work
 import { AiReplyWorkerModule } from './workers/ai-reply.worker.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import fs from 'fs';
+const devPath = path.join(process.cwd(), 'src', 'i18n'); // أثناء start:dev (ts-node)
+const compiledPath1 = path.join(__dirname, 'i18n'); // dist/src/i18n
+const compiledPath2 = path.join(process.cwd(), 'dist', 'i18n'); // dist/i18n (بديل)
+const isTsRuntime = __filename.endsWith('.ts');
+// I18n for internationalization
+function resolveI18nPath() {
+  const distPath = path.join(__dirname, 'i18n'); // عند التشغيل من dist: dist/src/i18n
+  const srcPath = path.join(process.cwd(), 'src', 'i18n'); // عند التشغيل بـ ts-node
+  return fs.existsSync(distPath) ? distPath : srcPath;
+}
+
+// اختر المسار اعتماداً على وضع التشغيل فعلاً، لا على NODE_ENV
+const i18nPath = isTsRuntime
+  ? devPath
+  : fs.existsSync(compiledPath1)
+    ? compiledPath1
+    : fs.existsSync(compiledPath2)
+      ? compiledPath2
+      : compiledPath1;
+console.log(`[I18N] path -> ${i18nPath} | ts=${isTsRuntime}`);
 
 @Module({
   imports: [
@@ -121,12 +148,28 @@ import { AppService } from './app.service';
           }
           return 'info';
         },
+        // إضافة correlation ID للتتبع
+        genReqId: (req: any) => req.headers['X-Request-Id'] || req.id,
+        // تحسين تنسيق الإنتاج
+        formatters: {
+          level: (label: string) => ({ level: label }),
+        },
+        // إضافة معلومات السياق
+        customProps: (req: any) => ({
+          service: 'kaleem-api',
+          requestId: req.headers['X-Request-Id'] || req.id,
+          userId: req.user?.sub,
+          merchantId: req.user?.merchantId,
+          userAgent: req.headers['user-agent'],
+          ip: req.ip || req.connection?.remoteAddress,
+        }),
       },
     }),
     ThrottlerModule.forRoot([{ ttl: 60, limit: 20 }]),
     MetricsModule,
     SystemModule,
     CommonModule,
+    CommonServicesModule, // إضافة وحدة الخدمات المشتركة
     ErrorManagementModule, // إضافة وحدة إدارة الأخطاء
     CacheModule, // إضافة وحدة الكاش
     EventEmitterModule.forRoot({
@@ -149,19 +192,23 @@ import { AppService } from './app.service';
       inject: [ConfigService],
     }),
     // Config
-    ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [configuration, varsConfig],
+    }),
+
+    I18nModule.forRoot({
+      fallbackLanguage: 'ar',
+      loader: I18nJsonLoader,
+      loaderOptions: {
+        path: resolveI18nPath(),
+        watch: process.env.NODE_ENV !== 'production',
+      },
+    }),
+
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
-    }),
-
-    // Cache (Redis)
-    CacheModule.register({
-      isGlobal: true,
-      store: redisStore,
-      host: process.env.REDIS_HOST,
-      port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
-      ttl: 30,
     }),
 
     // Scheduler

@@ -4,12 +4,14 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app-module.example';
 import { setupApp } from '../index';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // إعداد التطبيق مع المكونات المشتركة
-  setupApp(app);
+  const configService = app.get(ConfigService);
+  setupApp(app, configService);
 
   // إعداد Validation Pipe
   app.useGlobalPipes(
@@ -20,7 +22,7 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
-    })
+    }),
   );
 
   // إعداد Swagger
@@ -48,7 +50,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  
+
   console.log(`🚀 التطبيق يعمل على المنفذ ${port}`);
   console.log(`📚 Swagger متاح على: http://localhost:${port}/api`);
 }

@@ -98,7 +98,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       if (!decoded?.jti) {
         return false;
       }
-
+      const iat = (decoded?.iat || 0) * 1000;
+      const pwdAt = await this.cacheManager.get<number>(
+        `pwdChangedAt:${decoded?.sub}`,
+      );
+      if (pwdAt && iat < pwdAt) return false;
       // التحقق من القائمة السوداء
       const blacklistKey = `bl:${decoded.jti}`;
       const isBlacklisted = await this.cacheManager.get(blacklistKey);

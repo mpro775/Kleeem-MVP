@@ -32,8 +32,14 @@ export class SentryService {
       return;
     }
 
-    const dsn =
-      'https://f5f1b42c1eee4dc3939075726a33a520@errors.kaleem-ai.com/1';
+    const enabled =
+      this.configService.get<string>('SENTRY_ENABLED', 'true') === 'true';
+    if (!enabled) {
+      this.logger.log('Sentry disabled by SENTRY_ENABLED=false');
+      return;
+    }
+
+    const dsn = this.configService.get<string>('SENTRY_DSN'); // ← لا تَستخدم القيمة الـ hard-coded
     const environment = this.configService.get<string>(
       'NODE_ENV',
       'development',
@@ -45,52 +51,54 @@ export class SentryService {
       return;
     }
 
+    // اجعل الأداء صفر في dev ما لم يطلب صراحة
+    const tracesSampleRate = Number(
+      this.configService.get<string>(
+        'SENTRY_TRACES_SAMPLE_RATE',
+        environment === 'production' ? '0.1' : '0',
+      ),
+    );
+    const profilesSampleRate = Number(
+      this.configService.get<string>(
+        'SENTRY_PROFILES_SAMPLE_RATE',
+        environment === 'production' ? '0.1' : '0',
+      ),
+    );
+    const debug =
+      this.configService.get<string>('SENTRY_DEBUG', 'false') === 'true';
+
     try {
       Sentry.init({
         dsn,
         environment,
         release,
-        debug: environment === 'development',
+        debug,
+        // فعّل التكامل الخاص بالبروفايل فقط إن كان فيه sampling > 0
+        integrations:
+          profilesSampleRate > 0 ? [nodeProfilingIntegration()] : [],
+        tracesSampleRate,
+        profilesSampleRate,
 
-        // تكامل الأداء
-        integrations: [nodeProfilingIntegration()],
-
-        // إعدادات الأداء
-        tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
-        profilesSampleRate: environment === 'production' ? 0.1 : 1.0,
-
-        // إعدادات الأخطاء
-        beforeSend(event, hint) {
-          // تصفية الأخطاء الحساسة
+        beforeSend(event) {
           if (event.exception) {
-            const exception = event.exception.values?.[0];
-            if (exception?.type === 'ValidationError') {
-              // لا نرسل أخطاء التحقق إلى Sentry
-              return null;
-            }
+            const ex = event.exception.values?.[0];
+            if (ex?.type === 'ValidationError') return null;
           }
-
-          // إزالة البيانات الحساسة
           if (event.request?.headers) {
             delete event.request.headers.authorization;
             delete event.request.headers.cookie;
           }
-
           return event;
         },
-
-        // إعدادات السياق
-        initialScope: {
-          tags: {
-            service: 'kaleem-bot',
-          },
-        },
+        initialScope: { tags: { service: 'kaleem-bot' } },
       });
 
       this.isInitialized = true;
-      this.logger.log(`Sentry initialized for environment: ${environment}`);
+      this.logger.log(
+        `Sentry initialized (env=${environment}, traces=${tracesSampleRate}, profiles=${profilesSampleRate})`,
+      );
     } catch (error) {
-      this.logger.error('Failed to initialize Sentry', error);
+      this.logger.error('Failed to initialize Sentry', error as any);
     }
   }
 

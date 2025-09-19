@@ -2,7 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import * as Handlebars from 'handlebars';
 import { MerchantDocument } from '../schemas/merchant.schema';
-import { InstructionsService } from 'src/modules/instructions/instructions.service'; // ← جديد
+import { InstructionsService } from '../../instructions/instructions.service'; // ← جديد
 
 const MANDATORY_TOOLING = [
   // الأدوات:
@@ -56,20 +56,20 @@ export class PromptBuilderService {
     }
 
     // ===== قنوات خدمة العملاء (تظهر فقط عند توفرها) =====
-  const normWa = (v?: string) => {
-    const s = (v || '').trim();
-    if (!s) return '';
-    if (/^https?:\/\/(wa\.me|(?:www\.)?whatsapp\.com)\//i.test(s)) return s;
-    const digits = s.replace(/\D/g, '');
-    return digits ? `https://wa.me/${digits}` : '';
-  };
+    const normWa = (v?: string) => {
+      const s = (v || '').trim();
+      if (!s) return '';
+      if (/^https?:\/\/(wa\.me|(?:www\.)?whatsapp\.com)\//i.test(s)) return s;
+      const digits = s.replace(/\D/g, '');
+      return digits ? `https://wa.me/${digits}` : '';
+    };
 
-  const waLink = normWa(customerServiceWhatsapp);
-  if (customerServicePhone || waLink) {
-    lines.push('قنوات خدمة العملاء (استخدمها عندما يطلب العميل التواصل):');
-    if (customerServicePhone) lines.push(`- الهاتف: ${customerServicePhone}`);
-    if (waLink) lines.push(`- واتساب: ${waLink}`);
-  }
+    const waLink = normWa(customerServiceWhatsapp);
+    if (customerServicePhone || waLink) {
+      lines.push('قنوات خدمة العملاء (استخدمها عندما يطلب العميل التواصل):');
+      if (customerServicePhone) lines.push(`- الهاتف: ${customerServicePhone}`);
+      if (waLink) lines.push(`- واتساب: ${waLink}`);
+    }
 
     if (includeClosingPhrase) lines.push(`ختام: ${closingText}`);
 

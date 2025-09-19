@@ -2,7 +2,6 @@ import http from 'http';
 import * as client from 'prom-client';
 
 const register = new client.Registry();
-client.collectDefaultMetrics({ register });
 
 export function startMetricsServer(port: number) {
   http

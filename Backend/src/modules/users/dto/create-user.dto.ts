@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../schemas/user.schema';
+import { I18nMessage } from '../../../common/validators/i18n-validator';
 
 export class CreateUserDto {
   id: string;
@@ -36,15 +37,15 @@ export class CreateUserDto {
     example: '60d21b4667d0d8992e610c85',
     required: true,
   })
-  @IsString({ message: 'يجب أن يكون معرف التاجر نصيًا' })
-  @IsNotEmpty({ message: 'معرف التاجر مطلوب' })
+  @IsString(I18nMessage('validation.string'))
+  @IsNotEmpty(I18nMessage('validation.required'))
   merchantId: string | null;
   @ApiPropertyOptional({
-      description: 'حالة أول تسجيل دخول (لتوجيه Onboarding)',
-      example: false,
-    })
-    @IsOptional()
-    @IsBoolean()
+    description: 'حالة أول تسجيل دخول (لتوجيه Onboarding)',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean(I18nMessage('validation.boolean'))
   firstLogin: boolean;
 
   @ApiPropertyOptional({

@@ -1,6 +1,3 @@
-// ---------------------------
-// File: src/modules/webhooks/webhooks.controller.ts
-// ---------------------------
 import {
   Controller,
   Post,
@@ -22,12 +19,8 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { normalizeIncomingMessage } from './schemas/utils/normalize-incoming';
 import axios from 'axios';
-import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { ClientSession, Connection, Model, Types } from 'mongoose';
-import {
-  Merchant,
-  MerchantDocument,
-} from '../merchants/schemas/merchant.schema';
+import { InjectConnection } from '@nestjs/mongoose';
+import { ClientSession, Connection, Types } from 'mongoose';
 import { OrdersService } from '../orders/orders.service';
 import {
   buildOrderDetailsMessage,
@@ -43,6 +36,7 @@ import { EvolutionService } from '../integrations/evolution.service';
 import { ConfigService } from '@nestjs/config';
 import { ChatGateway } from '../chat/chat.gateway';
 import { OutboxService } from 'src/common/outbox/outbox.service';
+import { TranslationService } from '../../common/services/translation.service';
 import { createHmac, timingSafeEqual } from 'crypto';
 import {
   ApiTags,
@@ -54,13 +48,11 @@ import {
 } from '@nestjs/swagger';
 import * as bcrypt from 'bcrypt';
 
-// NEW: القنوات الجديدة + فك التشفير
-import {
-  Channel,
-  ChannelDocument,
-  ChannelProvider,
-} from '../channels/schemas/channel.schema';
-import { decryptSecret, hashSecret } from '../channels/utils/secrets.util';
+import { ChannelProvider } from '../channels/schemas/channel.schema';
+import { decryptSecret } from '../channels/utils/secrets.util';
+
+import { CHANNEL_REPOSITORY } from './tokens';
+import { ChannelRepository } from './repositories/channel.repository';
 
 // ================= Utils =================
 function detectOrderIntent(msg: string): {
@@ -86,16 +78,6 @@ function detectOrderIntent(msg: string): {
   return { step: 'normal' };
 }
 
-function verifyMetaSig(appSecret: string, raw: Buffer, sig?: string) {
-  if (!sig) return false;
-  const parts = sig.split('=');
-  if (parts.length !== 2) return false;
-  const scheme = parts[0];
-  if (scheme !== 'sha256') return false;
-  const theirs = Buffer.from(parts[1], 'hex');
-  const ours = createHmac('sha256', appSecret).update(raw).digest();
-  return theirs.length === ours.length && timingSafeEqual(theirs, ours);
-}
 async function tryWithTx<T>(
   conn: Connection,
   work: (session?: ClientSession) => Promise<T>,
@@ -109,7 +91,6 @@ async function tryWithTx<T>(
       e?.code === 20 ||
       /Transaction numbers are only allowed/i.test(e?.message)
     ) {
-      // Mongo بدون Replica Set → كمل بدون Transaction
       return await work(undefined);
     }
     throw e;
@@ -119,7 +100,8 @@ async function tryWithTx<T>(
     } catch {}
   }
 }
-@ApiTags('Webhooks')
+
+@ApiTags('webhooks')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('webhooks')
@@ -133,31 +115,21 @@ export class WebhooksController {
     private readonly chatGateway: ChatGateway,
     @InjectConnection() private readonly conn: Connection,
     private readonly outbox: OutboxService,
-    @InjectModel(Merchant.name)
-    private readonly merchantModel: Model<MerchantDocument>,
-
-    // NEW: مجموعة القنوات
-    @InjectModel(Channel.name)
-    private readonly channelModel: Model<ChannelDocument>,
+    @Inject(CHANNEL_REPOSITORY)
+    private readonly channelsRepo: ChannelRepository,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly translationService: TranslationService,
   ) {}
 
   // ================= Helpers (قناة افتراضية/تحقق/إرسال) =================
 
-  /** احصل على القناة الافتراضية لمزوّد محدد */
   private async getDefaultChannel(
     merchantId: string,
     provider: 'telegram' | 'whatsapp_cloud' | 'whatsapp_qr' | 'webchat',
   ) {
-    return this.channelModel.findOne({
-      merchantId: new Types.ObjectId(merchantId),
-      provider,
-      isDefault: true,
-      deletedAt: null,
-    });
+    return this.channelsRepo.findDefaultWithSecrets(merchantId, provider);
   }
 
-  /** تحقّق إذا البوت مفعّل على القناة الافتراضية للمزوّد */
   private async isBotEnabled(
     merchantId: string,
     channel: string,
@@ -171,14 +143,13 @@ export class WebhooksController {
             ? 'webchat'
             : undefined;
     if (!provider) return false;
-    const c = await this.getDefaultChannel(merchantId, provider as any);
+    const c = await this.channelsRepo.findDefault(merchantId, provider as any);
     return !!c?.enabled;
   }
 
-  /** إرسال رد (Telegram/WA Cloud/WA QR/Webchat) باختيار القناة المتاحة */
   private async sendReplyToChannel({
     merchantId,
-    channel, // whatsapp | telegram | webchat
+    channel,
     sessionId,
     text,
   }: {
@@ -208,7 +179,6 @@ export class WebhooksController {
       return;
     }
 
-    // whatsapp: جرّب Cloud ثم QR كاحتياط
     const cloud = await this.getDefaultChannel(merchantId, 'whatsapp_cloud');
     if (cloud?.enabled && cloud.accessTokenEnc && cloud.phoneNumberId) {
       const accessToken = decryptSecret(cloud.accessTokenEnc);
@@ -238,22 +208,13 @@ export class WebhooksController {
     merchantId: string,
     req: any,
   ): Promise<boolean> {
-    const sig = req.headers['x-hub-signature-256']; // format: sha256=...
+    const sig = req.headers['x-hub-signature-256'];
     if (!sig || !sig.startsWith('sha256=')) return false;
 
-    // جيب قناة WA Cloud الافتراضية + فكّ appSecret
-    const ch = await this.channelModel
-      .findOne({
-        merchantId: new Types.ObjectId(merchantId),
-        provider: ChannelProvider.WHATSAPP_CLOUD,
-        isDefault: true,
-        deletedAt: null,
-      })
-      .select('+appSecretEnc')
-      .lean();
-
-    const appSecret = ch?.appSecretEnc
-      ? decryptSecret(ch.appSecretEnc)
+    const ch =
+      await this.channelsRepo.findDefaultWaCloudWithAppSecret(merchantId);
+    const appSecret = (ch as any)?.appSecretEnc
+      ? decryptSecret((ch as any).appSecretEnc)
       : undefined;
     if (!appSecret || !req['rawBody']) return false;
 
@@ -263,8 +224,6 @@ export class WebhooksController {
       .digest();
     return theirs.length === ours.length && timingSafeEqual(theirs, ours);
   }
-
-  // ================= End Helpers =================
 
   @Public()
   @Get(':merchantId/incoming')
@@ -280,27 +239,15 @@ export class WebhooksController {
     if (mode !== 'subscribe' || !token)
       return res.status(400).send('Bad Request');
 
-    // قارن verify_token مع المخزّن (hashed)
-    const ch = await this.channelModel
-      .findOne({
-        merchantId: new Types.ObjectId(merchantId),
-        provider: ChannelProvider.WHATSAPP_CLOUD,
-        isDefault: true,
-        deletedAt: null,
-      })
-      .select('+verifyTokenHash')
-      .lean();
+    const ch = await this.channelsRepo.findDefaultWaCloudWithVerify(merchantId);
+    if (!(ch as any)?.verifyTokenHash)
+      return res.status(404).send('Channel not found');
 
-    if (!ch?.verifyTokenHash) return res.status(404).send('Channel not found');
-
-    const ok = await bcrypt.compare(token, ch.verifyTokenHash);
+    const ok = await bcrypt.compare(token, (ch as any).verifyTokenHash);
     if (!ok) return res.status(403).send('Forbidden');
 
     return res.status(200).send(challenge);
   }
-  /**
-   * استقبال الرسائل الواردة (مسار انتقالي قبل اعتماد /webhooks/:provider/:channelId)
-   */
 
   @Public()
   @Post('incoming/:merchantId')
@@ -326,20 +273,15 @@ export class WebhooksController {
   async handleIncoming(
     @Param('merchantId') merchantId: string,
     @Body() body: any,
-    @Req() req: any, // نحتاجه للـ rawBody + headers
+    @Req() req: any,
   ) {
-    // ✅ B1: توقيع Meta صارم - فشل التوقيع = 403
     if (req.headers['x-hub-signature-256']) {
       const ok = await this.verifyMetaSignature(merchantId, req);
-      if (!ok) {
-        throw new ForbiddenException('Invalid signature');
-      }
+      if (!ok) throw new ForbiddenException('Invalid signature');
     }
 
-    // 1) طبّع الحمولة
     const normalized = normalizeIncomingMessage(body, merchantId);
 
-    // ✅ B4: Idempotency عام لكل مزوّد باستخدام sourceMessageId
     if (normalized?.metadata?.sourceMessageId) {
       const sourceId = normalized.metadata.sourceMessageId;
       const channel = normalized.metadata?.channel || 'unknown';
@@ -349,12 +291,9 @@ export class WebhooksController {
       if (existing) {
         return { status: 'duplicate_ignored', sourceMessageId: sourceId };
       }
-
-      // تخزين في الكاش لمدة 24 ساعة
       await this.cacheManager.set(idempotencyKey, true, 24 * 60 * 60 * 1000);
     }
 
-    // 2) ملفات
     if (normalized.fileId || normalized.fileUrl) {
       let tmpPath: string | undefined;
       let originalName: string | undefined;
@@ -362,7 +301,6 @@ export class WebhooksController {
         normalized.mimeType || 'application/octet-stream';
 
       if (normalized.channel === 'telegram' && normalized.fileId) {
-        // Telegram: احصل على توكن من قناة telegram
         const tg = await this.getDefaultChannel(merchantId, 'telegram');
         const telegramToken = tg?.botTokenEnc
           ? decryptSecret(tg.botTokenEnc)
@@ -389,7 +327,6 @@ export class WebhooksController {
         mimeType,
       );
 
-      // 3) خزّن وادفع للـ Outbox في معاملة
       const session = await this.conn.startSession();
       try {
         await session.withTransaction(async () => {
@@ -435,19 +372,20 @@ export class WebhooksController {
                 },
               },
               exchange: 'chat.incoming',
-              routingKey: normalized.channel, // whatsapp | telegram | webchat
+              routingKey: normalized.channel,
             },
             session,
           );
         });
+
         const uiMsg = {
-          _id: undefined, // لو تقدر استرجع الـ _id من service أفضل (انظر ملاحظة 2 بالأسفل)
+          _id: undefined,
           role: 'customer' as const,
           text: normalized.text || '[تم استقبال ملف]',
           timestamp: normalized.timestamp,
           rating: null,
           feedback: null,
-          merchantId, // مفيد للبث لغرفة التاجر إن أردت
+          merchantId,
           metadata: {
             ...normalized.metadata,
             mediaUrl: presignedUrl,
@@ -456,7 +394,6 @@ export class WebhooksController {
             mimeType,
           },
         };
-        // بث للغرفة الخاصة بالجلسة
         this.chatGateway.sendMessageToSession(normalized.sessionId, uiMsg);
         return { status: 'ok', sessionId: normalized.sessionId };
       } finally {
@@ -464,7 +401,6 @@ export class WebhooksController {
       }
     }
 
-    // 4) تحقق الحقول النصّية
     if (
       !normalized.merchantId ||
       !normalized.sessionId ||
@@ -474,7 +410,6 @@ export class WebhooksController {
       throw new BadRequestException('Payload missing required fields');
     }
 
-    // 5) رسائل نصّية
     const tx = await this.conn.startSession();
     try {
       let sessionDoc: any;
@@ -517,7 +452,6 @@ export class WebhooksController {
         return doc;
       });
 
-      // 6) Intents (كما هو)
       const intent = detectOrderIntent(normalized.text);
 
       if (intent.step === 'orderDetails') {
@@ -648,6 +582,7 @@ export class WebhooksController {
           role: normalized.role,
         };
       }
+
       const last =
         Array.isArray(sessionDoc?.messages) && sessionDoc.messages.length
           ? sessionDoc.messages[sessionDoc.messages.length - 1]
@@ -675,9 +610,8 @@ export class WebhooksController {
             metadata: normalized.metadata,
           };
 
-      // ✅ بث فوري للموظفين في لوحة التحكم
       this.chatGateway.sendMessageToSession(normalized.sessionId, uiMsg);
-      // 7) handover
+
       const messages = sessionDoc.messages;
       const lastRole = messages.length
         ? messages[messages.length - 1].role
@@ -744,6 +678,7 @@ export class WebhooksController {
           },
         })
         .catch(() => {});
+      // eslint-disable-next-line no-console
       console.error('Webhook error:', err);
       return {
         sessionId: normalized.sessionId,
@@ -755,9 +690,6 @@ export class WebhooksController {
     }
   }
 
-  /**
-   * ردود البوت (عام)
-   */
   @Public()
   @Post('bot-reply/:merchantId')
   @ApiOperation({ summary: 'معالجة ردود البوت الآلية' })
@@ -792,12 +724,7 @@ export class WebhooksController {
       sessionId,
       channel,
       messages: [
-        {
-          role: 'bot',
-          text,
-          timestamp: new Date(),
-          metadata: metadata || {},
-        },
+        { role: 'bot', text, timestamp: new Date(), metadata: metadata || {} },
       ],
     });
 
@@ -817,9 +744,6 @@ export class WebhooksController {
     return { sessionId, status: 'ok' };
   }
 
-  /**
-   * ردّ اختبار للداشبورد فقط
-   */
   @Public()
   @Post(':merchantId/test-bot-reply')
   @ApiOperation({ summary: 'إرسال ردّ التستنج إلى الداشبورد فقط' })
@@ -839,11 +763,7 @@ export class WebhooksController {
     status: 200,
     description: 'تم إرسال ردّ التستنج بنجاح',
     schema: {
-      example: {
-        sessionId: 'dash-1727000000000',
-        status: 'ok',
-        test: true,
-      },
+      example: { sessionId: 'dash-1727000000000', status: 'ok', test: true },
     },
   })
   async handleTestBotReply(
@@ -895,10 +815,6 @@ export class WebhooksController {
     return { sessionId, status: 'ok', test: true };
   }
 
-  /**
-   * ردود الموظف (Agent)
-   * (تقدر تخليها محمية فقط بدون @Public حسب احتياجك)
-   */
   @Post('agent-reply/:merchantId')
   @ApiOperation({ summary: 'معالجة ردود الموظفين' })
   @ApiParam({ name: 'merchantId', description: 'معرّف التاجر' })
@@ -941,8 +857,9 @@ export class WebhooksController {
         },
       ],
     });
+
     const uiMsg = {
-      _id: undefined, // أو احصل عليه مثل أعلاه
+      _id: undefined,
       role: 'agent' as const,
       text,
       timestamp: new Date(),
@@ -952,6 +869,7 @@ export class WebhooksController {
       metadata: { ...metadata, agentId },
     };
     this.chatGateway.sendMessageToSession(sessionId, uiMsg);
+
     if (process.env.DIRECT_SEND_FALLBACK === 'true') {
       await this.sendReplyToChannel({ sessionId, text, channel, merchantId });
     } else {

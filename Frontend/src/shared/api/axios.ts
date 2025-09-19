@@ -225,7 +225,7 @@ axiosInstance.interceptors.response.use(
 
     const status = err.response?.status as number | undefined;
     const data = err.response?.data;
-    const headRequestId = err.response?.headers?.["x-request-id"];
+    const headRequestId = err.response?.headers?.["X-Request-Id"];
     const bodyRequestId = data?.requestId;
     const requestId = bodyRequestId || headRequestId;
 

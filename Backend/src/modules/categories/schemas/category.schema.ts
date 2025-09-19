@@ -1,9 +1,9 @@
 // src/modules/categories/schemas/category.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 import slugify from 'slugify';
 
-export type CategoryDocument = Category & Document;
+export type CategoryDocument = HydratedDocument<Category>;
 
 @Schema({ timestamps: true })
 export class Category {

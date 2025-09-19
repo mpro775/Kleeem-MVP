@@ -1,4 +1,3 @@
-// src/modules/outbox/outbox.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ClientSession, Types } from 'mongoose';
@@ -12,6 +11,7 @@ export interface EnqueueEventInput {
   exchange: string;
   routingKey: string;
   occurredAt?: string;
+  dedupeKey?: string;
 }
 export type OutboxEventLean = OutboxEvent & { _id: Types.ObjectId };
 
@@ -22,56 +22,97 @@ export class OutboxService {
     private readonly outboxModel: Model<OutboxEventDocument>,
   ) {}
 
-  async addEventInTx(
-    data: EnqueueEventInput,
-    session: ClientSession,
-  ): Promise<OutboxEventDocument> {
+  async addEventInTx(data: EnqueueEventInput, session: ClientSession) {
     const doc = new this.outboxModel({
       ...data,
       status: 'pending',
       attempts: 0,
+      nextAttemptAt: new Date(0),
       occurredAt: data.occurredAt ?? new Date().toISOString(),
     });
     await doc.save({ session });
     return doc;
   }
 
-  async enqueueEvent(
-    data: EnqueueEventInput,
-    session?: ClientSession,
-  ): Promise<OutboxEventDocument> {
-    if (session) return await this.addEventInTx(data, session);
-
+  async enqueueEvent(data: EnqueueEventInput, session?: ClientSession) {
+    if (session) return this.addEventInTx(data, session);
     const doc = new this.outboxModel({
       ...data,
       status: 'pending',
       attempts: 0,
+      nextAttemptAt: new Date(0),
       occurredAt: data.occurredAt ?? new Date().toISOString(),
     });
     await doc.save();
     return doc;
   }
 
-  async markPublished(id: string): Promise<void> {
+  // المطالبة الذرّية بدُفعة أحداث
+  async claimBatch(limit = 200, workerId = 'dispatcher-1') {
+    const claimed: OutboxEventLean[] = [];
+    for (let i = 0; i < limit; i++) {
+      const now = new Date();
+      const doc = await this.outboxModel
+        .findOneAndUpdate(
+          {
+            status: 'pending',
+            nextAttemptAt: { $lte: now },
+            attempts: { $lt: 10 },
+          },
+          {
+            $set: {
+              status: 'publishing',
+              lockedBy: workerId,
+              lockedAt: now,
+            },
+          },
+          { new: true, sort: { createdAt: 1 } },
+        )
+        .lean<OutboxEventLean>();
+      if (!doc) break;
+      claimed.push(doc);
+    }
+    return claimed;
+  }
+
+  async markPublished(id: string) {
     await this.outboxModel.updateOne(
       { _id: id },
-      { $set: { status: 'published', publishedAt: new Date() } },
+      {
+        $set: { status: 'published', publishedAt: new Date(), error: null },
+        $unset: { lockedBy: '', lockedAt: '' },
+      },
     );
   }
 
-  async markFailed(id: string, err: string): Promise<void> {
+  // backoff أُسّي مع سقف 5 دقائق
+  private nextAttemptDate(attempts: number) {
+    const base = 5000; // 5 ثوانٍ
+    const delay = Math.min(5 * 60_000, Math.pow(2, attempts) * base);
+    return new Date(Date.now() + delay);
+  }
+
+  async reschedule(id: string, err: string, attempts: number) {
     await this.outboxModel.updateOne(
       { _id: id },
-      { $set: { status: 'failed', error: err }, $inc: { attempts: 1 } },
+      {
+        $set: {
+          status: 'pending',
+          error: err,
+          nextAttemptAt: this.nextAttemptDate(attempts),
+        },
+        $inc: { attempts: 1 },
+        $unset: { lockedBy: '', lockedAt: '' },
+      },
     );
   }
 
-  async pullBatch(limit = 200): Promise<OutboxEventLean[]> {
-    return await this.outboxModel
-      .find({ status: 'pending', attempts: { $lt: 10 } })
-      .sort({ createdAt: 1 })
-      .limit(limit)
-      .lean<OutboxEventLean[]>()
-      .exec();
+  // استرجاع الرسائل العالقة في publishing
+  async recoverStuckPublishing(olderThanMs = 5 * 60_000) {
+    const threshold = new Date(Date.now() - olderThanMs);
+    await this.outboxModel.updateMany(
+      { status: 'publishing', lockedAt: { $lt: threshold } },
+      { $set: { status: 'pending' }, $unset: { lockedBy: '', lockedAt: '' } },
+    );
   }
 }

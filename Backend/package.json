@@ -8,38 +8,33 @@
   "scripts": {
     "start:prod": "node dist/main",
     "build": "nest build",
+    "postbuild": "copyfiles -u 1 \"src/i18n/**/*\" dist/src",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "backfill:merchants": "ts-node -r tsconfig-paths/register src/scripts/backfill-merchants.ts",
     "start:worker": "ts-node -r tsconfig-paths/register src/main.worker.ts",
+    "prestart:dev": "copyfiles -u 1 \"src/i18n/**/*\" dist/src",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "generate-specs": "ts-node generate-jest-specs.ts",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
+    "lint": "eslint . --ext .ts",
+    "test": "jest --runInBand",
+    "test:unit": "jest --runInBand --selectProjects unit",
+    "test:e2e": "jest --runInBand --selectProjects e2e",
     "migrate:msg-ids": "npx ts-node src/scripts/backfill-message-ids.ts",
-    "test:watch": "jest --watch",
     "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/seed-admin.ts",
-    "test:cov": "jest --coverage",
-    "test:unit": "jest --config jest.config.js",
-    "test:unit:watch": "jest --config jest.config.js --watch",
-    "test:unit:cov": "jest --config jest.config.js --coverage",
-    "test:integration": "jest --config jest.integration.config.js",
-    "test:integration:watch": "jest --config jest.integration.config.js --watch",
-    "test:e2e": "jest --config jest-e2e.config.js",
-    "test:e2e:watch": "jest --config jest-e2e.config.js --watch",
-    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
-    "test:ci": "npm run test:unit:cov && npm run test:integration && npm run test:e2e",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:security": "powershell -ExecutionPolicy Bypass -File test/e2e/run-security-tests.ps1",
     "test:security:bash": "bash test/e2e/run-security-tests.sh",
     "test:webhooks": "jest test/e2e/webhooks --verbose",
-    "test:auth": "jest test/e2e/auth --verbose"
+    "test:auth": "jest test/e2e/auth --verbose",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@express-rate-limit/tsconfig": "^1.0.2",
     "@faker-js/faker": "^9.9.0",
     "@google/generative-ai": "^0.24.1",
+    "@nestjs-modules/ioredis": "^2.0.2",
     "@nestjs/axios": "^4.0.0",
     "@nestjs/bull": "^11.0.2",
     "@nestjs/bullmq": "^11.0.2",
@@ -80,10 +75,13 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "csurf": "^1.11.0",
     "dayjs": "^1.11.13",
     "docx-parser": "^0.2.1",
     "dotenv": "^16.5.0",
+    "eslint-plugin-import": "^2.32.0",
     "express-rate-limit": "^7.5.1",
     "handlebars": "^4.7.8",
     "helmet": "^8.1.0",
@@ -97,7 +95,7 @@
     "mongodb-memory-server": "^10.2.0",
     "mongoose": "^8.15.1",
     "multer": "^2.0.1",
-    "multer-minio-storage-engine": "^1.0.0",
+    "nestjs-i18n": "^10.5.1",
     "nestjs-pino": "^4.4.0",
     "nodemailer": "^7.0.3",
     "openai": "^5.5.1",
@@ -119,8 +117,8 @@
     "socket.io-client": "^4.8.1",
     "stopword": "^3.1.5",
     "tesseract.js": "^6.0.1",
-    "uuid": "^11.1.0",
-    "xlsx": "^0.18.5"
+    "ts-morph": "^27.0.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -141,6 +139,7 @@
     "@types/supertest": "^6.0.2",
     "@types/xlsx": "^0.0.35",
     "copyfiles": "^2.4.1",
+    "cross-env": "^10.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
@@ -160,21 +159,10 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.20.0"
   },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
-    ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+  "lint-staged": {
+    "*.{ts,js,json}": [
+      "eslint --fix",
+      "git add"
+    ]
   }
 }

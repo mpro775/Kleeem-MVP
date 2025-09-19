@@ -1,23 +1,27 @@
-// src/modules/knowledge/knowledge.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { SourceUrl, SourceUrlSchema } from './schemas/source-url.schema';
-import { KnowledgeController } from './knowledge.controller';
 import { KnowledgeService } from './knowledge.service';
+import { SourceUrl, SourceUrlSchema } from './schemas/source-url.schema';
+import { SOURCE_URL_REPOSITORY } from './tokens';
+import { SourceUrlMongoRepository } from './repositories/source-url.mongo.repository';
 import { VectorModule } from '../vector/vector.module';
 import { NotificationsModule } from '../notifications/notifications.module';
-import { OutboxModule } from 'src/common/outbox/outbox.module';
+import { OutboxModule } from '../../common/outbox/outbox.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: SourceUrl.name, schema: SourceUrlSchema },
     ]),
-    VectorModule,
-      NotificationsModule,
-    OutboxModule,
+    forwardRef(() => VectorModule),
+    NotificationsModule, // ✅ Import NotificationsModule instead of providing NotificationsService directly
+    OutboxModule, // ✅ Import OutboxModule instead of providing OutboxService directly
   ],
-  controllers: [KnowledgeController],
-  providers: [KnowledgeService],
+  providers: [
+    KnowledgeService,
+    // Removed OutboxService from here - it's provided by OutboxModule
+    { provide: SOURCE_URL_REPOSITORY, useClass: SourceUrlMongoRepository },
+  ],
+  exports: [KnowledgeService],
 })
 export class KnowledgeModule {}

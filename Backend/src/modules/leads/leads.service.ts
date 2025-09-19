@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Lead, LeadDocument } from './schemas/lead.schema';
+import { Injectable, Inject } from '@nestjs/common';
+import { Lead } from './schemas/lead.schema';
 import { CreateLeadDto } from './dto/create-lead.dto';
+import { LEAD_REPOSITORY } from './tokens';
+import { LeadRepository } from './repositories/lead.repository';
+
 function normalizePhone(p?: string) {
   if (!p) return undefined;
   const digits = p.replace(/\D+/g, '');
@@ -10,11 +11,12 @@ function normalizePhone(p?: string) {
   // return digits.startsWith('0') ? '966' + digits.slice(1) : digits;
   return digits;
 }
+
 @Injectable()
 export class LeadsService {
   constructor(
-    @InjectModel(Lead.name)
-    private readonly leadModel: Model<LeadDocument>,
+    @Inject(LEAD_REPOSITORY)
+    private readonly leadsRepo: LeadRepository,
   ) {}
 
   async create(merchantId: string, dto: CreateLeadDto): Promise<Lead> {
@@ -23,27 +25,30 @@ export class LeadsService {
       dto.data?.mobile ??
       dto.data?.phoneNumber ??
       dto.data?.whatsapp;
-  
+
     const name = dto.data?.name ?? dto.data?.fullName ?? dto.data?.customerName;
-  
-    const created = await this.leadModel.create({
+
+    const created = await this.leadsRepo.create({
       merchantId,
       sessionId: dto.sessionId,
       data: dto.data,
       source: dto.source,
-      phoneNormalized: normalizePhone(phone), // ← جديد
-      name,                                   // ← اختياري للعرض
+      phoneNormalized: normalizePhone(phone),
+      name,
     });
-    return created.toObject();
+
+    return created as Lead;
   }
+
   async findAllForMerchant(merchantId: string): Promise<Lead[]> {
-    return this.leadModel.find({ merchantId }).sort({ createdAt: -1 }).lean();
+    const out = await this.leadsRepo.findAllForMerchant(merchantId);
+    return out as Lead[];
   }
-  async getPhoneBySession(merchantId: string, sessionId: string): Promise<string | undefined> {
-    const doc = await this.leadModel
-      .findOne({ merchantId, sessionId, phoneNormalized: { $exists: true, $ne: null } })
-      .sort({ updatedAt: -1, createdAt: -1 })
-      .lean();
-    return doc?.phoneNormalized;
+
+  async getPhoneBySession(
+    merchantId: string,
+    sessionId: string,
+  ): Promise<string | undefined> {
+    return this.leadsRepo.getPhoneBySession(merchantId, sessionId);
   }
 }

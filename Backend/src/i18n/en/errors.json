@@ -1,0 +1,122 @@
+{
+  "errors": {
+    "general": {
+      "internalServerError": "Internal server error",
+      "badRequest": "Bad request",
+      "unauthorized": "Unauthorized",
+      "forbidden": "Forbidden",
+      "notFound": "Not found",
+      "methodNotAllowed": "Method not allowed",
+      "conflict": "Data conflict",
+      "unprocessableEntity": "Unprocessable entity",
+      "tooManyRequests": "Too many requests",
+      "serviceUnavailable": "Service unavailable",
+      "gatewayTimeout": "Gateway timeout"
+    },
+
+    "business": {
+      "insufficientPermissions": "Insufficient permissions",
+      "resourceNotFound": "Resource not found",
+      "resourceAlreadyExists": "Resource already exists",
+      "invalidOperation": "Invalid operation",
+      "operationFailed": "Operation failed",
+      "quotaExceeded": "Quota exceeded",
+      "rateLimitExceeded": "Rate limit exceeded",
+      "maintenanceMode": "System is in maintenance mode"
+    },
+
+    "validation": {
+      "invalidInput": "Invalid input data",
+      "missingRequiredFields": "Missing required fields",
+      "invalidFormat": "Invalid data format",
+      "fieldTooLong": "Field is too long",
+      "fieldTooShort": "Field is too short",
+      "invalidValue": "Invalid value",
+      "duplicateEntry": "Duplicate entry"
+    },
+
+    "authentication": {
+      "invalidCredentials": "Invalid credentials",
+      "tokenExpired": "Token has expired",
+      "tokenInvalid": "Invalid token",
+      "accountLocked": "Account is locked",
+      "accountDisabled": "Account is disabled",
+      "passwordExpired": "Password has expired",
+      "sessionExpired": "Session has expired",
+      "invalidSession": "Invalid session",
+      "tooManyFailedAttempts": "Too many failed attempts"
+    },
+
+    "authorization": {
+      "accessDenied": "Access denied",
+      "insufficientPrivileges": "Insufficient privileges",
+      "roleRequired": "Specific role required",
+      "permissionDenied": "Permission denied",
+      "scopeNotAllowed": "Scope not allowed",
+      "resourceAccessDenied": "Resource access denied"
+    },
+
+    "system": {
+      "databaseError": "Database error",
+      "cacheError": "Cache error",
+      "queueError": "Queue error",
+      "storageError": "Storage error",
+      "networkError": "Network error",
+      "timeoutError": "Timeout error",
+      "configurationError": "Configuration error",
+      "dependencyError": "Dependency error"
+    },
+
+    "external": {
+      "apiError": "External API error",
+      "webhookError": "Webhook error",
+      "integrationError": "Integration error",
+      "paymentError": "Payment error",
+      "smsError": "SMS sending error",
+      "emailError": "Email sending error",
+      "thirdPartyError": "Third-party service error",
+      "telegramApiError": "Telegram API error",
+      "whatsappApiError": "WhatsApp API error",
+      "emailSendFailed": "Email sending failed",
+      "notificationSendFailed": "Notification sending failed"
+    },
+
+    "file": {
+      "uploadFailed": "File upload failed",
+      "fileNotFound": "File not found",
+      "fileTooLarge": "File is too large",
+      "invalidFileType": "Invalid file type",
+      "fileCorrupted": "File is corrupted",
+      "storageLimitExceeded": "Storage limit exceeded",
+      "fileAccessDenied": "File access denied"
+    },
+
+    "network": {
+      "connectionFailed": "Connection failed",
+      "dnsError": "DNS error",
+      "sslError": "SSL error",
+      "certificateError": "Certificate error",
+      "proxyError": "Proxy error",
+      "firewallError": "Firewall error",
+      "vpnError": "VPN error"
+    },
+
+    "performance": {
+      "slowResponse": "Slow response",
+      "highLatency": "High latency",
+      "memoryError": "Memory error",
+      "cpuError": "CPU error",
+      "diskError": "Disk error",
+      "loadError": "Load error",
+      "resourceExhausted": "Resources exhausted"
+    },
+
+    "userFriendly": {
+      "somethingWentWrong": "Something went wrong, please try again later",
+      "pleaseTryAgain": "Please try again",
+      "contactSupport": "Please contact support",
+      "serviceMaintenance": "Service is under maintenance",
+      "temporaryIssue": "Temporary issue, will be resolved soon"
+    }
+  }
+}

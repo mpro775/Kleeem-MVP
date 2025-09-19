@@ -1,16 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { Product, ProductDocument } from '../products/schemas/product.schema';
-import { Merchant, MerchantDocument } from '../merchants/schemas/merchant.schema';
+import { Injectable, Inject } from '@nestjs/common';
+import { PRODUCT_REPOSITORY, MERCHANT_REPOSITORY } from './tokens';
+import {
+  ProductRepository,
+  ProductLean,
+} from './repositories/product.repository';
+import { MerchantRepository } from './repositories/merchant.repository';
 
 @Injectable()
 export class OffersService {
   constructor(
-    @InjectModel(Product.name)
-    private readonly productModel: Model<ProductDocument>,
-    @InjectModel(Merchant.name)
-    private readonly merchantModel: Model<MerchantDocument>,
+    @Inject(PRODUCT_REPOSITORY)
+    private readonly products: ProductRepository,
+    @Inject(MERCHANT_REPOSITORY)
+    private readonly merchants: MerchantRepository,
   ) {}
 
   private computeIsActive(offer: any): boolean {
@@ -28,10 +30,15 @@ export class OffersService {
     return null;
   }
 
-  private buildPublicUrl(p: any, publicSlug?: string): string | undefined {
-    const slug = p.slug || String(p._id);
-    if (p.storefrontDomain) return `https://${p.storefrontDomain}/p/${slug}`;
-    if (p.storefrontSlug) return `/${p.storefrontSlug}/store/p/${slug}`;
+  private buildPublicUrl(
+    p: ProductLean,
+    publicSlug?: string,
+  ): string | undefined {
+    const slug = (p as any).slug || String(p._id);
+    if ((p as any).storefrontDomain)
+      return `https://${(p as any).storefrontDomain}/p/${slug}`;
+    if ((p as any).storefrontSlug)
+      return `/${(p as any).storefrontSlug}/store/p/${slug}`;
     if (publicSlug) return `/${publicSlug}/store/p/${slug}`;
     return undefined;
   }
@@ -40,41 +47,28 @@ export class OffersService {
     merchantId: string,
     opts: { limit: number; offset: number },
   ) {
-    const mId = new Types.ObjectId(merchantId);
-
-    const [merchant, products] = await Promise.all([
-      this.merchantModel.findById(mId).select('publicSlug').lean(),
-      this.productModel
-        .find({
-          merchantId: mId,
-          'offer.enabled': true,
-          // وجود newPrice أو oldPrice يكفي، بنحسب الفعّالية لاحقًا
-        })
-        .sort({ updatedAt: -1 })
-        .skip(opts.offset)
-        .limit(opts.limit)
-        .lean(),
+    const [publicSlug, products] = await Promise.all([
+      this.merchants.getPublicSlug(merchantId),
+      this.products.findOffersByMerchant(merchantId, opts),
     ]);
 
-    const publicSlug = merchant?.publicSlug;
-
     return products.map((p) => {
-      const isActive = this.computeIsActive(p.offer);
-      const priceOld = p.offer?.oldPrice ?? p.price ?? null;
-      const priceNew = p.offer?.newPrice ?? null;
+      const isActive = this.computeIsActive((p as any).offer);
+      const priceOld = (p as any).offer?.oldPrice ?? (p as any).price ?? null;
+      const priceNew = (p as any).offer?.newPrice ?? null;
       const priceEffective =
         isActive && priceNew != null
           ? Number(priceNew)
-          : Number(p.price ?? priceNew ?? 0);
+          : Number((p as any).price ?? priceNew ?? 0);
 
       return {
         id: String(p._id),
-        name: p.name,
-        slug: p.slug,
+        name: (p as any).name,
+        slug: (p as any).slug,
         priceOld: priceOld ?? null,
         priceNew,
         priceEffective,
-        currency: p.currency,
+        currency: (p as any).currency,
         discountPct: this.discountPct(
           priceOld ?? undefined,
           priceNew ?? undefined,
@@ -82,11 +76,13 @@ export class OffersService {
         url: this.buildPublicUrl(p, publicSlug),
         isActive,
         period: {
-          startAt: p.offer?.startAt ?? null,
-          endAt: p.offer?.endAt ?? null,
+          startAt: (p as any).offer?.startAt ?? null,
+          endAt: (p as any).offer?.endAt ?? null,
         },
         image:
-          Array.isArray(p.images) && p.images.length ? p.images[0] : undefined,
+          Array.isArray((p as any).images) && (p as any).images.length
+            ? (p as any).images[0]
+            : undefined,
       };
     });
   }

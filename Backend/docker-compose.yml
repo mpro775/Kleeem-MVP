@@ -223,8 +223,6 @@ services:
     image: prom/node-exporter:latest
     container_name: kaleem-node-exporter
     restart: unless-stopped
-    ports:
-      - '9100:9100'
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
@@ -298,6 +296,8 @@ services:
       - '9093:9093'
     volumes:
       - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
     networks: [backnet]
     restart: unless-stopped
 
@@ -307,8 +307,9 @@ services:
     container_name: kaleem-grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_USERS_DEFAULT_THEME=light
+      - GF_USERS_ALLOW_SIGN_UP=false
       # مهم لو خلف بروكسي أو غيرت البورت/الدومين
       - GF_SERVER_DOMAIN=grafana.kaleem-ai.com
       - GF_SERVER_ROOT_URL=https://grafana.kaleem-ai.com/
@@ -340,8 +341,6 @@ services:
     container_name: kaleem-redis-exporter
     environment:
       - REDIS_ADDR=redis:6379
-    ports:
-      - '9121:9121'
     networks: [backnet]
     restart: unless-stopped
     depends_on:
@@ -353,8 +352,6 @@ services:
     container_name: kaleem-mongodb-exporter
     environment:
       - MONGODB_URI=mongodb://admin:strongpassword@mongo:27017/admin
-    ports:
-      - '9216:9216'
     networks: [backnet]
     restart: unless-stopped
     depends_on:

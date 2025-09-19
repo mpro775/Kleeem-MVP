@@ -36,6 +36,8 @@ const config = {
     '^@common/(.*)$': '<rootDir>/src/common/$1',
     '^@modules/(.*)$': '<rootDir>/src/modules/$1',
     '^@config/(.*)$': '<rootDir>/src/config/$1',
+    '^ioredis$': '<rootDir>/test/mocks/ioredis.mock.ts',
+
   },
   setupFilesAfterEnv: ['<rootDir>/test/jest.setup.ts'],
   testTimeout: 30000,

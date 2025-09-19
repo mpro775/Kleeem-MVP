@@ -1,7 +1,7 @@
 // test/e2e/webhooks/whatsapp-cloud.e2e.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { createHmac } from 'crypto';
 import { AppModule } from '../../../src/app.module';
 

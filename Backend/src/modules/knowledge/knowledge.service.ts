@@ -1,12 +1,20 @@
-// src/modules/knowledge/knowledge.service.ts
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
+import { Types } from 'mongoose';
 import { chromium } from 'playwright';
 import { VectorService } from '../vector/vector.service';
-import { SourceUrl } from './schemas/source-url.schema';
 import { OutboxService } from 'src/common/outbox/outbox.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SOURCE_URL_REPOSITORY } from './tokens';
+import {
+  SourceUrlRepository,
+  SourceUrlEntity,
+} from './repositories/source-url.repository';
 
 function isUsefulChunk(text: string): boolean {
   const arabicCount = (text.match(/[\u0600-\u06FF]/g) || []).length;
@@ -16,24 +24,25 @@ function isUsefulChunk(text: string): boolean {
 @Injectable()
 export class KnowledgeService {
   private readonly logger = new Logger(KnowledgeService.name);
+
   constructor(
-    @InjectModel(SourceUrl.name)
-    private readonly sourceUrlModel: Model<SourceUrl>,
+    @Inject(SOURCE_URL_REPOSITORY)
+    private readonly sourceUrls: SourceUrlRepository,
     private readonly vectorService: VectorService,
-    private readonly notifications: NotificationsService,   // ⬅️ جديد
-    private readonly outbox: OutboxService,                 // ⬅️ جديد 
+    private readonly notifications: NotificationsService,
+    private readonly outbox: OutboxService,
   ) {}
 
   async addUrls(merchantId: string, urls: string[], requestedBy?: string) {
-    const unique = Array.from(new Set((urls ?? []).map(u => (u || '').trim()).filter(Boolean)));
+    const unique = Array.from(
+      new Set((urls ?? []).map((u) => (u || '').trim()).filter(Boolean)),
+    );
     if (!unique.length) return { success: false, count: 0, message: 'No URLs' };
 
-    const records = await this.sourceUrlModel.insertMany(
+    const records = await this.sourceUrls.createMany(
       unique.map((url) => ({ merchantId, url, status: 'pending' })),
-      { ordered: false },
     );
 
-    // إشعار “تمت جدولة الروابط”
     if (requestedBy) {
       await this.notifications.notifyUser(requestedBy, {
         type: 'knowledge.urls.queued',
@@ -45,34 +54,49 @@ export class KnowledgeService {
       });
     }
 
-    this.processUrlsInBackground(merchantId, records, requestedBy).catch((error) => {
-      this.logger.error(`Background processing failed: ${error.message}`);
-    });
+    this.processUrlsInBackground(merchantId, records, requestedBy).catch(
+      (error) => {
+        this.logger.error(`Background processing failed: ${error.message}`);
+      },
+    );
 
-    return { success: true, count: records.length, message: 'URLs queued for processing' };
+    return {
+      success: true,
+      count: records.length,
+      message: 'URLs queued for processing',
+    };
   }
-  private async processUrlsInBackground(merchantId: string, records: any[], requestedBy?: string) {
-    let done = 0, failed = 0;
+
+  private async processUrlsInBackground(
+    merchantId: string,
+    records: SourceUrlEntity[],
+    requestedBy?: string,
+  ) {
+    let done = 0,
+      failed = 0;
 
     for (let index = 0; index < records.length; index++) {
       const rec = records[index];
-      this.logger.log(`Processing URL ${index + 1}/${records.length}: ${rec.url}`);
+      this.logger.log(
+        `Processing URL ${index + 1}/${records.length}: ${rec.url}`,
+      );
 
-      // Outbox: started
-      await this.outbox.enqueueEvent({
-        exchange: 'knowledge.index',
-        routingKey: 'url.started',
-        eventType: 'knowledge.url.started',
-        aggregateType: 'knowledge',
-        aggregateId: merchantId,
-        payload: { merchantId, url: rec.url, index, total: records.length },
-      }).catch(() => {});
+      await this.outbox
+        .enqueueEvent({
+          exchange: 'knowledge.index',
+          routingKey: 'url.started',
+          eventType: 'knowledge.url.started',
+          aggregateType: 'knowledge',
+          aggregateId: merchantId,
+          payload: { merchantId, url: rec.url, index, total: records.length },
+        })
+        .catch(() => {});
 
       try {
         const { text } = await this.extractTextFromUrl(rec.url);
         this.logger.log(`Extracted ${text.length} characters from ${rec.url}`);
 
-        const chunks = (text.match(/.{1,1000}/gs) ?? []).map(s => s.trim());
+        const chunks = (text.match(/.{1,1000}/gs) ?? []).map((s) => s.trim());
         this.logger.log(`Split into ${chunks.length} chunks`);
 
         let processedChunks = 0;
@@ -81,22 +105,29 @@ export class KnowledgeService {
           if (chunk.length < 30) continue;
           if (!isUsefulChunk(chunk)) continue;
 
-          const embedding = await this.vectorService.embed(chunk);
-          await this.vectorService.upsertWebKnowledge([{
-            id: this.vectorService.generateWebKnowledgeId(merchantId, `${rec.url}#${i}`),
-            vector: embedding,
-            payload: { merchantId, url: rec.url, text: chunk, type: 'url', source: 'web' },
-          }]);
+          const embedding = await this.vectorService.embedText(chunk);
+          await this.vectorService.upsertWebKnowledge([
+            {
+              id: this.vectorService.generateWebKnowledgeId(
+                merchantId,
+                `${rec.url}#${i}`,
+              ),
+              vector: embedding,
+              payload: {
+                merchantId,
+                url: rec.url,
+                text: chunk,
+                type: 'url',
+                source: 'web',
+              },
+            },
+          ]);
           processedChunks++;
         }
 
-        await this.sourceUrlModel.updateOne(
-          { _id: rec._id },
-          { status: 'completed', textExtracted: text },
-        );
+        await this.sourceUrls.markCompleted(String(rec._id), text);
         done++;
 
-        // إشعار “اكتملت فهرسة رابط”
         if (requestedBy) {
           await this.notifications.notifyUser(requestedBy, {
             type: 'embeddings.completed',
@@ -108,25 +139,24 @@ export class KnowledgeService {
           });
         }
 
-        // Outbox: completed
-        await this.outbox.enqueueEvent({
-          exchange: 'knowledge.index',
-          routingKey: 'url.completed',
-          eventType: 'knowledge.url.completed',
-          aggregateType: 'knowledge',
-          aggregateId: merchantId,
-          payload: { merchantId, url: rec.url, processedChunks },
-        }).catch(() => {});
-
+        await this.outbox
+          .enqueueEvent({
+            exchange: 'knowledge.index',
+            routingKey: 'url.completed',
+            eventType: 'knowledge.url.completed',
+            aggregateType: 'knowledge',
+            aggregateId: merchantId,
+            payload: { merchantId, url: rec.url, processedChunks },
+          })
+          .catch(() => {});
       } catch (e: any) {
-        this.logger.error(`Failed to process ${rec.url}: ${e.message}`, e.stack);
-        await this.sourceUrlModel.updateOne(
-          { _id: rec._id },
-          { status: 'failed', errorMessage: e.message },
+        this.logger.error(
+          `Failed to process ${rec.url}: ${e.message}`,
+          e.stack,
         );
+        await this.sourceUrls.markFailed(String(rec._id), e.message);
         failed++;
 
-        // إشعار فشل
         if (requestedBy) {
           await this.notifications.notifyUser(requestedBy, {
             type: 'embeddings.failed',
@@ -138,19 +168,19 @@ export class KnowledgeService {
           });
         }
 
-        // Outbox: failed
-        await this.outbox.enqueueEvent({
-          exchange: 'knowledge.index',
-          routingKey: 'url.failed',
-          eventType: 'knowledge.url.failed',
-          aggregateType: 'knowledge',
-          aggregateId: merchantId,
-          payload: { merchantId, url: rec.url, error: e.message },
-        }).catch(() => {});
+        await this.outbox
+          .enqueueEvent({
+            exchange: 'knowledge.index',
+            routingKey: 'url.failed',
+            eventType: 'knowledge.url.failed',
+            aggregateType: 'knowledge',
+            aggregateId: merchantId,
+            payload: { merchantId, url: rec.url, error: e.message },
+          })
+          .catch(() => {});
       }
     }
 
-    // إشعار ملخّص الدفعة
     if (requestedBy) {
       await this.notifications.notifyUser(requestedBy, {
         type: 'embeddings.batch.completed',
@@ -167,7 +197,7 @@ export class KnowledgeService {
   }
 
   async getUrlsStatus(merchantId: string) {
-    const urls = await this.sourceUrlModel.find({ merchantId });
+    const urls = await this.sourceUrls.findByMerchant(merchantId);
     return {
       total: urls.length,
       pending: urls.filter((u) => u.status === 'pending').length,
@@ -183,15 +213,17 @@ export class KnowledgeService {
     };
   }
 
-  // ⬇️ تحسينات بسيطة للمتصفح (no-sandbox + timeout)
   async extractTextFromUrl(url: string): Promise<{ text: string }> {
     const browser = await chromium.launch({ args: ['--no-sandbox'] });
-    const page = await browser.newPage({ userAgent: 'Mozilla/5.0 (compatible; KaleemBot/1.0)' });
+    const page = await browser.newPage({
+      userAgent: 'Mozilla/5.0 (compatible; KaleemBot/1.0)',
+    });
     try {
       page.setDefaultNavigationTimeout(45_000);
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-      // انتظر networkidle قليلاً إن أمكن
-      await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
+      await page
+        .waitForLoadState('networkidle', { timeout: 15_000 })
+        .catch(() => {});
       const text = await page.evaluate(() => document.body?.innerText || '');
       return { text };
     } finally {
@@ -200,46 +232,38 @@ export class KnowledgeService {
   }
 
   async getUrls(merchantId: string) {
-    return this.sourceUrlModel
-      .find({ merchantId })
-      .select({ _id: 1, url: 1, status: 1, errorMessage: 1, createdAt: 1 })
-      .lean();
+    return this.sourceUrls.findListByMerchant(merchantId);
   }
-
 
   // ===========================
   //        دوال الحذف
   // ===========================
-
-  /** حذف بسجل Mongo _id (مع حذف متجهاته من Qdrant) */
   async deleteById(merchantId: string, id: string) {
-    if (!Types.ObjectId.isValid(id)) throw new BadRequestException('invalid id');
+    if (!Types.ObjectId.isValid(id))
+      throw new BadRequestException('invalid id');
 
-    const rec = await this.sourceUrlModel.findOne({ _id: id, merchantId });
+    const rec = await this.sourceUrls.findByIdForMerchant(id, merchantId);
     if (!rec) throw new NotFoundException('record not found');
 
     await this.deleteVectorsByUrl(merchantId, rec.url);
-    await this.sourceUrlModel.deleteOne({ _id: rec._id });
+    await this.sourceUrls.deleteByIdForMerchant(id, merchantId);
 
     return { success: true, deleted: 1, url: rec.url };
   }
 
-  /** حذف برابط URL صريح */
   async deleteByUrl(merchantId: string, url: string) {
-    const rec = await this.sourceUrlModel.findOne({ merchantId, url });
+    const rec = await this.sourceUrls.findByUrlForMerchant(url, merchantId);
     if (!rec) throw new NotFoundException('url not found');
 
     await this.deleteVectorsByUrl(merchantId, url);
-    await this.sourceUrlModel.deleteOne({ _id: rec._id });
+    await this.sourceUrls.deleteByIdForMerchant(String(rec._id), merchantId);
 
     return { success: true, deleted: 1, url };
   }
 
-  /** حذف كل روابط هذا التاجر + كل متجهاتها */
   async deleteAll(merchantId: string) {
-    const urls = await this.sourceUrlModel.find({ merchantId }).lean();
+    const urls = await this.sourceUrls.findByMerchant(merchantId);
 
-    // حذف كل نقاط هذا التاجر من web_knowledge
     await this.vectorService.deleteWebKnowledgeByFilter({
       must: [
         { key: 'merchantId', match: { value: merchantId } },
@@ -247,11 +271,10 @@ export class KnowledgeService {
       ],
     });
 
-    const { deletedCount } = await this.sourceUrlModel.deleteMany({ merchantId });
-    return { success: true, deleted: deletedCount ?? 0, urls: urls.length };
+    const deleted = await this.sourceUrls.deleteByMerchant(merchantId);
+    return { success: true, deleted, urls: urls.length };
   }
 
-  /** أداة مساعدة: حذف كل نقاط رابط واحد */
   private async deleteVectorsByUrl(merchantId: string, url: string) {
     await this.vectorService.deleteWebKnowledgeByFilter({
       must: [

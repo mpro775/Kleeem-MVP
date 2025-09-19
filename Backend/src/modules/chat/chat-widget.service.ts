@@ -2,40 +2,32 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import {
-  ChatWidgetSettings,
-  ChatWidgetSettingsDocument,
-} from './schema/chat-widget.schema';
-import { UpdateWidgetSettingsDto } from './dto/update-widget-settings.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { ChatWidgetSettings } from './schema/chat-widget.schema';
+import { UpdateWidgetSettingsDto } from './dto/update-widget-settings.dto';
+import { ChatWidgetRepository } from './repositories/chat-widget.repository';
 
 @Injectable()
 export class ChatWidgetService {
   constructor(
-    @InjectModel(ChatWidgetSettings.name)
-    private readonly widgetModel: Model<ChatWidgetSettingsDocument>,
+    @Inject('ChatWidgetRepository')
+    private readonly repo: ChatWidgetRepository,
     private readonly http: HttpService,
   ) {}
+
   async syncWidgetSlug(merchantId: string, slug: string) {
-    await this.widgetModel.findOneAndUpdate(
-      { merchantId },
-      { widgetSlug: slug },
-      { new: true, upsert: true },
-    );
+    await this.repo.setWidgetSlug(merchantId, slug);
     return slug;
   }
-  
+
   async getSettings(merchantId: string): Promise<ChatWidgetSettings> {
-    const settings = await this.widgetModel.findOne({ merchantId }).lean();
+    const settings = await this.repo.findOneByMerchant(merchantId);
     if (!settings) {
-      // أنشئ إعدادات افتراضية عند الطلب لأول مرة
-      const created = await this.widgetModel.create({ merchantId });
-      return created.toObject();
+      return await this.repo.createDefault(merchantId);
     }
     return settings;
   }
@@ -44,41 +36,32 @@ export class ChatWidgetService {
     merchantId: string,
     dto: UpdateWidgetSettingsDto,
   ): Promise<ChatWidgetSettings> {
-    const settings = await this.widgetModel
-      .findOneAndUpdate(
-        { merchantId },
-        { $set: dto },
-        { new: true, upsert: true },
-      )
-      .exec();
-
+    const settings = await this.repo.upsertAndReturn(merchantId, dto);
     if (!settings) throw new NotFoundException('Settings not found');
-    return settings.toObject();
+    return settings;
   }
+
   async generateWidgetSlug(merchantId: string): Promise<string> {
-    const base = (await this.getSettings(merchantId)).botName
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '');
+    const s = await this.getSettings(merchantId);
+    const base =
+      (s.botName || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '') || 'bot';
 
     let widgetSlug = base;
-    const exists = await this.widgetModel.exists({ widgetSlug });
+    const exists = await this.repo.existsByWidgetSlug(widgetSlug);
     if (exists) widgetSlug = `${base}-${uuidv4().slice(0, 6)}`;
-    await this.widgetModel.findOneAndUpdate(
-      { merchantId },
-      { widgetSlug },
-      { new: true },
-    );
+
+    await this.repo.setWidgetSlug(merchantId, widgetSlug);
     return widgetSlug;
   }
 
   async getSettingsBySlugOrPublicSlug(slug: string) {
-    return this.widgetModel.findOne({
-      $or: [{ widgetSlug: slug }, { publicSlug: slug }]
-    });
+    return this.repo.findBySlugOrPublicSlug(slug);
   }
-  
+
   async handleHandoff(
     merchantId: string,
     dto: { sessionId: string; note?: string },
@@ -96,7 +79,8 @@ export class ChatWidgetService {
 
     switch (settings.handoffChannel) {
       case 'slack': {
-        const url = settings.handoffConfig.webhookUrl as string;
+        const url = (settings.handoffConfig as any)?.webhookUrl as string;
+        if (!url) throw new BadRequestException('Slack webhook not configured');
         await firstValueFrom(
           this.http.post(url, {
             text: `Handoff requested: ${JSON.stringify(payload)}`,
@@ -105,11 +89,13 @@ export class ChatWidgetService {
         break;
       }
       case 'email': {
-        // مثال مبسط: استخدام SMTP service عبر API خارجي
-        const emailApi = settings.handoffConfig.apiUrl as string;
+        const apiUrl = (settings.handoffConfig as any)?.apiUrl as string;
+        const to = (settings.handoffConfig as any)?.to as string;
+        if (!apiUrl || !to)
+          throw new BadRequestException('Email handoff not configured');
         await firstValueFrom(
-          this.http.post(emailApi, {
-            to: settings.handoffConfig.to,
+          this.http.post(apiUrl, {
+            to,
             subject: `Handoff for session ${dto.sessionId}`,
             body: JSON.stringify(payload),
           }),
@@ -117,40 +103,39 @@ export class ChatWidgetService {
         break;
       }
       case 'webhook': {
-        const url = settings.handoffConfig.url as string;
+        const url = (settings.handoffConfig as any)?.url as string;
+        if (!url) throw new BadRequestException('Webhook URL not configured');
         await firstValueFrom(this.http.post(url, payload));
         break;
       }
+      default:
+        throw new BadRequestException('Unknown handoff channel');
     }
     return { success: true };
   }
 
   async getEmbedSettings(merchantId: string) {
-    const s = await this.widgetModel.findOne({ merchantId }).lean();
+    const s = await this.repo.findOneByMerchant(merchantId);
     if (!s) throw new NotFoundException('Settings not found');
 
     let headerBg = s.headerBgColor;
     let brand = s.brandColor;
 
+    // استخدام ألوان الستورفرونت لو مفعّل
     if ((s as any).useStorefrontBrand) {
-      const Storefront = this.widgetModel.db.model('Storefront');
-      const sf = await Storefront.findOne({ merchant: merchantId }).lean();
-      const dark = (sf as any).brandDark || '#111827';
+      const sf = await this.repo.getStorefrontBrand(merchantId);
+      const dark = sf?.brandDark || '#111827';
       headerBg = dark;
       brand = dark;
     }
 
-    const MerchantModel = this.widgetModel.db.model('Merchant');
-    const m = await MerchantModel.findById(merchantId)
-      .select('publicSlug')
-      .lean();
-    const shareUrl = `/${(m as any).publicSlug}/chat`;
+    const publicSlug = await this.repo.getMerchantPublicSlug(merchantId);
+    const shareUrl = `/${publicSlug ?? ''}/chat`;
 
     return {
       embedMode: s.embedMode,
       availableModes: ['bubble', 'iframe', 'bar', 'conversational'],
       shareUrl,
-      // نعيد ألوان الواجهه للاستهلاك المباشر
       colors: {
         headerBgColor: headerBg,
         brandColor: brand,
@@ -159,21 +144,25 @@ export class ChatWidgetService {
     };
   }
 
-  /** تحديث وضعية الـ Embed */
-  // داخل ChatWidgetService
   async updateEmbedSettings(merchantId: string, dto: { embedMode?: string }) {
-    const updated = await this.widgetModel
-      .findOneAndUpdate(
-        { merchantId },
-        dto.embedMode !== undefined ? { embedMode: dto.embedMode } : {},
-        { new: true },
-      )
-      .lean();
+    const updated = await this.repo.upsertAndReturn(
+      merchantId,
+      dto.embedMode !== undefined
+        ? {
+            embedMode: dto.embedMode as unknown as
+              | 'bubble'
+              | 'iframe'
+              | 'bar'
+              | 'conversational',
+          }
+        : {},
+    );
     if (!updated) throw new NotFoundException('Settings not found');
+
     return {
       embedMode: updated.embedMode,
       shareUrl: `/chat/${updated.widgetSlug}`,
-      availableModes: ['bubble', 'iframe', 'bar', 'conversational'], // ← أضف هذا
+      availableModes: ['bubble', 'iframe', 'bar', 'conversational'],
     };
   }
 }

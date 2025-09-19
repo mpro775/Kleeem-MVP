@@ -1,50 +1,35 @@
-// src/modules/merchants/services/prompt-version.service.ts
-
 import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { MerchantDocument } from '../schemas/merchant.schema';
+import { PromptVersionRepository } from '../repositories/prompt-version.repository';
 
 @Injectable()
 export class PromptVersionService {
   constructor(
-    @InjectModel('Merchant')
-    private readonly merchantModel: Model<MerchantDocument>,
+    @Inject('PromptVersionRepository')
+    private readonly repo: PromptVersionRepository,
   ) {}
 
   /** يحفظ نسخة متقدمة حالية في سجل history قبل التعديل */
   async snapshot(merchantId: string, note?: string) {
-    const m = await this.merchantModel.findById(merchantId);
-    if (!m) throw new NotFoundException('Merchant not found');
-
-    if (!Array.isArray(m.advancedConfigHistory)) {
-      m.advancedConfigHistory = [];
-    }
+    const m = await this.repo.getOrFail(merchantId);
 
     const currentTpl = m.currentAdvancedConfig?.template?.trim();
     if (currentTpl) {
-      m.advancedConfigHistory.push({
+      await this.repo.appendAdvancedHistory(merchantId, {
         template: currentTpl,
         note,
         updatedAt: new Date(),
       });
-      await m.save();
     }
   }
 
   /** يعيد قائمة سجل القوالب المتقدمة */
   async list(merchantId: string) {
-    const m = await this.merchantModel
-      .findById(merchantId, 'advancedConfigHistory')
-      .lean();
-    if (!m) throw new NotFoundException('Merchant not found');
-    return Array.isArray(m.advancedConfigHistory)
-      ? m.advancedConfigHistory
-      : [];
+    return this.repo.getAdvancedHistory(merchantId);
   }
 
   /**
@@ -52,25 +37,24 @@ export class PromptVersionService {
    * @param versionIndex رقم المؤشر (0-based)
    */
   async revert(merchantId: string, versionIndex: number) {
-    const m = await this.merchantModel.findById(merchantId);
-    if (!m) throw new NotFoundException('Merchant not found');
+    // نتأكد من وجود التاجر
+    await this.repo.getOrFail(merchantId);
 
-    const history = Array.isArray(m.advancedConfigHistory)
-      ? m.advancedConfigHistory
-      : [];
+    const history = await this.repo.getAdvancedHistory(merchantId);
 
     if (versionIndex < 0 || versionIndex >= history.length) {
       throw new BadRequestException('Invalid version index');
     }
 
-    // أولًا، خزن النسخة الحالية كسجل
+    // خزن النسخة الحالية كسجل أولاً
     await this.snapshot(merchantId, 'Revert snapshot');
 
-    // ثمّ استرجع القالب من history وقم بالتطبيق
+    // ثم طبّق النسخة المطلوبة على currentAdvancedConfig
     const version = history[versionIndex];
-    m.currentAdvancedConfig.template = version.template;
-    m.currentAdvancedConfig.updatedAt = new Date();
-    m.currentAdvancedConfig.note = version.note;
-    await m.save();
+    await this.repo.setCurrentAdvancedConfig(merchantId, {
+      template: version.template,
+      updatedAt: new Date(),
+      note: version.note,
+    });
   }
 }

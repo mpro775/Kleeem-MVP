@@ -1,39 +1,22 @@
-// src/modules/kleem/botChats/botChats.service.ts
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, PipelineStage } from 'mongoose';
+import { Inject, Injectable } from '@nestjs/common';
+import { FilterQuery, PipelineStage } from 'mongoose';
 import { BotChatSession } from './schemas/botChats.schema';
 import { QueryBotRatingsDto } from './dto/query-bot-ratings.dto';
-
-export interface AppendMessage {
-  role: 'user' | 'bot';
-  text: string;
-  metadata?: Record<string, unknown>;
-  timestamp?: Date;
-}
+import {
+  AppendMessage,
+  BotChatRepository,
+} from './repositories/bot-chats.repository';
+import { BOT_CHAT_REPOSITORY } from './tokens';
 
 @Injectable()
 export class BotChatsService {
   constructor(
-    @InjectModel(BotChatSession.name)
-    private readonly botChatModel: Model<BotChatSession>,
+    @Inject(BOT_CHAT_REPOSITORY)
+    private readonly repo: BotChatRepository,
   ) {}
 
   async createOrAppend(sessionId: string, messages: AppendMessage[]) {
-    const doc = await this.botChatModel.findOne({ sessionId });
-    const toInsert = messages.map((m) => ({
-      role: m.role,
-      text: m.text,
-      metadata: m.metadata ?? {},
-      timestamp: m.timestamp ?? new Date(),
-    }));
-
-    if (doc) {
-      doc.messages.push(...toInsert);
-      doc.markModified('messages');
-      return doc.save();
-    }
-    return this.botChatModel.create({ sessionId, messages: toInsert });
+    return this.repo.createOrAppend(sessionId, messages);
   }
 
   async rateMessage(
@@ -42,37 +25,23 @@ export class BotChatsService {
     rating: 0 | 1,
     feedback?: string,
   ) {
-    const doc = await this.botChatModel.findOne({ sessionId });
-    if (!doc || !doc.messages[msgIdx]) {
-      throw new Error('Message not found for rating');
-    }
-    doc.messages[msgIdx].rating = rating;
-    if (typeof feedback === 'string') doc.messages[msgIdx].feedback = feedback;
-    await doc.save();
+    await this.repo.rateMessage(sessionId, msgIdx, rating, feedback);
     return { status: 'ok' as const };
   }
 
   async findBySession(sessionId: string) {
-    return this.botChatModel.findOne({ sessionId }).lean();
+    return this.repo.findBySession(sessionId);
   }
 
   async findAll(page = 1, limit = 20, q?: string) {
     const filter: FilterQuery<BotChatSession> = {};
     if (q) (filter as any)['messages.text'] = { $regex: q, $options: 'i' };
-
-    const total = await this.botChatModel.countDocuments(filter);
-    const data = await this.botChatModel
-      .find(filter)
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .sort({ updatedAt: -1 })
-      .lean();
-
-    return { data, total };
+    return this.repo.findAll(filter, page, limit);
   }
 
   async listBotRatings(qry: QueryBotRatingsDto) {
     const { page, limit, rating, q, sessionId, from, to } = qry;
+
     const match: Record<string, any> = {
       'messages.role': 'bot',
       'messages.rating': { $ne: null },
@@ -107,10 +76,9 @@ export class BotChatsService {
               ':',
               { $toString: '$messages.timestamp' },
             ],
-          }, // id اصطناعي للجدول
+          },
           sessionId: 1,
           updatedAt: 1,
-          msgIdx: { $indexOfArray: ['$messages', '$messages'] }, // لا يعمل هكذا في التجميع — لذا لا نعيده (اختياري)
           message: '$messages.text',
           rating: '$messages.rating',
           feedback: '$messages.feedback',
@@ -125,13 +93,12 @@ export class BotChatsService {
       },
     ];
 
-    const res = await this.botChatModel.aggregate(pipeline);
+    const res = await this.repo.aggregate(pipeline);
     const items = res[0]?.items ?? [];
     const total = res[0]?.meta?.[0]?.total ?? 0;
     return { items, total, page, limit };
   }
 
-  // إحصائيات سريعة
   async botRatingsStats(from?: string, to?: string) {
     const match: Record<string, any> = {
       'messages.role': 'bot',
@@ -143,7 +110,7 @@ export class BotChatsService {
       if (to) match['messages.timestamp'].$lte = new Date(to);
     }
 
-    const [agg] = await this.botChatModel.aggregate([
+    const [agg] = await this.repo.aggregate([
       { $unwind: '$messages' },
       { $match: match },
       {
@@ -175,11 +142,7 @@ export class BotChatsService {
       },
     ]);
 
-    // Top أسوأ ردود (الأكثر 👎)
-    const topBad = await this.getFrequentBadBotReplies(10);
-
-    // توزيع أسبوعي (آخر 8 أسابيع)
-    const weekly = await this.botChatModel.aggregate([
+    const weekly = await this.repo.aggregate([
       { $unwind: '$messages' },
       { $match: match },
       {
@@ -197,45 +160,20 @@ export class BotChatsService {
       { $limit: 8 },
     ]);
 
+    const topBad = await this.repo.getFrequentBadBotReplies(10);
+
     return {
       summary: agg ?? { totalRated: 0, thumbsUp: 0, thumbsDown: 0, upRate: 0 },
       weekly: weekly.reverse(),
       topBad,
     };
   }
-  // إحصائيات
+
   async getTopQuestions(limit = 10) {
-    const agg = await this.botChatModel.aggregate([
-      { $unwind: '$messages' },
-      { $match: { 'messages.role': 'user' } },
-      { $group: { _id: '$messages.text', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: limit },
-    ]);
-    return agg.map((x) => ({
-      question: x._id as string,
-      count: x.count as number,
-    }));
+    return this.repo.getTopQuestions(limit);
   }
 
   async getFrequentBadBotReplies(limit = 10) {
-    const agg = await this.botChatModel.aggregate([
-      { $unwind: '$messages' },
-      { $match: { 'messages.role': 'bot', 'messages.rating': 0 } },
-      {
-        $group: {
-          _id: '$messages.text',
-          count: { $sum: 1 },
-          feedbacks: { $push: '$messages.feedback' },
-        },
-      },
-      { $sort: { count: -1 } },
-      { $limit: limit },
-    ]);
-    return agg.map((x) => ({
-      text: x._id as string,
-      count: x.count as number,
-      feedbacks: (x.feedbacks as (string | null)[]).filter(Boolean) as string[],
-    }));
+    return this.repo.getFrequentBadBotReplies(limit);
   }
 }

@@ -1,0 +1,463 @@
+erDiagram
+Analytics-event {
+  ObjectId merchantId PK?
+  String type PK?
+  String channel PK?
+  Mixed payload 
+}
+Kleem-missing-response {
+  String channel PK?
+  String question PK?
+  String botReply 
+  String sessionId 
+  String customerId 
+  Boolean resolved 
+  String manualReply 
+  String category 
+  String aiAnalysis 
+  String sourceId 
+}
+Missing-response {
+  ObjectId merchant PK?
+  Mixed channel PK?
+  String question PK?
+  String botReply PK?
+  String sessionId 
+  String aiAnalysis 
+  String customerId 
+  Mixed type 
+  Boolean resolved 
+  Date resolvedAt 
+  String resolvedBy 
+}
+Missing-response }o--|| Merchant : "merchant"
+Stats {
+  ObjectId merchantId PK?
+  Mixed period PK?
+  Date date PK?
+  Number productCount 
+  String messagesByChannel 
+}
+Unavailable-products {
+  ObjectId merchant PK?
+  String channel PK?
+  String productName PK?
+  String question 
+  String botReply 
+  String sessionId 
+  String customerId 
+  String context 
+  Boolean resolved 
+  String manualReply 
+  String category 
+}
+Unavailable-products }o--|| Merchant : "merchant"
+Email-verification-token {
+  ObjectId userId PK?
+  String codeHash PK?
+  Date expiresAt PK?
+}
+Email-verification-token }o--|| User : "userId"
+Password-reset-token {
+  ObjectId userId PK?
+  String tokenHash PK?
+  Date expiresAt PK?
+  Boolean used 
+}
+Password-reset-token }o--|| User : "userId"
+Category {
+  String name PK?
+  ObjectId merchantId PK?
+  ObjectId parent 
+  String description 
+  String image 
+  String keywords 
+  String slug PK?
+  String path 
+  ObjectId ancestors 
+  Number depth 
+  Number order 
+}
+Category }o--|| Merchant : "merchantId"
+Category }o--|| Category : "parent"
+Category }o--|| Category : "ancestors"
+Channel {
+  ObjectId merchantId PK?
+  Mixed provider PK?
+  Boolean enabled 
+  Mixed status 
+  String accountLabel 
+  String webhookUrl 
+  String secretHash 
+  String accessTokenEnc 
+  String refreshTokenEnc 
+  Date expiresAt 
+  String scopes 
+  String phoneNumberId 
+  String wabaId 
+  String appSecretEnc 
+  String verifyTokenHash 
+  String sessionId 
+  String instanceId 
+  String qr 
+  String botTokenEnc 
+  String username 
+  String defaultChatId 
+  String pageId 
+  String igBusinessId 
+  String widgetSettings 
+  Boolean isDefault 
+  Date deletedAt 
+}
+Channel }o--|| Merchant : "merchantId"
+Document {
+  String merchantId PK?
+  String filename PK?
+  String fileType PK?
+  String storageKey PK?
+  String status 
+  String errorMessage 
+}
+Faq {
+  String merchantId PK?
+  String question PK?
+  String answer PK?
+  Mixed status 
+  String errorMessage 
+}
+Instruction {
+  ObjectId merchantId 
+  String instruction PK?
+  String relatedReplies 
+  String type 
+  Boolean active 
+}
+Instruction }o--|| Merchant : "merchantId"
+Integration {
+  ObjectId merchantId PK?
+  Mixed provider PK?
+  Boolean active 
+  String accessToken 
+  String refreshToken 
+  String tokenType 
+  Number expiresIn 
+  Date expiresAt 
+  String managerToken 
+  String authorizationToken 
+  String storeId 
+  String storeUrl 
+  String scopes 
+  Date lastSync 
+}
+Integration }o--|| Merchant : "merchantId"
+Source-url {
+  String merchantId PK?
+  String url PK?
+  String status 
+  String errorMessage 
+  String textExtracted 
+}
+Lead {
+  String merchantId PK?
+  String sessionId PK?
+  String data PK?
+  String source 
+  String phoneNormalized 
+  String name 
+}
+Address {
+  String street 
+  String city 
+  String state 
+  String postalCode 
+  String country 
+}
+Advanced-config {
+  String template 
+  Date updatedAt 
+  String note 
+}
+Merchant {
+  Date requestedAt 
+  ObjectId requestedBy 
+  String reason 
+  Date forcedAt 
+  ObjectId forcedBy 
+  String name 
+  ObjectId userId PK?
+  String skippedChecklistItems 
+  String logoUrl 
+  Mixed productSource 
+  String productSourceConfig 
+  Mixed addresses 
+  String socialLinks 
+  Mixed subscription PK?
+  String categories 
+  String customCategory 
+  String businessType 
+  String businessDescription 
+  String workflowId 
+  String publicSlug 
+  String logoKey 
+  Boolean publicSlugEnabled 
+  Mixed quickConfig 
+  Mixed currentAdvancedConfig 
+  String status 
+  String phone 
+  Date lastActivity 
+  Mixed advancedConfigHistory 
+  String finalPromptTemplate 
+  String returnPolicy 
+  String exchangePolicy 
+  String shippingPolicy 
+  Boolean active 
+  Date deletedAt 
+  Mixed deletion 
+  ObjectId storefront 
+  Mixed workingHours 
+}
+Merchant }o--|| User : "requestedBy"
+Merchant }o--|| User : "forcedBy"
+Merchant }o--|| User : "userId"
+Merchant }o--|| Storefront : "storefront"
+Quick-config {
+  String dialect 
+  String tone 
+  String customInstructions 
+  Boolean includeClosingPhrase 
+  String customerServicePhone 
+  String customerServiceWhatsapp 
+  String closingText 
+}
+Subscription-plan {
+  Mixed tier PK?
+  ObjectId planId 
+  Date startDate PK?
+  Date endDate 
+  String features 
+}
+Subscription-plan }o--|| Plan : "planId"
+Working-hours {
+  Mixed day PK?
+  String openTime PK?
+  String closeTime PK?
+}
+Message {
+  ObjectId _id 
+  Mixed role PK?
+  String text PK?
+  Date timestamp PK?
+  String metadata 
+  String keywords 
+  Mixed rating 
+  String feedback 
+  ObjectId ratedBy 
+  Date ratedAt 
+  ObjectId merchantId PK?
+  String sessionId PK?
+  Mixed transport 
+  Mixed channel PK?
+  Boolean handoverToAgent 
+  Mixed messages 
+}
+Message }o--|| User : "ratedBy"
+Message }o--|| Merchant : "merchantId"
+Notification {
+  ObjectId userId 
+  ObjectId merchantId 
+  String type PK?
+  String title PK?
+  String body 
+  String data 
+  Mixed severity 
+  Boolean read 
+  Date readAt 
+}
+Notification }o--|| User : "userId"
+Notification }o--|| Merchant : "merchantId"
+Order {
+  ObjectId product 
+  String name PK?
+  Number price PK?
+  Number quantity PK?
+  String merchantId PK?
+  String sessionId PK?
+  String customer PK?
+  Mixed products PK?
+  String status 
+  String externalId 
+  String source 
+}
+Order }o--|| Product : "product"
+Plan {
+  String name PK?
+  Number priceCents PK?
+  String currency PK?
+  Number durationDays PK?
+  Number messageLimit 
+  Boolean llmEnabled 
+  Boolean isTrial 
+  Boolean isActive 
+  String description 
+  String features 
+  Mixed billingPeriod 
+  Number trialPeriodDays 
+  Boolean archived 
+}
+Product-setup-config {
+  ObjectId merchantId PK?
+  String storeType PK?
+  String provider 
+  Boolean hasApi 
+  String apiUrl 
+  String accessToken 
+}
+Product-setup-config }o--|| Merchant : "merchantId"
+Product {
+  ObjectId merchantId PK?
+  String originalUrl 
+  String platform 
+  String name PK?
+  String description 
+  Number price 
+  Boolean isAvailable 
+  String images 
+  ObjectId category 
+  String lowQuantity 
+  String specsBlock 
+  Date lastFetchedAt 
+  Date lastFullScrapedAt 
+  String errorState 
+  Mixed source PK?
+  String sourceUrl 
+  String externalId 
+  String status 
+  Date lastSync 
+  Mixed syncStatus 
+  ObjectId offers 
+  String keywords 
+  String uniqueKey 
+  Mixed currency 
+  String attributes 
+  Number offer 
+  String publicUrlStored 
+  String slug 
+  String storefrontSlug 
+  String storefrontDomain 
+}
+Product }o--|| Merchant : "merchantId"
+Product }o--|| Category : "category"
+Product }o--|| Offer : "offers"
+Storefront {
+  ObjectId merchant PK?
+  String primaryColor 
+  String buttonStyle 
+  String secondaryColor 
+  String brandDark 
+  String banners 
+  String slug 
+  String storefrontUrl 
+  String domain 
+  String featuredProductIds 
+}
+Storefront }o--|| Merchant : "merchant"
+Support-ticket {
+  String originalName PK?
+  String filename PK?
+  String mimeType PK?
+  Number size PK?
+  String url 
+  Mixed storage 
+  String name PK?
+  String email PK?
+  String phone 
+  Mixed topic PK?
+  String subject PK?
+  String message PK?
+  Mixed status 
+  String source 
+  String ip 
+  String userAgent 
+  Mixed attachments 
+  String ticketNumber 
+  ObjectId merchantId 
+  ObjectId createdBy 
+}
+Support-ticket }o--|| Merchant : "merchantId"
+Support-ticket }o--|| User : "createdBy"
+Usage-counter {
+  ObjectId merchantId PK?
+  String monthKey PK?
+  Number messagesUsed 
+}
+Usage-counter }o--|| Merchant : "merchantId"
+User {
+  String email PK?
+  String password PK?
+  Boolean firstLogin 
+  String name PK?
+  String phone 
+  Mixed role 
+  Boolean emailVerified 
+  String emailVerificationCode 
+  Date emailVerificationExpiresAt 
+  ObjectId merchantId 
+  Date passwordChangedAt 
+  Mixed notificationsPrefs 
+  Boolean active 
+  Date deletedAt 
+}
+User }o--|| Merchant : "merchantId"
+Incoming-event {
+  String merchantId PK?
+  String channel PK?
+  String platformMessageId PK?
+  String sessionId 
+}
+Webhook {
+  String eventType PK?
+  String payload PK?
+  Date receivedAt 
+}
+Workflow-history {
+  String merchantId PK?
+  String workflowId PK?
+  Number version PK?
+  Mixed workflowJson PK?
+  String updatedBy PK?
+  Date updatedAt 
+  Boolean isRollback 
+}
+BotChats {
+  Mixed role PK?
+  String text PK?
+  String metadata 
+  Date timestamp 
+  Mixed rating 
+  String feedback 
+  String sessionId PK?
+  Mixed messages 
+}
+BotFaq {
+  String question PK?
+  String answer PK?
+  Mixed status 
+  Mixed source 
+  String tags 
+  Mixed locale 
+  Mixed vectorStatus 
+  String createdBy 
+}
+BotPrompt {
+  Mixed type PK?
+  String content PK?
+  String name 
+  String tags 
+  Boolean active 
+  Number version 
+  Mixed locale 
+  String channel 
+  String variables 
+  String goal 
+  Boolean archived 
+}

@@ -5,14 +5,12 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CatalogController } from './catalog.controller';
 import { CatalogService } from './catalog.service';
 
-import {
-  Merchant,
-  MerchantSchema,
-} from '../merchants/schemas/merchant.schema';
+import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
 
 import { ZidModule } from '../integrations/zid/zid.module';
 import { SallaModule } from '../integrations/salla/salla.module';
 import { ProductsModule } from '../products/products.module';
+import { MongoCatalogRepository } from './repositories/mongo-catalog.repository';
 
 @Module({
   imports: [
@@ -24,7 +22,13 @@ import { ProductsModule } from '../products/products.module';
     forwardRef(() => ProductsModule),
   ],
   controllers: [CatalogController],
-  providers: [CatalogService],
+  providers: [
+    CatalogService,
+    {
+      provide: 'CatalogRepository',
+      useClass: MongoCatalogRepository,
+    },
+  ],
   exports: [CatalogService],
 })
 export class CatalogModule {}

@@ -12,6 +12,7 @@ import { EvolutionService } from '../integrations/evolution.service';
 import { ChannelsDispatcherService } from './channels-dispatcher.service';
 import { WhatsappCloudService } from './whatsapp-cloud.service';
 import { ChatModule } from '../chat/chat.module';
+import { MongoChannelsRepository } from './repositories/mongo-channels.repository';
 
 @Module({
   imports: [
@@ -22,6 +23,10 @@ import { ChatModule } from '../chat/chat.module';
   controllers: [ChannelsController],
   providers: [
     ChannelsService,
+    {
+      provide: 'ChannelsRepository',
+      useClass: MongoChannelsRepository,
+    },
     TelegramAdapter,
     WhatsAppCloudAdapter,
     WhatsAppQrAdapter,

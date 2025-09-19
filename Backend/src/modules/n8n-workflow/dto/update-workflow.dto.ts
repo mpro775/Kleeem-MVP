@@ -1,5 +1,5 @@
 import { IsObject, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { WorkflowDefinition } from '../n8n-workflow.service';
+import { WorkflowDefinition } from '../types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**

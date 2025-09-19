@@ -2,14 +2,16 @@ groups:
   - name: core
     rules:
       - alert: APIHighErrorRate
-        expr: sum(rate(http_requests_total{job="api",status=~"5.."}[5m])) 
-              / sum(rate(http_requests_total{job="api"}[5m])) > 0.05
+        expr:
+          sum(rate(http_requests_total{job="kaleem-api",status_code=~"5.."}[5m]))
+          / sum(rate(http_requests_total{job="kaleem-api"}[5m])) > 0.01
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "API 5xx > 5% لمدة 5 دقائق"
-          description: "تحقق من لوجات api و backend."
+          summary: 'API 5xx > 1% لمدة 5 دقائق'
+          description: 'راجع logs و traces للمسارات الأكثر تأثراً.'
+          runbook_url: 'https://kb.kaleem-ai.com/runbooks/api-high-error-rate'
 
       - alert: RabbitMQQueueBacklog
         expr: rabbitmq_queue_messages{queue=~".*\\.q$"} > 1000
@@ -17,8 +19,9 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "RabbitMQ backlog مرتفع"
-          description: "الطابور {{ $labels.queue }} تجاوز 1000 رسالة."
+          summary: 'RabbitMQ backlog مرتفع'
+          description: 'الطابور {{ $labels.queue }} تجاوز 1000 رسالة.'
+          runbook_url: 'https://kb.kaleem-ai.com/runbooks/rabbitmq-backlog'
 
       - alert: InstanceHighCPU
         expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
@@ -26,13 +29,15 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "CPU > 80% لوقت طويل"
-          description: "تحقق من الخدمة: {{ $labels.container_label_com_docker_compose_service }}"
+          summary: 'CPU > 80% لوقت طويل'
+          description: 'تحقق من الخدمة: {{ $labels.container_label_com_docker_compose_service }}'
+          runbook_url: 'https://kb.kaleem-ai.com/runbooks/high-cpu-usage'
 
       - alert: QdrantDown
-        expr: up{job="cadvisor"} < 1 and on() vector(0) == 0   # بديل سريع
+        expr: up{job="cadvisor"} < 1 and on() vector(0) == 0 # بديل سريع
         for: 5m
         labels: { severity: critical }
         annotations:
-          summary: "تحقق من qdrant"
-          description: "جرّب healthcheck و/أو راقب اللوجات عبر Loki."
+          summary: 'تحقق من qdrant'
+          description: 'جرّب healthcheck و/أو راقب اللوجات عبر Loki.'
+          runbook_url: 'https://kb.kaleem-ai.com/runbooks/qdrant-down'

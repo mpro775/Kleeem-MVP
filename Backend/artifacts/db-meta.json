@@ -1,0 +1,2899 @@
+{
+  "generatedAt": "2025-09-18T02:29:39.426Z",
+  "models": [
+    {
+      "name": "Analytics-event",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/analytics/schemas/analytics-event.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "ObjectId",
+          "required": true,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "channel",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "payload",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "AnalyticsEventSchema.index({ merchantId: 1, createdAt: -1 })"
+      ]
+    },
+    {
+      "name": "Kleem-missing-response",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/analytics/schemas/kleem-missing-response.schema.ts",
+      "fields": [
+        {
+          "name": "channel",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "question",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "botReply",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "sessionId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "customerId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "resolved",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "manualReply",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "category",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "aiAnalysis",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "sourceId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "KleemMissingResponseSchema.index({ channel: 1, createdAt: -1 })",
+        "KleemMissingResponseSchema.index({ resolved: 1, createdAt: -1 })",
+        "KleemMissingResponseSchema.index({ sessionId: 1 })",
+        "KleemMissingResponseSchema.index({ customerId: 1 })"
+      ]
+    },
+    {
+      "name": "Missing-response",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/analytics/schemas/missing-response.schema.ts",
+      "fields": [
+        {
+          "name": "merchant",
+          "type": "ObjectId",
+          "required": true,
+          "index": true,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "channel",
+          "type": "Mixed",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "question",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "botReply",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "sessionId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "aiAnalysis",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "customerId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "type",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "resolved",
+          "type": "Boolean",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "resolvedAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "resolvedBy",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "MissingResponseSchema.index({ merchant: 1, createdAt: -1 })",
+        "MissingResponseSchema.index({ merchant: 1, resolved: 1, createdAt: -1 })",
+        "MissingResponseSchema.index({ merchant: 1, channel: 1, createdAt: -1 })",
+        "MissingResponseSchema.index({ merchant: 1, type: 1, createdAt: -1 })"
+      ]
+    },
+    {
+      "name": "Stats",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/analytics/schemas/stats.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "ObjectId",
+          "required": true,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "period",
+          "type": "Mixed",
+          "required": true,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "date",
+          "type": "Date",
+          "required": true,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "productCount",
+          "type": "Number",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "messagesByChannel",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Unavailable-products",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/analytics/schemas/unavailable-products.schema.ts",
+      "fields": [
+        {
+          "name": "merchant",
+          "type": "ObjectId",
+          "required": true,
+          "index": false,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "channel",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "productName",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "question",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "botReply",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "sessionId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "customerId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "context",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "resolved",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "manualReply",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "category",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Email-verification-token",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/auth/schemas/email-verification-token.schema.ts",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "ObjectId",
+          "required": true,
+          "index": true,
+          "unique": false,
+          "ref": "User"
+        },
+        {
+          "name": "codeHash",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "expiresAt",
+          "type": "Date",
+          "required": true,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Password-reset-token",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/auth/schemas/password-reset-token.schema.ts",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "ObjectId",
+          "required": true,
+          "index": true,
+          "unique": false,
+          "ref": "User"
+        },
+        {
+          "name": "tokenHash",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "expiresAt",
+          "type": "Date",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "used",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Category",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/categories/schemas/category.schema.ts",
+      "fields": [
+        {
+          "name": "name",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "merchantId",
+          "type": "ObjectId",
+          "required": true,
+          "index": true,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "parent",
+          "type": "ObjectId",
+          "required": false,
+          "index": true,
+          "unique": false,
+          "ref": "Category"
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "image",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "keywords",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "slug",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "path",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "ancestors",
+          "type": "ObjectId",
+          "required": false,
+          "index": false,
+          "unique": false,
+          "ref": "Category"
+        },
+        {
+          "name": "depth",
+          "type": "Number",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "order",
+          "type": "Number",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "CategorySchema.index(\r\n  {\r\n    merchantId: 1,\r\n    parent: 1,\r\n    order: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "CategorySchema.index(\r\n  { merchantId: 1, parent: 1, slug: 1 },\r\n  { unique: true, background: true },\r\n)",
+        "CategorySchema.index(\r\n  { name: 'text', description: 'text' },\r\n  {\r\n    weights: { name: 5, description: 1 },\r\n    background: true,\r\n  },\r\n)",
+        "CategorySchema.index(\r\n  {\r\n    merchantId: 1,\r\n    path: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "CategorySchema.index(\r\n  {\r\n    merchantId: 1,\r\n    depth: 1,\r\n    order: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "CategorySchema.index(\r\n  {\r\n    merchantId: 1,\r\n    ancestors: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)"
+      ]
+    },
+    {
+      "name": "Channel",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/channels/schemas/channel.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "ObjectId",
+          "required": true,
+          "index": true,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "provider",
+          "type": "Mixed",
+          "required": true,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "enabled",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "status",
+          "type": "Mixed",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "accountLabel",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "webhookUrl",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "secretHash",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "accessTokenEnc",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "refreshTokenEnc",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "expiresAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "scopes",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "phoneNumberId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "wabaId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "appSecretEnc",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "verifyTokenHash",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "sessionId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "instanceId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "qr",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "botTokenEnc",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "username",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "defaultChatId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "pageId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "igBusinessId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "widgetSettings",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "isDefault",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "deletedAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "ChannelSchema.index({ merchantId: 1, provider: 1, status: 1 })",
+        "ChannelSchema.index(\r\n  { merchantId: 1, provider: 1, isDefault: 1 },\r\n  { unique: true, partialFilterExpression: { isDefault: true, deletedAt: null } },\r\n)",
+        "ChannelSchema.index({ merchantId: 1, provider: 1, deletedAt: 1 })"
+      ]
+    },
+    {
+      "name": "Document",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/documents/schemas/document.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "filename",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "fileType",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "storageKey",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "errorMessage",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Faq",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/faq/schemas/faq.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "question",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "answer",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "status",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "errorMessage",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "FaqSchema.index({ merchantId: 1, status: 1, createdAt: -1 })"
+      ]
+    },
+    {
+      "name": "Instruction",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/instructions/schemas/instruction.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "ObjectId",
+          "required": false,
+          "index": false,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "instruction",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "relatedReplies",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "active",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Integration",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/integrations/schemas/integration.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "ObjectId",
+          "required": true,
+          "index": true,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "provider",
+          "type": "Mixed",
+          "required": true,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "active",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "accessToken",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "refreshToken",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "tokenType",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "expiresIn",
+          "type": "Number",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "expiresAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "managerToken",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "authorizationToken",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "storeId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "storeUrl",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "scopes",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "lastSync",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "IntegrationSchema.index({ merchantId: 1, provider: 1 }, { unique: true })"
+      ]
+    },
+    {
+      "name": "Source-url",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/knowledge/schemas/source-url.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "url",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "errorMessage",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "textExtracted",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "SourceUrlSchema.index({ merchantId: 1, url: 1 }, { unique: true })"
+      ]
+    },
+    {
+      "name": "Lead",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/leads/schemas/lead.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "String",
+          "required": true,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "sessionId",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "data",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "source",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "phoneNormalized",
+          "type": "String",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "LeadSchema.index({ merchantId: 1, phoneNormalized: 1 })",
+        "LeadSchema.index({ merchantId: 1, sessionId: 1 })"
+      ]
+    },
+    {
+      "name": "Address",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/merchants/schemas/address.schema.ts",
+      "fields": [
+        {
+          "name": "street",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "city",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "state",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "postalCode",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "country",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Advanced-config",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/merchants/schemas/advanced-config.schema.ts",
+      "fields": [
+        {
+          "name": "template",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "note",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Merchant",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/merchants/schemas/merchant.schema.ts",
+      "fields": [
+        {
+          "name": "requestedAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "requestedBy",
+          "type": "ObjectId",
+          "required": false,
+          "index": false,
+          "unique": false,
+          "ref": "User"
+        },
+        {
+          "name": "reason",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "forcedAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "forcedBy",
+          "type": "ObjectId",
+          "required": false,
+          "index": false,
+          "unique": false,
+          "ref": "User"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "userId",
+          "type": "ObjectId",
+          "required": true,
+          "index": false,
+          "unique": false,
+          "ref": "User"
+        },
+        {
+          "name": "skippedChecklistItems",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "logoUrl",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "productSource",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "productSourceConfig",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "addresses",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "socialLinks",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "subscription",
+          "type": "Mixed",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "categories",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "customCategory",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "businessType",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "businessDescription",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "workflowId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "publicSlug",
+          "type": "String",
+          "required": false,
+          "index": true,
+          "unique": true
+        },
+        {
+          "name": "logoKey",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "publicSlugEnabled",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "quickConfig",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "currentAdvancedConfig",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "phone",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "lastActivity",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "advancedConfigHistory",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "finalPromptTemplate",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "returnPolicy",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "exchangePolicy",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "shippingPolicy",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "active",
+          "type": "Boolean",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "deletedAt",
+          "type": "Date",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "deletion",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "storefront",
+          "type": "ObjectId",
+          "required": false,
+          "index": false,
+          "unique": false,
+          "ref": "Storefront"
+        },
+        {
+          "name": "workingHours",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "MerchantSchema.index({ userId: 1 }, { unique: true, background: true })",
+        "MerchantSchema.index({ publicSlug: 1 }, { unique: true, background: true })",
+        "MerchantSchema.index(\r\n  {\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "MerchantSchema.index(\r\n  { name: 'text', businessDescription: 'text' },\r\n  {\r\n    weights: { name: 5, businessDescription: 1 },\r\n    background: true,\r\n  },\r\n)",
+        "MerchantSchema.index(\r\n  {\r\n    categories: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "MerchantSchema.index(\r\n  {\r\n    productSource: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "MerchantSchema.index(\r\n  {\r\n    'subscription.status': 1,\r\n    'subscription.expiresAt': 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)"
+      ]
+    },
+    {
+      "name": "Quick-config",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/merchants/schemas/quick-config.schema.ts",
+      "fields": [
+        {
+          "name": "dialect",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "tone",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "customInstructions",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "includeClosingPhrase",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "customerServicePhone",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "customerServiceWhatsapp",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "closingText",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Subscription-plan",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/merchants/schemas/subscription-plan.schema.ts",
+      "fields": [
+        {
+          "name": "tier",
+          "type": "Mixed",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "planId",
+          "type": "ObjectId",
+          "required": false,
+          "index": false,
+          "unique": false,
+          "ref": "Plan"
+        },
+        {
+          "name": "startDate",
+          "type": "Date",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "endDate",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "features",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Working-hours",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/merchants/schemas/working-hours.schema.ts",
+      "fields": [
+        {
+          "name": "day",
+          "type": "Mixed",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "openTime",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "closeTime",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Message",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/messaging/schemas/message.schema.ts",
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "role",
+          "type": "Mixed",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "text",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "timestamp",
+          "type": "Date",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "metadata",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "keywords",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "rating",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "feedback",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "ratedBy",
+          "type": "ObjectId",
+          "required": false,
+          "index": false,
+          "unique": false,
+          "ref": "User"
+        },
+        {
+          "name": "ratedAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "merchantId",
+          "type": "ObjectId",
+          "required": true,
+          "index": false,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "sessionId",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "transport",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "channel",
+          "type": "Mixed",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "handoverToAgent",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "messages",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "MessageSessionSchema.index(\n  { merchantId: 1, channel: 1, sessionId: 1 },\n  { unique: true, name: 'uniq_merchant_channel_session' },\n)",
+        "MessageSessionSchema.index({ createdAt: -1 })"
+      ]
+    },
+    {
+      "name": "Notification",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/notifications/schemas/notification.schema.ts",
+      "fields": [
+        {
+          "name": "userId",
+          "type": "ObjectId",
+          "required": false,
+          "index": true,
+          "unique": false,
+          "ref": "User"
+        },
+        {
+          "name": "merchantId",
+          "type": "ObjectId",
+          "required": false,
+          "index": true,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "title",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "body",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "data",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "severity",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "read",
+          "type": "Boolean",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "readAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "NotificationSchema.index({ userId: 1, read: 1, createdAt: -1 })"
+      ]
+    },
+    {
+      "name": "Order",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/orders/schemas/order.schema.ts",
+      "fields": [
+        {
+          "name": "product",
+          "type": "ObjectId",
+          "required": false,
+          "index": false,
+          "unique": false,
+          "ref": "Product"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "price",
+          "type": "Number",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "quantity",
+          "type": "Number",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "merchantId",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "sessionId",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "customer",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "products",
+          "type": "Mixed",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "externalId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "source",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "OrderSchema.index(\r\n  {\r\n    merchantId: 1,\r\n    status: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "OrderSchema.index(\r\n  {\r\n    sessionId: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "OrderSchema.index(\r\n  {\r\n    'customer.phone': 1,\r\n    merchantId: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true, sparse: true },\r\n)",
+        "OrderSchema.index(\r\n  {\r\n    merchantId: 1,\r\n    source: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "OrderSchema.index(\r\n  { merchantId: 1, externalId: 1 },\r\n  { unique: true, sparse: true, background: true },\r\n)"
+      ]
+    },
+    {
+      "name": "Plan",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/plans/schemas/plan.schema.ts",
+      "fields": [
+        {
+          "name": "name",
+          "type": "String",
+          "required": true,
+          "index": true,
+          "unique": true
+        },
+        {
+          "name": "priceCents",
+          "type": "Number",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "currency",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "durationDays",
+          "type": "Number",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "messageLimit",
+          "type": "Number",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "llmEnabled",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "isTrial",
+          "type": "Boolean",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "features",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "billingPeriod",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "trialPeriodDays",
+          "type": "Number",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "archived",
+          "type": "Boolean",
+          "required": false,
+          "index": true,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "PlanSchema.index({ name: 1 }, { unique: true, background: true })",
+        "PlanSchema.index(\r\n  {\r\n    isActive: 1,\r\n    archived: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "PlanSchema.index(\r\n  {\r\n    isTrial: 1,\r\n    isActive: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "PlanSchema.index(\r\n  {\r\n    currency: 1,\r\n    billingPeriod: 1,\r\n    isActive: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "PlanSchema.index(\r\n  {\r\n    priceCents: 1,\r\n    currency: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)"
+      ]
+    },
+    {
+      "name": "Product-setup-config",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/products/schemas/product-setup-config.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "ObjectId",
+          "required": true,
+          "index": false,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "storeType",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "provider",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "hasApi",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "apiUrl",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "accessToken",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Product",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/products/schemas/product.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "ObjectId",
+          "required": true,
+          "index": false,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "originalUrl",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "platform",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "price",
+          "type": "Number",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "isAvailable",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "images",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "category",
+          "type": "ObjectId",
+          "required": false,
+          "index": false,
+          "unique": false,
+          "ref": "Category"
+        },
+        {
+          "name": "lowQuantity",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "specsBlock",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "lastFetchedAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "lastFullScrapedAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "errorState",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "source",
+          "type": "Mixed",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "sourceUrl",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "externalId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "lastSync",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "syncStatus",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "offers",
+          "type": "ObjectId",
+          "required": false,
+          "index": false,
+          "unique": false,
+          "ref": "Offer"
+        },
+        {
+          "name": "keywords",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "uniqueKey",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": true
+        },
+        {
+          "name": "currency",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "attributes",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "offer",
+          "type": "Number",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "publicUrlStored",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "slug",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "storefrontSlug",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "storefrontDomain",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "ProductSchema.index(\n  {\n    merchantId: 1,\n    status: 1,\n    createdAt: -1,\n    _id: -1,\n  },\n  { background: true },\n)",
+        "ProductSchema.index(\n  { name: 'text', description: 'text' },\n  {\n    weights: { name: 5, description: 1 },\n    background: true,\n  },\n)",
+        "ProductSchema.index(\n  {\n    merchantId: 1,\n    category: 1,\n    status: 1,\n    isAvailable: 1,\n    createdAt: -1,\n    _id: -1,\n  },\n  { background: true },\n)",
+        "ProductSchema.index(\n  {\n    merchantId: 1,\n    'offer.enabled': 1,\n    'offer.startAt': 1,\n    'offer.endAt': 1,\n    createdAt: -1,\n    _id: -1,\n  },\n  { background: true },\n)",
+        "ProductSchema.index(\n  {\n    merchantId: 1,\n    source: 1,\n    createdAt: -1,\n    _id: -1,\n  },\n  { background: true },\n)",
+        "ProductSchema.index(\n  {\n    merchantId: 1,\n    price: 1,\n    createdAt: -1,\n    _id: -1,\n  },\n  { background: true },\n)",
+        "ProductSchema.index(\n  { uniqueKey: 1 },\n  { unique: true, sparse: true, background: true },\n)",
+        "ProductSchema.index({ slug: 1 }, { sparse: true, background: true })"
+      ]
+    },
+    {
+      "name": "Storefront",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/storefront/schemas/storefront.schema.ts",
+      "fields": [
+        {
+          "name": "merchant",
+          "type": "ObjectId",
+          "required": true,
+          "index": false,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "primaryColor",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "buttonStyle",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "secondaryColor",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "brandDark",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "banners",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "slug",
+          "type": "String",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "storefrontUrl",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "domain",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": true
+        },
+        {
+          "name": "featuredProductIds",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Support-ticket",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/support/schemas/support-ticket.schema.ts",
+      "fields": [
+        {
+          "name": "originalName",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "filename",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "mimeType",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "size",
+          "type": "Number",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "url",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "storage",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "email",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "phone",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "topic",
+          "type": "Mixed",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "subject",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "message",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "status",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "source",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "ip",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "userAgent",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "attachments",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "ticketNumber",
+          "type": "String",
+          "required": false,
+          "index": true,
+          "unique": true
+        },
+        {
+          "name": "merchantId",
+          "type": "ObjectId",
+          "required": false,
+          "index": true,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "createdBy",
+          "type": "ObjectId",
+          "required": false,
+          "index": true,
+          "unique": false,
+          "ref": "User"
+        }
+      ],
+      "indexes": [
+        "SupportTicketSchema.index(\r\n  { ticketNumber: 1 },\r\n  { unique: true, background: true },\r\n)",
+        "SupportTicketSchema.index(\r\n  {\r\n    status: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "SupportTicketSchema.index(\r\n  {\r\n    merchantId: 1,\r\n    status: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true, sparse: true },\r\n)",
+        "SupportTicketSchema.index(\r\n  {\r\n    topic: 1,\r\n    status: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "SupportTicketSchema.index(\r\n  { subject: 'text', message: 'text', name: 'text' },\r\n  {\r\n    weights: { subject: 5, name: 3, message: 1 },\r\n    background: true,\r\n  },\r\n)",
+        "SupportTicketSchema.index(\r\n  {\r\n    email: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true },\r\n)",
+        "SupportTicketSchema.index(\r\n  {\r\n    createdBy: 1,\r\n    createdAt: -1,\r\n    _id: -1,\r\n  },\r\n  { background: true, sparse: true },\r\n)"
+      ]
+    },
+    {
+      "name": "Usage-counter",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/usage/schemas/usage-counter.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "ObjectId",
+          "required": true,
+          "index": true,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "monthKey",
+          "type": "String",
+          "required": true,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "messagesUsed",
+          "type": "Number",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "UsageCounterSchema.index({ merchantId: 1, monthKey: 1 }, { unique: true })"
+      ]
+    },
+    {
+      "name": "User",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/users/schemas/user.schema.ts",
+      "fields": [
+        {
+          "name": "email",
+          "type": "String",
+          "required": true,
+          "index": true,
+          "unique": true
+        },
+        {
+          "name": "password",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "firstLogin",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "phone",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "role",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "emailVerified",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "emailVerificationCode",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "emailVerificationExpiresAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "merchantId",
+          "type": "ObjectId",
+          "required": false,
+          "index": false,
+          "unique": false,
+          "ref": "Merchant"
+        },
+        {
+          "name": "passwordChangedAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "notificationsPrefs",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "active",
+          "type": "Boolean",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "deletedAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "UserSchema.index({ email: 1 }, { unique: true, background: true })",
+        "UserSchema.index(\n  {\n    role: 1,\n    active: 1,\n    createdAt: -1,\n    _id: -1,\n  },\n  { background: true },\n)",
+        "UserSchema.index(\n  {\n    merchantId: 1,\n    active: 1,\n    createdAt: -1,\n    _id: -1,\n  },\n  { background: true, sparse: true },\n)",
+        "UserSchema.index(\n  { name: 'text', email: 'text' },\n  {\n    weights: { name: 3, email: 2 },\n    background: true,\n  },\n)",
+        "UserSchema.index({ active: 1, createdAt: -1, _id: -1 }, { background: true })",
+        "UserSchema.index(\n  {\n    emailVerified: 1,\n    createdAt: -1,\n    _id: -1,\n  },\n  { background: true },\n)"
+      ]
+    },
+    {
+      "name": "Incoming-event",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/webhooks/schemas/incoming-event.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "channel",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "platformMessageId",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "sessionId",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "IncomingEventSchema.index(\r\n  { merchantId: 1, channel: 1, platformMessageId: 1 },\r\n  { unique: true },\r\n)"
+      ]
+    },
+    {
+      "name": "Webhook",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/webhooks/schemas/webhook.schema.ts",
+      "fields": [
+        {
+          "name": "eventType",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "payload",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "receivedAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "Workflow-history",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/workflow-history/schemas/workflow-history.schema.ts",
+      "fields": [
+        {
+          "name": "merchantId",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "workflowId",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "version",
+          "type": "Number",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "workflowJson",
+          "type": "Mixed",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "updatedBy",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "updatedAt",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "isRollback",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "BotChats",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/kleem/botChats/schemas/botChats.schema.ts",
+      "fields": [
+        {
+          "name": "role",
+          "type": "Mixed",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "text",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "metadata",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "timestamp",
+          "type": "Date",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "rating",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "feedback",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "sessionId",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "messages",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "BotChatSessionSchema.index({ sessionId: 1 }, { unique: true })",
+        "BotChatSessionSchema.index({ updatedAt: -1 })"
+      ]
+    },
+    {
+      "name": "BotFaq",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/kleem/botFaq/schemas/botFaq.schema.ts",
+      "fields": [
+        {
+          "name": "question",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "answer",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "status",
+          "type": "Mixed",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "source",
+          "type": "Mixed",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "tags",
+          "type": "String",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "locale",
+          "type": "Mixed",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "vectorStatus",
+          "type": "Mixed",
+          "required": false,
+          "index": true,
+          "unique": false
+        },
+        {
+          "name": "createdBy",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "BotFaqSchema.index({ status: 1, updatedAt: -1 })"
+      ]
+    },
+    {
+      "name": "BotPrompt",
+      "file": "C:/Users/Smart Academy/Desktop/كليم/Kaleem/Backend/src/modules/kleem/botPrompt/schemas/botPrompt.schema.ts",
+      "fields": [
+        {
+          "name": "type",
+          "type": "Mixed",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "content",
+          "type": "String",
+          "required": true,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "tags",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "active",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "version",
+          "type": "Number",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "locale",
+          "type": "Mixed",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "channel",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "variables",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "goal",
+          "type": "String",
+          "required": false,
+          "index": false,
+          "unique": false
+        },
+        {
+          "name": "archived",
+          "type": "Boolean",
+          "required": false,
+          "index": false,
+          "unique": false
+        }
+      ],
+      "indexes": [
+        "BotPromptSchema.index({ type: 1, active: 1 })",
+        "BotPromptSchema.index({ archived: 1, updatedAt: -1 })"
+      ]
+    }
+  ]
+}

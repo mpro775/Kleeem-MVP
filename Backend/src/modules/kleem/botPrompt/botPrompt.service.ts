@@ -1,117 +1,105 @@
-// src/modules/kleem/botPrompt/botPrompt.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { BotPrompt } from './schemas/botPrompt.schema';
 import { CreateBotPromptDto } from './dto/create-botPrompt.dto';
 import { UpdateBotPromptDto } from './dto/update-botPrompt.dto';
+import { BOT_PROMPT_REPOSITORY } from './tokens';
+import { BotPromptRepository } from './repositories/bot-prompt.repository';
 
 @Injectable()
 export class BotPromptService {
   constructor(
-    @InjectModel(BotPrompt.name) private readonly model: Model<BotPrompt>,
+    @Inject(BOT_PROMPT_REPOSITORY)
+    private readonly repo: BotPromptRepository,
   ) {}
 
   async create(dto: CreateBotPromptDto) {
-    // إن كان النوع system ومطلوب تفعيله: عطّل الباقي
     if (dto.type === 'system' && dto.active) {
-      await this.model.updateMany(
-        { type: 'system' },
-        { $set: { active: false } },
-      );
+      await this.repo.updateMany({ type: 'system' }, {
+        active: false,
+      } as Partial<BotPrompt>);
     }
-    return this.model.create({ ...dto, active: dto.active ?? false });
+    return this.repo.create({ ...dto, active: dto.active ?? false } as any);
   }
 
   async findAll(filter?: {
     type?: 'system' | 'user';
     includeArchived?: boolean;
   }) {
-    const q: any = {};
-    if (filter?.type) q.type = filter.type;
-    if (!filter?.includeArchived) q.archived = { $ne: true };
-    return this.model.find(q).sort({ updatedAt: -1 }).lean();
+    return this.repo.findAll(filter);
   }
 
   async findById(id: string) {
-    const doc = await this.model.findById(id).lean();
+    const doc = await this.repo.findById(id);
     if (!doc) throw new NotFoundException('Prompt not found');
     return doc;
   }
 
   async update(id: string, dto: UpdateBotPromptDto) {
-    const doc = await this.model.findByIdAndUpdate(id, dto, { new: true });
+    const doc = await this.repo.updateById(id, dto as any);
     if (!doc) throw new NotFoundException('Prompt not found');
 
-    // لو غيّرناه إلى active=true ونوعه system: عطّل غيره
-    if (dto.active && doc.type === 'system') {
-      await this.model.updateMany(
-        { _id: { $ne: doc._id }, type: 'system' },
-        { $set: { active: false } },
+    if ((dto as any).active && doc.type === 'system') {
+      await this.repo.updateMany(
+        { _id: { $ne: (doc as any)._id }, type: 'system' },
+        { active: false } as any,
       );
     }
     return doc;
   }
+
   async publish(id: string) {
-    const doc = await this.model.findById(id);
+    const doc = await this.repo.findById(id);
     if (!doc || doc.type !== 'system') throw new NotFoundException();
 
-    await this.model.updateMany(
-      { type: 'system' },
-      { $set: { active: false } },
+    await this.repo.updateMany({ type: 'system' }, { active: false } as any);
+    const last = await this.repo.findOne(
+      { type: 'system', archived: { $ne: true } },
+      { version: -1 },
     );
-    const last = await this.model
-      .findOne({ type: 'system', archived: { $ne: true } })
-      .sort({ version: -1 })
-      .lean();
-    doc.version = (last?.version ?? 0) + 1;
-    doc.active = true;
-    await doc.save();
-    return doc.toObject();
+
+    const nextVersion = ((last as any)?.version ?? 0) + 1;
+    const updated = await this.repo.updateById(id, {
+      version: nextVersion,
+      active: true,
+    } as any);
+    return updated!;
   }
+
   async getActiveSystemPrompt(): Promise<string> {
     return this.getActiveSystemPromptOrDefault();
   }
+
   async setActive(id: string, active: boolean) {
-    const doc = await this.model.findById(id);
+    const doc = await this.repo.findById(id);
     if (!doc) throw new NotFoundException('Prompt not found');
 
     if (doc.type === 'system' && active) {
-      await this.model.updateMany(
-        { type: 'system' },
-        { $set: { active: false } },
-      );
+      await this.repo.updateMany({ type: 'system' }, { active: false } as any);
     }
-    doc.active = active;
-    await doc.save();
-    return doc;
+    const updated = await this.repo.updateById(id, { active } as any);
+    return updated!;
   }
 
   async archive(id: string) {
-    const doc = await this.model.findByIdAndUpdate(
-      id,
-      { archived: true, active: false },
-      { new: true },
-    );
+    const doc = await this.repo.updateById(id, {
+      archived: true,
+      active: false,
+    } as any);
     if (!doc) throw new NotFoundException('Prompt not found');
     return doc;
   }
 
   async remove(id: string) {
-    const res = await this.model.deleteOne({ _id: id });
-    return { deleted: res.deletedCount === 1 };
+    return this.repo.deleteById(id);
   }
 
-  // تُستخدم في KleemChatService
   async getActiveSystemPromptOrDefault(): Promise<string> {
-    const current = await this.model
-      .findOne({ type: 'system', active: true, archived: { $ne: true } })
-      .sort({ updatedAt: -1 })
-      .lean();
+    const current = await this.repo.findOne(
+      { type: 'system', active: true, archived: { $ne: true } },
+      { updatedAt: -1 },
+    );
+    if ((current as any)?.content) return (current as any).content as string;
 
-    if (current?.content) return current.content;
-
-    // Fallback افتراضي (عدّله بما يناسب كليم)
     return `أنت "كليم" — مساعد افتراضي ومندوب مبيعات لمنصة كليم.
 - تحدّث بلغة ودّية واضحة.
 - هدفك إقناع الزائر بالتجربة أو الاشتراك مع معالجة الاعتراضات.

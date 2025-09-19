@@ -13,12 +13,13 @@ import {
 import { BotPromptService } from './botPrompt.service';
 import { CreateBotPromptDto } from './dto/create-botPrompt.dto';
 import { UpdateBotPromptDto } from './dto/update-botPrompt.dto';
-import { SetActiveDto } from './dto/set-active.dto';
+import { SetActiveKaleemDto } from './dto/set-active.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { UseGuards } from '@nestjs/common';
 import { Public } from 'src/common/decorators/public.decorator';
+import { TranslationService } from '../../../common/services/translation.service';
 import {
   ApiTags,
   ApiOperation,
@@ -34,30 +35,33 @@ import {
   ApiNotFoundResponse,
 } from '@nestjs/swagger';
 import { BotPrompt } from './schemas/botPrompt.schema';
-@ApiTags('كليم - إدارة البرومبتات')
+@ApiTags('kleem.botPrompt')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 @Controller('admin/kleem/bot-prompts')
 export class BotPromptController {
-  constructor(private readonly svc: BotPromptService) { }
+  constructor(
+    private readonly svc: BotPromptService,
+    private readonly translationService: TranslationService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'إنشاء برومبت جديد',
-    description: 'إنشاء برومبت جديد مع المحتوى المحدد'
+    summary: 'kleem.botPrompt.operations.create.summary',
+    description: 'kleem.botPrompt.operations.create.description',
   })
   @ApiBody({ type: CreateBotPromptDto })
   @ApiCreatedResponse({
-    description: 'تم إنشاء البرومبت بنجاح',
+    description: 'kleem.botPrompt.responses.success.created',
     type: BotPrompt,
   })
   @ApiBadRequestResponse({
-    description: 'بيانات الطلب غير صالحة',
+    description: 'kleem.botPrompt.responses.error.badRequest',
   })
   @ApiForbiddenResponse({
-    description: 'غير مصرح - يجب أن تكون مسؤولاً',
+    description: 'kleem.botPrompt.responses.error.forbidden',
   })
   async create(@Body() dto: CreateBotPromptDto) {
     return this.svc.create(dto);
@@ -66,18 +70,18 @@ export class BotPromptController {
   @Get('ping')
   @Public()
   @ApiOperation({
-    summary: 'فحص حالة الخدمة',
-    description: 'فحص ما إذا كانت خدمة البرومبتات تعمل بشكل صحيح'
+    summary: 'kleem.botPrompt.operations.ping.summary',
+    description: 'kleem.botPrompt.operations.ping.description',
   })
   @ApiOkResponse({
-    description: 'الخدمة تعمل بشكل صحيح',
+    description: 'kleem.botPrompt.responses.success.serviceOk',
     schema: {
       type: 'object',
       properties: {
         ok: { type: 'boolean', example: true },
-        who: { type: 'string', example: 'bot-prompts' }
-      }
-    }
+        who: { type: 'string', example: 'bot-prompts' },
+      },
+    },
   })
   ping() {
     return { ok: true, who: 'bot-prompts' };
@@ -85,27 +89,27 @@ export class BotPromptController {
 
   @Get()
   @ApiOperation({
-    summary: 'عرض قائمة البرومبتات',
-    description: 'استرجاع قائمة البرومبتات مع إمكانية التصفية حسب النوع وحالة الأرشفة'
+    summary: 'kleem.botPrompt.operations.list.summary',
+    description: 'kleem.botPrompt.operations.list.description',
   })
   @ApiQuery({
     name: 'type',
     required: false,
     enum: ['system', 'user'],
-    description: 'تصفية حسب نوع البرومبت'
+    description: 'تصفية حسب نوع البرومبت',
   })
   @ApiQuery({
     name: 'includeArchived',
     required: false,
     type: Boolean,
-    description: 'تضمين البرومبتات المؤرشفة (true/false)'
+    description: 'تضمين البرومبتات المؤرشفة (true/false)',
   })
   @ApiOkResponse({
-    description: 'تم استرجاع قائمة البرومبتات بنجاح',
+    description: 'kleem.botPrompt.responses.success.found',
     type: [BotPrompt],
   })
   @ApiForbiddenResponse({
-    description: 'غير مصرح - يجب أن تكون مسؤولاً',
+    description: 'kleem.botPrompt.responses.error.forbidden',
   })
   list(
     @Query('type') type?: 'system' | 'user',
@@ -120,13 +124,13 @@ export class BotPromptController {
   @Get(':id')
   @ApiOperation({
     summary: 'عرض تفاصيل برومبت',
-    description: 'استرجاع تفاصيل برومبت معين بواسطة المعرف'
+    description: 'استرجاع تفاصيل برومبت معين بواسطة المعرف',
   })
   @ApiParam({
     name: 'id',
     required: true,
     description: 'معرف البرومبت',
-    example: '507f1f77bcf86cd799439011'
+    example: '507f1f77bcf86cd799439011',
   })
   @ApiOkResponse({
     description: 'تم استرجاع تفاصيل البرومبت بنجاح',
@@ -145,13 +149,13 @@ export class BotPromptController {
   @Patch(':id')
   @ApiOperation({
     summary: 'تحديث برومبت',
-    description: 'تحديث بيانات برومبت موجود'
+    description: 'تحديث بيانات برومبت موجود',
   })
   @ApiParam({
     name: 'id',
     required: true,
     description: 'معرف البرومبت المراد تحديثه',
-    example: '507f1f77bcf86cd799439011'
+    example: '507f1f77bcf86cd799439011',
   })
   @ApiBody({ type: UpdateBotPromptDto })
   @ApiOkResponse({
@@ -171,15 +175,15 @@ export class BotPromptController {
   @Post(':id/active')
   @ApiOperation({
     summary: 'تفعيل/تعطيل برومبت',
-    description: 'تغيير حالة تفعيل برومبت معين'
+    description: 'تغيير حالة تفعيل برومبت معين',
   })
   @ApiParam({
     name: 'id',
     required: true,
     description: 'معرف البرومبت',
-    example: '507f1f77bcf86cd799439011'
+    example: '507f1f77bcf86cd799439011',
   })
-  @ApiBody({ type: SetActiveDto })
+  @ApiBody({ type: SetActiveKaleemDto })
   @ApiOkResponse({
     description: 'تم تغيير حالة التفعيل بنجاح',
     type: BotPrompt,
@@ -190,20 +194,20 @@ export class BotPromptController {
   @ApiForbiddenResponse({
     description: 'غير مصرح - يجب أن تكون مسؤولاً',
   })
-  async setActive(@Param('id') id: string, @Body() body: SetActiveDto) {
+  async setActive(@Param('id') id: string, @Body() body: SetActiveKaleemDto) {
     return this.svc.setActive(id, body.active);
   }
 
   @Post(':id/archive')
   @ApiOperation({
     summary: 'أرشفة برومبت',
-    description: 'أرشفة برومبت معين (تعطيله دون حذفه)'
+    description: 'أرشفة برومبت معين (تعطيله دون حذفه)',
   })
   @ApiParam({
     name: 'id',
     required: true,
     description: 'معرف البرومبت المرأرشفته',
-    example: '507f1f77bcf86cd799439011'
+    example: '507f1f77bcf86cd799439011',
   })
   @ApiOkResponse({
     description: 'تم أرشفة البرومبت بنجاح',
@@ -223,13 +227,13 @@ export class BotPromptController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'حذف برومبت',
-    description: 'حذف برومبت بشكل دائم'
+    description: 'حذف برومبت بشكل دائم',
   })
   @ApiParam({
     name: 'id',
     required: true,
     description: 'معرف البرومبت المرحذفه',
-    example: '507f1f77bcf86cd799439011'
+    example: '507f1f77bcf86cd799439011',
   })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
@@ -247,7 +251,7 @@ export class BotPromptController {
   @Get('system/active')
   @ApiOperation({
     summary: 'عرض البرومبت النشط للنظام',
-    description: 'استرجاع البرومبت النشط حاليًا للنظام مع معلوماته الكاملة'
+    description: 'استرجاع البرومبت النشط حاليًا للنظام مع معلوماته الكاملة',
   })
   @ApiOkResponse({
     description: 'تم استرجاع البرومبت النشط بنجاح',
@@ -265,7 +269,8 @@ export class BotPromptController {
   @Get('system/active/content')
   @ApiOperation({
     summary: 'عرض محتوى البرومبت النشط',
-    description: 'استرجاع محتوى البرومبت النشط للنظام فقط (بدون معلومات إضافية)'
+    description:
+      'استرجاع محتوى البرومبت النشط للنظام فقط (بدون معلومات إضافية)',
   })
   @ApiOkResponse({
     description: 'تم استرجاع محتوى البرومبت النشط بنجاح',
@@ -275,10 +280,10 @@ export class BotPromptController {
         content: {
           type: 'string',
           description: 'محتوى البرومبت النشط',
-          example: 'أنت مساعد ذكي يساعد المستخدمين...'
-        }
-      }
-    }
+          example: 'أنت مساعد ذكي يساعد المستخدمين...',
+        },
+      },
+    },
   })
   @ApiForbiddenResponse({
     description: 'غير مصرح - يجب أن تكون مسؤولاً',

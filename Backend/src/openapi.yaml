@@ -1,0 +1,964 @@
+openapi: 3.1.0
+info:
+  title: Kaleem AI - Analytics API
+  version: 1.0.0
+  description: >
+    مواصفة OpenAPI 3.1 لوحدات التحليلات (Analytics) كما في الكود المرفق.
+    تعتمد هذه المواصفة فقط على DTOs والواجهات الموجودة. أي حقول غير معرّفة في الشيفرة وُسمت بـ TODO.
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local
+  - url: https://api.kaleem-ai.com/api
+    description: Production
+
+tags:
+  - name: analytics
+    description: نقاط نهاية التحليلات للمستخدمين
+  - name: analytics-admin
+    description: نقاط نهاية إدارة التحليلات (Admin)
+  - name: webhooks
+    description: Webhook receivers (مُعلَنَة كمسارات + توثيق قسم webhooks)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PeriodParam:
+      name: period
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [week, month, quarter]
+        default: week
+      example: week
+      description: الفترة الزمنية للتجميع.
+    GroupByParam:
+      name: groupBy
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [day, hour]
+        default: day
+      example: day
+      description: أسلوب التجميع الزمني.
+    PageParam:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+      required: false
+      description: رقم الصفحة (1+).
+    LimitParam:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, default: 20 }
+      required: false
+      description: حجم الصفحة.
+    LimitTopKeywords:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+      example: 10
+    LimitTopProducts:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 50, default: 5 }
+      example: 5
+    ResolvedParam:
+      name: resolved
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [all, 'true', 'false']
+        default: all
+    ChannelParam:
+      name: channel
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [telegram, whatsapp, webchat, all]
+        default: all
+    TypeParam:
+      name: type
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [missing_response, unavailable_product, all]
+        default: all
+    SearchParam:
+      name: search
+      in: query
+      required: false
+      schema: { type: string }
+      description: بحث نصّي في question/botReply/aiAnalysis/sessionId/customerId.
+    FromParam:
+      name: from
+      in: query
+      required: false
+      schema: { type: string, format: date-time }
+      description: وقت البدء (ISO).
+    ToParam:
+      name: to
+      in: query
+      required: false
+      schema: { type: string, format: date-time }
+      description: وقت الانتهاء (ISO).
+
+  headers:
+    X-RateLimit-Limit:
+      description: الحد الأقصى للطلبات في النافذة الحالية.
+      schema: { type: integer }
+    X-RateLimit-Remaining:
+      description: عدد الطلبات المتبقية في النافذة الحالية.
+      schema: { type: integer }
+    X-RateLimit-Reset:
+      description: وقت إعادة الضبط بالثواني منذ Unix epoch.
+      schema: { type: integer }
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [statusCode, error, message, requestId, timestamp]
+      properties:
+        statusCode: { type: integer, example: 403 }
+        error: { type: string, example: Forbidden }
+        message:
+          oneOf:
+            - { type: string, example: 'analytics.responses.error.noMerchant' }
+            - {
+                type: array,
+                items: { type: string },
+                example: ['Invalid period'],
+              }
+        requestId: { type: string, example: 'req_01HZX8P9R2...' }
+        timestamp:
+          {
+            type: string,
+            format: date-time,
+            example: '2025-09-18T10:15:30.000Z',
+          }
+
+    KeywordCount:
+      type: object
+      properties:
+        keyword: { type: string, example: 'delivery' }
+        count: { type: integer, example: 42 }
+      required: [keyword, count]
+
+    ChannelCount:
+      type: object
+      properties:
+        channel: { type: string, example: 'whatsapp' }
+        count: { type: integer, example: 128 }
+      required: [channel, count]
+
+    TopProduct:
+      type: object
+      properties:
+        productId: { type: string, example: '64f2c1a9...' }
+        name: { type: string, example: 'Premium Hoodie' }
+        count: { type: integer, example: 17 }
+      required: [productId, name, count]
+
+    Overview:
+      type: object
+      properties:
+        sessions:
+          type: object
+          properties:
+            count: { type: integer, example: 560 }
+            changePercent:
+              type: integer
+              nullable: true
+              example: 12
+          required: [count]
+        messages: { type: integer, example: 1345 }
+        topKeywords:
+          type: array
+          items: { $ref: '#/components/schemas/KeywordCount' }
+        topProducts:
+          type: array
+          items: { $ref: '#/components/schemas/TopProduct' }
+        channels:
+          type: object
+          properties:
+            total: { type: integer, example: 3 }
+            breakdown:
+              type: array
+              items: { $ref: '#/components/schemas/ChannelCount' }
+          required: [total, breakdown]
+        orders:
+          type: object
+          properties:
+            count: { type: integer, example: 190 }
+            changePercent: { type: integer, nullable: true, example: -5 }
+            byStatus:
+              type: object
+              additionalProperties: { type: integer }
+              example:
+                created: 50
+                paid: 120
+                canceled: 20
+            totalSales: { type: number, example: 24500.75 }
+          required: [count, byStatus, totalSales]
+        csat: { type: number, nullable: true, example: 4.6 }
+        firstResponseTimeSec: { type: number, nullable: true, example: 42 }
+        missingOpen: { type: integer, example: 7 }
+        storeExtras:
+          type: object
+          properties:
+            paidOrders: { type: integer, example: 120 }
+            aov: { type: number, nullable: true, example: 204.17 }
+      required: [sessions, messages, topKeywords, topProducts, channels, orders]
+
+    AddToKnowledgeDto:
+      type: object
+      properties:
+        question:
+          type: string
+          example: 'ماهي سياسة الاستبدال؟'
+        answer:
+          type: string
+          example: 'الاستبدال متاح خلال 14 يوم مع الفاتورة الأصلية.'
+      required: [question, answer]
+
+    CreateMissingResponseDto:
+      type: object
+      properties:
+        merchant:
+          type: string
+          description: معرف التاجر
+          example: merchant_123
+        channel:
+          type: string
+          enum: [telegram, whatsapp, webchat]
+          description: القناة التي وردت منها الرسالة
+          example: whatsapp
+        question:
+          type: string
+          description: سؤال العميل
+          example: 'هل يتوفر لديكم هذا المنتج؟'
+        botReply:
+          type: string
+          description: رد البوت على سؤال العميل
+          example: 'عفواً، لم أفهم السؤال.'
+        sessionId:
+          type: string
+          nullable: true
+          description: معرف الجلسة (اختياري)
+          example: session_xyz
+        aiAnalysis:
+          type: string
+          nullable: true
+          description: تحليل الذكاء الاصطناعي للرسالة (اختياري)
+          example: 'العميل يستفسر عن توفر منتج.'
+        customerId:
+          type: string
+          nullable: true
+          description: معرف العميل (اختياري)
+          example: customer_456
+        type:
+          type: string
+          enum: [missing_response, unavailable_product]
+          description: نوع الاستجابة المسجلة
+          example: missing_response
+        resolved:
+          type: boolean
+          nullable: true
+          description: ما إذا كانت الاستجابة قد تمت معالجتها أم لا (اختياري)
+          example: false
+      required: [merchant, channel, question, botReply, type]
+
+    CreateKleemMissingResponseDto:
+      type: object
+      properties:
+        channel:
+          type: string
+          enum: [telegram, whatsapp, webchat]
+          example: telegram
+        question:
+          type: string
+          example: 'متى يصل الطلب؟'
+        botReply:
+          type: string
+          nullable: true
+          example: '—'
+        sessionId:
+          type: string
+          nullable: true
+          example: 'sess_abc'
+        customerId:
+          type: string
+          nullable: true
+          example: 'cust_123'
+        aiAnalysis:
+          type: string
+          nullable: true
+          example: 'استفسار حالة شحن'
+        resolved:
+          type: boolean
+          nullable: true
+          example: false
+        category:
+          type: string
+          nullable: true
+          example: 'shipping'
+        sourceId:
+          type: string
+          nullable: true
+          example: 'bot_789'
+      required: [channel, question]
+
+    ProductsCountResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 142
+      required: [total]
+
+    ListResult:
+      type: object
+      description: >
+        نتيجة ترقيم عامة. **TODO:** `items` عنصر/هيكل العناصر غير معرّف في الشيفرة المرفقة.
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            description: 'TODO: عرّف مخطط العنصر عندما يتوفر.'
+        total: { type: integer, example: 250 }
+        page: { type: integer, example: 1 }
+        limit: { type: integer, example: 20 }
+      required: [items, total, page, limit]
+
+    AckWithId:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        id: { type: string, example: '64f2c1a9e1...' }
+      required: [success, id]
+
+    ResolveOneResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        item:
+          type: object
+          description: 'TODO: مخطط العنصر المُحَدَّث غير متاح.'
+      required: [success, item]
+
+    ResolveBulkBody:
+      type: object
+      properties:
+        ids:
+          type: array
+          items: { type: string }
+          example: ['6501...', '6502...']
+      required: [ids]
+
+    ResolveBulkResponse:
+      type: object
+      description: 'رد الدُفعة من المستودع. TODO: حقول دقيقة حين تتوفر.'
+      properties:
+        success: { type: boolean, example: true }
+        resolvedCount:
+          type: integer
+          nullable: true
+          example: 10
+
+    AddToKnowledgeResult:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        faqId: { type: string, example: 'faq_64f2...' }
+        missingResponseId: { type: string, example: 'ms_64f2...' }
+        resolved: { type: boolean, example: true }
+      required: [success, faqId, missingResponseId, resolved]
+
+    MessagesTimelineResponse:
+      type: array
+      description: 'الهيكل يعتمد على تجميع المستودع. TODO: تعريف الحقول عند التوفر.'
+      items:
+        type: object
+        example:
+          bucket: '2025-09-11'
+          count: 123
+
+    StatsResponse:
+      type: array
+      description: 'نتيجة statsMissing من المستودع. TODO: تعريف أدق عند التوفر.'
+      items:
+        type: object
+        example:
+          _id: 'whatsapp'
+          channels:
+            - { channel: 'whatsapp', resolved: false, count: 7 }
+            - { channel: 'webchat', resolved: true, count: 2 }
+          total: 9
+
+  responses:
+    RateLimited:
+      description: Too Many Requests
+      headers:
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/X-RateLimit-Limit'
+        X-RateLimit-Remaining:
+          $ref: '#/components/headers/X-RateLimit-Remaining'
+        X-RateLimit-Reset:
+          $ref: '#/components/headers/X-RateLimit-Reset'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+security:
+  - bearerAuth: []
+
+paths:
+  /analytics/overview:
+    get:
+      tags: [analytics]
+      operationId: analytics_overview
+      summary: analytics.operations.dashboard.summary
+      description: analytics.operations.dashboard.description
+      parameters:
+        - $ref: '#/components/parameters/PeriodParam'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining:
+              { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset:
+              { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Overview' }
+              examples:
+                example:
+                  value:
+                    sessions: { count: 560, changePercent: 12 }
+                    messages: 1345
+                    topKeywords:
+                      - { keyword: 'delivery', count: 42 }
+                      - { keyword: 'refund', count: 31 }
+                    topProducts:
+                      - {
+                          productId: '64f2...',
+                          name: 'Premium Hoodie',
+                          count: 17,
+                        }
+                    channels:
+                      total: 3
+                      breakdown:
+                        - { channel: 'whatsapp', count: 980 }
+                        - { channel: 'telegram', count: 230 }
+                        - { channel: 'webchat', count: 135 }
+                    orders:
+                      count: 190
+                      changePercent: -5
+                      byStatus: { created: 50, paid: 120, canceled: 20 }
+                      totalSales: 24500.75
+                    csat: 4.6
+                    firstResponseTimeSec: 42
+                    missingOpen: 7
+                    storeExtras: { paidOrders: 120, aov: 204.17 }
+      x-slos:
+        response_p95_ms: 500
+        availability: 99.9
+      x-grafana:
+        dashboard: 'TODO: https://grafana.example.com/d/analytics-overview'
+
+  /analytics/top-keywords:
+    get:
+      tags: [analytics]
+      operationId: analytics_top_keywords
+      summary: analytics.operations.metrics.summary
+      description: analytics.operations.metrics.description
+      parameters:
+        - $ref: '#/components/parameters/PeriodParam'
+        - $ref: '#/components/parameters/LimitTopKeywords'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining:
+              { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset:
+              { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/KeywordCount' }
+              examples:
+                ex:
+                  value:
+                    - { keyword: 'delivery', count: 42 }
+                    - { keyword: 'payment', count: 18 }
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana: { dashboard: 'TODO: https://grafana.example.com/d/keywords' }
+
+  /analytics/messages-timeline:
+    get:
+      tags: [analytics]
+      operationId: analytics_messages_timeline
+      summary: analytics.operations.trends.summary
+      description: analytics.operations.trends.description
+      parameters:
+        - $ref: '#/components/parameters/PeriodParam'
+        - $ref: '#/components/parameters/GroupByParam'
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-RateLimit-Limit:
+              { $ref: '#/components/headers/X-RateLimit-Limit' }
+            X-RateLimit-Remaining:
+              { $ref: '#/components/headers/X-RateLimit-Remaining' }
+            X-RateLimit-Reset:
+              { $ref: '#/components/headers/X-RateLimit-Reset' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessagesTimelineResponse' }
+              examples:
+                dayBuckets:
+                  value:
+                    - { bucket: '2025-09-10', count: 120 }
+                    - { bucket: '2025-09-11', count: 95 }
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana: { dashboard: 'TODO: https://grafana.example.com/d/timeline' }
+
+  /analytics/products-count:
+    get:
+      tags: [analytics]
+      operationId: analytics_products_count
+      summary: analytics.operations.performance.summary
+      description: إجمالي عدد المنتجات للتاجر الحالي.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductsCountResponse' }
+              examples:
+                ex: { value: { total: 142 } }
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana: { dashboard: 'TODO: https://grafana.example.com/d/products' }
+
+  /analytics/webhook:
+    post:
+      tags: [webhooks]
+      operationId: analytics_webhook_create_missing
+      summary: Webhook للتحليلات (عام)
+      description: يستقبل حدثًا لإنشاء MissingResponse من قنوات مختلفة.
+      security: [] # @Public()
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateMissingResponseDto' }
+            examples:
+              whatsappMsg:
+                value:
+                  merchant: 'merchant_123'
+                  channel: 'whatsapp'
+                  question: 'هل يتوفر لديكم هذا المنتج؟'
+                  botReply: 'عفوًا، لم أفهم السؤال.'
+                  sessionId: 'session_xyz'
+                  aiAnalysis: 'العميل يستفسر عن توفر منتج.'
+                  customerId: 'customer_456'
+                  type: 'missing_response'
+                  resolved: false
+      responses:
+        '200':
+          description: Acknowledged
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AckWithId' }
+              examples:
+                ex: { value: { success: true, id: '64f2c1a9e1...' } }
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana: { dashboard: 'TODO: https://grafana.example.com/d/webhooks' }
+
+  /analytics/missing-responses:
+    get:
+      tags: [analytics]
+      operationId: analytics_missing_responses_list
+      summary: جلب الرسائل المنسية / غير المجاب عنها
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/ResolvedParam'
+        - $ref: '#/components/parameters/ChannelParam'
+        - $ref: '#/components/parameters/TypeParam'
+        - $ref: '#/components/parameters/SearchParam'
+        - $ref: '#/components/parameters/FromParam'
+        - $ref: '#/components/parameters/ToParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListResult' }
+              examples:
+                ex:
+                  value:
+                    items:
+                      - id: '64f2...'
+                        channel: 'whatsapp'
+                        question: 'ما مقاسات المنتج؟'
+                        botReply: '—'
+                        resolved: false
+                        createdAt: '2025-09-12T10:00:00Z'
+                    total: 250
+                    page: 1
+                    limit: 20
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana:
+        { dashboard: 'TODO: https://grafana.example.com/d/missing-list' }
+
+  /analytics/missing-responses/{id}/resolve:
+    patch:
+      tags: [analytics]
+      operationId: analytics_missing_responses_resolve_one
+      summary: تحديد رسالة كمُعالجة
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResolveOneResponse' }
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana:
+        { dashboard: 'TODO: https://grafana.example.com/d/missing-resolve' }
+
+  /analytics/missing-responses/resolve:
+    patch:
+      tags: [analytics]
+      operationId: analytics_missing_responses_resolve_bulk
+      summary: تحديد عدة رسائل كمُعالجة
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResolveBulkBody' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResolveBulkResponse' }
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana:
+        { dashboard: 'TODO: https://grafana.example.com/d/missing-bulk' }
+
+  /analytics/missing-responses/{id}/add-to-knowledge:
+    post:
+      tags: [analytics]
+      operationId: analytics_missing_add_to_knowledge
+      summary: تحويل الرسالة المنسيّة إلى معرفة (FAQ) + وضعها مُعالجة
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddToKnowledgeDto' }
+            examples:
+              ar:
+                value:
+                  {
+                    question: 'ماهي سياسة الاستبدال؟',
+                    answer: 'الاستبدال متاح خلال 14 يوم مع الفاتورة الأصلية.',
+                  }
+              en:
+                value:
+                  {
+                    question: "What's the return policy?",
+                    answer: 'Returns accepted within 14 days with original receipt.',
+                  }
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AddToKnowledgeResult' }
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana:
+        { dashboard: 'TODO: https://grafana.example.com/d/add-to-knowledge' }
+
+  /analytics/missing-responses/stats:
+    get:
+      tags: [analytics]
+      operationId: analytics_missing_stats
+      summary: إحصاءات الرسائل المنسية
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 90, default: 7 }
+        - name: notify
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ['true', 'false']
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StatsResponse' }
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana:
+        { dashboard: 'TODO: https://grafana.example.com/d/missing-stats' }
+
+  /analytics/top-products:
+    get:
+      tags: [analytics]
+      operationId: analytics_top_products
+      summary: الحصول على أبرز المنتجات
+      parameters:
+        - $ref: '#/components/parameters/PeriodParam'
+        - $ref: '#/components/parameters/LimitTopProducts'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TopProduct' }
+              examples:
+                ex:
+                  value:
+                    - {
+                        productId: '64f2...',
+                        name: 'Premium Hoodie',
+                        count: 17,
+                      }
+                    - { productId: '64f3...', name: 'Sneakers', count: 9 }
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana:
+        { dashboard: 'TODO: https://grafana.example.com/d/top-products' }
+
+  /analytics/webhook/kleem:
+    post:
+      tags: [webhooks]
+      operationId: analytics_webhook_kleem_create_missing
+      summary: Webhook عام (Kleem)
+      security: [] # @Public()
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: '#/components/schemas/CreateKleemMissingResponseDto' }
+            examples:
+              kleem:
+                value:
+                  channel: 'telegram'
+                  question: 'متى يصل الطلب؟'
+                  botReply: ''
+                  sessionId: 'sess_abc'
+                  customerId: 'cust_123'
+                  aiAnalysis: 'استفسار حالة شحن'
+                  resolved: false
+                  category: 'shipping'
+                  sourceId: 'bot_789'
+      responses:
+        '200':
+          description: Acknowledged
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AckWithId' }
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana: { dashboard: 'TODO: https://grafana.example.com/d/webhooks' }
+
+  /admin/analytics/kleem-missing-responses:
+    get:
+      tags: [analytics-admin]
+      operationId: analytics_admin_kleem_missing_list
+      summary: (Admin) قائمة Kleem Missing
+      parameters:
+        - name: channel
+          in: query
+          required: false
+          schema: { type: string, enum: [telegram, whatsapp, webchat] }
+        - name: resolved
+          in: query
+          required: false
+          schema: { type: string, enum: ['true', 'false'] }
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+        - name: sessionId
+          in: query
+          required: false
+          schema: { type: string }
+        - name: customerId
+          in: query
+          required: false
+          schema: { type: string }
+        - name: from
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListResult' }
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana:
+        { dashboard: 'TODO: https://grafana.example.com/d/admin-kleem-list' }
+
+  /admin/analytics/kleem-missing-responses/{id}:
+    patch:
+      tags: [analytics-admin]
+      operationId: analytics_admin_kleem_missing_update
+      summary: (Admin) تحديث عنصر Kleem Missing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resolved: { type: boolean }
+                manualReply: { type: string }
+                category: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                description: 'TODO: ردّ updateKleemMissing غير معرّف تفصيلاً.'
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana:
+        { dashboard: 'TODO: https://grafana.example.com/d/admin-kleem-update' }
+
+  /admin/analytics/kleem-missing-responses/bulk-resolve:
+    post:
+      tags: [analytics-admin]
+      operationId: analytics_admin_kleem_missing_bulk_resolve
+      summary: (Admin) حلّ جماعي لعناصر Kleem Missing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResolveBulkBody' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResolveBulkResponse' }
+      x-slos: { response_p95_ms: 500, availability: 99.9 }
+      x-grafana:
+        { dashboard: 'TODO: https://grafana.example.com/d/admin-kleem-bulk' }
+
+webhooks:
+  missingResponse.created:
+    post:
+      summary: حدث وارد لإنشاء MissingResponse (قنوات عامة)
+      description: >
+        يُستخدم لاستقبال رسالة مفقودة/غير مُجاب عنها من WhatsApp/Telegram/Webchat.
+        **ملاحظة:** هذا يطابق المسار `/analytics/webhook`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateMissingResponseDto' }
+            examples:
+              orderQuestion:
+                value:
+                  merchant: 'merchant_123'
+                  channel: 'whatsapp'
+                  question: 'Do you have size L?'
+                  botReply: "Sorry, I didn't get that."
+                  sessionId: 'session_xyz'
+                  aiAnalysis: 'Product availability inquiry'
+                  customerId: 'customer_456'
+                  type: 'missing_response'
+                  resolved: false
+      responses:
+        '200':
+          description: Ack
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received: { type: boolean, example: true }
+
+  kleem.missingResponse.created:
+    post:
+      summary: حدث Kleem وارد لإنشاء MissingResponse
+      description: >
+        **Kleem** integration inbound. يطابق المسار `/analytics/webhook/kleem`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: '#/components/schemas/CreateKleemMissingResponseDto' }
+            examples:
+              arMessage:
+                value:
+                  channel: 'telegram'
+                  question: 'متى يصل الطلب؟'
+                  sessionId: 'sess_abc'
+                  customerId: 'cust_123'
+                  aiAnalysis: 'استفسار حالة شحن'
+                  resolved: false
+                  category: 'shipping'
+                  sourceId: 'bot_789'
+      responses:
+        '200':
+          description: Ack
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received: { type: boolean, example: true }

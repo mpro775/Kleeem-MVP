@@ -1,59 +1,40 @@
-// src/merchants/merchant-checklist.service.ts
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-
-import { MerchantDocument } from './schemas/merchant.schema';
-import { ProductDocument } from '../products/schemas/product.schema';
-import { CategoryDocument } from '../categories/schemas/category.schema';
+import { Injectable, Inject } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { StorefrontService } from '../storefront/storefront.service';
-
-// ✅ القنوات الجديدة
 import {
-  Channel,
-  ChannelDocument,
   ChannelProvider,
   ChannelStatus,
+  ChannelDocument,
 } from '../channels/schemas/channel.schema';
-
-export type ChecklistItem = {
-  key: string;
-  title: string;
-  isComplete: boolean;
-  isSkipped?: boolean;
-  skippable?: boolean;
-  message?: string;
-  actionPath?: string;
-};
-
-export type ChecklistGroup = {
-  key: string;
-  title: string;
-  items: ChecklistItem[];
-};
+import {
+  ChecklistGroup,
+  ChecklistItem,
+} from './types/merchant-checklist.service.types'; // ← ملف أنواع بسيط سنضيفه بالأسفل
+import { MerchantChecklistRepository } from './repositories/merchant-checklist.repository';
 
 @Injectable()
 export class MerchantChecklistService {
   constructor(
-    @InjectModel('Merchant') private merchantModel: Model<MerchantDocument>,
-    @InjectModel('Product') private productModel: Model<ProductDocument>,
-    @InjectModel('Category') private categoryModel: Model<CategoryDocument>,
-    @InjectModel(Channel.name) private channelModel: Model<ChannelDocument>, // ✅
     private readonly storefrontService: StorefrontService,
+    // ✅ الاعتماد على الريبو بدل InjectModel
+    @Inject('MerchantChecklistRepository')
+    private readonly repo: MerchantChecklistRepository,
   ) {}
+
   private readonly quickDefaults = {
     dialect: 'خليجي',
     tone: 'ودّي',
     includeClosingPhrase: true,
     closingText: 'هل أقدر أساعدك بشي ثاني؟ 😊',
   };
-  
+
   private isNonDefaultString(v?: string, def?: string) {
     const a = (v || '').trim();
     const b = (def || '').trim();
     return a.length > 0 && a !== b;
   }
-  private inferSource(m: MerchantDocument | any): 'internal' | 'salla' | 'zid' {
+
+  private inferSource(m: any): 'internal' | 'salla' | 'zid' {
     const sallaActive = !!m?.productSourceConfig?.salla?.active;
     const zidActive = !!m?.productSourceConfig?.zid?.active;
     if (zidActive) return 'zid';
@@ -61,48 +42,24 @@ export class MerchantChecklistService {
     return 'internal';
   }
 
-  // ✅ Helper: جلب قناة افتراضية/مفعّلة لكل مزوّد
-  private async getDefaultChannelFor(
-    merchantId: string,
-    provider: ChannelProvider,
-  ) {
-    const q = {
-      merchantId: new Types.ObjectId(merchantId),
-      provider,
-      deletedAt: null,
-    } as any;
-    const def = await this.channelModel
-      .findOne({ ...q, isDefault: true })
-      .lean();
-    if (def) return def;
-    const enabled = await this.channelModel
-      .findOne({ ...q, enabled: true })
-      .sort({ updatedAt: -1 })
-      .lean();
-    if (enabled) return enabled;
-    return this.channelModel.findOne(q).sort({ updatedAt: -1 }).lean();
-  }
-
-  private isConnected(c?: ChannelDocument | null) {
+  private isConnected(c?: Pick<ChannelDocument, 'enabled' | 'status'> | null) {
     if (!c) return false;
     return !!c.enabled && c.status === ChannelStatus.CONNECTED;
   }
 
-  // ✅ Helper: حالة السلاج الموحّد (publicSlug)
   private getPublicSlugStatus(m: any) {
     const slug = (m?.publicSlug || '').trim();
-    const enabled = m?.publicSlugEnabled !== false; // الافتراضي مفعّل إن لم يُحدَّد
+    const enabled = m?.publicSlugEnabled !== false;
     const has = slug.length >= 3;
     return { slug, has, enabled };
   }
 
   async getChecklist(merchantId: string): Promise<ChecklistGroup[]> {
-    const m = await this.merchantModel.findById(merchantId).lean();
+    const m = await this.repo.findMerchantLean(merchantId);
     if (!m) return [];
 
     const source = this.inferSource(m);
-    const isInternal = source === 'internal';
-    const skipped = Array.isArray((m as any).skippedChecklistItems)
+    const skipped: string[] = Array.isArray((m as any).skippedChecklistItems)
       ? (m as any).skippedChecklistItems
       : [];
 
@@ -110,19 +67,26 @@ export class MerchantChecklistService {
 
     const [productCount, categoryCount, tgCh, waQrCh, waApiCh, webCh] =
       await Promise.all([
-        this.productModel.countDocuments({
-          merchantId: new Types.ObjectId(merchantId),
-        }),
-        this.categoryModel.countDocuments({
-          merchantId: new Types.ObjectId(merchantId),
-        }),
-        this.getDefaultChannelFor(merchantId, ChannelProvider.TELEGRAM),
-        this.getDefaultChannelFor(merchantId, ChannelProvider.WHATSAPP_QR),
-        this.getDefaultChannelFor(merchantId, ChannelProvider.WHATSAPP_CLOUD),
-        this.getDefaultChannelFor(merchantId, ChannelProvider.WEBCHAT),
+        this.repo.countProducts(merchantId),
+        this.repo.countCategories(merchantId),
+        this.repo.getDefaultOrEnabledOrAnyChannel(
+          merchantId,
+          ChannelProvider.TELEGRAM,
+        ),
+        this.repo.getDefaultOrEnabledOrAnyChannel(
+          merchantId,
+          ChannelProvider.WHATSAPP_QR,
+        ),
+        this.repo.getDefaultOrEnabledOrAnyChannel(
+          merchantId,
+          ChannelProvider.WHATSAPP_CLOUD,
+        ),
+        this.repo.getDefaultOrEnabledOrAnyChannel(
+          merchantId,
+          ChannelProvider.WEBCHAT,
+        ),
       ]);
 
-    // ✅ حالة السلاج الموحّد
     const slugState = this.getPublicSlugStatus(m);
 
     // 1) معلومات المتجر
@@ -130,9 +94,9 @@ export class MerchantChecklistService {
       {
         key: 'logo',
         title: 'شعار المتجر',
-        isComplete: !!m.logoUrl,
+        isComplete: !!(m as any).logoUrl,
         isSkipped: skipped.includes('logo'),
-        message: m.logoUrl ? undefined : 'ارفع شعار المتجر',
+        message: (m as any).logoUrl ? undefined : 'ارفع شعار المتجر',
         actionPath: '/dashboard/marchinfo',
         skippable: true,
       },
@@ -140,16 +104,15 @@ export class MerchantChecklistService {
         key: 'address',
         title: 'عنوان المتجر',
         isComplete:
-          !!m.addresses?.length &&
-          !!m.addresses[0]?.street &&
-          !!m.addresses[0]?.city &&
-          !!m.addresses[0]?.country,
+          !!(m as any).addresses?.length &&
+          !!(m as any).addresses[0]?.street &&
+          !!(m as any).addresses[0]?.city &&
+          !!(m as any).addresses[0]?.country,
         isSkipped: skipped.includes('address'),
         message: 'اكمل حقول العنوان (الشارع، المدينة، الدولة)',
         actionPath: '/dashboard/marchinfo',
         skippable: true,
       },
-      // ✅ بند السلاج الموحّد
       {
         key: 'publicSlug',
         title: 'السلاج الموحّد (الرابط العام)',
@@ -160,19 +123,19 @@ export class MerchantChecklistService {
             ? undefined
             : 'فعّل الرابط العام للسلاج'
           : 'عيِّن السلاج العام من "معلومات المتجر"',
-        actionPath: '/dashboard/marchinfo', // التحرير من هنا فقط
+        actionPath: '/dashboard/marchinfo',
         skippable: false,
       },
     ];
 
-    // 2) قنوات التواصل — من مجموعة القنوات
+    // 2) قنوات التواصل
     const channels: ChecklistItem[] = [
       {
         key: 'channel_whatsapp_qr',
         title: 'واتساب (QR / Evolution)',
-        isComplete: this.isConnected(waQrCh),
+        isComplete: this.isConnected(waQrCh || undefined),
         isSkipped: skipped.includes('channel_whatsapp_qr'),
-        message: this.isConnected(waQrCh)
+        message: this.isConnected(waQrCh || undefined)
           ? undefined
           : 'اربط جلسة Evolution وفعّل الويبهوك',
         actionPath: '/dashboard/channels',
@@ -181,9 +144,9 @@ export class MerchantChecklistService {
       {
         key: 'channel_whatsapp_api',
         title: 'واتساب الرسمي (Cloud API)',
-        isComplete: this.isConnected(waApiCh),
+        isComplete: this.isConnected(waApiCh || undefined),
         isSkipped: skipped.includes('channel_whatsapp_api'),
-        message: this.isConnected(waApiCh)
+        message: this.isConnected(waApiCh || undefined)
           ? undefined
           : 'أدخل بيانات WABA (Access Token / Phone Number ID / App Secret)',
         actionPath: '/dashboard/channels',
@@ -192,9 +155,9 @@ export class MerchantChecklistService {
       {
         key: 'channel_telegram',
         title: 'تيليجرام',
-        isComplete: this.isConnected(tgCh),
+        isComplete: this.isConnected(tgCh || undefined),
         isSkipped: skipped.includes('channel_telegram'),
-        message: this.isConnected(tgCh)
+        message: this.isConnected(tgCh || undefined)
           ? undefined
           : 'أدخل توكن البوت واضبط Webhook تلقائياً',
         actionPath: '/dashboard/channels',
@@ -203,9 +166,9 @@ export class MerchantChecklistService {
       {
         key: 'channel_webchat',
         title: 'الويب شات',
-        isComplete: this.isConnected(webCh),
+        isComplete: this.isConnected(webCh || undefined),
         isSkipped: skipped.includes('channel_webchat'),
-        message: this.isConnected(webCh)
+        message: this.isConnected(webCh || undefined)
           ? undefined
           : 'فعّل الويب شات واستخرج كود الويدجت',
         actionPath: '/dashboard/channels',
@@ -214,23 +177,31 @@ export class MerchantChecklistService {
     ];
 
     // 3) إعدادات البرومبت
-    const qc = m.quickConfig || {};
-    const dialectCustomized = this.isNonDefaultString(qc.dialect, this.quickDefaults.dialect);
-    const toneCustomized = this.isNonDefaultString(qc.tone, this.quickDefaults.tone);
+    const qc = (m as any).quickConfig || {};
+    const dialectCustomized = this.isNonDefaultString(
+      qc.dialect,
+      this.quickDefaults.dialect,
+    );
+    const toneCustomized = this.isNonDefaultString(
+      qc.tone,
+      this.quickDefaults.tone,
+    );
     const closingCustomized =
-      qc.includeClosingPhrase === false || // إلغاء الجملة الختامية يعتبر تخصيصاً
+      qc.includeClosingPhrase === false ||
       this.isNonDefaultString(qc.closingText, this.quickDefaults.closingText);
     const hasCustomInstructions =
       Array.isArray(qc.customInstructions) &&
       qc.customInstructions.some((s: string) => (s || '').trim().length > 0);
-  
+
     const quickConfig: ChecklistItem[] = [
       {
         key: 'quickConfig_dialect',
         title: 'اختيار اللهجة (غير الافتراضي)',
         isComplete: dialectCustomized,
         isSkipped: skipped.includes('quickConfig_dialect'),
-        message: dialectCustomized ? undefined : `القيمة الافتراضية "${this.quickDefaults.dialect}" — غيّرها إن أردت`,
+        message: dialectCustomized
+          ? undefined
+          : `القيمة الافتراضية "${this.quickDefaults.dialect}" — غيّرها إن أردت`,
         actionPath: '/dashboard/prompt',
         skippable: false,
       },
@@ -239,11 +210,12 @@ export class MerchantChecklistService {
         title: 'اختيار الأسلوب (غير الافتراضي)',
         isComplete: toneCustomized,
         isSkipped: skipped.includes('quickConfig_tone'),
-        message: toneCustomized ? undefined : `القيمة الافتراضية "${this.quickDefaults.tone}" — غيّرها إن أردت`,
+        message: toneCustomized
+          ? undefined
+          : `القيمة الافتراضية "${this.quickDefaults.tone}" — غيّرها إن أردت`,
         actionPath: '/dashboard/prompt',
         skippable: false,
       },
-      // ✅ بند الرسالة الختامية
       {
         key: 'quickConfig_closing',
         title: 'الرسالة الختامية',
@@ -255,13 +227,14 @@ export class MerchantChecklistService {
         actionPath: '/dashboard/prompt',
         skippable: true,
       },
-      // (اختياري) تعليمات مخصصة — مكتمل لو فيها عناصر
       {
         key: 'quickConfig_customInstructions',
         title: 'تعليمات مخصّصة للذكاء الاصطناعي',
         isComplete: hasCustomInstructions,
         isSkipped: skipped.includes('quickConfig_customInstructions'),
-        message: hasCustomInstructions ? undefined : 'أضف تعليمات مخصّصة لتحسين إجابات البوت.',
+        message: hasCustomInstructions
+          ? undefined
+          : 'أضف تعليمات مخصّصة لتحسين إجابات البوت.',
         actionPath: '/dashboard/prompt',
         skippable: true,
       },
@@ -270,11 +243,8 @@ export class MerchantChecklistService {
     // 4) متفرقات
     const misc: ChecklistItem[] = [];
 
-
-    if (this.inferSource(m) === 'internal') {
-      const categoryCount = await this.categoryModel.countDocuments({
-        merchantId: new Types.ObjectId(merchantId),
-      });
+    if (source === 'internal') {
+      // للداخلية: نستخدم إحصاءات الكاتيجوري والمنتجات
       misc.push(
         {
           key: 'categories',
@@ -318,8 +288,8 @@ export class MerchantChecklistService {
         key: 'workingHours',
         title: 'مواعيد العمل',
         isComplete:
-          Array.isArray(m.workingHours) &&
-          m.workingHours.every((w: any) => w.openTime && w.closeTime),
+          Array.isArray((m as any).workingHours) &&
+          (m as any).workingHours.every((w: any) => w.openTime && w.closeTime),
         message: 'اضبط مواعيد عمل المتجر',
         actionPath: '/dashboard/marchinfo',
         skippable: true,
@@ -327,7 +297,9 @@ export class MerchantChecklistService {
       {
         key: 'returnPolicy',
         title: 'سياسة الاسترجاع',
-        isComplete: !!m.returnPolicy && m.returnPolicy.trim().length > 0,
+        isComplete:
+          !!(m as any).returnPolicy &&
+          (m as any).returnPolicy.trim().length > 0,
         message: 'أضف سياسة الاسترجاع',
         actionPath: '/dashboard/marchinfo',
         skippable: true,
@@ -335,7 +307,9 @@ export class MerchantChecklistService {
       {
         key: 'exchangePolicy',
         title: 'سياسة الاستبدال',
-        isComplete: !!m.exchangePolicy && m.exchangePolicy.trim().length > 0,
+        isComplete:
+          !!(m as any).exchangePolicy &&
+          (m as any).exchangePolicy.trim().length > 0,
         message: 'أضف سياسة الاستبدال',
         actionPath: '/dashboard/marchinfo',
         skippable: true,
@@ -343,9 +317,11 @@ export class MerchantChecklistService {
       {
         key: 'shippingPolicy',
         title: 'سياسة الشحن',
-        isComplete: !!m.shippingPolicy && m.shippingPolicy.trim().length > 0,
+        isComplete:
+          !!(m as any).shippingPolicy &&
+          (m as any).shippingPolicy.trim().length > 0,
         message: 'أضف سياسة الشحن',
-        actionPath: '/dashboard/marchinfos', // (كما كان لديك)
+        actionPath: '/dashboard/marchinfos', // كما كان لديك
         skippable: true,
       },
     );

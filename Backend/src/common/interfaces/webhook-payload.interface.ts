@@ -3,5 +3,8 @@ export interface WebhookPayload {
   orderId?: string;
   amount?: number;
   status?: string;
-  [key: string]: any; // <-- لو هناك خصائص ديناميكية
+  [key: string]: any;
 }
+
+// ✅ Alias يحلّ أي استيراد قديم
+export type WebhookPayloadInterface = WebhookPayload;

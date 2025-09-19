@@ -1,4 +1,3 @@
-// src/modules/auth/services/cookie.service.ts
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
@@ -16,24 +15,43 @@ export interface CookieOptions {
 export class CookieService {
   constructor(private readonly config: ConfigService) {}
 
-  /**
-   * ✅ C4: إعداد كوكيز آمنة
-   */
   private getSecureCookieOptions(): CookieOptions {
-    const isProduction = this.config.get<string>('NODE_ENV') === 'production';
+    const isProduction =
+      (this.config.get<string>('NODE_ENV') || '').toLowerCase() ===
+      'production';
+
+    // تسمح بالتهيئة عبر البيئة، مع قيم افتراضية آمنة
+    const domain =
+      this.config.get<string>('COOKIE_DOMAIN') ||
+      (isProduction ? '.kaleem-ai.com' : undefined);
+
+    const sameSiteRaw = (
+      this.config.get<string>('COOKIE_SAMESITE') ||
+      (isProduction ? 'none' : 'lax')
+    ).toLowerCase();
+    const sameSite = (
+      ['strict', 'lax', 'none'].includes(sameSiteRaw)
+        ? sameSiteRaw
+        : isProduction
+          ? 'none'
+          : 'lax'
+    ) as 'strict' | 'lax' | 'none';
+
+    const secureEnv = this.config.get<string>('COOKIE_SECURE');
+    const secure =
+      typeof secureEnv === 'string'
+        ? ['1', 'true', 'yes', 'on'].includes(secureEnv.toLowerCase())
+        : isProduction;
 
     return {
-      httpOnly: true, // منع الوصول عبر JavaScript
-      secure: isProduction, // HTTPS فقط في الإنتاج
-      sameSite: isProduction ? 'none' : 'lax', // للـ cross-origin في الإنتاج
-      domain: isProduction ? '.kaleem-ai.com' : undefined, // للـ subdomains
+      httpOnly: true,
+      secure,
+      sameSite,
+      domain,
       path: '/',
     };
   }
 
-  /**
-   * تعيين Access Token في كوكيز آمنة
-   */
   setAccessTokenCookie(
     res: Response,
     accessToken: string,
@@ -41,15 +59,11 @@ export class CookieService {
   ): void {
     const options = {
       ...this.getSecureCookieOptions(),
-      maxAge: expiresInSeconds * 1000, // Convert to milliseconds
+      maxAge: expiresInSeconds * 1000,
     };
-
     res.cookie('accessToken', accessToken, options);
   }
 
-  /**
-   * تعيين Refresh Token في كوكيز آمنة
-   */
   setRefreshTokenCookie(
     res: Response,
     refreshToken: string,
@@ -57,25 +71,17 @@ export class CookieService {
   ): void {
     const options = {
       ...this.getSecureCookieOptions(),
-      maxAge: expiresInSeconds * 1000, // Convert to milliseconds
+      maxAge: expiresInSeconds * 1000,
     };
-
     res.cookie('refreshToken', refreshToken, options);
   }
 
-  /**
-   * حذف كوكيز التوكنات
-   */
   clearAuthCookies(res: Response): void {
     const options = this.getSecureCookieOptions();
-
     res.clearCookie('accessToken', options);
     res.clearCookie('refreshToken', options);
   }
 
-  /**
-   * تعيين كوكيز مخصصة آمنة
-   */
   setSecureCookie(
     res: Response,
     name: string,
@@ -86,27 +92,16 @@ export class CookieService {
       ...this.getSecureCookieOptions(),
       maxAge: expiresInSeconds ? expiresInSeconds * 1000 : undefined,
     };
-
     res.cookie(name, value, options);
   }
 
-  /**
-   * حذف كوكيز مخصصة
-   */
   clearCookie(res: Response, name: string): void {
     const options = this.getSecureCookieOptions();
     res.clearCookie(name, options);
   }
 
-  /**
-   * تعيين كوكيز الجلسة (session-only)
-   */
   setSessionCookie(res: Response, name: string, value: string): void {
-    const options = {
-      ...this.getSecureCookieOptions(),
-      // لا maxAge = session cookie
-    };
-
+    const options = this.getSecureCookieOptions(); // بدون maxAge → session cookie
     res.cookie(name, value, options);
   }
 }

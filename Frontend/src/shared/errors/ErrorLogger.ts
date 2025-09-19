@@ -199,7 +199,7 @@ class ErrorLogger {
       message: `خطأ في API: ${response.status} ${response.statusText}`,
       status: response.status,
       code: `API_${response.status}`,
-      requestId: response.headers.get('x-request-id') || undefined
+      requestId: response.headers.get('') || undefined
     });
 
     this.log(error, { responseData: data });

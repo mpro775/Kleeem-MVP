@@ -1,15 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../../src/app.module';
-import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis-mock';
 
 describe('API Integration Tests', () => {
   let app: INestApplication;
   let mongo: MongoMemoryReplSet;
-  let redis: Redis;
+  let redis: any;
   let accessToken: string;
   let merchantId: string;
 
@@ -336,7 +335,7 @@ describe('API Integration Tests', () => {
 
   describe('Rate Limiting', () => {
     it('should apply rate limiting to login endpoint', async () => {
-      const promises = [];
+      const promises: any[] = [];
 
       // Make multiple requests quickly
       for (let i = 0; i < 10; i++) {

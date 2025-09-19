@@ -7,6 +7,7 @@ import { FaqController } from './faq.controller';
 import { VectorModule } from '../vector/vector.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { OutboxModule } from '../../common/outbox/outbox.module';
+import { MongoFaqRepository } from './repositories/mongo-faq.repository';
 
 @Module({
   imports: [
@@ -15,7 +16,13 @@ import { OutboxModule } from '../../common/outbox/outbox.module';
     NotificationsModule,
     OutboxModule,
   ],
-  providers: [FaqService],
+  providers: [
+    FaqService,
+    {
+      provide: 'FaqRepository',
+      useClass: MongoFaqRepository,
+    },
+  ],
   controllers: [FaqController],
   exports: [FaqService],
 })

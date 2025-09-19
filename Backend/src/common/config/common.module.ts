@@ -10,6 +10,7 @@ import {
   AuthGuard,
 } from '../index';
 import { EnvironmentValidatorService } from '../services/environment-validator.service';
+import { TranslationService } from '../services/translation.service';
 
 @Global()
 @Module({
@@ -41,7 +42,11 @@ import { EnvironmentValidatorService } from '../services/environment-validator.s
     },
 
     // Services
-    EnvironmentValidatorService,
+    {
+      provide: 'EnvironmentValidatorService',
+      useClass: EnvironmentValidatorService,
+    },
+    TranslationService,
 
     // Global Guards (اختياري - يمكن إزالته إذا كنت تريد تطبيقه يدوياً)
     // {
@@ -49,6 +54,6 @@ import { EnvironmentValidatorService } from '../services/environment-validator.s
     //   useClass: AuthGuard,
     // },
   ],
-  exports: [JwtModule],
+  exports: [JwtModule, 'EnvironmentValidatorService', TranslationService],
 })
 export class CommonModule {}

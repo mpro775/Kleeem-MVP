@@ -1,0 +1,79 @@
+name: Deploy to Production
+
+on:
+  workflow_run:
+    workflows: ['CI/CD Pipeline']
+    types: [completed]
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/kaleem-api
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Checkout deployment scripts
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            docker-compose.yml
+            docker-compose.prod.yml
+            scripts/
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Deploy to server
+        run: |
+          # متغيرات النشر
+          export IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          export DEPLOY_HOST="${{ secrets.DEPLOY_HOST }}"
+          export DEPLOY_USER="${{ secrets.DEPLOY_USER }}"
+
+          # نسخ ملفات النشر
+          scp docker-compose.prod.yml $DEPLOY_USER@$DEPLOY_HOST:/opt/kaleem/
+          scp scripts/deploy.sh $DEPLOY_USER@$DEPLOY_HOST:/opt/kaleem/
+
+          # تنفيذ النشر
+          ssh $DEPLOY_USER@$DEPLOY_HOST "
+            cd /opt/kaleem
+            export IMAGE_TAG=$IMAGE_TAG
+            chmod +x deploy.sh
+            ./deploy.sh
+          "
+
+      - name: Health check after deployment
+        run: |
+          # انتظار 30 ثانية للتطبيق للبدء
+          sleep 30
+
+          # فحص الصحة
+          for i in {1..10}; do
+            if curl -f https://api.kaleem-ai.com/api/health; then
+              echo "✅ Deployment successful!"
+              exit 0
+            fi
+            echo "⏳ Waiting for service to be ready... ($i/10)"
+            sleep 30
+          done
+
+          echo "❌ Deployment health check failed"
+          exit 1
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "🚀 Deployment completed successfully!"
+            # هنا يمكن إضافة إشعار Slack/Discord
+          else
+            echo "❌ Deployment failed!"
+            # هنا يمكن إضافة إشعار فشل
+          fi

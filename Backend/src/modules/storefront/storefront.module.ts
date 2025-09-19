@@ -1,5 +1,5 @@
 // src/storefront/storefront.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
 import { Product, ProductSchema } from '../products/schemas/product.schema';
@@ -15,6 +15,18 @@ import { MulterModule } from '@nestjs/platform-express';
 import * as Minio from 'minio';
 import { Order, OrderSchema } from '../orders/schemas/order.schema';
 import { LeadsModule } from '../leads/leads.module';
+import {
+  STOREFRONT_REPOSITORY,
+  STOREFRONT_PRODUCT_REPOSITORY,
+  STOREFRONT_CATEGORY_REPOSITORY,
+  STOREFRONT_MERCHANT_REPOSITORY,
+  STOREFRONT_ORDER_REPOSITORY,
+} from './tokens';
+import { StorefrontMongoRepository } from './repositories/storefront.mongo.repository';
+import { StorefrontProductMongoRepository } from './repositories/product.mongo.repository';
+import { StorefrontCategoryMongoRepository } from './repositories/category.mongo.repository';
+import { StorefrontMerchantMongoRepository } from './repositories/merchant.mongo.repository';
+import { StorefrontOrderMongoRepository } from './repositories/order.mongo.repository';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -24,12 +36,13 @@ import { LeadsModule } from '../leads/leads.module';
       { name: Storefront.name, schema: StorefrontSchema },
       { name: Order.name, schema: OrderSchema },
     ]),
-    VectorModule,
+    forwardRef(() => VectorModule),
     MulterModule.register({ dest: './uploads' }),
     LeadsModule,
   ],
   controllers: [StorefrontController],
-  providers: [StorefrontService,
+  providers: [
+    StorefrontService,
     {
       provide: 'MINIO_CLIENT',
       useFactory: () =>
@@ -40,7 +53,25 @@ import { LeadsModule } from '../leads/leads.module';
           accessKey: process.env.MINIO_ACCESS_KEY!,
           secretKey: process.env.MINIO_SECRET_KEY!,
         }),
-    },],
+    },
+    { provide: STOREFRONT_REPOSITORY, useClass: StorefrontMongoRepository },
+    {
+      provide: STOREFRONT_PRODUCT_REPOSITORY,
+      useClass: StorefrontProductMongoRepository,
+    },
+    {
+      provide: STOREFRONT_CATEGORY_REPOSITORY,
+      useClass: StorefrontCategoryMongoRepository,
+    },
+    {
+      provide: STOREFRONT_MERCHANT_REPOSITORY,
+      useClass: StorefrontMerchantMongoRepository,
+    },
+    {
+      provide: STOREFRONT_ORDER_REPOSITORY,
+      useClass: StorefrontOrderMongoRepository,
+    },
+  ],
   exports: [StorefrontService],
 })
 export class StorefrontModule {}

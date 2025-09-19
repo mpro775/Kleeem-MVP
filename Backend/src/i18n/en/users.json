@@ -1,0 +1,136 @@
+{
+  "users": {
+    "profile": {
+      "title": "Profile",
+      "personalInfo": "Personal Information",
+      "accountSettings": "Account Settings",
+      "security": "Security",
+      "preferences": "Preferences"
+    },
+
+    "fields": {
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "fullName": "Full Name",
+      "email": "Email",
+      "phone": "Phone Number",
+      "avatar": "Avatar",
+      "bio": "Bio",
+      "website": "Website",
+      "location": "Location",
+      "timezone": "Timezone",
+      "language": "Language",
+      "theme": "Theme",
+      "notifications": "Notifications"
+    },
+
+    "actions": {
+      "editProfile": "Edit Profile",
+      "changePassword": "Change Password",
+      "updateSettings": "Update Settings",
+      "saveChanges": "Save Changes",
+      "cancel": "Cancel",
+      "deleteAccount": "Delete Account"
+    },
+
+    "operations": {
+      "list": {
+        "summary": "Get all users",
+        "description": "Get list of all users"
+      },
+      "get": {
+        "summary": "Get single user",
+        "description": "Get single user data by ID"
+      },
+      "update": {
+        "summary": "Update user data",
+        "description": "Update user data (name/phone only)"
+      },
+      "getNotifications": {
+        "summary": "User notification preferences",
+        "description": "Get user notification preferences"
+      },
+      "updateNotifications": {
+        "summary": "Update notification preferences",
+        "description": "Update user notification preferences"
+      },
+      "delete": {
+        "summary": "Delete user account",
+        "description": "Delete user account after password confirmation"
+      },
+      "create": {
+        "bodyDescription": "User creation data: email, name, role (optional)"
+      }
+    },
+
+    "messages": {
+      "profileUpdated": "Profile updated successfully",
+      "settingsUpdated": "Settings updated successfully",
+      "passwordChanged": "Password changed successfully",
+      "accountDeleted": "Account deleted successfully",
+      "userCreated": "User created successfully",
+      "userUpdated": "User updated successfully",
+      "userDeleted": "User deleted successfully",
+      "userActivated": "User activated successfully",
+      "userDeactivated": "User deactivated successfully",
+      "listSuccess": "Users list returned successfully",
+      "getSuccess": "User data returned successfully"
+    },
+
+    "errors": {
+      "userNotFound": "User not found",
+      "emailAlreadyExists": "Email already exists",
+      "phoneAlreadyExists": "Phone number already exists",
+      "invalidRole": "Invalid role",
+      "cannotDeleteSelf": "You cannot delete your own account",
+      "cannotDeleteAdmin": "Cannot delete admin account",
+      "insufficientPermissions": "Insufficient permissions",
+      "accountAlreadyActive": "Account is already active",
+      "accountAlreadyInactive": "Account is already inactive",
+      "invalidData": "Invalid data",
+      "unauthorized": "Unauthorized access",
+      "invalidCredentials": "Invalid credentials"
+    },
+
+    "roles": {
+      "admin": "Admin",
+      "manager": "Manager",
+      "user": "User",
+      "moderator": "Moderator",
+      "editor": "Editor",
+      "viewer": "Viewer"
+    },
+
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "suspended": "Suspended",
+      "banned": "Banned",
+      "deleted": "Deleted"
+    },
+
+    "validation": {
+      "firstNameRequired": "First name is required",
+      "lastNameRequired": "Last name is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email address",
+      "phoneRequired": "Phone number is required",
+      "phoneInvalid": "Invalid phone number",
+      "bioMaxLength": "Bio must be less than 500 characters",
+      "websiteInvalid": "Invalid website URL"
+    },
+
+    "permissions": {
+      "read": "Read",
+      "write": "Write",
+      "update": "Update",
+      "delete": "Delete",
+      "manageUsers": "Manage Users",
+      "manageRoles": "Manage Roles",
+      "manageSettings": "Manage Settings",
+      "viewAnalytics": "View Analytics",
+      "manageContent": "Manage Content"
+    }
+  }
+}

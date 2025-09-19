@@ -9,6 +9,7 @@ import { DocumentsService } from './documents.service';
 import { DocumentsController } from './documents.controller';
 import { DocumentProcessor } from './processors/document.processor';
 import { VectorModule } from '../vector/vector.module';
+import { MongoDocumentsRepository } from './repositories/mongo-documents.repository';
 
 @Module({
   imports: [
@@ -22,7 +23,14 @@ import { VectorModule } from '../vector/vector.module';
     }),
     VectorModule, // ✅ أضف هذا هنا
   ],
-  providers: [DocumentsService, DocumentProcessor],
+  providers: [
+    DocumentsService,
+    DocumentProcessor,
+    {
+      provide: 'DocumentsRepository',
+      useClass: MongoDocumentsRepository,
+    },
+  ],
   controllers: [DocumentsController],
 })
 export class DocumentsModule {}

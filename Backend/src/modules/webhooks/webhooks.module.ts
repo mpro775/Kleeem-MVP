@@ -20,6 +20,11 @@ import { Channel, ChannelSchema } from '../channels/schemas/channel.schema';
 import { WhatsappQrWebhookController } from './whatsapp-qr.webhook.controller';
 import { ChatWebhooksUnifiedController } from './chat-webhooks-unified.controller';
 import { MerchantsModule } from '../merchants/merchants.module';
+import { WEBHOOK_REPOSITORY } from './tokens';
+import { WebhookMongoRepository } from './repositories/webhook.mongo.repository';
+import { CHANNEL_REPOSITORY } from './tokens';
+import { ChannelMongoRepository } from './repositories/channel.mongo.repository';
+import { CommonModule } from '../../common/config/common.module';
 
 @Module({
   imports: [
@@ -39,10 +44,13 @@ import { MerchantsModule } from '../merchants/merchants.module';
     MessagingModule, // لحفظ الرسائل (MessageService)
     ChannelsModule,
     MerchantsModule, // للوصول إلى SlugResolverService
+    CommonModule, // للوصول إلى TranslationService
   ],
   providers: [
     WebhooksService, // خدمة معالجة الـ webhook العامة
     WebhooksController, // لإعادة استخدامه في TelegramWebhookController
+    { provide: WEBHOOK_REPOSITORY, useClass: WebhookMongoRepository },
+    { provide: CHANNEL_REPOSITORY, useClass: ChannelMongoRepository },
   ],
   controllers: [
     WebhooksController,

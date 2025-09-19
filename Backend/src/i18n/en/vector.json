@@ -1,0 +1,36 @@
+{
+  "operations": {
+    "semanticProductsPost": {
+      "summary": "Search Similar Products (POST)",
+      "description": "Search for similar products based on search text using request body"
+    },
+    "semanticProductsGet": {
+      "summary": "Search Similar Products (GET)",
+      "description": "Search for similar products based on search criteria in URL query"
+    },
+    "unifiedSearch": {
+      "summary": "Unified Search Across All Data Types",
+      "description": "Search across products, categories, and brands together"
+    }
+  },
+  "responses": {
+    "success": {
+      "found": "Similar products found successfully",
+      "searchCompleted": "Search operation completed successfully"
+    },
+    "error": {
+      "badRequest": "Invalid request data",
+      "missingParams": "Search text and merchant ID must be provided",
+      "invalidTopK": "Result count must be between 1 and 50",
+      "missingMerchantQuery": "Merchant ID and search query must be provided",
+      "searchFailed": "Failed to process search request"
+    }
+  },
+  "fields": {
+    "text": "Product search text",
+    "merchantId": "Merchant ID",
+    "topK": "Number of results required",
+    "query": "Search query",
+    "recommendations": "Recommendations"
+  }
+}

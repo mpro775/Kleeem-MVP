@@ -9,6 +9,7 @@ import { IntentService } from '../intent/intent.service';
 import { CtaService } from '../cta/cta.service';
 import { renderPrompt } from '../common/template.service';
 import { VectorService } from 'src/modules/vector/vector.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class KleemChatService {
@@ -21,6 +22,7 @@ export class KleemChatService {
     private readonly settings: SettingsService,
     private readonly intent: IntentService,
     private readonly cta: CtaService,
+    private readonly config: ConfigService,
     private readonly vector: VectorService,
     private readonly events: EventEmitter2,
   ) {
@@ -94,20 +96,29 @@ export class KleemChatService {
     await this.chats.createOrAppend(sessionId, [
       { role: 'user', text, metadata: metadata ?? {} },
     ]);
+
     this.events.emit('kleem.admin_new_message', {
       sessionId,
       message: { role: 'user', text },
     });
 
-    // ✅ فعّل “يكتب الآن” فورًا
+    // “يكتب الآن”
     this.startTyping(sessionId);
 
     const systemPrompt = await this.buildSystemPrompt(text);
+
+    const n8nEndpoint = this.config.get<string>('vars.chat.n8nEndpoint')!;
+    const botName = this.config.get<string>('vars.chat.botName')!;
+    const defaultChannel = this.config.get<string>('vars.chat.defaultChannel')!;
+    const stopDelayMs = this.config.get<number>(
+      'vars.chat.typing.stopDelayMs',
+    )!;
+
     try {
-      await this.n8n.post('/webhook/webhooks/kleem/incoming', {
-        bot: 'kleem',
+      await this.n8n.post(n8nEndpoint, {
+        bot: botName,
         sessionId,
-        channel: 'webchat',
+        channel: defaultChannel,
         text,
         prompt: systemPrompt,
         policy: {
@@ -117,8 +128,8 @@ export class KleemChatService {
       });
     } catch (err) {
       this.logger.error('[n8n] failed to post user message', err as Error);
-      // إن فشل، أوقف النبض بعد ثانيتين حتى لا تبقى تومض
-      setTimeout(() => this.stopTyping(sessionId), 2000);
+      // لا نستخدم 2000 مباشرةً
+      setTimeout(() => this.stopTyping(sessionId), stopDelayMs);
     }
     return { status: 'queued' as const };
   }

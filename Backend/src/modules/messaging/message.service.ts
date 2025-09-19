@@ -1,41 +1,36 @@
 // ---------------------------
 // File: src/modules/messaging/message.service.ts
 // ---------------------------
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { ClientSession, Model, Types } from 'mongoose';
 import {
-  MessageSession,
-  MessageSessionDocument,
-} from './schemas/message.schema';
+  Injectable,
+  NotFoundException,
+  Inject,
+  BadRequestException,
+} from '@nestjs/common';
+import { ClientSession, Types } from 'mongoose';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
 import { removeStopwords, ara, eng } from 'stopword';
 import { ChatGateway } from '../chat/chat.gateway';
 import { GeminiService } from '../ai/gemini.service';
+import { MESSAGE_SESSION_REPOSITORY } from './tokens';
+import {
+  MessageItem,
+  MessageRepository,
+  MessageSessionEntity,
+} from './repositories/message.repository';
 
 @Injectable()
 export class MessageService {
   constructor(
-    @InjectModel(MessageSession.name)
-    private readonly messageModel: Model<MessageSessionDocument>,
+    @Inject(MESSAGE_SESSION_REPOSITORY)
+    private readonly messagesRepo: MessageRepository,
     private readonly chatGateway: ChatGateway,
     private readonly geminiService: GeminiService,
   ) {}
 
   async createOrAppend(dto: CreateMessageDto, session?: ClientSession) {
-    const mId = new Types.ObjectId(dto.merchantId);
-
-    const existing = await this.messageModel
-      .findOne({
-        merchantId: mId,
-        sessionId: dto.sessionId,
-        channel: dto.channel,
-      })
-      .session(session ?? null)
-      .exec();
-
-    const toInsert = dto.messages.map((m) => ({
+    const toInsert: MessageItem[] = dto.messages.map((m) => ({
       _id: new Types.ObjectId(),
       role: m.role,
       text: m.text,
@@ -46,59 +41,46 @@ export class MessageService {
 
     const lastMsg = toInsert[toInsert.length - 1];
 
-    if (existing) {
-      existing.messages.push(...toInsert);
-      existing.markModified('messages');
-      await existing.save({ session });
+    let doc =
+      (await this.messagesRepo.findByMerchantSessionChannel(
+        dto.merchantId,
+        dto.sessionId,
+        dto.channel,
+        { session },
+      )) || null;
+
+    if (doc) {
+      doc = await this.messagesRepo.appendMessagesById(
+        String(doc._id),
+        toInsert,
+        { session },
+      );
     } else {
-      await this.messageModel.create(
-        [
-          {
-            merchantId: mId,
-            sessionId: dto.sessionId,
-            channel: dto.channel,
-            messages: toInsert,
-          },
-        ],
+      doc = await this.messagesRepo.createSessionWithMessages(
+        {
+          merchantId: dto.merchantId,
+          sessionId: dto.sessionId,
+          channel: dto.channel,
+          messages: toInsert,
+        },
         { session },
       );
     }
 
-    // ✅ إرسال واحد فقط بعد تأكيد الكتابة
     if (lastMsg) this.chatGateway.sendMessageToSession(dto.sessionId, lastMsg);
-
-    return (
-      existing ??
-      (await this.messageModel
-        .findOne({
-          merchantId: mId,
-          sessionId: dto.sessionId,
-          channel: dto.channel,
-        })
-        .exec())
-    );
+    return doc;
   }
+
   async findByWidgetSlugAndSession(
     slug: string,
     sessionId: string,
     channel: 'webchat',
   ) {
-    const Widget = this.messageModel.db.model('ChatWidgetSettings');
-    const w = await Widget.findOne({
-      $or: [{ widgetSlug: slug }, { publicSlug: slug }],
-    })
-      .select('merchantId')
-      .lean();
-    if (!w) return null;
-
-    return this.messageModel
-      .findOne({
-        merchantId: new Types.ObjectId(String((w as any).merchantId)),
-        sessionId,
-        channel,
-      })
-      .lean()
-      .exec();
+    return this.messagesRepo.findByWidgetSlugAndSession(
+      slug,
+      sessionId,
+      channel,
+    );
   }
 
   async rateMessage(
@@ -109,35 +91,27 @@ export class MessageService {
     feedback?: string,
     merchantId?: string,
   ) {
-    const res = await this.messageModel.updateOne(
-      { sessionId, 'messages._id': new Types.ObjectId(messageId) },
-      { merchantId: new Types.ObjectId(merchantId) },
-      {
-        $set: {
-          'messages.$.rating': rating,
-          'messages.$.feedback': feedback ?? null,
-          'messages.$.ratedBy': new Types.ObjectId(userId),
-          'messages.$.ratedAt': new Date(),
-        },
-      },
-    );
+    const ok = await this.messagesRepo.updateMessageRating({
+      sessionId,
+      messageId,
+      userId,
+      rating,
+      feedback,
+      merchantId,
+    });
 
-    if (res.matchedCount === 0) {
-      throw new Error('لم يتم العثور على الرسالة للتقييم'); // أو BadRequestException
+    if (!ok) {
+      throw new BadRequestException('لم يتم العثور على الرسالة للتقييم');
     }
 
     if (rating === 0) {
-      const session = await this.messageModel
-        .findOne(
-          { sessionId },
-          { messages: { $elemMatch: { _id: new Types.ObjectId(messageId) } } },
-        )
-        .lean();
-
-      const msg = session?.messages?.[0];
-      if (msg?.text) {
+      const text = await this.messagesRepo.getMessageTextById(
+        sessionId,
+        messageId,
+      );
+      if (text) {
         await this.geminiService.generateAndSaveInstructionFromBadReply(
-          msg.text,
+          text,
           merchantId,
         );
       }
@@ -147,84 +121,47 @@ export class MessageService {
   }
 
   async findBySession(sessionId: string, merchantId: string) {
-    return this.messageModel
-      .findOne({ sessionId, merchantId: new Types.ObjectId(merchantId) })
-      .exec();
+    return this.messagesRepo.findBySession(merchantId, sessionId);
   }
 
-  async findById(id: string): Promise<MessageSessionDocument> {
-    const doc = await this.messageModel.findById(id).exec();
+  async findById(id: string): Promise<MessageSessionEntity> {
+    const doc = await this.messagesRepo.findById(id);
     if (!doc) throw new NotFoundException(`Session ${id} not found`);
     return doc;
   }
+
   async setHandover(
     sessionId: string,
     handoverToAgent: boolean,
     merchantId: string,
   ) {
-    return this.messageModel.updateOne(
-      { sessionId, merchantId: new Types.ObjectId(merchantId) },
-      { handoverToAgent },
-    );
+    await this.messagesRepo.setHandover(sessionId, merchantId, handoverToAgent);
   }
 
   async update(
     id: string,
     dto: UpdateMessageDto,
-  ): Promise<MessageSessionDocument> {
-    const updated = await this.messageModel
-      .findByIdAndUpdate(id, dto, { new: true })
-      .exec();
+  ): Promise<MessageSessionEntity> {
+    const updated = await this.messagesRepo.updateById(id, dto as any);
     if (!updated) throw new NotFoundException(`Session ${id} not found`);
     return updated;
   }
 
   async remove(id: string): Promise<{ deleted: boolean }> {
-    const res = await this.messageModel.deleteOne({ _id: id }).exec();
-    return { deleted: res.deletedCount > 0 };
+    const deleted = await this.messagesRepo.deleteById(id);
+    return { deleted };
   }
-  async getFrequentBadBotReplies(merchantId: string, limit = 10) {
-    const mid = new Types.ObjectId(merchantId);
-    const agg = await this.messageModel.aggregate([
-      { $match: { merchantId: mid } }, // <-- مهم: تقييد بالتاجر
-      { $unwind: '$messages' },
-      { $match: { 'messages.role': 'bot', 'messages.rating': 0 } },
-      {
-        $group: {
-          _id: '$messages.text',
-          count: { $sum: 1 },
-          feedbacks: { $push: '$messages.feedback' },
-        },
-      },
-      { $sort: { count: -1 } },
-      { $limit: limit },
-    ]);
 
-    return agg.map((item) => ({
-      text: item._id,
-      count: item.count,
-      feedbacks: (item.feedbacks || []).filter(Boolean),
-    }));
+  async getFrequentBadBotReplies(merchantId: string, limit = 10) {
+    return this.messagesRepo.aggregateFrequentBadBotReplies(merchantId, limit);
   }
+
   async findAll(filters: {
     merchantId?: string;
     channel?: string;
     limit: number;
     page: number;
-  }): Promise<{ data: MessageSessionDocument[]; total: number }> {
-    const query: any = {};
-    if (filters.merchantId)
-      query.merchantId = new Types.ObjectId(filters.merchantId);
-    if (filters.channel) query.channel = filters.channel;
-
-    const total = await this.messageModel.countDocuments(query);
-    const data = await this.messageModel
-      .find(query)
-      .skip((filters.page - 1) * filters.limit)
-      .limit(filters.limit)
-      .sort({ updatedAt: -1 })
-      .exec();
-
-    return { data, total };
+  }): Promise<{ data: MessageSessionEntity[]; total: number }> {
+    return this.messagesRepo.findAll(filters);
   }
 }

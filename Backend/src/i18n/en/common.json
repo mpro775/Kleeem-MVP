@@ -1,0 +1,58 @@
+{
+  "auth": {
+    "errors": {
+      "invalidCredentials": "Invalid credentials",
+      "userNotFound": "User not found",
+      "emailAlreadyExists": "Email already exists",
+      "invalidToken": "Invalid token",
+      "tokenExpired": "Token expired",
+      "accountNotVerified": "Account not verified",
+      "insufficientPermissions": "Insufficient permissions",
+      "passwordTooWeak": "Password too weak",
+      "currentPasswordIncorrect": "Current password is incorrect"
+    },
+    "messages": {
+      "loginSuccess": "Login successful",
+      "registrationSuccess": "Registration successful",
+      "logoutSuccess": "Logout successful",
+      "passwordResetSent": "Password reset link sent",
+      "passwordResetSuccess": "Password reset successful",
+      "emailVerified": "Email verified",
+      "profileUpdated": "Profile updated"
+    }
+  },
+  "vector": {
+    "errors": {
+      "embeddingFailed": "Failed to create vector embedding",
+      "invalidVector": "Invalid vector",
+      "qdrantConnectionFailed": "Failed to connect to vector database",
+      "collectionNotFound": "Collection not found"
+    }
+  },
+  "embeddings": {
+    "errors": {
+      "invalidBaseUrl": "Invalid base URL",
+      "invalidText": "Invalid text",
+      "requestFailed": "Embedding request failed",
+      "timeout": "Request timeout"
+    }
+  },
+  "merchants": {
+    "errors": {
+      "notFound": "Merchant not found",
+      "unauthorized": "Unauthorized access",
+      "invalidData": "Invalid data",
+      "quotaExceeded": "Quota exceeded"
+    }
+  },
+  "common": {
+    "errors": {
+      "internalServerError": "Internal server error",
+      "badRequest": "Bad request",
+      "unauthorized": "Unauthorized",
+      "forbidden": "Forbidden",
+      "notFound": "Not found",
+      "validationError": "Validation error"
+    }
+  }
+}

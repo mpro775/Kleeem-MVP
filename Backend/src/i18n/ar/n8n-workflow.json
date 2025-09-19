@@ -1,0 +1,67 @@
+{
+  "operations": {
+    "create": {
+      "summary": "إنشاء سير عمل جديد",
+      "description": "إنشاء سير عمل N8N جديد"
+    },
+    "findAll": {
+      "summary": "استرجاع جميع سير العمل",
+      "description": "جلب قائمة بجميع سير العمل"
+    },
+    "findOne": {
+      "summary": "استرجاع سير عمل محدد",
+      "description": "جلب تفاصيل سير عمل محدد"
+    },
+    "update": {
+      "summary": "تحديث سير العمل",
+      "description": "تحديث بيانات سير عمل موجود"
+    },
+    "remove": {
+      "summary": "حذف سير العمل",
+      "description": "حذف سير عمل بشكل دائم"
+    },
+    "execute": {
+      "summary": "تنفيذ سير العمل",
+      "description": "تنفيذ سير عمل N8N"
+    },
+    "status": {
+      "summary": "حالة سير العمل",
+      "description": "فحص حالة تنفيذ سير العمل"
+    }
+  },
+  "responses": {
+    "success": {
+      "created": "تم إنشاء سير العمل بنجاح",
+      "found": "تم العثور على سير العمل",
+      "updated": "تم تحديث سير العمل بنجاح",
+      "deleted": "تم حذف سير العمل بنجاح",
+      "executed": "تم تنفيذ سير العمل بنجاح",
+      "statusRetrieved": "تم جلب حالة سير العمل بنجاح"
+    },
+    "error": {
+      "notFound": "سير العمل غير موجود",
+      "badRequest": "بيانات الطلب غير صالحة",
+      "unauthorized": "غير مصرح بالوصول",
+      "forbidden": "ممنوع الوصول",
+      "executionFailed": "فشل في تنفيذ سير العمل",
+      "statusFailed": "فشل في جلب حالة سير العمل"
+    }
+  },
+  "fields": {
+    "name": "اسم سير العمل",
+    "description": "وصف سير العمل",
+    "nodes": "العقد",
+    "connections": "الاتصالات",
+    "status": "الحالة",
+    "lastExecuted": "آخر تنفيذ",
+    "executionTime": "وقت التنفيذ"
+  },
+  "status": {
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "running": "قيد التشغيل",
+    "completed": "مكتمل",
+    "failed": "فاشل",
+    "paused": "متوقف مؤقتاً"
+  }
+}

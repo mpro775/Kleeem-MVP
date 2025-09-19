@@ -1,27 +1,31 @@
-// src/modules/webhooks/webhooks.service.ts
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { Connection, Model } from 'mongoose';
-import { Webhook, WebhookDocument } from './schemas/webhook.schema';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 import { MessageService } from '../messaging/message.service';
 import { BotReplyDto } from './dto/bot-reply.dto';
 import { OutboxService } from 'src/common/outbox/outbox.service';
+import { WEBHOOK_REPOSITORY } from './tokens';
+import { WebhookRepository } from './repositories/webhook.repository';
 
 @Injectable()
 export class WebhooksService {
   constructor(
     private readonly messageService: MessageService,
-    @InjectModel(Webhook.name)
-    private readonly webhookModel: Model<WebhookDocument>,
     @InjectConnection() private readonly conn: Connection,
     private readonly outbox: OutboxService,
+    @Inject(WEBHOOK_REPOSITORY)
+    private readonly webhooksRepo: WebhookRepository,
   ) {}
 
   private async appendAndEnqueue(
     merchantId: string,
     sessionId: string,
     channel: string,
-    message: { role: 'customer' | 'bot' | 'agent'; text: string; metadata?: any },
+    message: {
+      role: 'customer' | 'bot' | 'agent';
+      text: string;
+      metadata?: any;
+    },
     outboxEvent:
       | { type: 'chat.incoming'; routingKey: string }
       | { type: 'chat.reply'; routingKey: string },
@@ -33,7 +37,11 @@ export class WebhooksService {
         sessionId,
         channel,
         messages: [
-          { role: message.role, text: message.text, metadata: message.metadata || {} },
+          {
+            role: message.role,
+            text: message.text,
+            metadata: message.metadata || {},
+          },
         ],
       },
       dbSession,
@@ -60,22 +68,20 @@ export class WebhooksService {
 
   async handleEvent(eventType: string, payload: any) {
     const { merchantId, from, messageText, metadata } = payload || {};
-    if (!merchantId || !from || !messageText)
+    if (!merchantId || !from || !messageText) {
       throw new BadRequestException(`Invalid payload`);
-
+    }
     const channel = eventType.replace('_incoming', '');
 
     const session = await this.conn.startSession();
     try {
       await session.withTransaction(async () => {
-        await this.webhookModel.create(
-          [
-            {
-              eventType,
-              payload: JSON.stringify(payload),
-              receivedAt: new Date(),
-            },
-          ],
+        await this.webhooksRepo.createOne(
+          {
+            eventType,
+            payload: JSON.stringify(payload),
+            receivedAt: new Date(),
+          },
           { session },
         );
 
@@ -88,6 +94,7 @@ export class WebhooksService {
           session,
         );
       });
+
       return { sessionId: from, status: 'accepted' };
     } finally {
       await session.endSession();
@@ -99,8 +106,9 @@ export class WebhooksService {
     dto: BotReplyDto,
   ): Promise<{ sessionId: string; status: 'accepted' }> {
     const { sessionId, text, metadata } = dto || {};
-    if (!sessionId || !text)
+    if (!sessionId || !text) {
       throw new BadRequestException('sessionId و text مطلوبة');
+    }
 
     const session = await this.conn.startSession();
     try {
@@ -114,6 +122,7 @@ export class WebhooksService {
           session,
         );
       });
+
       return { sessionId, status: 'accepted' };
     } finally {
       await session.endSession();

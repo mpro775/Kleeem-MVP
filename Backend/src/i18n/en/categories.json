@@ -1,0 +1,60 @@
+{
+  "operations": {
+    "create": {
+      "summary": "Add Category",
+      "description": "Create a new category in the system"
+    },
+    "findAll": {
+      "summary": "Retrieve Categories",
+      "description": "Retrieve all categories (flat or tree view)"
+    },
+    "findOne": {
+      "summary": "Retrieve Specific Category",
+      "description": "Retrieve details of a specific category"
+    },
+    "breadcrumbs": {
+      "summary": "Get Category Breadcrumbs",
+      "description": "Retrieve category path in hierarchical structure"
+    },
+    "subtree": {
+      "summary": "Get Subtree",
+      "description": "Retrieve all subcategories"
+    },
+    "move": {
+      "summary": "Move Category",
+      "description": "Move/reorder category within hierarchy"
+    },
+    "remove": {
+      "summary": "Delete Category",
+      "description": "Delete a specific category"
+    },
+    "uploadImage": {
+      "summary": "Upload Category Image",
+      "description": "Upload and convert category image (≤ 2MB, webp)"
+    },
+    "update": {
+      "summary": "Update Category",
+      "description": "Update specific category data"
+    }
+  },
+  "responses": {
+    "success": {
+      "created": "Category created successfully",
+      "found": "Categories retrieved successfully",
+      "updated": "Category updated successfully",
+      "deleted": "Category deleted successfully"
+    },
+    "error": {
+      "notFound": "Category not found",
+      "badRequest": "Invalid category data",
+      "unsupportedFormat": "Unsupported image format (png/jpg/webp only)",
+      "noFile": "No file attached"
+    }
+  },
+  "fields": {
+    "merchantId": "Merchant ID",
+    "tree": "Tree View",
+    "cascade": "Cascade Delete",
+    "file": "File"
+  }
+}

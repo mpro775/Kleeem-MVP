@@ -1,0 +1,58 @@
+{
+  "auth": {
+    "errors": {
+      "invalidCredentials": "بيانات الاعتماد غير صحيحة",
+      "userNotFound": "المستخدم غير موجود",
+      "emailAlreadyExists": "البريد الإلكتروني موجود بالفعل",
+      "invalidToken": "رمز غير صحيح",
+      "tokenExpired": "انتهت صلاحية الرمز",
+      "accountNotVerified": "الحساب غير مفعل",
+      "insufficientPermissions": "صلاحيات غير كافية",
+      "passwordTooWeak": "كلمة المرور ضعيفة جداً",
+      "currentPasswordIncorrect": "كلمة المرور الحالية غير صحيحة"
+    },
+    "messages": {
+      "loginSuccess": "تم تسجيل الدخول بنجاح",
+      "registrationSuccess": "تم التسجيل بنجاح",
+      "logoutSuccess": "تم تسجيل الخروج بنجاح",
+      "passwordResetSent": "تم إرسال رابط إعادة تعيين كلمة المرور",
+      "passwordResetSuccess": "تم إعادة تعيين كلمة المرور بنجاح",
+      "emailVerified": "تم التحقق من البريد الإلكتروني",
+      "profileUpdated": "تم تحديث الملف الشخصي"
+    }
+  },
+  "vector": {
+    "errors": {
+      "embeddingFailed": "فشل في إنشاء التمثيل المتجه",
+      "invalidVector": "متجه غير صحيح",
+      "qdrantConnectionFailed": "فشل في الاتصال بقاعدة البيانات المتجهة",
+      "collectionNotFound": "المجموعة غير موجودة"
+    }
+  },
+  "embeddings": {
+    "errors": {
+      "invalidBaseUrl": "عنوان URL الأساسي غير صحيح",
+      "invalidText": "النص غير صحيح",
+      "requestFailed": "فشل في طلب التمثيل",
+      "timeout": "انتهت مهلة الطلب"
+    }
+  },
+  "merchants": {
+    "errors": {
+      "notFound": "التاجر غير موجود",
+      "unauthorized": "غير مصرح لك بالوصول",
+      "invalidData": "البيانات غير صحيحة",
+      "quotaExceeded": "تم تجاوز الحد المسموح"
+    }
+  },
+  "common": {
+    "errors": {
+      "internalServerError": "خطأ داخلي في الخادم",
+      "badRequest": "طلب غير صحيح",
+      "unauthorized": "غير مصرح لك بالوصول",
+      "forbidden": "ممنوع",
+      "notFound": "غير موجود",
+      "validationError": "خطأ في التحقق من البيانات"
+    }
+  }
+}

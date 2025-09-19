@@ -27,6 +27,9 @@ import {
   PasswordResetToken,
   PasswordResetTokenSchema,
 } from './schemas/password-reset-token.schema';
+import { MongoAuthRepository } from './repositories/mongo-auth.repository';
+import { RedisSessionStore } from './repositories/redis-session-store.repository';
+import { CommonServicesModule } from '../../common/services/common-services.module';
 
 @Module({
   imports: [
@@ -56,9 +59,23 @@ import {
     UsersModule,
     MerchantsModule, // لازمه ل AuthController الذي يستعمل MerchantsService
     MetricsModule,
+    CommonServicesModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, TokenService, CookieService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    TokenService,
+    CookieService,
+    {
+      provide: 'AuthRepository',
+      useClass: MongoAuthRepository,
+    },
+    {
+      provide: 'SessionStore',
+      useClass: RedisSessionStore,
+    },
+  ],
   exports: [AuthService, TokenService, CookieService],
 })
 export class AuthModule {}

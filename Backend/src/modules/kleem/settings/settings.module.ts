@@ -6,6 +6,8 @@ import {
 } from './botRuntimeSettings.schema';
 import { SettingsService } from './settings.service';
 import { SettingsController } from './settings.controller';
+import { SETTINGS_REPOSITORY } from './tokens';
+import { SettingsMongoRepository } from './repositories/settings.mongo.repository';
 
 @Module({
   imports: [
@@ -13,7 +15,13 @@ import { SettingsController } from './settings.controller';
       { name: BotRuntimeSettings.name, schema: BotRuntimeSettingsSchema },
     ]),
   ],
-  providers: [SettingsService],
+  providers: [
+    SettingsService,
+    {
+      provide: SETTINGS_REPOSITORY,
+      useClass: SettingsMongoRepository,
+    },
+  ],
   controllers: [SettingsController],
   exports: [SettingsService],
 })

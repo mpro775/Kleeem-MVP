@@ -1,49 +1,49 @@
 // src/modules/kleem/chat/kleem-chat.controller.ts
-import { 
-  Controller, 
-  Post, 
-  Get, 
-  Param, 
-  Body, 
-  UseGuards, 
-  HttpStatus 
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  UseGuards,
+  HttpStatus,
 } from '@nestjs/common';
 import { KleemChatService } from './kleem-chat.service';
 import { BotChatsService } from '../botChats/botChats.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { Public } from 'src/common/decorators/public.decorator';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiParam, 
-  ApiBody, 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
   ApiBearerAuth,
   ApiOkResponse,
   ApiBadRequestResponse,
   ApiNotFoundResponse,
   ApiProperty,
-  ApiPropertyOptional
+  ApiPropertyOptional,
 } from '@nestjs/swagger';
-import { 
-  IsString, 
-  IsNumber, 
-  IsOptional, 
-  IsIn, 
-  IsObject, 
-  IsNotEmpty, 
-  Min, 
-  MaxLength 
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsIn,
+  IsObject,
+  IsNotEmpty,
+  Min,
+  MaxLength,
 } from 'class-validator';
 
 // DTOs for request/response schemas
-class SendMessageDto {
+class SendKaleemMessageDto {
   @IsString()
   @IsNotEmpty()
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'نص الرسالة المرسلة من المستخدم',
     example: 'مرحباً، أريد الاستفسار عن الخدمات المتوفرة',
-    required: true
+    required: true,
   })
   text: string;
 
@@ -53,18 +53,18 @@ class SendMessageDto {
     description: 'بيانات إضافية',
     type: 'object',
     additionalProperties: true,
-    example: { platform: 'web', userAgent: 'Mozilla/5.0' }
+    example: { platform: 'web', userAgent: 'Mozilla/5.0' },
   })
   metadata?: Record<string, unknown>;
 }
 
-class RateMessageDto {
+class RateMessageKaleemDto {
   @IsNumber()
   @Min(0)
   @ApiProperty({
     description: 'فهرس الرسالة في المحادثة (يبدأ من 0)',
     example: 2,
-    required: true
+    required: true,
   })
   msgIdx: number;
 
@@ -73,7 +73,7 @@ class RateMessageDto {
     description: 'تقييم الرسالة (0: سلبي، 1: إيجابي)',
     enum: [0, 1],
     example: 1,
-    required: true
+    required: true,
   })
   rating: 0 | 1;
 
@@ -83,7 +83,7 @@ class RateMessageDto {
   @ApiPropertyOptional({
     description: 'تعليق إضافي على التقييم',
     example: 'كانت الإجابة مفيدة جداً',
-    required: false
+    required: false,
   })
   feedback?: string;
 }
@@ -91,7 +91,7 @@ class RateMessageDto {
 class ChatSessionResponse {
   @ApiProperty({
     description: 'معرف الجلسة',
-    example: 'session-12345'
+    example: 'session-12345',
   })
   sessionId: string;
 
@@ -105,9 +105,9 @@ class ChatSessionResponse {
         text: { type: 'string', example: 'مرحباً' },
         timestamp: { type: 'string', format: 'date-time' },
         rating: { type: 'number', example: 1, nullable: true },
-        feedback: { type: 'string', nullable: true }
-      }
-    }
+        feedback: { type: 'string', nullable: true },
+      },
+    },
   })
   messages: Array<{
     role: string;
@@ -140,30 +140,30 @@ export class KleemChatController {
    */
   @Post(':sessionId/message')
   @Public()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'إرسال رسالة',
-    description: 'إرسال رسالة جديدة من المستخدم إلى البوت في جلسة محددة'
+    description: 'إرسال رسالة جديدة من المستخدم إلى البوت في جلسة محددة',
   })
   @ApiParam({
     name: 'sessionId',
     description: 'معرف الجلسة الفريد',
-    example: 'session-12345'
+    example: 'session-12345',
   })
-  @ApiBody({ 
+  @ApiBody({
     description: 'بيانات الرسالة',
-    type: SendMessageDto,
-    required: true
+    type: SendKaleemMessageDto,
+    required: true,
   })
   @ApiOkResponse({
     description: 'تم استلام الرسالة بنجاح',
-    type: Object
+    type: Object,
   })
   @ApiBadRequestResponse({
-    description: 'بيانات الطلب غير صالحة'
+    description: 'بيانات الطلب غير صالحة',
   })
   async sendMessage(
     @Param('sessionId') sessionId: string,
-    @Body() body: SendMessageDto,
+    @Body() body: SendKaleemMessageDto,
   ) {
     return this.kleem.handleUserMessage(sessionId, body.text, body.metadata);
   }
@@ -176,32 +176,32 @@ export class KleemChatController {
    */
   @Post(':sessionId/rate')
   @Public()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'تقييم رسالة',
-    description: 'تقييم رسالة من البوت في جلسة محددة'
+    description: 'تقييم رسالة من البوت في جلسة محددة',
   })
   @ApiParam({
     name: 'sessionId',
     description: 'معرف الجلسة الفريد',
-    example: 'session-12345'
+    example: 'session-12345',
   })
   @ApiBody({
     description: 'بيانات التقييم',
-    type: RateMessageDto,
-    required: true
+    type: RateMessageKaleemDto,
+    required: true,
   })
   @ApiOkResponse({
-    description: 'تم تسجيل التقييم بنجاح'
+    description: 'تم تسجيل التقييم بنجاح',
   })
   @ApiBadRequestResponse({
-    description: 'بيانات التقييم غير صالحة'
+    description: 'بيانات التقييم غير صالحة',
   })
   @ApiNotFoundResponse({
-    description: 'الجلسة أو الرسالة غير موجودة'
+    description: 'الجلسة أو الرسالة غير موجودة',
   })
   async rate(
     @Param('sessionId') sessionId: string,
-    @Body() body: RateMessageDto,
+    @Body() body: RateMessageKaleemDto,
   ) {
     return this.chats.rateMessage(
       sessionId,
@@ -218,21 +218,21 @@ export class KleemChatController {
    */
   @Get(':sessionId')
   @Public()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'استرجاع المحادثة',
-    description: 'استرجاع كافة الرسائل في جلسة محددة'
+    description: 'استرجاع كافة الرسائل في جلسة محددة',
   })
   @ApiParam({
     name: 'sessionId',
     description: 'معرف الجلسة الفريد',
-    example: 'session-12345'
+    example: 'session-12345',
   })
   @ApiOkResponse({
     description: 'تم استرجاع المحادثة بنجاح',
-    type: ChatSessionResponse
+    type: ChatSessionResponse,
   })
   @ApiNotFoundResponse({
-    description: 'الجلسة غير موجودة'
+    description: 'الجلسة غير موجودة',
   })
   async getSession(@Param('sessionId') sessionId: string) {
     return this.chats.findBySession(sessionId);

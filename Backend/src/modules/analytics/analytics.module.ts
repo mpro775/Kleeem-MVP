@@ -23,6 +23,8 @@ import { AnalyticsAdminController } from './analytics.admin.controller';
 import { FaqModule } from '../faq/faq.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { Channel, ChannelSchema } from '../channels/schemas/channel.schema';
+import { MongoAnalyticsRepository } from './repositories/mongo-analytics.repository';
+import { CommonModule } from '../../common/config/common.module';
 
 @Module({
   imports: [
@@ -37,10 +39,13 @@ import { Channel, ChannelSchema } from '../channels/schemas/channel.schema';
     ]),
     forwardRef(() => ProductsModule),
     FaqModule,
-    NotificationsModule,  // ← أضف هذا السطر    
-
+    NotificationsModule,
+    CommonModule, // للوصول إلى TranslationService
   ],
-  providers: [AnalyticsService],
+  providers: [
+    AnalyticsService,
+    { provide: 'AnalyticsRepository', useClass: MongoAnalyticsRepository },
+  ],
   controllers: [AnalyticsController, AnalyticsAdminController],
   exports: [AnalyticsService], // ← هذا السطر مفقود عندك
 })

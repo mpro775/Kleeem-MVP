@@ -1,0 +1,103 @@
+{
+  "merchants": {
+    "errors": {
+      "notFound": "التاجر غير موجود",
+      "invalidSlug": "سلاج غير صالح",
+      "fileNotSupported": "صيغة الصورة غير مدعومة (PNG/JPG/WEBP)",
+      "fileTooLarge": "الحجم الأقصى 2MB",
+      "noFileAttached": "لم يتم إرفاق ملف",
+      "unauthorized": "ممنوع",
+      "subscriptionExpired": "الاشتراك منتهي الصلاحية",
+      "insufficientPermissions": "صلاحيات غير كافية",
+      "invalidData": "البيانات غير صحيحة",
+      "alreadyExists": "التاجر موجود بالفعل"
+    },
+    "messages": {
+      "created": "تم إنشاء التاجر بنجاح",
+      "updated": "تم تحديث بيانات التاجر بنجاح",
+      "deleted": "تم حذف التاجر بنجاح",
+      "logoUploaded": "تم رفع الشعار بنجاح",
+      "subscriptionValid": "الاشتراك صالح",
+      "softDeleted": "تم حذف ناعم للتاجر",
+      "restored": "تم استرجاع التاجر",
+      "permanentlyDeleted": "تم حذف التاجر نهائياً"
+    },
+    "operations": {
+      "create": {
+        "summary": "إنشاء تاجر جديد",
+        "description": "إنشاء تاجر جديد مع الإعدادات الأولية"
+      },
+      "update": {
+        "summary": "تحديث بيانات التاجر",
+        "description": "تحديث بيانات التاجر بالكامل"
+      },
+      "delete": {
+        "summary": "حذف ناعم للتاجر",
+        "description": "حذف ناعم للتاجر (تعطيل + تمييز بالحذف)"
+      },
+      "restore": {
+        "summary": "استرجاع التاجر",
+        "description": "استرجاع التاجر بعد الحذف الناعم"
+      },
+      "permanentDelete": {
+        "summary": "حذف إجباري",
+        "description": "حذف إجباري + تنظيف كامل (للمشرف فقط)"
+      },
+      "list": {
+        "summary": "جلب جميع التجار",
+        "description": "جلب قائمة بجميع التجار"
+      },
+      "get": {
+        "summary": "جلب تاجر واحد",
+        "description": "جلب بيانات تاجر واحد حسب المعرّف"
+      },
+      "checklist": {
+        "summary": "قائمة التحقق",
+        "description": "جلب قائمة العناصر في قائمة التحقق"
+      },
+      "uploadLogo": {
+        "summary": "رفع شعار التاجر",
+        "description": "رفع شعار التاجر كملف (MinIO + حذف مؤقت)"
+      },
+      "verifySubscription": {
+        "summary": "التحقق من الاشتراك",
+        "description": "التحقق من صلاحية الاشتراك الحالي"
+      },
+      "skipChecklistItem": {
+        "summary": "تخطي عنصر",
+        "description": "تخطي عنصر في قائمة التحقق"
+      }
+    },
+    "fields": {
+      "name": "اسم التاجر",
+      "slug": "السلاج",
+      "logo": "الشعار",
+      "description": "الوصف",
+      "phone": "رقم الهاتف",
+      "email": "البريد الإلكتروني",
+      "address": "العنوان",
+      "subscription": "الاشتراك",
+      "categories": "الفئات",
+      "workingHours": "ساعات العمل",
+      "socialLinks": "روابط وسائل التواصل",
+      "returnPolicy": "سياسة الإرجاع",
+      "exchangePolicy": "سياسة الاستبدال",
+      "shippingPolicy": "سياسة الشحن"
+    },
+    "checklist": {
+      "items": {
+        "profile": "إكمال الملف الشخصي",
+        "logo": "رفع شعار التاجر",
+        "categories": "تحديد فئات المنتجات",
+        "workingHours": "تحديد ساعات العمل",
+        "socialLinks": "إضافة روابط وسائل التواصل",
+        "policies": "إضافة السياسات",
+        "subscription": "تفعيل الاشتراك"
+      },
+      "messages": {
+        "itemSkipped": "تم تخطي العنصر بنجاح",
+        "itemCompleted": "تم إكمال العنصر بنجاح"
+      }
+    }
+  }
+}

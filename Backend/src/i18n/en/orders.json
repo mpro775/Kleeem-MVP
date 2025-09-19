@@ -1,0 +1,54 @@
+{
+  "operations": {
+    "create": {
+      "summary": "Create New Order",
+      "description": "Creates a new order record in the system with provided data"
+    },
+    "findAll": {
+      "summary": "Retrieve All Orders",
+      "description": "Returns a list of all orders with their details"
+    },
+    "findOne": {
+      "summary": "Retrieve Specific Order Details",
+      "description": "Returns details of a specific order based on the provided ID"
+    },
+    "findMine": {
+      "summary": "Retrieve My Orders",
+      "description": "Returns a list of current customer's orders"
+    },
+    "findByCustomer": {
+      "summary": "Retrieve Customer Orders",
+      "description": "Returns a list of orders for a specific customer"
+    },
+    "updateStatus": {
+      "summary": "Update Order Status",
+      "description": "Updates the status of the specified order"
+    }
+  },
+  "responses": {
+    "success": {
+      "created": "Order created successfully",
+      "found": "Order found successfully",
+      "updated": "Order updated successfully",
+      "deleted": "Order deleted successfully"
+    },
+    "error": {
+      "notFound": "Order not found",
+      "badRequest": "Invalid order data",
+      "unauthorized": "Unauthorized - Login required"
+    }
+  },
+  "fields": {
+    "merchantId": "Merchant ID",
+    "sessionId": "Session ID",
+    "customer": "Customer",
+    "items": "Items",
+    "productId": "Product ID",
+    "quantity": "Quantity",
+    "price": "Price",
+    "name": "Name",
+    "phone": "Phone Number",
+    "email": "Email",
+    "status": "Status"
+  }
+}

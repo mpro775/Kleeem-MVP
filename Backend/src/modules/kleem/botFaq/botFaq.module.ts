@@ -4,8 +4,11 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { BotFaq, BotFaqSchema } from './schemas/botFaq.schema';
 import { BotFaqService } from './botFaq.service';
 import { BotFaqController, BotFaqPublicController } from './botFaq.controller';
-import { VectorModule } from 'src/modules/vector/vector.module';
+import { VectorModule } from '../../../vector/vector.module';
 import { seconds, ThrottlerModule } from '@nestjs/throttler';
+import { BOT_FAQ_REPOSITORY } from './tokens';
+import { BotFaqMongoRepository } from './repositories/bot-faq.mongo.repository';
+import { CommonModule } from '../../../common/config/common.module';
 
 @Module({
   imports: [
@@ -16,8 +19,12 @@ import { seconds, ThrottlerModule } from '@nestjs/throttler';
         { name: 'public', limit: 30, ttl: seconds(60) }, // 30 طلب/دقيقة
       ],
     }),
+    CommonModule, // للوصول إلى TranslationService
   ],
-  providers: [BotFaqService],
+  providers: [
+    BotFaqService,
+    { provide: BOT_FAQ_REPOSITORY, useClass: BotFaqMongoRepository },
+  ],
   controllers: [BotFaqController, BotFaqPublicController],
   exports: [BotFaqService],
 })

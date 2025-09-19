@@ -1,20 +1,12 @@
-// src/integrations/zid/zid.service.ts
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
-import {
-  Merchant,
-  MerchantDocument,
-} from '../../merchants/schemas/merchant.schema';
-import {
-  Integration,
-  IntegrationDocument,
-} from '../schemas/integration.schema';
-import { ExternalProduct, ZidProductsResponse } from '../types';
-import { toDateOrNull } from '../utils/date';
+import { ExternalProduct } from '../types';
+import { ZID_INTEGRATION_REPOSITORY, ZID_MERCHANT_REPOSITORY } from './tokens';
+import { IntegrationRepository } from './repositories/integration.repository';
+import { MerchantRepository } from './repositories/merchant.repository';
 
 export interface ZidOAuthTokenResponse {
   access_token: string;
@@ -28,11 +20,18 @@ export interface ZidOAuthTokenResponse {
 @Injectable()
 export class ZidService {
   private readonly logger = new Logger(ZidService.name);
+
+  constructor(
+    private readonly http: HttpService,
+    private readonly config: ConfigService,
+    @Inject(ZID_INTEGRATION_REPOSITORY)
+    private readonly integrations: IntegrationRepository,
+    @Inject(ZID_MERCHANT_REPOSITORY)
+    private readonly merchants: MerchantRepository,
+  ) {}
+
   private async getZidCreds(merchantId: Types.ObjectId) {
-    const integ = await this.integrationModel.findOne({
-      merchantId,
-      provider: 'zid',
-    });
+    const integ = await this.integrations.findZidByMerchant(merchantId);
     if (!integ) throw new Error('Integration not found');
 
     // جدّد لو قارب الانتهاء
@@ -40,26 +39,16 @@ export class ZidService {
       await this.refreshAccessToken(merchantId);
     }
 
-    const fresh = await this.integrationModel
-      .findOne({ merchantId, provider: 'zid' })
-      .lean();
+    const fresh = await this.integrations.findZidByMerchant(merchantId);
     if (!fresh?.managerToken) throw new Error('Missing manager token');
 
     return {
       managerToken: fresh.managerToken, // لـ X-Manager-Token / Access-Token
       authorizationHeader:
-        fresh.authorizationToken || `Bearer ${fresh.managerToken}`, // fallback مؤقت إن لزم
+        fresh.authorizationToken || `Bearer ${fresh.managerToken}`, // fallback
       storeId: fresh.storeId,
     };
   }
-
-  constructor(
-    private readonly http: HttpService,
-    private readonly config: ConfigService,
-    @InjectModel(Merchant.name) private merchantModel: Model<MerchantDocument>,
-    @InjectModel(Integration.name)
-    private integrationModel: Model<IntegrationDocument>,
-  ) {}
 
   getOAuthUrl(state: string): string {
     const clientId = this.config.get<string>('ZID_CLIENT_ID');
@@ -84,7 +73,7 @@ export class ZidService {
       redirect_uri: String(redirectUri),
       response_type: 'code',
       scope: scopes,
-      state, // 👈 نحمل merchantId + nonce
+      state,
     });
     return `${base}?${q.toString()}`;
   }
@@ -120,42 +109,24 @@ export class ZidService {
     const now = Date.now();
     const expiresAt = new Date(now + (tokens.expires_in ?? 3600) * 1000);
 
-    await this.integrationModel.updateOne(
-      { merchantId, provider: 'zid' },
-      {
-        $set: {
-          active: true,
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-          tokenType: tokens.token_type,
-          expiresIn: tokens.expires_in,
-          expiresAt,
-          storeId: tokens.store_id,
-          lastSync: new Date(),
-        },
-      },
-      { upsert: true },
-    );
+    await this.integrations.upsertZid(merchantId, {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      tokenType: tokens.token_type,
+      expiresIn: tokens.expires_in,
+      expiresAt,
+      storeId: tokens.store_id,
+      lastSync: new Date(),
+    });
 
-    // حدّث merchant (مصدر المنتجات + حالة مصدر زد)
-    await this.merchantModel.updateOne(
-      { _id: merchantId },
-      {
-        $set: {
-          productSource: 'zid',
-          'productSourceConfig.internal.enabled': false,
-          'productSourceConfig.zid.active': true,
-          'productSourceConfig.zid.storeId': tokens.store_id,
-          'productSourceConfig.zid.lastSync': new Date(),
-        },
-      },
-    );
+    await this.merchants.updateProductSourceZid(merchantId, {
+      storeId: tokens.store_id,
+      lastSync: new Date(),
+    });
   }
 
   async refreshAccessToken(merchantId: Types.ObjectId) {
-    const integ = await this.integrationModel
-      .findOne({ merchantId, provider: 'zid' })
-      .lean();
+    const integ = await this.integrations.findZidByMerchant(merchantId);
     if (!integ?.refreshToken) throw new Error('No refresh token');
 
     const clientId = this.config.get<string>('ZID_CLIENT_ID')!;
@@ -181,10 +152,7 @@ export class ZidService {
   }
 
   async getValidAccessToken(merchantId: Types.ObjectId) {
-    const integ = await this.integrationModel.findOne({
-      merchantId,
-      provider: 'zid',
-    });
+    const integ = await this.integrations.findZidByMerchant(merchantId);
     if (!integ) throw new Error('Integration not found');
     if (integ.expiresAt && integ.expiresAt.getTime() - Date.now() > 60_000) {
       return integ.accessToken!;
@@ -206,8 +174,8 @@ export class ZidService {
           `https://api.zid.sa/v1/products/?page=${page}&page_size=100`,
           {
             headers: {
-              Authorization: authorizationHeader, // Bearer ... (من Authorization token)
-              'X-Manager-Token': managerToken, // أو 'Access-Token'
+              Authorization: authorizationHeader,
+              'X-Manager-Token': managerToken,
               'Store-Id': storeId,
               Role: 'Manager',
             },
@@ -243,9 +211,8 @@ export class ZidService {
     const { managerToken, authorizationHeader, storeId } =
       await this.getZidCreds(merchantId);
     const base = 'https://api.zid.sa/v1/managers/webhooks';
-    const targetUrl = this.config.get<string>('ZID_WEBHOOK_URL')!; // احرص يطابق راوت الاستقبال
+    const targetUrl = this.config.get<string>('ZID_WEBHOOK_URL')!;
 
-    // 1) اقرأ المسجّل لتفادي التكرار
     const list = await firstValueFrom(
       this.http.get<any>(base, {
         headers: {

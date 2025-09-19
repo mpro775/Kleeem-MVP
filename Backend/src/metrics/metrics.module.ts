@@ -9,6 +9,7 @@ import {
 import { HttpMetricsInterceptor } from '../common/interceptors/http-metrics.interceptor';
 import { BusinessMetrics, BusinessMetricsProviders } from './business.metrics';
 import { SecurityMetrics, SecurityMetricsProviders } from './security.metrics';
+import { ProductMetrics, ProductMetricsProviders } from './product.metrics';
 
 export const HttpRequestDurationProvider = makeHistogramProvider({
   name: 'http_request_duration_seconds',
@@ -24,16 +25,33 @@ export const HttpErrorRateProvider = makeCounterProvider({
   labelNames: ['method', 'route', 'status_code', 'error_type'],
 });
 
-export const CacheHitRateProvider = makeCounterProvider({
-  name: 'cache_operations_total',
-  help: 'Total cache operations (hits/misses)',
-  labelNames: ['operation', 'result', 'cache_type'],
+// Injection tokens for the interceptor
+export const HTTP_REQUEST_DURATION_SECONDS = 'HTTP_REQUEST_DURATION_SECONDS';
+export const HTTP_ERRORS_TOTAL = 'HTTP_ERRORS_TOTAL';
+
+export const DatabaseMetricsProvider = makeHistogramProvider({
+  name: 'database_query_duration_seconds',
+  help: 'Database query duration in seconds',
+  labelNames: ['operation', 'collection', 'status'],
+  buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2],
 });
 
 export const ActiveConnectionsProvider = makeGaugeProvider({
   name: 'websocket_connections_active',
   help: 'Number of active WebSocket connections',
   labelNames: ['gateway', 'authenticated'],
+});
+
+export const WsActiveGauge = makeGaugeProvider({
+  name: 'websocket_active_connections',
+  help: 'Active WS connections',
+  labelNames: ['namespace'],
+});
+
+export const CacheHitRateGauge = makeGaugeProvider({
+  name: 'cache_hit_rate',
+  help: 'Cache hit rate percentage',
+  labelNames: ['cache_type'],
 });
 
 @Module({
@@ -45,24 +63,50 @@ export const ActiveConnectionsProvider = makeGaugeProvider({
   ],
   providers: [
     HttpRequestDurationProvider,
+    {
+      provide: HTTP_REQUEST_DURATION_SECONDS,
+      useFactory: (histogram) => histogram,
+      inject: ['PROM_METRIC_HTTP_REQUEST_DURATION_SECONDS'],
+    },
     HttpErrorRateProvider,
-    CacheHitRateProvider,
+    {
+      provide: HTTP_ERRORS_TOTAL,
+      useFactory: (counter) => counter,
+      inject: ['PROM_METRIC_HTTP_ERRORS_TOTAL'],
+    },
+    DatabaseMetricsProvider,
     ActiveConnectionsProvider,
+    WsActiveGauge,
+    CacheHitRateGauge,
     HttpMetricsInterceptor,
     ...BusinessMetricsProviders,
     ...SecurityMetricsProviders,
+    ...ProductMetricsProviders,
     BusinessMetrics,
     SecurityMetrics,
+    ProductMetrics,
   ],
   exports: [
     PrometheusModule,
     HttpMetricsInterceptor,
     HttpRequestDurationProvider,
+    {
+      provide: HTTP_REQUEST_DURATION_SECONDS,
+      useFactory: (histogram) => histogram,
+      inject: ['PROM_METRIC_HTTP_REQUEST_DURATION_SECONDS'],
+    },
     HttpErrorRateProvider,
-    CacheHitRateProvider,
+    {
+      provide: HTTP_ERRORS_TOTAL,
+      useFactory: (counter) => counter,
+      inject: ['PROM_METRIC_HTTP_ERRORS_TOTAL'],
+    },
     ActiveConnectionsProvider,
+    WsActiveGauge,
+    CacheHitRateGauge,
     BusinessMetrics,
     SecurityMetrics,
+    ProductMetrics,
   ],
 })
 export class MetricsModule {}

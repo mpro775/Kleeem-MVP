@@ -1,0 +1,66 @@
+{
+  "operations": {
+    "create": {
+      "summary": "إنشاء ويبهوك",
+      "description": "إنشاء ويبهوك جديد لتلقي الإشعارات"
+    },
+    "findAll": {
+      "summary": "جلب الويبهوكس",
+      "description": "استرجاع قائمة بجميع الويبهوكس"
+    },
+    "findOne": {
+      "summary": "جلب ويبهوك محدد",
+      "description": "استرجاع تفاصيل ويبهوك محدد"
+    },
+    "update": {
+      "summary": "تحديث ويبهوك",
+      "description": "تحديث إعدادات ويبهوك موجود"
+    },
+    "remove": {
+      "summary": "حذف ويبهوك",
+      "description": "حذف ويبهوك محدد"
+    },
+    "test": {
+      "summary": "اختبار ويبهوك",
+      "description": "إرسال طلب اختبار للويبهوك"
+    },
+    "retry": {
+      "summary": "إعادة إرسال",
+      "description": "إعادة إرسال ويبهوك فاشل"
+    },
+    "logs": {
+      "summary": "سجلات الويبهوك",
+      "description": "عرض سجلات إرسال الويبهوك"
+    }
+  },
+  "responses": {
+    "success": {
+      "created": "تم إنشاء الويبهوك بنجاح",
+      "updated": "تم تحديث الويبهوك بنجاح",
+      "deleted": "تم حذف الويبهوك بنجاح",
+      "tested": "تم إرسال اختبار الويبهوك بنجاح",
+      "retried": "تم إعادة إرسال الويبهوك بنجاح"
+    },
+    "error": {
+      "notFound": "الويبهوك غير موجود",
+      "invalidUrl": "عنوان URL غير صالح",
+      "failed": "فشل في إرسال الويبهوك",
+      "timeout": "انتهت مهلة الويبهوك"
+    }
+  },
+  "fields": {
+    "url": "عنوان URL",
+    "events": "الأحداث",
+    "secret": "المفتاح السري",
+    "status": "الحالة",
+    "lastTriggered": "آخر تشغيل",
+    "retryCount": "عدد المحاولات"
+  },
+  "events": {
+    "orderCreated": "تم إنشاء طلب",
+    "orderUpdated": "تم تحديث طلب",
+    "paymentReceived": "تم استلام الدفع",
+    "productCreated": "تم إنشاء منتج",
+    "productUpdated": "تم تحديث منتج"
+  }
+}

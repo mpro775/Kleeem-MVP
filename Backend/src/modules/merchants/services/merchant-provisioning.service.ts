@@ -1,0 +1,112 @@
+import {
+  Injectable,
+  Inject,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
+import { MerchantsRepository } from '../repositories/merchants.repository';
+import { CreateMerchantDto } from '../dto/requests/create-merchant.dto';
+import { N8nWorkflowService } from '../../n8n-workflow/n8n-workflow.service';
+import { StorefrontService } from '../../storefront/storefront.service';
+import { PromptBuilderService } from './prompt-builder.service';
+import { BusinessMetrics } from '../../../metrics/business.metrics';
+import { TranslationService } from '../../../common/services/translation.service';
+
+@Injectable()
+export class MerchantProvisioningService {
+  private readonly logger = new Logger(MerchantProvisioningService.name);
+
+  constructor(
+    @Inject('MerchantsRepository')
+    private readonly merchantsRepository: MerchantsRepository,
+    private readonly n8n: N8nWorkflowService,
+    private readonly storefrontService: StorefrontService,
+    private readonly promptBuilder: PromptBuilderService,
+    private readonly businessMetrics: BusinessMetrics,
+    private readonly translationService: TranslationService,
+  ) {}
+
+  /**
+   * إنشاء التاجر + تهيئة الـ n8n + إنشاء Storefront
+   * مع Rollback نظيف عند الفشل.
+   */
+  async create(dto: CreateMerchantDto) {
+    const merchant = await this.merchantsRepository.create(dto);
+
+    // Metrics
+    this.businessMetrics.incMerchantCreated();
+    this.businessMetrics.incN8nWorkflowCreated();
+
+    let wfId: string | null = null;
+    let storefrontCreated = false;
+
+    try {
+      // 1) n8n workflow
+      wfId = await this.n8n.createForMerchant(merchant.id);
+      merchant.workflowId = wfId;
+
+      // 2) Compile final prompt
+      merchant.finalPromptTemplate =
+        await this.promptBuilder.compileTemplate(merchant);
+      await merchant.save?.();
+
+      // 3) Storefront افتراضي
+      await this.storefrontService.create({
+        merchant: merchant.id,
+        primaryColor: '#FF8500',
+        secondaryColor: '#1976d2',
+        buttonStyle: 'rounded',
+        banners: [],
+        featuredProductIds: [],
+        slug: merchant.id.toString(),
+      });
+      storefrontCreated = true;
+
+      return merchant;
+    } catch (err) {
+      // Rollback
+      try {
+        if (wfId) {
+          try {
+            await this.n8n.setActive(wfId, false);
+          } catch {}
+          try {
+            await this.n8n.delete(wfId);
+          } catch {}
+        }
+      } catch {}
+
+      if (storefrontCreated) {
+        try {
+          await this.storefrontService.deleteByMerchant(merchant.id);
+        } catch {}
+      }
+
+      // احذف التاجر الذي أنشأناه للتو
+      try {
+        await this.merchantsRepository.remove(merchant.id);
+      } catch {}
+
+      this.logger.error('Merchant initialization failed', err as Error);
+      throw new InternalServerErrorException(
+        this.translationService.translate(
+          'merchants.errors.initializationFailed',
+        ),
+      );
+    }
+  }
+
+  /**
+   * ضمان وجود Workflow للتاجر.
+   * (نفس السلوك السابق: يعيد placeholder إن لم يوجد.)
+   */
+  async ensureWorkflow(merchantId: string): Promise<string> {
+    const merchant = await this.merchantsRepository.findOne(merchantId);
+    const doc = merchant as any;
+    if (!doc?.workflowId) {
+      // ضع منطق إنشاء فعلي هنا إن رغبت لاحقًا
+      return 'wf_placeholder';
+    }
+    return String(doc.workflowId);
+  }
+}

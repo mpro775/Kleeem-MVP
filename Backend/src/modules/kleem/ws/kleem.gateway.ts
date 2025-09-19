@@ -21,6 +21,8 @@ import {
 } from './kleem-ws.types';
 import { OnEvent } from '@nestjs/event-emitter';
 import { KleemChatService } from '../chat/kleem-chat.service';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import { Gauge } from 'prom-client';
 
 @WebSocketGateway({
   path: '/api/kaleem/ws', // ✅ موحّد
@@ -43,6 +45,8 @@ export class KleemGateway
   constructor(
     private readonly kleem: KleemChatService,
     private readonly jwt: JwtService,
+    @InjectMetric('websocket_active_connections')
+    private readonly wsGauge: Gauge<string>,
   ) {}
 
   // ✅ Redis adapter (مثل ChatGateway السابق)
@@ -85,11 +89,16 @@ export class KleemGateway
 
     // الأدمن/الوكيل من JWT فقط
     if (roleIsAdminOrAgent) void client.join('kleem_admin'); // ✅ موحّد
+
+    // تتبع الاتصالات النشطة
+    this.wsGauge.inc({ namespace: 'kleem' });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  handleDisconnect(_: Socket) {
+  handleDisconnect(client: Socket) {
     // cleanup تلقائي من socket.io
+
+    // تتبع الاتصالات النشطة
+    this.wsGauge.dec({ namespace: 'kleem' });
   }
 
   // (اختياري) اشتراك صريح للأدمن

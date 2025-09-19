@@ -1,38 +1,22 @@
+// test/integration-setup.ts
 import 'jest-extended';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 
-jest.setTimeout(60000);
+let repl: MongoMemoryReplSet;
 
-// Global test setup for integration tests
+jest.setTimeout(60_000);
+
 beforeAll(async () => {
-  // Suppress console output during tests
-  const originalConsole = global.console;
-  global.console = {
-    ...originalConsole,
-    log: jest.fn(),
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  };
+  repl = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
+  process.env.MONGODB_URI = repl.getUri();
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+  jest.spyOn(console, 'debug').mockImplementation(() => {});
+  jest.spyOn(console, 'info').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+  jest.spyOn(console, 'error').mockImplementation(() => {});
 });
 
-// Clean up after tests
 afterAll(async () => {
-  // Close any open handles
-  await new Promise((resolve) => setTimeout(resolve, 500));
-});
-
-// Handle MongoDB Memory Server cleanup
-process.on('exit', () => {
-  console.log('Test process exiting...');
-});
-
-// Global error handlers for tests
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  await repl?.stop();
+  await new Promise((r) => setTimeout(r, 500));
 });

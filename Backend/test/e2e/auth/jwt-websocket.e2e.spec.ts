@@ -1,7 +1,7 @@
 // test/e2e/auth/jwt-websocket.e2e.spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { io, Socket } from 'socket.io-client';
 import { AppModule } from '../../../src/app.module';
 
@@ -10,6 +10,8 @@ describe('JWT & WebSocket E2E (H4)', () => {
   let testUser: { email: string; password: string; userId?: string };
   let accessToken: string;
   let refreshToken: string;
+  let wsClient: Socket;
+  let validAccessToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -27,6 +29,9 @@ describe('JWT & WebSocket E2E (H4)', () => {
   });
 
   afterAll(async () => {
+    if (wsClient?.connected) {
+      wsClient.disconnect();
+    }
     await app.close();
   });
 
@@ -133,7 +138,6 @@ describe('JWT & WebSocket E2E (H4)', () => {
    */
   describe('WebSocket Authentication', () => {
     let validAccessToken: string;
-    let wsClient: Socket;
 
     beforeEach(async () => {
       // الحصول على token صالح
@@ -143,12 +147,6 @@ describe('JWT & WebSocket E2E (H4)', () => {
         .expect(200);
 
       validAccessToken = loginResponse.body.accessToken;
-    });
-
-    afterEach(() => {
-      if (wsClient?.connected) {
-        wsClient.disconnect();
-      }
     });
 
     it('should connect WebSocket with valid token', (done) => {
@@ -249,32 +247,50 @@ describe('JWT & WebSocket E2E (H4)', () => {
    * اختبارات أمان WebSocket متقدمة
    */
   describe('WebSocket Security Features', () => {
-    it('should enforce rate limiting on WebSocket messages', (done) => {
+    it('should enforce rate limiting on WebSocket messages', async () => {
+      // Get a valid token for this test
+      const loginResponse = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send(testUser)
+        .expect(200);
+
+      const token = loginResponse.body.accessToken;
+
       wsClient = io(`http://localhost:${app.get('PORT') || 3000}/api/chat`, {
-        auth: { token: validAccessToken },
+        auth: { token: token },
       });
 
-      wsClient.on('connect', () => {
-        // إرسال رسائل كثيرة بسرعة
-        for (let i = 0; i < 15; i++) {
-          wsClient.emit('join', { sessionId: `test-session-${i}` });
-        }
-      });
+      await new Promise<void>((resolve, reject) => {
+        let rateLimitReceived = false;
+        let disconnectReceived = false;
 
-      wsClient.on('rate_limit_exceeded', (data) => {
-        expect(data).toHaveProperty('message');
-        expect(data).toHaveProperty('retryAfter');
-        done();
-      });
+        wsClient.on('connect', () => {
+          // إرسال رسائل كثيرة بسرعة
+          for (let i = 0; i < 15; i++) {
+            wsClient.emit('join', { sessionId: `test-session-${i}` });
+          }
+        });
 
-      wsClient.on('disconnect', () => {
-        // قد يقطع الاتصال بسبب التجاوز المفرط
-        done();
-      });
+        wsClient.on('rate_limit_exceeded', (data) => {
+          rateLimitReceived = true;
+          expect(data).toHaveProperty('message');
+          expect(data).toHaveProperty('retryAfter');
+          if (disconnectReceived) {
+            resolve();
+          }
+        });
 
-      setTimeout(() => {
-        done(new Error('Should have received rate limit exceeded event'));
-      }, 5000);
+        wsClient.on('disconnect', () => {
+          disconnectReceived = true;
+          if (rateLimitReceived) {
+            resolve();
+          }
+        });
+
+        setTimeout(() => {
+          reject(new Error('Should have received rate limit exceeded event'));
+        }, 5000);
+      });
     });
   });
 });

@@ -1,0 +1,136 @@
+{
+  "users": {
+    "profile": {
+      "title": "الملف الشخصي",
+      "personalInfo": "المعلومات الشخصية",
+      "accountSettings": "إعدادات الحساب",
+      "security": "الأمان",
+      "preferences": "التفضيلات"
+    },
+
+    "fields": {
+      "firstName": "الاسم الأول",
+      "lastName": "اسم العائلة",
+      "fullName": "الاسم الكامل",
+      "email": "البريد الإلكتروني",
+      "phone": "رقم الهاتف",
+      "avatar": "الصورة الشخصية",
+      "bio": "نبذة تعريفية",
+      "website": "الموقع الإلكتروني",
+      "location": "الموقع",
+      "timezone": "المنطقة الزمنية",
+      "language": "اللغة",
+      "theme": "المظهر",
+      "notifications": "الإشعارات"
+    },
+
+    "actions": {
+      "editProfile": "تعديل الملف الشخصي",
+      "changePassword": "تغيير كلمة المرور",
+      "updateSettings": "تحديث الإعدادات",
+      "saveChanges": "حفظ التغييرات",
+      "cancel": "إلغاء",
+      "deleteAccount": "حذف الحساب"
+    },
+
+    "operations": {
+      "list": {
+        "summary": "جلب جميع المستخدمين",
+        "description": "جلب قائمة بجميع المستخدمين"
+      },
+      "get": {
+        "summary": "جلب مستخدم واحد",
+        "description": "جلب بيانات مستخدم واحد حسب المعرّف"
+      },
+      "update": {
+        "summary": "تحديث بيانات مستخدم",
+        "description": "تحديث بيانات المستخدم (الاسم/الهاتف فقط)"
+      },
+      "getNotifications": {
+        "summary": "تفضيلات إشعارات المستخدم",
+        "description": "جلب تفضيلات إشعارات المستخدم"
+      },
+      "updateNotifications": {
+        "summary": "تحديث تفضيلات الإشعارات",
+        "description": "تحديث تفضيلات إشعارات المستخدم"
+      },
+      "delete": {
+        "summary": "حذف حساب المستخدم",
+        "description": "حذف حساب المستخدم بعد تأكيد كلمة المرور"
+      },
+      "create": {
+        "bodyDescription": "بيانات إنشاء المستخدم: البريد الإلكتروني، الاسم، الدور (اختياري)"
+      }
+    },
+
+    "messages": {
+      "profileUpdated": "تم تحديث الملف الشخصي بنجاح",
+      "settingsUpdated": "تم تحديث الإعدادات بنجاح",
+      "passwordChanged": "تم تغيير كلمة المرور بنجاح",
+      "accountDeleted": "تم حذف الحساب بنجاح",
+      "userCreated": "تم إنشاء المستخدم بنجاح",
+      "userUpdated": "تم تحديث المستخدم بنجاح",
+      "userDeleted": "تم حذف المستخدم بنجاح",
+      "userActivated": "تم تفعيل المستخدم بنجاح",
+      "userDeactivated": "تم إلغاء تفعيل المستخدم بنجاح",
+      "listSuccess": "تم إرجاع قائمة المستخدمين بنجاح",
+      "getSuccess": "تم إرجاع بيانات المستخدم بنجاح"
+    },
+
+    "errors": {
+      "userNotFound": "المستخدم غير موجود",
+      "emailAlreadyExists": "البريد الإلكتروني موجود بالفعل",
+      "phoneAlreadyExists": "رقم الهاتف موجود بالفعل",
+      "invalidRole": "الدور غير صحيح",
+      "cannotDeleteSelf": "لا يمكنك حذف حسابك الخاص",
+      "cannotDeleteAdmin": "لا يمكن حذف حساب المدير",
+      "insufficientPermissions": "صلاحيات غير كافية",
+      "accountAlreadyActive": "الحساب نشط بالفعل",
+      "accountAlreadyInactive": "الحساب غير نشط بالفعل",
+      "invalidData": "البيانات غير صحيحة",
+      "unauthorized": "غير مصرح لك بالوصول",
+      "invalidCredentials": "بيانات الاعتماد غير صحيحة"
+    },
+
+    "roles": {
+      "admin": "مدير",
+      "manager": "مدير",
+      "user": "مستخدم",
+      "moderator": "مشرف",
+      "editor": "محرر",
+      "viewer": "مشاهد"
+    },
+
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "pending": "قيد الانتظار",
+      "suspended": "معلق",
+      "banned": "محظور",
+      "deleted": "محذوف"
+    },
+
+    "validation": {
+      "firstNameRequired": "الاسم الأول مطلوب",
+      "lastNameRequired": "اسم العائلة مطلوب",
+      "emailRequired": "البريد الإلكتروني مطلوب",
+      "emailInvalid": "البريد الإلكتروني غير صحيح",
+      "phoneRequired": "رقم الهاتف مطلوب",
+      "phoneInvalid": "رقم الهاتف غير صحيح",
+      "bioMaxLength": "النبذة التعريفية يجب أن تكون أقل من 500 حرف",
+      "websiteInvalid": "الموقع الإلكتروني غير صحيح"
+    },
+
+    "permissions": {
+      "read": "قراءة",
+      "write": "كتابة",
+      "update": "تحديث",
+      "delete": "حذف",
+      "manageUsers": "إدارة المستخدمين",
+      "manageRoles": "إدارة الأدوار",
+      "manageSettings": "إدارة الإعدادات",
+      "viewAnalytics": "عرض التحليلات",
+      "manageContent": "إدارة المحتوى"
+    }
+  }
+}

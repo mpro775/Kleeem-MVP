@@ -22,8 +22,6 @@ import {
   ApiOperation,
   ApiParam,
   ApiBody,
-  ApiOkResponse,
-  ApiCreatedResponse,
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
   ApiNotFoundResponse,
@@ -33,13 +31,13 @@ import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
   CurrentUser,
-  PaginationDto,
 } from '../../common';
 import { NotificationsPrefsDto } from './dto/notifications-prefs.dto';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from './schemas/user.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
+import { TranslationService } from '../../common/services/translation.service';
 
 @ApiTags('المستخدمون')
 @ApiBearerAuth()
@@ -49,13 +47,17 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly translationService: TranslationService,
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'جلب جميع المستخدمين' })
-  @ApiSuccessResponse(Array, 'تم إرجاع قائمة المستخدمين بنجاح')
+  @ApiOperation({
+    summary: 'i18n:users.operations.list.summary',
+    description: 'i18n:users.operations.list.description',
+  })
+  @ApiSuccessResponse(Array, 'i18n:users.messages.listSuccess')
   @ApiUnauthorizedResponse({
-    description: 'غير مصرح: توكن JWT غير صالح أو مفقود',
+    description: 'i18n:auth.errors.unauthorized',
   })
   @UseInterceptors(CacheInterceptor)
   @UseGuards(JwtAuthGuard)
@@ -64,12 +66,15 @@ export class UsersController {
   }
 
   @Get(':id')
-  @ApiParam({ name: 'id', type: 'string', description: 'معرّف المستخدم' })
-  @ApiOperation({ summary: 'جلب مستخدم واحد حسب المعرّف' })
-  @ApiSuccessResponse(CreateUserDto, 'تم إرجاع بيانات المستخدم بنجاح')
-  @ApiNotFoundResponse({ description: 'المستخدم غير موجود' })
+  @ApiParam({ name: 'id', type: 'string', description: 'معرف المستخدم' })
+  @ApiOperation({
+    summary: 'i18n:users.operations.get.summary',
+    description: 'i18n:users.operations.get.description',
+  })
+  @ApiSuccessResponse(CreateUserDto, 'i18n:users.messages.getSuccess')
+  @ApiNotFoundResponse({ description: 'i18n:users.errors.userNotFound' })
   @ApiUnauthorizedResponse({
-    description: 'غير مصرح: توكن JWT غير صالح أو مفقود',
+    description: 'i18n:auth.errors.unauthorized',
   })
   @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string) {
@@ -79,15 +84,14 @@ export class UsersController {
   @Post()
   @ApiBody({
     type: CreateUserDto,
-    description:
-      'بيانات إنشاء المستخدم: البريد الإلكتروني، الاسم، الدور (اختياري)',
+    description: 'i18n:users.operations.create.bodyDescription',
   })
-  @CommonApiCreatedResponse(CreateUserDto, 'تم إنشاء المستخدم بنجاح')
+  @CommonApiCreatedResponse(CreateUserDto, 'i18n:users.messages.userCreated')
   @ApiBadRequestResponse({
-    description: 'طلب غير صالح: بيانات مفقودة أو تنسيق خاطئ',
+    description: 'i18n:users.errors.invalidData',
   })
   @ApiUnauthorizedResponse({
-    description: 'غير مصرح: توكن JWT غير صالح أو مفقود',
+    description: 'i18n:auth.errors.unauthorized',
   })
   @UseGuards(JwtAuthGuard)
   create(@Body() createDto: CreateUserDto) {
@@ -96,7 +100,10 @@ export class UsersController {
 
   // تحديث ملف المستخدم (اسم/هاتف فقط)
   @Put(':id')
-  @ApiOperation({ summary: 'تحديث بيانات مستخدم (الاسم/الهاتف فقط)' })
+  @ApiOperation({
+    summary: 'i18n:users.operations.update.summary',
+    description: 'i18n:users.operations.update.description',
+  })
   updateProfile(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     // أي حقل email يأتي ضمنياً سيتم تجاهله
     return this.usersService.update(id, dto as any);
@@ -104,14 +111,20 @@ export class UsersController {
 
   // إشعاراتي - جلب
   @Get(':id/notifications')
-  @ApiOperation({ summary: 'جلب تفضيلات إشعارات المستخدم' })
+  @ApiOperation({
+    summary: 'i18n:users.operations.getNotifications.summary',
+    description: 'i18n:users.operations.getNotifications.description',
+  })
   async getNotifications(@Param('id') id: string) {
     return this.usersService.getNotificationsPrefs(id);
   }
 
   // إشعاراتي - تحديث
   @Put(':id/notifications')
-  @ApiOperation({ summary: 'تحديث تفضيلات إشعارات المستخدم' })
+  @ApiOperation({
+    summary: 'i18n:users.operations.updateNotifications.summary',
+    description: 'i18n:users.operations.updateNotifications.description',
+  })
   updateNotifications(
     @Param('id') id: string,
     @Body() dto: NotificationsPrefsDto,
@@ -121,7 +134,10 @@ export class UsersController {
 
   // حذف الحساب بكلمة المرور (بديل آمن عن DELETE التقليدي)
   @Post(':id/delete')
-  @ApiOperation({ summary: 'حذف حساب المستخدم بعد تأكيد كلمة المرور' })
+  @ApiOperation({
+    summary: 'i18n:users.operations.delete.summary',
+    description: 'i18n:users.operations.delete.description',
+  })
   async deleteWithPassword(
     @Param('id') id: string,
     @Body() body: ConfirmPasswordDto, // { confirmPassword: string }
@@ -134,12 +150,15 @@ export class UsersController {
     const isSelf = actorId === id;
     const isAdmin = actorRole === 'ADMIN';
     if (!isSelf && !isAdmin) {
-      throw new BadRequestException('لا تملك صلاحية حذف هذا الحساب');
+      throw new BadRequestException(
+        'i18n:users.errors.insufficientPermissions',
+      );
     }
 
     // من الذي نطابق كلمة مروره؟
     const target = await this.userModel.findById(id).select('+password');
-    if (!target) throw new BadRequestException('مستخدم غير موجود');
+    if (!target)
+      throw new BadRequestException('i18n:users.errors.userNotFound');
 
     // لو أدمن → نتحقق من كلمة مرور الأدمن نفسه (actor)
     // لو حذف ذاتي → نتحقق من كلمة مرور نفس المستخدم الهدف
@@ -149,16 +168,15 @@ export class UsersController {
       .select('+password');
     if (!passwordOwner?.password) {
       // حساب SSO بدون كلمة مرور؟ اطلب OTP بدل ذلك
-      throw new BadRequestException(
-        'لا يمكن تأكيد كلمة المرور لهذا الحساب. استخدم التحقق عبر البريد/OTP.',
-      );
+      throw new BadRequestException('i18n:users.errors.invalidCredentials');
     }
 
     const ok = await bcrypt.compare(
       body.confirmPassword,
       passwordOwner.password,
     );
-    if (!ok) throw new BadRequestException('كلمة المرور غير صحيحة');
+    if (!ok)
+      throw new BadRequestException('i18n:auth.errors.invalidCredentials');
 
     // 🔒 بدّلها بحذف ناعم (مقترح بالأسفل)
     return this.usersService.remove(id);

@@ -12,7 +12,7 @@ const sendMailMock = jest.fn();
 const createTransportMock = jest.fn(() => ({ sendMail: sendMailMock }));
 
 jest.mock('nodemailer', () => ({
-  createTransport: (...args: any[]) => createTransportMock(...args),
+  createTransport: (...args: any[]) => createTransportMock(),
 }));
 
 // Helper: ConfigService.get mock
@@ -67,7 +67,9 @@ describe('MailService', () => {
         FRONTEND_URL: 'https://app.example.com',
       };
 
-      expect(() => new MailService(makeConfig(cfg))).toThrow(InternalServerErrorException);
+      expect(() => new MailService(makeConfig(cfg))).toThrow(
+        InternalServerErrorException,
+      );
       try {
         new MailService(makeConfig(cfg));
       } catch (e: any) {
@@ -122,7 +124,9 @@ describe('MailService', () => {
       const code = 'XYZ';
 
       sendMailMock.mockRejectedValueOnce(new Error('smtp failure'));
-      const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
       const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
 
       await expect(service.sendVerificationEmail(email, code)).rejects.toThrow(

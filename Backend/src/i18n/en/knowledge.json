@@ -1,0 +1,59 @@
+{
+  "operations": {
+    "create": {
+      "summary": "Create New Knowledge",
+      "description": "Create a new knowledge record in the system"
+    },
+    "findAll": {
+      "summary": "Retrieve All Knowledge",
+      "description": "Get list of all knowledge records"
+    },
+    "findOne": {
+      "summary": "Retrieve Specific Knowledge",
+      "description": "Get details of specific knowledge by ID"
+    },
+    "update": {
+      "summary": "Update Knowledge",
+      "description": "Update existing knowledge data"
+    },
+    "remove": {
+      "summary": "Delete Knowledge",
+      "description": "Permanently delete knowledge record"
+    },
+    "search": {
+      "summary": "Search Knowledge",
+      "description": "Search knowledge base using text query"
+    },
+    "export": {
+      "summary": "Export Knowledge",
+      "description": "Export knowledge data in specified format"
+    }
+  },
+  "responses": {
+    "success": {
+      "created": "Knowledge created successfully",
+      "found": "Knowledge found successfully",
+      "updated": "Knowledge updated successfully",
+      "deleted": "Knowledge deleted successfully",
+      "searched": "Search completed successfully",
+      "exported": "Export completed successfully"
+    },
+    "error": {
+      "notFound": "Knowledge not found",
+      "badRequest": "Invalid request data",
+      "unauthorized": "Unauthorized access",
+      "forbidden": "Access forbidden",
+      "searchFailed": "Search failed",
+      "exportFailed": "Export failed"
+    }
+  },
+  "fields": {
+    "title": "Knowledge Title",
+    "content": "Knowledge Content",
+    "category": "Category",
+    "tags": "Tags",
+    "author": "Author",
+    "createdAt": "Created Date",
+    "updatedAt": "Updated Date"
+  }
+}

@@ -23,17 +23,21 @@ import { VectorService } from './vector.service';
 import { SemanticRequestDto } from './dto/semantic-request.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { TranslationService } from '../../common/services/translation.service';
 
 /**
  * واجهة تحكم البحث الدلالي
  * تتعامل مع عمليات البحث عن المنتجات باستخدام النماذج اللغوية
  */
 @UseGuards(JwtAuthGuard)
-@ApiTags('البحث الدلالي')
+@ApiTags('vector')
 @Controller('vector')
 @ApiBearerAuth()
 export class VectorController {
-  constructor(private readonly vector: VectorService) {}
+  constructor(
+    private readonly vector: VectorService,
+    private readonly translationService: TranslationService,
+  ) {}
 
   /**
    * البحث عن منتجات مشابهة باستخدام POST
@@ -42,16 +46,16 @@ export class VectorController {
   @Post('products')
   @Public()
   @ApiOperation({
-    summary: 'البحث عن منتجات مشابهة (POST)',
-    description: 'يبحث عن منتجات مشابهة بناءً على نص البحث باستخدام body الطلب',
+    summary: 'vector.operations.semanticProductsPost.summary',
+    description: 'vector.operations.semanticProductsPost.description',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'تم العثور على منتجات مشابهة بنجاح',
+    description: 'vector.responses.success.found',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'بيانات الطلب غير صالحة',
+    description: 'vector.responses.error.badRequest',
   })
   @ApiBody({ type: SemanticRequestDto })
   async semanticSProducts(@Body() dto: SemanticRequestDto) {
@@ -72,7 +76,7 @@ export class VectorController {
     } catch (error) {
       throw new BadRequestException({
         success: false,
-        message: 'فشل في معالجة طلب البحث',
+        message: 'vector.responses.error.searchFailed',
         error: error.message,
       });
     }
@@ -85,34 +89,34 @@ export class VectorController {
   @Get('products')
   @Public()
   @ApiOperation({
-    summary: 'البحث عن منتجات مشابهة (GET)',
-    description: 'يبحث عن منتجات مشابهة بناءً على معايير البحث في استعلام URL',
+    summary: 'vector.operations.semanticProductsGet.summary',
+    description: 'vector.operations.semanticProductsGet.description',
   })
   @ApiQuery({
     name: 'text',
     required: true,
-    description: 'نص البحث عن المنتجات',
+    description: 'vector.fields.text',
     example: 'هاتف ذكي بمواصفات عالية',
   })
   @ApiQuery({
     name: 'merchantId',
     required: true,
-    description: 'معرف التاجر',
+    description: 'vector.fields.merchantId',
     example: '60d21b4667d0d8992e610c85',
   })
   @ApiQuery({
     name: 'topK',
     required: false,
-    description: 'عدد النتائج المطلوبة (بين 1 و 50)',
+    description: 'vector.fields.topK',
     example: '5',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'تم العثور على منتجات مشابهة بنجاح',
+    description: 'vector.responses.success.found',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'بيانات الطلب غير صالحة',
+    description: 'vector.responses.error.badRequest',
   })
   async semanticSearchProductsByQuery(
     @Query('text') text: string,
@@ -127,14 +131,14 @@ export class VectorController {
     if (!text || !merchantId) {
       throw new BadRequestException({
         success: false,
-        message: 'يجب توفير نص البحث ومعرف التاجر',
+        message: 'vector.responses.error.missingParams',
       });
     }
 
     if (topK < 1 || topK > 50) {
       throw new BadRequestException({
         success: false,
-        message: 'يجب أن يكون عدد النتائج بين 1 و 50',
+        message: 'vector.responses.error.invalidTopK',
       });
     }
 
@@ -155,7 +159,7 @@ export class VectorController {
     } catch (error) {
       throw new BadRequestException({
         success: false,
-        message: 'فشل في معالجة طلب البحث',
+        message: 'vector.responses.error.searchFailed',
         error: error.message,
       });
     }
@@ -168,8 +172,8 @@ export class VectorController {
   @Post('unified-search')
   @Public()
   @ApiOperation({
-    summary: 'بحث موحد في جميع أنواع البيانات',
-    description: 'يبحث في المنتجات والفئات والعلامات التجارية معًا',
+    summary: 'vector.operations.unifiedSearch.summary',
+    description: 'vector.operations.unifiedSearch.description',
   })
   @ApiBody({
     schema: {
@@ -178,12 +182,12 @@ export class VectorController {
       properties: {
         merchantId: {
           type: 'string',
-          description: 'معرف التاجر',
+          description: 'vector.fields.merchantId',
           example: '60d21b4667d0d8992e610c85',
         },
         query: {
           type: 'string',
-          description: 'نص البحث',
+          description: 'vector.fields.query',
           example: 'هاتف ذكي',
         },
         topK: {
@@ -198,11 +202,11 @@ export class VectorController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'تمت عملية البحث بنجاح',
+    description: 'vector.responses.success.searchCompleted',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'بيانات الطلب غير صالحة',
+    description: 'vector.responses.error.badRequest',
   })
   async unifiedSearch(
     @Body('merchantId') merchantId: string,
@@ -212,7 +216,7 @@ export class VectorController {
     if (!merchantId || !query) {
       throw new BadRequestException({
         success: false,
-        message: 'يجب توفير معرف التاجر ونص البحث',
+        message: 'vector.responses.error.missingMerchantQuery',
       });
     }
 
@@ -236,7 +240,7 @@ export class VectorController {
     } catch (error) {
       throw new BadRequestException({
         success: false,
-        message: 'فشل في معالجة طلب البحث',
+        message: 'vector.responses.error.searchFailed',
         error: error.message,
       });
     }

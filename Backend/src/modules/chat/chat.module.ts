@@ -11,6 +11,7 @@ import {
 import { MerchantsModule } from '../merchants/merchants.module';
 import { HttpModule } from '@nestjs/axios';
 import { PublicChatWidgetController } from './public-chat-widget.controller';
+import { MongoChatWidgetRepository } from './repositories/mongo-chat-widget.repository';
 
 @Module({
   imports: [
@@ -21,7 +22,14 @@ import { PublicChatWidgetController } from './public-chat-widget.controller';
 
     HttpModule,
   ],
-  providers: [ChatGateway, ChatWidgetService],
+  providers: [
+    ChatGateway,
+    ChatWidgetService,
+    {
+      provide: 'ChatWidgetRepository',
+      useClass: MongoChatWidgetRepository,
+    },
+  ],
   controllers: [ChatWidgetController, PublicChatWidgetController],
   exports: [ChatWidgetService, ChatGateway],
 })

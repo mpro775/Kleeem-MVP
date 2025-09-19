@@ -4,17 +4,13 @@ import {
   ConflictException,
   BadRequestException,
   Logger,
+  Inject,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
-import { User, UserDocument } from '../users/schemas/user.schema';
-import {
-  Merchant,
-  MerchantDocument,
-} from '../merchants/schemas/merchant.schema';
 import { RegisterDto } from './dto/register.dto';
 import { MailService } from '../mail/mail.service';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -26,85 +22,73 @@ import {
   minutesFromNow,
   sha256,
 } from './utils/verification-code';
-import {
-  EmailVerificationToken,
-  EmailVerificationTokenDocument,
-} from './schemas/email-verification-token.schema';
-import { PlanTier } from '../merchants/schemas/subscription-plan.schema';
-import { BusinessMetrics } from 'src/metrics/business.metrics';
+import { BusinessMetrics } from '../../metrics/business.metrics';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ConfigService } from '@nestjs/config';
 import { generateSecureToken } from './utils/password-reset';
-import {
-  PasswordResetToken,
-  PasswordResetTokenDocument,
-} from './schemas/password-reset-token.schema';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { toStr } from './utils/id';
-import { CreateMerchantDto } from '../merchants/dto/create-merchant.dto';
 import { TokenService } from './services/token.service';
+import { AuthRepository } from './repositories/auth.repository';
+import { TranslationService } from '../../common/services/translation.service';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
-    @InjectModel(Merchant.name) private merchantModel: Model<MerchantDocument>,
-    @InjectModel(EmailVerificationToken.name)
-    private tokenModel: Model<EmailVerificationTokenDocument>,
-    @InjectModel(PasswordResetToken.name)
-    private prtModel: Model<PasswordResetTokenDocument>,
+    @Inject('AuthRepository') private readonly repo: AuthRepository,
     private readonly jwtService: JwtService,
     private readonly merchants: MerchantsService,
     private readonly mailService: MailService,
     private readonly businessMetrics: BusinessMetrics,
     private readonly config: ConfigService,
     private readonly tokenService: TokenService,
+    private readonly translationService: TranslationService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
   async register(registerDto: RegisterDto) {
     const { password, confirmPassword, email, name } = registerDto;
     if (password !== confirmPassword) {
-      throw new BadRequestException('كلمتا المرور غير متطابقتين');
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.passwordMismatch'),
+      );
     }
 
     try {
-      // نحاول الحفظ مباشرة والاعتماد على unique index لالتقاط السباقات
-      const userDoc = await new this.userModel({
+      const userDoc = await this.repo.createUser({
         name,
         email,
-        password, // pre-save hash
+        password, // pre-save hook يتولى الهاش
         role: 'MERCHANT',
-        active: true, // حساب مفعل
+        active: true,
         firstLogin: true,
         emailVerified: false,
-      }).save();
+      });
 
-      // أنشئ رمز تفعيل بهيكل TTL Collection
       const code = generateNumericCode(6);
-      await this.tokenModel.create({
+      await this.repo.createEmailVerificationToken({
         userId: userDoc._id,
         codeHash: sha256(code),
         expiresAt: minutesFromNow(15),
       });
 
-      // أرسل الإيميل (لا يُفشل المسار إذا تعطل)
       try {
         await this.mailService.sendVerificationEmail(email, code);
         this.businessMetrics.incEmailSent();
       } catch {
         this.businessMetrics.incEmailFailed();
       }
-      // لا Merchant الآن
-      const payload = {
-        userId: userDoc._id,
+
+      const { accessToken } = await this.tokenService.createAccessOnly({
+        userId: String(userDoc._id),
         role: userDoc.role,
         merchantId: null,
-      };
+      });
       return {
-        accessToken: this.jwtService.sign(payload),
+        accessToken,
         user: {
           id: userDoc._id,
           name: userDoc.name,
@@ -116,56 +100,63 @@ export class AuthService {
         },
       };
     } catch (err: any) {
-      // التقاط 11000 Duplicates
       if (err?.code === 11000 && err?.keyPattern?.email) {
-        throw new ConflictException('Email already in use');
+        throw new ConflictException(
+          this.translationService.translate('auth.errors.emailAlreadyExists'),
+        );
       }
-      throw new InternalServerErrorException('Failed to register');
+      this.logger.error('Registration failed', err);
+      throw new InternalServerErrorException(
+        this.translationService.translate('auth.errors.registrationFailed'),
+      );
     }
   }
-  // ✅ C1: AuthService.login(...) مع TokenService
+
   async login(
     loginDto: LoginDto,
     sessionInfo?: { userAgent?: string; ip?: string },
   ) {
     const { email, password } = loginDto;
 
-    const userDoc = await this.userModel
-      .findOne({ email })
-      .select('+password active merchantId emailVerified role')
-      .exec();
-
-    // لا نكشف السبب الدقيق على العميل، لكن داخلياً نميّز
-    if (!userDoc) throw new BadRequestException('Invalid credentials');
-
-    // حساب المستخدم موقوف؟
-    if (userDoc.active === false) {
-      throw new BadRequestException('الحساب معطّل، تواصل مع الدعم');
-    }
-
-    const isMatch = await bcrypt.compare(password, userDoc.password);
-    if (!isMatch) throw new BadRequestException('Invalid credentials');
-
-    // يجب تفعيل البريد قبل الدخول (يمكنك إرجاع رسالة أدق للفرونت)
-    if (!userDoc.emailVerified) {
+    const userDoc = await this.repo.findUserByEmailWithPassword(email);
+    if (!userDoc) {
       throw new BadRequestException(
-        'يجب تفعيل البريد الإلكتروني قبل تسجيل الدخول',
+        this.translationService.translate('auth.errors.invalidCredentials'),
       );
     }
 
-    // لو عنده تاجر، امنع الدخول إن كان التاجر محذوف ناعماً/معطل
-    if (userDoc.merchantId && userDoc.role !== 'ADMIN') {
-      const m = await this.merchantModel
-        .findById(userDoc.merchantId)
-        .select('_id active deletedAt')
-        .lean();
+    if (userDoc.active === false) {
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.accountDisabled'),
+      );
+    }
 
-      if (m && (m.active === false || m.deletedAt)) {
-        throw new BadRequestException('تم إيقاف حساب التاجر مؤقتًا');
+    const isMatch = await bcrypt.compare(password, userDoc.password);
+    if (!isMatch) {
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.invalidCredentials'),
+      );
+    }
+
+    if (!userDoc.emailVerified) {
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.emailNotVerified'),
+      );
+    }
+
+    if (userDoc.merchantId && userDoc.role !== 'ADMIN') {
+      const m = await this.repo.findMerchantBasicById(
+        userDoc.merchantId as any,
+      );
+      if (m && (m.active === false || (m as any).deletedAt)) {
+        throw new BadRequestException(
+          this.translationService.translate(
+            'auth.errors.merchantAccountSuspended',
+          ),
+        );
       }
     }
 
-    // ✅ استخدام TokenService لإنشاء زوج التوكنات
     const payload = {
       userId: String(userDoc._id),
       role: userDoc.role,
@@ -192,7 +183,6 @@ export class AuthService {
     };
   }
 
-  // ✅ C2: تدوير التوكنات
   async refreshTokens(
     refreshToken: string,
     sessionInfo?: { userAgent?: string; ip?: string },
@@ -200,7 +190,6 @@ export class AuthService {
     return this.tokenService.refreshTokens(refreshToken, sessionInfo);
   }
 
-  // ✅ C2: تسجيل الخروج - إبطال الجلسة الحالية
   async logout(refreshToken: string): Promise<{ message: string }> {
     try {
       const decoded = this.jwtService.decode(refreshToken) as any;
@@ -208,67 +197,75 @@ export class AuthService {
         await this.tokenService.revokeRefreshToken(decoded.jti);
       }
       return { message: 'تم تسجيل الخروج بنجاح' };
-    } catch (error) {
-      // حتى لو فشل، نعتبره نجح
-      return { message: 'تم تسجيل الخروج بنجاح' };
+    } catch {
+      return {
+        message: this.translationService.translate(
+          'auth.messages.logoutSuccess',
+        ),
+      };
     }
   }
 
-  // ✅ C2: تسجيل الخروج من جميع الأجهزة
   async logoutAll(userId: string): Promise<{ message: string }> {
     await this.tokenService.revokeAllUserSessions(userId);
-    return { message: 'تم تسجيل الخروج من جميع الأجهزة بنجاح' };
+    return {
+      message: this.translationService.translate(
+        'auth.messages.logoutAllSuccess',
+      ),
+    };
   }
 
-  // auth.service.ts
-  async verifyEmail(dto: VerifyEmailDto): Promise<{
-    accessToken: string;
-    user: {
-      id: string;
-      name: string;
-      email: string;
-      role: string;
-      merchantId: string | null;
-      firstLogin: boolean;
-      emailVerified: boolean;
-    };
-  }> {
+  async verifyEmail(dto: VerifyEmailDto) {
     const { email, code } = dto;
-    const user = await this.userModel.findOne({ email }).exec();
-    if (!user) throw new BadRequestException('رمز التفعيل غير صحيح');
+    const user = await this.repo.findUserByEmailWithPassword(email);
+    if (!user) {
+      throw new BadRequestException(
+        this.translationService.translate(
+          'auth.errors.invalidVerificationCode',
+        ),
+      );
+    }
 
-    const tokenDoc = await this.tokenModel
-      .findOne({ userId: user._id })
-      .sort({ createdAt: -1 })
-      .exec();
-
+    const tokenDoc = await this.repo.latestEmailVerificationTokenByUser(
+      user._id,
+    );
     if (!tokenDoc || tokenDoc.codeHash !== sha256(code)) {
-      throw new BadRequestException('رمز التفعيل غير صحيح');
+      throw new BadRequestException(
+        this.translationService.translate(
+          'auth.errors.invalidVerificationCode',
+        ),
+      );
     }
     if (tokenDoc.expiresAt.getTime() < Date.now()) {
-      throw new BadRequestException('رمز التفعيل منتهي الصلاحية');
+      throw new BadRequestException(
+        this.translationService.translate(
+          'auth.errors.verificationCodeExpired',
+        ),
+      );
     }
 
     user.emailVerified = true;
-    user.firstLogin = true; // 👈 نريد الذهاب للأونبوردنج
-    await user.save();
+    user.firstLogin = true;
+    await this.repo.saveUser(user);
+
+    // Invalidate cache after user update
+    await this.invalidateUserCache(user.email, String(user._id));
+
     const merchant = await this.merchants.ensureForUser(user._id, {
       name: user.name,
     });
-    // اربط الـ merchantId إن لم يكن
+
     if (!user.merchantId) {
       user.merchantId = merchant._id as any;
-      await user.save();
+      await this.repo.saveUser(user);
     }
-    await this.tokenModel.deleteMany({ userId: user._id });
+    await this.repo.deleteEmailVerificationTokensByUser(user._id);
 
-    const payload = {
-      userId: user._id,
+    const { accessToken } = await this.tokenService.createAccessOnly({
+      userId: String(user._id),
       role: user.role,
-      merchantId: user.merchantId ?? null,
-    };
-    const accessToken = this.jwtService.sign(payload);
-
+      merchantId: user.merchantId ? String(user.merchantId) : null,
+    });
     return {
       accessToken,
       user: {
@@ -276,34 +273,64 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
-        merchantId: toStr(user.merchantId), // ✅
+        merchantId: toStr(user.merchantId),
         firstLogin: true,
         emailVerified: true,
       },
     };
   }
 
+  // Cached user lookup with TTL of 5 minutes
+  private async findUserByEmail(email: string) {
+    const cacheKey = `user:email:${email}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const user = await this.repo.findUserByEmailWithPassword(email);
+    if (user) {
+      // Cache for 5 minutes
+      await this.cacheManager.set(cacheKey, user, 300 * 1000); // ✅ 5 دقائق بالملّي ثانية
+    }
+    return user;
+  }
+
+  // Cache invalidation helper
+  private async invalidateUserCache(email: string, userId?: string) {
+    const promises = [this.cacheManager.del(`user:email:${email}`)];
+    if (userId) {
+      promises.push(this.cacheManager.del(`user:id:${userId}`));
+    }
+    await Promise.all(promises);
+  }
+
   async resendVerification(dto: ResendVerificationDto): Promise<void> {
     const { email } = dto;
-    const user = await this.userModel.findOne({ email }).exec();
-    if (!user) throw new BadRequestException('البريد الإلكتروني غير مسجل');
-    if (user.emailVerified)
-      throw new BadRequestException('البريد الإلكتروني مُفعّل مسبقًا');
+    const user = await this.findUserByEmail(email);
+    if (!user) {
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.emailNotRegistered'),
+      );
+    }
+    if ((user as any).emailVerified)
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.emailAlreadyVerified'),
+      );
 
-    // (اختياري) حد من الوتيرة: لا تنشئ أكثر من توكن خلال 60 ثانية
-    const recent = await this.tokenModel
-      .findOne({ userId: user._id })
-      .sort({ createdAt: -1 })
-      .select({ createdAt: 1 })
-      .lean<{ createdAt: Date }>();
-    if (recent && Date.now() - new Date(recent.createdAt).getTime() < 60_000) {
-      // لا تفجر الطلب؛ فقط تجاهل/أعد 204 (تصميم اختياري)
+    const recent = await this.repo.latestEmailVerificationTokenByUser(
+      (user as any)._id,
+    );
+    if (
+      recent &&
+      Date.now() - new Date((recent as any).createdAt).getTime() < 60_000
+    ) {
       return;
     }
 
     const code = generateNumericCode(6);
-    await this.tokenModel.create({
-      userId: user._id,
+    await this.repo.createEmailVerificationToken({
+      userId: (user as any)._id,
       codeHash: sha256(code),
       expiresAt: minutesFromNow(15),
     });
@@ -314,31 +341,27 @@ export class AuthService {
       this.logger.error('Failed to send verification email', e);
     }
   }
+
   async requestPasswordReset(dto: RequestPasswordResetDto): Promise<void> {
     const { email } = dto;
-    const user = await this.userModel.findOne({ email }).select('_id').lean();
-
-    // لا نكشف وجود البريد: نرجع 204 دائمًا
+    const user = await this.repo.findUserByEmailSelectId(email);
     if (!user) return;
 
-    // Rate control بسيط: لا نصدر أكثر من طلب كل 60 ثانية
-    const last = await this.prtModel
-      .findOne({ userId: user._id })
-      .sort({ createdAt: -1 })
-      .select({ createdAt: 1 })
-      .lean<{ createdAt: Date }>();
-    if (last && Date.now() - new Date(last.createdAt).getTime() < 60_000) {
-      return; // صمتًا
+    const last = await this.repo.latestPasswordResetTokenByUser(user._id, true);
+    if (
+      last &&
+      Date.now() - new Date((last as any).createdAt).getTime() < 60_000
+    ) {
+      return;
     }
 
-    // إنشاء توكن آمن (غير قابل للتخمين)
-    const token = generateSecureToken(32); // 256-bit
+    const token = generateSecureToken(32);
     const tokenHash = sha256(token);
 
-    await this.prtModel.create({
+    await this.repo.createPasswordResetToken({
       userId: user._id,
       tokenHash,
-      expiresAt: minutesFromNow(30), // صلاحية 30 دقيقة
+      expiresAt: minutesFromNow(30),
     });
 
     const base = (this.config.get<string>('FRONTEND_URL') ?? '').replace(
@@ -348,19 +371,16 @@ export class AuthService {
     const link = `${base}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
 
     await this.mailService.sendPasswordResetEmail(email, link);
-
-    this.businessMetrics.incEmailSent(); // (اختياري)
+    this.businessMetrics.incEmailSent?.();
   }
+
   async validatePasswordResetToken(
     email: string,
     token: string,
   ): Promise<boolean> {
-    const user = await this.userModel.findOne({ email }).select('_id').lean();
-    if (!user) return false;
-    const doc = await this.prtModel
-      .findOne({ userId: user._id, used: false })
-      .sort({ createdAt: -1 })
-      .lean();
+    const u = await this.repo.findUserByEmailSelectId(email);
+    if (!u) return false;
+    const doc = await this.repo.findLatestPasswordResetForUser(u._id, true);
     if (!doc) return false;
     if (doc.expiresAt.getTime() < Date.now()) return false;
     return doc.tokenHash === sha256(token);
@@ -370,102 +390,108 @@ export class AuthService {
     const { email, token, newPassword, confirmPassword } = dto;
 
     if (newPassword !== confirmPassword) {
-      throw new BadRequestException('كلمتا المرور غير متطابقتين');
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.passwordMismatch'),
+      );
     }
 
-    const user = await this.userModel
-      .findOne({ email })
-      .select('+password')
-      .exec();
-    // لا نكشف التفاصيل
-    if (!user) return; // 204
+    const user = await this.repo.findUserByEmailWithPassword(email);
+    if (!user) return;
 
-    const doc = await this.prtModel
-      .findOne({ userId: user._id, used: false })
-      .sort({ createdAt: -1 })
-      .exec();
-    if (!doc) return; // 204
-
-    if (doc.expiresAt.getTime() < Date.now()) {
-      return; // 204
-    }
+    const doc = await this.repo.latestPasswordResetTokenByUser(user._id, true);
+    if (!doc) return;
+    if (doc.expiresAt.getTime() < Date.now()) return;
 
     const ok = doc.tokenHash === sha256(token);
-    if (!ok) return; // 204
+    if (!ok) return;
 
-    // عدّل كلمة المرور (اعتمد pre-save hook للهاش)
     user.password = newPassword;
     user.passwordChangedAt = new Date();
-    await user.save();
+    await this.repo.saveUser(user);
 
-    // علّم التوكن بأنه مستعمل واحذف البقية
-    doc.used = true;
-    await doc.save();
-    await this.prtModel.deleteMany({ userId: user._id, _id: { $ne: doc._id } });
+    // Invalidate cache after password change
+    await this.invalidateUserCache(user.email, String(user._id));
 
-    // (اختياري) this.businessMetrics.incPasswordResetCompleted?.();
+    await this.repo.markPasswordResetTokenUsed(doc._id);
+    await this.repo.deleteOtherPasswordResetTokens(user._id, doc._id);
   }
+
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
     const { currentPassword, newPassword, confirmPassword } = dto;
     if (newPassword !== confirmPassword) {
-      throw new BadRequestException('كلمتا المرور غير متطابقتين');
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.passwordMismatch'),
+      );
     }
 
-    const user = await this.userModel
-      .findById(userId)
-      .select('+password')
-      .exec();
-    if (!user) throw new BadRequestException('مستخدم غير موجود');
+    const user = await this.repo.findUserByIdWithPassword(userId);
+    if (!user) {
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.userNotFound'),
+      );
+    }
 
     const match = await bcrypt.compare(currentPassword, user.password);
-    if (!match) throw new BadRequestException('كلمة المرور الحالية غير صحيحة');
+    if (!match) {
+      throw new BadRequestException(
+        this.translationService.translate(
+          'auth.errors.currentPasswordIncorrect',
+        ),
+      );
+    }
 
     user.password = newPassword;
     user.passwordChangedAt = new Date();
-    await user.save();
+    await this.repo.saveUser(user);
 
-    // نظّف أي توكنات إعادة تعيين سابقة
-    await this.prtModel.deleteMany({ userId });
+    // Invalidate cache after password change
+    await this.invalidateUserCache(user.email, String(user._id));
+    await this.cacheManager.set(
+      `pwdChangedAt:${user._id}`,
+      user.passwordChangedAt.getTime(),
+      30 * 24 * 3600 * 1000, // ✅ 30 يوم بالملّي ثانية
+    );
+
+    await this.repo.deletePasswordResetTokensByUser(user._id);
 
     this.businessMetrics.incPasswordChangeCompleted?.();
   }
 
   async ensureMerchant(userId: string) {
-    const user = await this.userModel.findById(userId);
-    if (!user) throw new BadRequestException('User not found');
+    const user = await this.repo.findUserById(userId);
+    if (!user) {
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.userNotFound'),
+      );
+    }
 
-    // تحقق من تاجر موجود وصالح
     if (user.merchantId) {
-      const m = await this.merchantModel
-        .findById(user.merchantId)
-        .select('_id active deletedAt')
-        .lean();
+      const m = await this.repo.findMerchantBasicById(user.merchantId as any);
       if (!m) throw new BadRequestException('Merchant not found');
-      if (m.deletedAt || m.active === false) {
+      if ((m as any).deletedAt || (m as any).active === false) {
         throw new BadRequestException('تم إيقاف حساب التاجر مؤقتًا');
       }
     } else {
-      // لا تنشئ لو البريد غير مفعّل
+      if (!user.emailVerified)
+        throw new BadRequestException(
+          this.translationService.translate('auth.errors.emailNotVerified'),
+        );
+      const m = await this.merchants.ensureForUser(user._id, {
+        name: user.name,
+      });
       if (!user.merchantId) {
-        if (!user.emailVerified)
-          throw new BadRequestException('Email not verified');
-        const m = await this.merchants.ensureForUser(user._id, {
-          name: user.name,
-        });
-        if (!user.merchantId) {
-          user.merchantId = m._id as any;
-          await user.save();
-        }
+        user.merchantId = m._id as any;
+        await this.repo.saveUser(user);
       }
     }
-
-    const payload = {
-      userId: user._id,
+    const { accessToken } = await this.tokenService.createAccessOnly({
+      userId: String(user._id),
       role: user.role,
-      merchantId: user.merchantId,
-    };
+      merchantId: user.merchantId ? String(user.merchantId) : null,
+    });
     return {
-      accessToken: this.jwtService.sign(payload),
+      accessToken,
+
       user: {
         id: user._id,
         name: user.name,

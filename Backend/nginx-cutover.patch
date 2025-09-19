@@ -1,0 +1,178 @@
+diff --git a/docker-compose.prod.yml b/docker-compose.prod.yml
+index 6f1a2c1..b3c9d42 100644
+--- a/docker-compose.prod.yml
++++ b/docker-compose.prod.yml
+@@ -1,6 +1,6 @@
+ version: '3.8'
+ 
+ services:
+-  # ===== التطبيق الرئيسي =====
++  # ===== التطبيق الرئيسي (ربط على اللوكال فقط) =====
+   api:
+     image: ${KALEEM_API_IMAGE:-ghcr.io/kaleem/kaleem-api:latest}
+     container_name: kaleem-api-prod
+@@ -8,7 +8,8 @@ services:
+-      - '3000:3000'
++      # اجعل الخدمة خلف Nginx فقط
++      - '127.0.0.1:3000:3000'
+     environment:
+       - NODE_ENV=production
+       - PORT=3000
+       - TZ=Asia/Riyadh
+diff --git a/ops/nginx/http.d/api-globals.conf b/ops/nginx/http.d/api-globals.conf
+new file mode 100644
+index 0000000..f9c2d33
+--- /dev/null
++++ b/ops/nginx/http.d/api-globals.conf
+@@ -0,0 +1,24 @@
++# =====================================================================
++# يوضع هذا الملف داخل كتلة http { } في /etc/nginx/nginx.conf
++# يعرّف: ربط request-id في اللوج + منطقة الـ rate-limit + فورمات اللوج
++# =====================================================================
++
++# اربط X-Request-Id القادم من التطبيق (Nest) مع اللوج
++map $upstream_http_x_request_id $req_id {
++  default $upstream_http_x_request_id;
++}
++
++# ≈ 33 طلب/دقيقة ~= 495 طلب/15 دقيقة (متوافق مع RATE_LIMIT_MAX=500)
++limit_req_zone $binary_remote_addr zone=api_rl:10m rate=33r/m;
++
++# فورمات لوج مخصّص للـ API يحتوي زمن الاستجابة و request-id
++log_format api '$remote_addr - $time_local "$request" $status $body_bytes_sent '
++               '"$http_referer" "$http_user_agent" req_id=$req_id '
++               'urt=$upstream_response_time rt=$request_time';
++
++# مثال لتفعيل Gzip (اختياري)
++gzip on;
++gzip_comp_level 5;
++gzip_types application/json application/javascript text/css text/plain;
++gzip_min_length 1024;
++gzip_vary on;
+diff --git a/ops/nginx/snippets/proxy-headers.conf b/ops/nginx/snippets/proxy-headers.conf
+new file mode 100644
+index 0000000..a3d5b2f
+--- /dev/null
++++ b/ops/nginx/snippets/proxy-headers.conf
+@@ -0,0 +1,15 @@
++# رؤوس قياسية عند تمرير الطلب للتطبيق
++proxy_http_version 1.1;
++proxy_set_header Host              $host;
++proxy_set_header X-Real-IP         $remote_addr;
++proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
++proxy_set_header X-Forwarded-Proto $scheme;
++proxy_set_header X-Forwarded-Host  $host;
++proxy_set_header X-Forwarded-Port  $server_port;
++
++# مهلات مناسبة
++proxy_connect_timeout 15s;
++proxy_send_timeout    60s;
++proxy_read_timeout    60s;
++
++client_max_body_size 16m;
+diff --git a/ops/nginx/snippets/security-headers.conf b/ops/nginx/snippets/security-headers.conf
+new file mode 100644
+index 0000000..f1b1a44
+--- /dev/null
++++ b/ops/nginx/snippets/security-headers.conf
+@@ -0,0 +1,13 @@
++# هيدرز أمان عامة (يمكن تخصيص CSP حسب حاجتك)
++add_header X-Content-Type-Options "nosniff" always;
++add_header X-Frame-Options "DENY" always;
++add_header Referrer-Policy "no-referrer" always;
++add_header X-XSS-Protection "1; mode=block" always;
++# HSTS لسنة كاملة (+subdomains). فعّل فقط إن كان كل الدومين خلف HTTPS.
++add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+diff --git a/ops/nginx/sites-available/api.kaleem-ai.com.conf b/ops/nginx/sites-available/api.kaleem-ai.com.conf
+new file mode 100644
+index 0000000..c4b7c2d
+--- /dev/null
++++ b/ops/nginx/sites-available/api.kaleem-ai.com.conf
+@@ -0,0 +1,69 @@
++# =====================================================================
++# موقع Nginx لـ api.kaleem-ai.com
++# - يوجّه إلى API الداخل على 127.0.0.1:3000
++# - يستخدم الـ rate-limit المعرفة في http.d/api-globals.conf
++# - يضم WebSocket + لوج خاص + هيدرز أمان + Gzip (اختياري)
++# =====================================================================
++
++server {
++  listen 443 ssl http2;
++  server_name api.kaleem-ai.com;
++
++  # شهادات TLS (عدّل المسارات حسب خادمك)
++  ssl_certificate     /etc/letsencrypt/live/api.kaleem-ai.com/fullchain.pem;
++  ssl_certificate_key /etc/letsencrypt/live/api.kaleem-ai.com/privkey.pem;
++
++  # لوج بصيغة api (مُعرّفة في http.d/api-globals.conf)
++  access_log /var/log/nginx/api.access.log api;
++  error_log  /var/log/nginx/api.error.log warn;
++
++  # سنِبتس للرؤوس والأمان
++  include /etc/nginx/snippets/proxy-headers.conf;
++  include /etc/nginx/snippets/security-headers.conf;
++
++  # ========= REST API =========
++  location /api/ {
++    # حد الطلبات (≈ 33 طلب/دقيقة لكل IP، burst قصير)
++    limit_req zone=api_rl burst=50 nodelay;
++
++    proxy_pass http://127.0.0.1:3000;
++  }
++
++  # ========= WebSocket (إن وُجد مسار WS) =========
++  location /socket/ {
++    proxy_pass http://127.0.0.1:3000;
++    proxy_set_header Upgrade $http_upgrade;
++    proxy_set_header Connection "upgrade";
++  }
++}
++
++# إعادة توجيه http -> https
++server {
++  listen 80;
++  server_name api.kaleem-ai.com;
++  return 301 https://$host$request_uri;
++}
+diff --git a/ops/nginx/README.md b/ops/nginx/README.md
+new file mode 100644
+index 0000000..b2a0f58
+--- /dev/null
++++ b/ops/nginx/README.md
+@@ -0,0 +1,36 @@
++# نشر إعدادات Nginx (إرشادي)
++
++> هذه الملفات مرجعية لوضعها على الـ VPS. لا تُستخدم داخل Docker.
++
++## أين أضع هذه الملفات؟
++1) ضع محتويات `ops/nginx/snippets/` داخل `/etc/nginx/snippets/`
++2) ضع محتويات `ops/nginx/http.d/` داخل مسار يشمله http في `nginx.conf` مثل:
++   ```nginx
++   http {
++     include /etc/nginx/http.d/*.conf;
++     ...
++   }
++   ```
++3) ملف الموقع `ops/nginx/sites-available/api.kaleem-ai.com.conf`:
++   - انسخه إلى `/etc/nginx/sites-available/api.kaleem-ai.com.conf`
++   - أنشئ رابطًا في `sites-enabled`:
++     ```bash
++     sudo ln -s /etc/nginx/sites-available/api.kaleem-ai.com.conf /etc/nginx/sites-enabled/api.kaleem-ai.com.conf
++     ```
++
++## ربط الـ API داخليًا
++في `docker-compose.prod.yml` تم تغيير منفذ الـ API إلى:
++```
++127.0.0.1:3000:3000
++```
++ما يعني أن الوصول يتم عبر Nginx فقط.
++
++## اختبار وإعادة تحميل
++```bash
++sudo nginx -t && sudo systemctl reload nginx
++curl -fsS https://api.kaleem-ai.com/api/health
++```
++
++## ملاحظات
++- تأكد من مسارات الشهادات (Let's Encrypt) صحيحة.
++- عدّل أسماء الدومينات حسب بيئتك إن اختلفت.

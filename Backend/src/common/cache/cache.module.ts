@@ -7,12 +7,14 @@ import { CacheService } from './cache.service';
 import { CacheWarmerService } from './cache-warmer.service';
 import { CacheController } from './cache.controller';
 import { CacheMetrics } from './cache.metrics';
+import { MetricsModule } from '../../metrics/metrics.module';
 
 @Global()
 @Module({
   imports: [
     ConfigModule,
     ScheduleModule.forRoot(),
+    MetricsModule,
     NestCacheModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {

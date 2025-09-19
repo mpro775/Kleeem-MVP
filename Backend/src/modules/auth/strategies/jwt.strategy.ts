@@ -14,10 +14,8 @@ export interface JwtPayload {
 }
 
 function cookieExtractor(req: Request): string | null {
-  return (
-    (req.cookies && (req.cookies['access_token'] || req.cookies['token'])) ||
-    null
-  );
+  const c = req.cookies || {};
+  return c['accessToken'] || c['access_token'] || c['token'] || null;
 }
 
 @Injectable()
@@ -41,9 +39,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   // يُحقن الناتج في req.user
-  async validate(payload: JwtPayload): Promise<JwtPayload> {
+  async validate(payload: any) {
+    const userId = payload.userId ?? payload.sub; // 👈 دعم الحالتين
     return {
-      userId: payload.userId,
+      userId,
       role: payload.role,
       merchantId: payload.merchantId ?? null,
       iat: payload.iat,

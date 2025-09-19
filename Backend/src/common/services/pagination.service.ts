@@ -47,26 +47,22 @@ export class PaginationService {
     // حد أقصى للـ limit
     const limit = Math.min(dto.limit || 20, 100);
 
-    // بناء الاستعلام
-    let query = model.find(filter).sort(sort).limit(limit);
+    // بناء الاستعلام مع معالجة أفضل للأنواع
+    const baseQuery = model.find(filter).sort(sort).limit(limit);
 
     if (populate) {
-      query = query.populate(populate);
+      baseQuery.populate(populate);
     }
 
     if (select) {
-      query = query.select(select);
+      baseQuery.select(select);
     }
 
-    if (lean) {
-      query = query.lean();
-    }
-
-    // تنفيذ الاستعلام
-    const items = await query.exec();
+    // تنفيذ الاستعلام مع معالجة النوع حسب lean
+    const items = lean ? await baseQuery.lean().exec() : await baseQuery.exec();
 
     // إنشاء الـ cursor للصفحة التالية
-    const lastItem = items[items.length - 1];
+    const lastItem = items[items.length - 1] as any;
     let nextCursor: string | undefined;
 
     if (lastItem) {
@@ -83,7 +79,7 @@ export class PaginationService {
         hasMore: items.length === limit,
         count: items.length,
       },
-    };
+    } as PaginationResult<T>;
   }
 
   /**

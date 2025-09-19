@@ -1,0 +1,55 @@
+{
+  "operations": {
+    "dashboard": {
+      "summary": "Analytics Dashboard",
+      "description": "Display main analytics dashboard with key metrics"
+    },
+    "metrics": {
+      "summary": "Detailed Metrics",
+      "description": "Display detailed performance metrics"
+    },
+    "reports": {
+      "summary": "Reports",
+      "description": "Generate and export reports"
+    },
+    "trends": {
+      "summary": "Trends",
+      "description": "Analyze trends and changes"
+    },
+    "performance": {
+      "summary": "Performance",
+      "description": "System performance metrics"
+    },
+    "export": {
+      "summary": "Export Data",
+      "description": "Export analytics data in CSV/Excel format"
+    }
+  },
+  "responses": {
+    "success": {
+      "generated": "Report generated successfully",
+      "exported": "Data exported successfully",
+      "found": "Data found successfully"
+    },
+    "error": {
+      "noData": "No data available",
+      "invalidDateRange": "Invalid date range",
+      "exportFailed": "Data export failed"
+    }
+  },
+  "fields": {
+    "dateRange": "Date Range",
+    "metrics": "Metrics",
+    "reports": "Reports",
+    "exportFormat": "Export Format",
+    "period": "Time Period"
+  },
+  "metrics": {
+    "totalOrders": "Total Orders",
+    "totalRevenue": "Total Revenue",
+    "totalCustomers": "Total Customers",
+    "conversionRate": "Conversion Rate",
+    "averageOrderValue": "Average Order Value",
+    "activeUsers": "Active Users"
+  }
+}

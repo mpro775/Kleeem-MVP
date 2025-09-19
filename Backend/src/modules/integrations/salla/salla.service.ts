@@ -1,45 +1,41 @@
-// src/integrations/salla/salla.service.ts
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
 
-import {
-  Integration,
-  IntegrationDocument,
-} from '../schemas/integration.schema';
-import {
-  Merchant,
-  MerchantDocument,
-} from '../../merchants/schemas/merchant.schema';
 import { toDateOrNull } from '../utils/date';
 import { ExternalProduct } from '../types';
+import {
+  SALLA_INTEGRATION_REPOSITORY,
+  SALLA_MERCHANT_REPOSITORY,
+} from './tokens';
+import { SallaIntegrationRepository } from './repositories/integration.repository';
+import { SallaMerchantRepository } from './repositories/merchant.repository';
 
 interface SallaTokenResponse {
   access_token: string;
   refresh_token?: string;
   token_type: string;
-  expires: number; // seconds timestamp per docs
+  expires: number;
   scope?: string;
 }
 type SallaProductsResponse = {
-  data?: {
-    products?: unknown[];
-  };
+  data?: { products?: unknown[] };
   links?: { next?: string | null };
 };
 
 @Injectable()
 export class SallaService {
   private readonly logger = new Logger(SallaService.name);
+
   constructor(
     private readonly http: HttpService,
     private readonly config: ConfigService,
-    @InjectModel(Integration.name)
-    private integrationModel: Model<IntegrationDocument>,
-    @InjectModel(Merchant.name) private merchantModel: Model<MerchantDocument>,
+    @Inject(SALLA_INTEGRATION_REPOSITORY)
+    private readonly integrations: SallaIntegrationRepository,
+    @Inject(SALLA_MERCHANT_REPOSITORY)
+    private readonly merchants: SallaMerchantRepository,
   ) {}
 
   getOAuthUrl(state: string) {
@@ -53,7 +49,7 @@ export class SallaService {
       scope,
       state,
     });
-    return `https://accounts.salla.sa/oauth2/auth?${params.toString()}`; // :contentReference[oaicite:4]{index=4}
+    return `https://accounts.salla.sa/oauth2/auth?${params.toString()}`;
   }
 
   async exchangeCodeForToken(code: string): Promise<SallaTokenResponse> {
@@ -71,52 +67,33 @@ export class SallaService {
       this.http.post<SallaTokenResponse>(
         'https://accounts.salla.sa/oauth2/token',
         body,
-        {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        },
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
       ),
     );
-    return data; // :contentReference[oaicite:5]{index=5}
+    return data;
   }
 
   async upsertIntegration(
     merchantId: Types.ObjectId,
     tokens: SallaTokenResponse,
   ) {
-    const expiresAt = new Date(Date.now() + (tokens.expires ?? 1209600) * 1000); // 14 يوم تقريبًا
-    await this.integrationModel.updateOne(
-      { merchantId, provider: 'salla' },
-      {
-        $set: {
-          active: true,
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-          tokenType: tokens.token_type,
-          expiresIn: tokens.expires,
-          expiresAt,
-          lastSync: new Date(),
-        },
-      },
-      { upsert: true },
-    );
-
-    await this.merchantModel.updateOne(
-      { _id: merchantId },
-      {
-        $set: {
-          productSource: 'salla',
-          'productSourceConfig.internal.enabled': false,
-          'productSourceConfig.salla.active': true,
-          'productSourceConfig.salla.lastSync': new Date(),
-        },
-      },
-    );
+    const expiresAt = new Date(Date.now() + (tokens.expires ?? 1209600) * 1000); // ~14 days
+    await this.integrations.upsert(merchantId, {
+      provider: 'salla',
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      tokenType: tokens.token_type,
+      expiresIn: tokens.expires,
+      expiresAt,
+      lastSync: new Date(),
+    });
+    await this.merchants.updateProductSourceSalla(merchantId, {
+      lastSync: new Date(),
+    });
   }
 
   async refreshAccessToken(merchantId: Types.ObjectId) {
-    const integ = await this.integrationModel
-      .findOne({ merchantId, provider: 'salla' })
-      .lean();
+    const integ = await this.integrations.findByMerchant(merchantId);
     if (!integ?.refreshToken) throw new Error('No refresh token');
 
     const clientId = this.config.get<string>('SALLA_CLIENT_ID')!;
@@ -131,9 +108,7 @@ export class SallaService {
       this.http.post<SallaTokenResponse>(
         'https://accounts.salla.sa/oauth2/token',
         body,
-        {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        },
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
       ),
     );
     await this.upsertIntegration(merchantId, data);
@@ -141,15 +116,13 @@ export class SallaService {
   }
 
   async getValidAccessToken(merchantId: Types.ObjectId) {
-    const integ = await this.integrationModel.findOne({
-      merchantId,
-      provider: 'salla',
-    });
+    const integ = await this.integrations.findByMerchant(merchantId);
     if (!integ) throw new Error('Integration not found');
     if (integ.expiresAt && integ.expiresAt.getTime() - Date.now() > 60_000)
       return integ.accessToken!;
     return this.refreshAccessToken(merchantId);
   }
+
   async fetchSallaProducts(
     merchantId: Types.ObjectId,
   ): Promise<ExternalProduct[]> {
@@ -164,14 +137,15 @@ export class SallaService {
       const { data } = await firstValueFrom(
         this.http.get<SallaProductsResponse>(
           `${base}/admin/v2/products?page=${page}`,
-          { headers: { Authorization: `Bearer ${accessToken}` } },
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          },
         ),
       );
 
       const items = Array.isArray(data?.data?.products)
         ? (data.data?.products ?? [])
         : [];
-
       for (const item of items) {
         const obj = item as Record<string, unknown>;
 
@@ -212,15 +186,15 @@ export class SallaService {
       }
 
       if (!data?.links?.next) break;
-      page++;
+      page += 1;
     }
 
     return results;
   }
+
   async registerDefaultWebhooks(merchantId: Types.ObjectId) {
     const accessToken = await this.getValidAccessToken(merchantId);
     const targetUrl = this.config.get<string>('SALLA_WEBHOOK_URL')!;
-    // مثال: الاشتراك في منتج/طلب (حدّث حسب احتياجك)
     await firstValueFrom(
       this.http.post(
         'https://api.salla.dev/admin/v2/webhooks/subscribe',
@@ -228,6 +202,6 @@ export class SallaService {
         { headers: { Authorization: `Bearer ${accessToken}` } },
       ),
     );
-    // كرر للاحداث الأخرى …
+    // أضف أحداثًا أخرى إذا لزم
   }
 }

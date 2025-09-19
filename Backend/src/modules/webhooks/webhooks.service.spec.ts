@@ -88,10 +88,10 @@ describe('WebhooksService', () => {
 
     it('should handle whatsapp_incoming event successfully', async () => {
       const eventType = 'whatsapp_incoming';
-      
+
       // Mock transaction success
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -103,7 +103,7 @@ describe('WebhooksService', () => {
 
       expect(mockConnection.startSession).toHaveBeenCalled();
       expect(mockSession.withTransaction).toHaveBeenCalled();
-      
+
       expect(mockWebhookModel.create).toHaveBeenCalledWith(
         [
           {
@@ -159,9 +159,9 @@ describe('WebhooksService', () => {
 
     it('should handle telegram_incoming event successfully', async () => {
       const eventType = 'telegram_incoming';
-      
+
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -193,9 +193,9 @@ describe('WebhooksService', () => {
 
     it('should handle webchat_incoming event successfully', async () => {
       const eventType = 'webchat_incoming';
-      
+
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -269,7 +269,7 @@ describe('WebhooksService', () => {
       };
 
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -277,7 +277,10 @@ describe('WebhooksService', () => {
       mockMessageService.createOrAppend.mockResolvedValue({} as any);
       mockOutboxService.enqueueEvent.mockResolvedValue({} as any);
 
-      const result = await service.handleEvent('whatsapp_incoming', payloadWithoutMetadata);
+      const result = await service.handleEvent(
+        'whatsapp_incoming',
+        payloadWithoutMetadata,
+      );
 
       expect(mockMessageService.createOrAppend).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -295,7 +298,7 @@ describe('WebhooksService', () => {
 
     it('should handle transaction failure', async () => {
       const transactionError = new Error('Transaction failed');
-      
+
       mockSession.withTransaction.mockRejectedValue(transactionError);
 
       await expect(
@@ -307,7 +310,7 @@ describe('WebhooksService', () => {
 
     it('should ensure session is always ended', async () => {
       const transactionError = new Error('Transaction failed');
-      
+
       mockSession.withTransaction.mockRejectedValue(transactionError);
 
       try {
@@ -334,7 +337,7 @@ describe('WebhooksService', () => {
       };
 
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -342,7 +345,10 @@ describe('WebhooksService', () => {
       mockMessageService.createOrAppend.mockResolvedValue({} as any);
       mockOutboxService.enqueueEvent.mockResolvedValue({} as any);
 
-      const result = await service.handleEvent('whatsapp_incoming', largePayload);
+      const result = await service.handleEvent(
+        'whatsapp_incoming',
+        largePayload,
+      );
 
       expect(mockWebhookModel.create).toHaveBeenCalledWith(
         [
@@ -365,7 +371,7 @@ describe('WebhooksService', () => {
       };
 
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -373,7 +379,10 @@ describe('WebhooksService', () => {
       mockMessageService.createOrAppend.mockResolvedValue({} as any);
       mockOutboxService.enqueueEvent.mockResolvedValue({} as any);
 
-      const result = await service.handleEvent('whatsapp_incoming', specialPayload);
+      const result = await service.handleEvent(
+        'whatsapp_incoming',
+        specialPayload,
+      );
 
       expect(mockMessageService.createOrAppend).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -399,7 +408,7 @@ describe('WebhooksService', () => {
 
       for (const testCase of testCases) {
         mockSession.withTransaction.mockImplementation(async (callback) => {
-          await callback();
+          await callback(mockSession);
           return {};
         });
 
@@ -438,7 +447,7 @@ describe('WebhooksService', () => {
 
     it('should handle bot reply successfully', async () => {
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -499,14 +508,17 @@ describe('WebhooksService', () => {
       };
 
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
       mockMessageService.createOrAppend.mockResolvedValue({} as any);
       mockOutboxService.enqueueEvent.mockResolvedValue({} as any);
 
-      const result = await service.handleBotReply(merchantId, botReplyWithoutMetadata);
+      const result = await service.handleBotReply(
+        merchantId,
+        botReplyWithoutMetadata,
+      );
 
       expect(mockMessageService.createOrAppend).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -578,7 +590,7 @@ describe('WebhooksService', () => {
 
     it('should handle transaction failure in bot reply', async () => {
       const transactionError = new Error('Bot reply transaction failed');
-      
+
       mockSession.withTransaction.mockRejectedValue(transactionError);
 
       await expect(
@@ -596,7 +608,7 @@ describe('WebhooksService', () => {
       };
 
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -627,7 +639,7 @@ describe('WebhooksService', () => {
       };
 
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -647,7 +659,7 @@ describe('WebhooksService', () => {
       };
 
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -682,7 +694,11 @@ describe('WebhooksService', () => {
           },
           processing: {
             duration: 1200,
-            steps: ['intent_analysis', 'context_retrieval', 'response_generation'],
+            steps: [
+              'intent_analysis',
+              'context_retrieval',
+              'response_generation',
+            ],
           },
           business: {
             merchantId,
@@ -693,7 +709,7 @@ describe('WebhooksService', () => {
       };
 
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -731,9 +747,9 @@ describe('WebhooksService', () => {
 
     it('should handle webhook model creation errors', async () => {
       const modelError = new Error('Webhook creation failed');
-      
+
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -750,9 +766,9 @@ describe('WebhooksService', () => {
 
     it('should handle message service errors', async () => {
       const messageError = new Error('Message service failed');
-      
+
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -770,9 +786,9 @@ describe('WebhooksService', () => {
 
     it('should handle outbox service errors', async () => {
       const outboxError = new Error('Outbox service failed');
-      
+
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -799,7 +815,7 @@ describe('WebhooksService', () => {
       };
 
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -818,7 +834,7 @@ describe('WebhooksService', () => {
       const results = await Promise.all(promises);
 
       expect(results).toHaveLength(100);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.status).toBe('accepted');
       });
 
@@ -828,9 +844,9 @@ describe('WebhooksService', () => {
 
     it('should handle concurrent bot replies', async () => {
       const merchantId = 'merchant-123';
-      
+
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 
@@ -894,7 +910,7 @@ describe('WebhooksService', () => {
       };
 
       mockSession.withTransaction.mockImplementation(async (callback) => {
-        await callback();
+        await callback(mockSession);
         return {};
       });
 

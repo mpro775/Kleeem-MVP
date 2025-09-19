@@ -16,13 +16,12 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MerchantsService } from '../merchants.service';
 import { PromptVersionService } from '../services/prompt-version.service';
 import { PromptPreviewService } from '../services/prompt-preview.service';
-import { QuickConfigDto } from '../dto/quick-config.dto';
-import { AdvancedTemplateDto } from '../dto/advanced-template.dto';
-import { PreviewPromptDto } from '../dto/preview-prompt.dto';
+import { QuickConfigDto } from '../dto/requests/quick-config.dto';
+import { AdvancedTemplateDto } from '../dto/requests/advanced-template.dto';
+import { PreviewPromptDto } from '../dto/requests/preview-prompt.dto';
 import { MerchantDocument } from '../schemas/merchant.schema';
 import { StorefrontService } from '../../storefront/storefront.service';
 import { PromptBuilderService } from '../services/prompt-builder.service'; // إذا ستستخدمها هنا
-import { buildHbsContext } from '../services/prompt-utils';
 
 @ApiTags('Merchants • Prompt')
 @Controller('merchants/:id/prompt')
@@ -40,7 +39,7 @@ export class MerchantPromptController {
   @ApiResponse({ status: 200, type: QuickConfigDto })
   async getQuickConfig(@Param('id') id: string) {
     const m = await this.merchantSvc.findOne(id);
-    return m.quickConfig;
+    return (m as any).quickConfig as QuickConfigDto;
   }
 
   @Patch('quick-config')
@@ -60,9 +59,10 @@ export class MerchantPromptController {
   @ApiResponse({ status: 200, type: AdvancedTemplateDto })
   async getAdvancedTemplate(@Param('id') id: string) {
     const m = await this.merchantSvc.findOne(id);
+    const merchantDoc = m as any;
     return {
-      template: m.currentAdvancedConfig.template,
-      note: m.currentAdvancedConfig.note,
+      template: merchantDoc.currentAdvancedConfig.template as string,
+      note: merchantDoc.currentAdvancedConfig.note as string,
     };
   }
 
@@ -103,7 +103,8 @@ export class MerchantPromptController {
     const m = await this.merchantSvc.findOne(id);
 
     // 1) خذ نسخة Plain من المستند
-    const base = m.toObject ? m.toObject() : (m as any);
+    const merchantDoc = m as any;
+    const base = merchantDoc.toObject ? merchantDoc.toObject() : merchantDoc;
 
     // 2) ادمج quickConfig القادم من الفرونت (بدون حفظ)
     const mergedConfig = {
@@ -140,8 +141,9 @@ export class MerchantPromptController {
   @ApiResponse({ status: 200, schema: { example: { prompt: '...' } } })
   async finalPrompt(@Param('id') id: string) {
     const m = await this.merchantSvc.findOne(id);
-    if (!m.finalPromptTemplate)
+    const merchantDoc = m as any;
+    if (!merchantDoc.finalPromptTemplate)
       throw new BadRequestException('Final prompt not configured');
-    return { prompt: m.finalPromptTemplate };
+    return { prompt: merchantDoc.finalPromptTemplate };
   }
 }

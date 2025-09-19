@@ -6,8 +6,8 @@ import {
   Injectable,
   ForbiddenException,
 } from '@nestjs/common';
-import { MerchantDocument } from 'src/modules/merchants/schemas/merchant.schema';
-import { PlanTier } from 'src/modules/merchants/schemas/subscription-plan.schema';
+import { MerchantDocument } from '../../modules/merchants/schemas/merchant.schema';
+import { PlanTier } from '../../modules/merchants/schemas/subscription-plan.schema';
 
 @Injectable()
 export class TrialGuard implements CanActivate {

@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Inject, Injectable } from '@nestjs/common';
 import { BotRuntimeSettings } from './botRuntimeSettings.schema';
 import { UpdateBotRuntimeSettingsDto } from './dto/update-settings.dto';
+import { SETTINGS_REPOSITORY } from './tokens';
+import { SettingsRepository } from './repositories/settings.repository';
 
 @Injectable()
 export class SettingsService {
@@ -11,18 +11,17 @@ export class SettingsService {
   private TTL = 10_000; // 10s
 
   constructor(
-    @InjectModel(BotRuntimeSettings.name)
-    private readonly model: Model<BotRuntimeSettings>,
+    @Inject(SETTINGS_REPOSITORY)
+    private readonly repo: SettingsRepository,
   ) {}
 
   async get(): Promise<BotRuntimeSettings> {
     const now = Date.now();
     if (this.cache && now - this.cacheAt < this.TTL) return this.cache;
 
-    let doc = await this.model.findOne().lean<BotRuntimeSettings>();
+    let doc = await this.repo.findOneLean();
     if (!doc) {
-      // أنشئ بوثيقة افتراضية واحدة فقط
-      doc = (await this.model.create({})).toObject();
+      doc = await this.repo.create({} as Partial<BotRuntimeSettings>);
     }
     this.cache = doc;
     this.cacheAt = now;
@@ -30,21 +29,18 @@ export class SettingsService {
   }
 
   cached(): BotRuntimeSettings {
-    // قديمة/منتهية؟ لا بأس، للاستخدامات السريعة
     return this.cache || ({} as BotRuntimeSettings);
   }
 
   async update(dto: UpdateBotRuntimeSettingsDto) {
-    const doc = await this.model.findOne();
-    if (!doc) {
-      const created = await this.model.create(dto);
-      this.cache = created.toObject() as BotRuntimeSettings;
-      this.cacheAt = Date.now();
-      return this.cache;
+    const existing = await this.repo.findOneLean();
+    let updated: BotRuntimeSettings;
+    if (!existing) {
+      updated = await this.repo.create(dto as any);
+    } else {
+      updated = await this.repo.findOneAndUpdate(dto as any);
     }
-    Object.assign(doc, dto);
-    await doc.save();
-    this.cache = doc.toObject() as BotRuntimeSettings;
+    this.cache = updated;
     this.cacheAt = Date.now();
     return this.cache;
   }

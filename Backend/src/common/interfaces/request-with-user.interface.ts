@@ -8,7 +8,7 @@ export interface JwtPayload {
 }
 
 export interface RequestWithUser extends Request {
-  user?: JwtPayload; // من JwtAuthGuard(passport)
+  user?: JwtPayload;
   authUser?: {
     _id: any;
     role: 'ADMIN' | 'MERCHANT' | 'MEMBER';
@@ -22,3 +22,6 @@ export interface RequestWithUser extends Request {
     deletedAt?: Date | null;
   } | null;
 }
+
+// ✅ Alias للتوافق مع الاسم الذي قد تتوقعه الاختبارات
+export type RequestWithUserInterface = RequestWithUser;

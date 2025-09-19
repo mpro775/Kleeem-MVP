@@ -1,37 +1,67 @@
 # syntax=docker/dockerfile:1.7
 
-########### تبعيات الإنتاج فقط ###########
-FROM node:20-alpine AS deps-prod
+########### مرحلة البناء ###########
+FROM node:20-alpine AS build
 WORKDIR /app
-RUN apk add --no-cache libc6-compat
-COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
 
-########### تبعيات التطوير (لبناء TypeScript) ###########
-FROM node:20-alpine AS deps-dev
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci && npm cache clean --force
+# تثبيت التبعيات الأساسية
+RUN apk add --no-cache \
+    libc6-compat \
+    python3 \
+    make \
+    g++ \
+    curl
 
-########### البناء ###########
-FROM node:20-alpine AS builder
-WORKDIR /app
-# لازم package*.json هنا علشان npm run build
+# تحسين الكاش - نسخ package.json أولاً
 COPY package*.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev=false && npm cache clean --force
 COPY tsconfig*.json nest-cli.json ./
-COPY src ./src
-COPY --from=deps-dev /app/node_modules ./node_modules
-# لو تحتاج أوامر قبل البناء (مثلاً prisma generate) ضعها هنا
-# RUN npm run prisma:generate
-RUN npm run build -- --webpack=false
+# نسخ الكود المصدري
+COPY . .
 
-########### التشغيل (صورة نهائية صغيرة) ###########
-FROM node:20-alpine AS runner
+
+# إعداد متغير البيئة للبناء
+ARG NODE_ENV=production
+ENV NODE_ENV=$NODE_ENV
+
+# بناء التطبيق وحذف dev dependencies
+RUN npm run build && npm prune --omit=dev
+
+########### مرحلة التشغيل ###########
+FROM node:20-alpine AS runtime
 WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=deps-prod /app/node_modules ./node_modules
-COPY --from=builder  /app/dist        ./dist
-COPY package*.json ./
+
+# إعداد متغيرات البيئة
+ENV NODE_ENV=production \
+    PORT=3000 \
+    TZ=Asia/Riyadh
+
+# تثبيت الأدوات الأساسية
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    wget \
+    ca-certificates \
+    && update-ca-certificates
+
+# إنشاء مستخدم غير جذري
 RUN addgroup -S app && adduser -S app -G app
+
+# نسخ الملفات من مرحلة البناء
+COPY --from=build --chown=app:app /app/dist ./dist
+COPY --from=build --chown=app:app /app/node_modules ./node_modules
+COPY --from=build --chown=app:app /app/package*.json ./
+
+# إعداد فحص الصحة
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:${PORT}/api/health || exit 1
+
+# فتح المنفذ
+EXPOSE 3000
+
+# تشغيل كمستخدم غير جذري
 USER app
+
+# تشغيل نظيف مع معالجة الإشارات
+ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "dist/main.js"]

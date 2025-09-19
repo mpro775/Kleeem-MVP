@@ -45,20 +45,7 @@ export const SecurityMetricsProviders = [
     labelNames: ['provider', 'event_type', 'result'],
   }),
 
-  // Cache metrics
-  makeCounterProvider({
-    name: 'cache_operations_total',
-    help: 'Total cache operations',
-    labelNames: ['operation', 'result', 'cache_type'],
-  }),
-
   // Response time percentiles
-  makeHistogramProvider({
-    name: 'http_request_duration_p95_seconds',
-    help: 'HTTP request duration P95 in seconds',
-    labelNames: ['method', 'route', 'status_code'],
-    buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
-  }),
 ];
 
 @Injectable()
@@ -74,10 +61,6 @@ export class SecurityMetrics {
     private readonly rateLimitExceeded: Counter<string>,
     @InjectMetric('webhook_security_events_total')
     private readonly webhookSecurityEvents: Counter<string>,
-    @InjectMetric('cache_operations_total')
-    private readonly cacheOperations: Counter<string>,
-    @InjectMetric('http_request_duration_p95_seconds')
-    private readonly httpDurationP95: Histogram<string>,
   ) {}
 
   // Security Events
@@ -135,27 +118,5 @@ export class SecurityMetrics {
     result: 'success' | 'failure',
   ) {
     this.webhookSecurityEvents.inc({ provider, event_type: eventType, result });
-  }
-
-  // Cache Operations
-  recordCacheOperation(
-    operation: 'get' | 'set' | 'del' | 'exists',
-    result: 'hit' | 'miss' | 'success' | 'failure',
-    cacheType: 'redis' | 'memory' | 'session',
-  ) {
-    this.cacheOperations.inc({ operation, result, cache_type: cacheType });
-  }
-
-  // HTTP Duration P95
-  recordHttpDuration(
-    method: string,
-    route: string,
-    statusCode: number,
-    durationSeconds: number,
-  ) {
-    this.httpDurationP95.observe(
-      { method, route, status_code: statusCode.toString() },
-      durationSeconds,
-    );
   }
 }

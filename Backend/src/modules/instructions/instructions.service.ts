@@ -1,14 +1,12 @@
-// src/modules/instructions/instructions.service.ts
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Instruction, InstructionDocument } from './schemas/instruction.schema';
-import { Model, Types } from 'mongoose';
+import { Injectable, Inject } from '@nestjs/common';
+import { Instruction } from './schemas/instruction.schema';
+import { InstructionsRepository } from './repositories/instructions.repository';
 
 @Injectable()
 export class InstructionsService {
   constructor(
-    @InjectModel(Instruction.name)
-    private instructionModel: Model<InstructionDocument>,
+    @Inject('InstructionsRepository')
+    private readonly repo: InstructionsRepository,
   ) {}
 
   async create(instruction: {
@@ -17,68 +15,50 @@ export class InstructionsService {
     relatedReplies?: string[];
     type?: 'auto' | 'manual';
   }) {
-    const { merchantId, ...rest } = instruction;
-    return this.instructionModel.create({
-      ...rest,
-      merchantId: merchantId ? new Types.ObjectId(merchantId) : undefined,
-      type: instruction.type || 'auto',
+    // نفس العقد السابق لكن عبر الـ Repository
+    return this.repo.create({
+      merchantId: instruction.merchantId,
+      instruction: instruction.instruction,
+      relatedReplies: instruction.relatedReplies,
+      type: instruction.type ?? 'auto',
       active: true,
     });
   }
-  async findAll({
-    merchantId,
-    active,
-    limit = 30,
-    page = 1,
-  }: {
+
+  async findAll(params: {
     merchantId?: string;
     active?: boolean;
     limit?: number;
     page?: number;
   }) {
-    const filter: any = {};
-    if (merchantId) filter.merchantId = new Types.ObjectId(merchantId);
-    if (typeof active === 'boolean') filter.active = active;
-    return this.instructionModel
-      .find(filter)
-      .limit(limit)
-      .skip((page - 1) * limit)
-      .sort({ updatedAt: -1 })
-      .lean();
+    return this.repo.findAll(params);
   }
 
   async findOne(id: string) {
-    return this.instructionModel.findById(id).lean();
+    return this.repo.findById(id);
   }
 
   async update(id: string, data: Partial<Instruction>) {
-    return this.instructionModel.findByIdAndUpdate(id, data, { new: true });
+    return this.repo.updateById(id, data);
   }
 
   async remove(id: string) {
-    return this.instructionModel.findByIdAndDelete(id);
+    return this.repo.deleteById(id);
   }
 
   async deactivate(id: string) {
-    return this.instructionModel.findByIdAndUpdate(
-      id,
-      { active: false },
-      { new: true },
-    );
+    return this.repo.setActive(id, false);
   }
 
   async activate(id: string) {
-    return this.instructionModel.findByIdAndUpdate(
-      id,
-      { active: true },
-      { new: true },
-    );
+    return this.repo.setActive(id, true);
   }
 
-  // جلب التوجيهات الفعالة فقط لتكوين البرومبت
+  // جلب التوجيهات الفعّالة فقط لتكوين البرومبت
   async getActiveInstructions(merchantId?: string) {
-    const filter: any = { active: true };
-    if (merchantId) filter.merchantId = new Types.ObjectId(merchantId);
-    return this.instructionModel.find(filter).sort({ updatedAt: -1 }).lean();
+    return this.repo.getActiveInstructions(merchantId);
+  }
+  async getCurrentInstructions(merchantId: string) {
+    return { system: 'default', merchantId };
   }
 }

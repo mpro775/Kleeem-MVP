@@ -23,10 +23,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { MerchantsService } from './merchants.service';
-import { CreateMerchantDto } from './dto/create-merchant.dto';
-import { UpdateMerchantDto } from './dto/update-merchant.dto';
+
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RequestWithUser } from '../../common/interfaces/request-with-user.interface';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -38,20 +36,20 @@ import {
   ApiForbiddenResponse,
   ApiNotFoundResponse,
 } from '@nestjs/swagger';
-import { Public } from 'src/common/decorators/public.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
 } from '../../common';
-import {
-  ChecklistGroup,
-  MerchantChecklistService,
-} from './merchant-checklist.service';
-import { OnboardingBasicDto } from './dto/onboarding-basic.dto';
+import { MerchantChecklistService } from './merchant-checklist.service';
+import { ChecklistGroup } from './types/merchant-checklist.service.types';
+import { OnboardingBasicDto } from './dto/requests/onboarding-basic.dto';
 import {
   ProductSource,
   UpdateProductSourceDto,
-} from './dto/update-product-source.dto';
+} from './dto/requests/update-product-source.dto';
+import { CreateMerchantDto } from './dto/requests/create-merchant.dto';
+import { UpdateMerchantDto } from './dto/requests/update-merchant.dto';
 import { unlink } from 'fs/promises';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectModel, ParseObjectIdPipe } from '@nestjs/mongoose';
@@ -60,9 +58,10 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CatalogService } from '../catalog/catalog.service';
-import { OutboxService } from 'src/common/outbox/outbox.service';
+import { OutboxService } from '../../common/outbox/outbox.service';
 import { CurrentUser, CurrentUserId, CurrentMerchantId } from '../../common';
 import type { Role } from '../../common/interfaces/jwt-payload.interface';
+import { TranslationService } from '../../common/services/translation.service';
 const SLUG_RE = /^[a-z](?:[a-z0-9-]{1,48}[a-z0-9])$/;
 class SoftDeleteDto {
   reason?: string;
@@ -71,9 +70,12 @@ function assertOwnerOrAdmin(
   merchantIdParam: string,
   jwtMerchantId: string | null,
   role: Role | string,
+  translationService?: TranslationService,
 ) {
   if (role !== 'ADMIN' && merchantIdParam !== String(jwtMerchantId)) {
-    throw new HttpException('ممنوع', HttpStatus.FORBIDDEN);
+    const message =
+      translationService?.translate('auth.errors.forbidden') ?? 'ممنوع';
+    throw new HttpException(message, HttpStatus.FORBIDDEN);
   }
 }
 class ForceDeleteDto {
@@ -92,12 +94,19 @@ export class MerchantsController {
     private readonly notifications: NotificationsService,
     private readonly catalog: CatalogService,
     private readonly outbox: OutboxService,
+    private readonly translationService: TranslationService,
   ) {}
 
   @Post()
-  @ApiOperation({ summary: 'إنشاء تاجر جديد مع الإعدادات الأولية' })
+  @ApiOperation({
+    summary: 'i18n:products.operations.create.summary',
+    description: 'i18n:products.operations.create.description',
+  })
   @ApiBody({ type: CreateMerchantDto })
-  @CommonApiCreatedResponse(CreateMerchantDto, 'تم إنشاء التاجر بنجاح')
+  @CommonApiCreatedResponse(
+    CreateMerchantDto,
+    'i18n:merchants.messages.created',
+  )
   create(@Body() dto: CreateMerchantDto) {
     return this.svc.create(dto);
   }
@@ -106,18 +115,27 @@ export class MerchantsController {
   @Get('check-public-slug') // ← ضع هذا قبل أي ':id'
   async checkPublicSlug(@Query('slug') slug: string) {
     if (!slug || !SLUG_RE.test(slug)) {
-      throw new BadRequestException('سلاج غير صالح');
+      throw new BadRequestException('i18n:merchants.errors.invalidSlug');
     }
     const exists = await this.svc.existsByPublicSlug(slug);
     return { available: !exists };
   }
   @Put(':id/soft-delete')
-  @ApiOperation({ summary: 'حذف ناعم للتاجر (تعطيل + تمييز بالحذف)' })
+  @ApiOperation({
+    summary: 'i18n:merchants.operations.delete.summary',
+    description: 'i18n:merchants.operations.delete.description',
+  })
   @ApiParam({ name: 'id', description: 'معرف التاجر' })
   @ApiBody({ type: SoftDeleteDto, required: false })
-  @ApiOkResponse({ description: 'تم التعطيل والحذف الناعم' })
-  @ApiUnauthorizedResponse({ description: 'التوثيق مطلوب' })
-  @ApiForbiddenResponse({ description: 'غير مخوّل' })
+  @ApiOkResponse({
+    description: 'i18n:merchants.messages.softDeleted',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'i18n:auth.errors.unauthorized',
+  })
+  @ApiForbiddenResponse({
+    description: 'i18n:auth.errors.forbidden',
+  })
   async softDelete(
     @Param('id') id: string,
     @Body() body: SoftDeleteDto,
@@ -128,11 +146,20 @@ export class MerchantsController {
   }
 
   @Put(':id/restore')
-  @ApiOperation({ summary: 'استرجاع التاجر بعد الحذف الناعم' })
+  @ApiOperation({
+    summary: 'i18n:merchants.operations.restore.summary',
+    description: 'i18n:merchants.operations.restore.description',
+  })
   @ApiParam({ name: 'id', description: 'معرف التاجر' })
-  @ApiOkResponse({ description: 'تم الاسترجاع' })
-  @ApiUnauthorizedResponse({ description: 'التوثيق مطلوب' })
-  @ApiForbiddenResponse({ description: 'غير مخوّل' })
+  @ApiOkResponse({
+    description: 'i18n:merchants.messages.restored',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'i18n:auth.errors.unauthorized',
+  })
+  @ApiForbiddenResponse({
+    description: 'i18n:auth.errors.forbidden',
+  })
   async restore(
     @Param('id') id: string,
     @CurrentUser()
@@ -141,13 +168,24 @@ export class MerchantsController {
     return this.svc.restore(id, user);
   }
   @Post(':id/purge')
-  @ApiOperation({ summary: 'حذف إجباري + تنظيف كامل (للمشرف فقط)' })
+  @ApiOperation({
+    summary: 'i18n:merchants.operations.permanentDelete.summary',
+    description: 'i18n:merchants.operations.permanentDelete.description',
+  })
   @ApiParam({ name: 'id', description: 'معرف التاجر' })
   @ApiBody({ type: ForceDeleteDto, required: false })
-  @ApiOkResponse({ description: 'تم الحذف النهائي والتنظيف الكامل' })
-  @ApiNotFoundResponse({ description: 'التاجر غير موجود' })
-  @ApiForbiddenResponse({ description: 'غير مخوّل' })
-  @ApiUnauthorizedResponse({ description: 'التوثيق مطلوب' })
+  @ApiOkResponse({
+    description: 'i18n:merchants.messages.permanentlyDeleted',
+  })
+  @ApiNotFoundResponse({
+    description: 'i18n:merchants.errors.notFound',
+  })
+  @ApiForbiddenResponse({
+    description: 'i18n:auth.errors.forbidden',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'i18n:auth.errors.unauthorized',
+  })
   async purge(
     @Param('id') id: string,
     @CurrentUser() user: { userId: string; role: Role },
@@ -161,24 +199,41 @@ export class MerchantsController {
     return this.svc.findOne(id);
   }
   @Get()
-  @ApiOperation({ summary: 'جلب جميع التجار' })
-  @ApiSuccessResponse(Array, 'قائمة التجار')
+  @ApiOperation({
+    summary: 'i18n:merchants.operations.list.summary',
+    description: 'i18n:merchants.operations.list.description',
+  })
+  @ApiSuccessResponse(Array, 'i18n:merchants.operations.list.description')
   findAll() {
     return this.svc.findAll();
   }
 
   @Get(':id/checklist')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'جلب قائمة العناصر في قائمة التحقق' })
-  @ApiOkResponse({ description: 'قائمة العناصر في قائمة التحقق' })
-  @ApiForbiddenResponse({ description: 'غير مخوّل' })
-  @ApiUnauthorizedResponse({ description: 'التوثيق مطلوب' })
+  @ApiOperation({
+    summary: 'i18n:merchants.operations.checklist.summary',
+    description: 'i18n:merchants.operations.checklist.description',
+  })
+  @ApiOkResponse({
+    description: 'i18n:merchants.operations.checklist.description',
+  })
+  @ApiForbiddenResponse({
+    description: 'i18n:auth.errors.forbidden',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'i18n:auth.errors.unauthorized',
+  })
   async getChecklist(
     @Param('id') merchantId: string,
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { role: Role },
   ): Promise<ChecklistGroup[]> {
-    assertOwnerOrAdmin(merchantId, jwtMerchantId, user.role);
+    assertOwnerOrAdmin(
+      merchantId,
+      jwtMerchantId,
+      user.role,
+      this.translationService,
+    );
     return this.checklist.getChecklist(merchantId);
   }
 
@@ -190,8 +245,11 @@ export class MerchantsController {
   }
 
   @Post(':id/logo')
-  @ApiOperation({ summary: 'رفع شعار التاجر كملف (MinIO + حذف مؤقت)' })
-  @ApiParam({ name: 'id', description: 'معرّف التاجر' })
+  @ApiOperation({
+    summary: 'i18n:merchants.operations.uploadLogo.summary',
+    description: 'i18n:merchants.operations.uploadLogo.description',
+  })
+  @ApiParam({ name: 'id', description: 'معرف التاجر' })
   @UseInterceptors(FileInterceptor('file')) // ← يعتمد على MulterModule.register({ dest: './uploads' })
   async uploadLogo(
     @Param('id') id: string,
@@ -199,9 +257,10 @@ export class MerchantsController {
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { role: Role },
   ) {
-    assertOwnerOrAdmin(id, jwtMerchantId, user.role);
+    assertOwnerOrAdmin(id, jwtMerchantId, user.role, this.translationService);
 
-    if (!file) throw new BadRequestException('لم يتم إرفاق ملف');
+    if (!file)
+      throw new BadRequestException('i18n:merchants.errors.noFileAttached');
     const allowed = ['image/png', 'image/jpeg', 'image/webp'];
     const maxBytes = 2 * 1024 * 1024;
 
@@ -209,25 +268,34 @@ export class MerchantsController {
       try {
         await unlink(file.path);
       } catch {}
-      throw new BadRequestException('صيغة الصورة غير مدعومة (PNG/JPG/WEBP)');
+      throw new BadRequestException('i18n:merchants.errors.fileNotSupported');
     }
     if (file.size > maxBytes) {
       try {
         await unlink(file.path);
       } catch {}
-      throw new BadRequestException('الحجم الأقصى 2MB');
+      throw new BadRequestException('i18n:merchants.errors.fileTooLarge');
     }
 
     const url = await this.svc.uploadLogoToMinio(id, file);
     return { url };
   }
   @Put(':id')
-  @ApiOperation({ summary: 'تحديث بيانات التاجر بالكامل' })
-  @ApiParam({ name: 'id', description: 'معرّف التاجر' })
+  @ApiOperation({
+    summary: 'i18n:merchants.operations.update.summary',
+    description: 'i18n:merchants.operations.update.description',
+  })
+  @ApiParam({ name: 'id', description: 'معرف التاجر' })
   @ApiBody({ type: UpdateMerchantDto })
-  @ApiOkResponse({ description: 'تم التحديث بنجاح' })
-  @ApiNotFoundResponse({ description: 'التاجر غير موجود' })
-  @ApiForbiddenResponse({ description: 'غير مخوّل' })
+  @ApiOkResponse({
+    description: 'i18n:merchants.messages.updated',
+  })
+  @ApiNotFoundResponse({
+    description: 'i18n:merchants.errors.notFound',
+  })
+  @ApiForbiddenResponse({
+    description: 'i18n:auth.errors.forbidden',
+  })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateMerchantDto,
@@ -235,9 +303,10 @@ export class MerchantsController {
     @CurrentUser() user: { role: Role },
   ) {
     const merchant = await this.svc.findOne(id);
-    if (!merchant) throw new NotFoundException('التاجر غير موجود');
+    if (!merchant)
+      throw new NotFoundException('i18n:merchants.errors.notFound');
 
-    assertOwnerOrAdmin(id, jwtMerchantId, user.role);
+    assertOwnerOrAdmin(id, jwtMerchantId, user.role, this.translationService);
 
     // (اختياري) لوج محلي بدون req:
     this.logger.debug('DTO keys = %o', Object.keys(dto as any));
@@ -245,25 +314,39 @@ export class MerchantsController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'حذف التاجر' })
-  @ApiParam({ name: 'id', description: 'معرّف التاجر' })
-  @ApiOkResponse({ description: 'تم الحذف بنجاح' })
-  @ApiNotFoundResponse({ description: 'التاجر غير موجود' })
-  @ApiForbiddenResponse({ description: 'غير مخوّل' })
-  @ApiUnauthorizedResponse({ description: 'التوثيق مطلوب' })
+  @ApiOperation({
+    summary: 'i18n:merchants.operations.delete.summary',
+    description: 'i18n:merchants.operations.delete.description',
+  })
+  @ApiParam({ name: 'id', description: 'معرف التاجر' })
+  @ApiOkResponse({
+    description: 'i18n:merchants.messages.deleted',
+  })
+  @ApiNotFoundResponse({
+    description: 'i18n:merchants.errors.notFound',
+  })
+  @ApiForbiddenResponse({
+    description: 'i18n:auth.errors.forbidden',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'i18n:auth.errors.unauthorized',
+  })
   async remove(
     @Param('id') id: string,
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { userId: string; role: Role },
   ) {
-    assertOwnerOrAdmin(id, jwtMerchantId, user.role);
+    assertOwnerOrAdmin(id, jwtMerchantId, user.role, this.translationService);
     // نفّذ الحذف الناعم بدل الصلب لأمان وتوافق
     return this.svc.softDelete(id, user, 'via DELETE /merchants/:id');
   }
 
   @Get(':id/subscription-status')
-  @ApiOperation({ summary: 'التحقق من صلاحية الاشتراك الحالي' })
-  @ApiParam({ name: 'id', description: 'معرّف التاجر' })
+  @ApiOperation({
+    summary: 'i18n:merchants.operations.verifySubscription.summary',
+    description: 'i18n:merchants.operations.verifySubscription.description',
+  })
+  @ApiParam({ name: 'id', description: 'معرف التاجر' })
   @ApiOkResponse({
     schema: {
       example: { merchantId: '...', subscriptionActive: true },
@@ -276,7 +359,7 @@ export class MerchantsController {
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { role: Role },
   ) {
-    assertOwnerOrAdmin(id, jwtMerchantId, user.role);
+    assertOwnerOrAdmin(id, jwtMerchantId, user.role, this.translationService);
     return this.svc.isSubscriptionActive(id).then((active) => ({
       merchantId: id,
       subscriptionActive: active,
@@ -284,11 +367,18 @@ export class MerchantsController {
   }
 
   @Post(':id/checklist/:itemKey/skip')
-  @ApiOperation({ summary: 'تخطي عنصر في قائمة التحقق' })
-  @ApiParam({ name: 'id', description: 'معرّف التاجر' })
-  @ApiParam({ name: 'itemKey', description: 'معرّف العنصر' })
-  @ApiOkResponse({ description: 'تم تخطي العنصر بنجاح' })
-  @ApiNotFoundResponse({ description: 'التاجر غير موجود' })
+  @ApiOperation({
+    summary: 'i18n:merchants.operations.skipChecklistItem.summary',
+    description: 'i18n:merchants.operations.skipChecklistItem.description',
+  })
+  @ApiParam({ name: 'id', description: 'معرف التاجر' })
+  @ApiParam({ name: 'itemKey', description: 'معرف العنصر' })
+  @ApiOkResponse({
+    description: 'i18n:merchants.checklist.messages.itemSkipped',
+  })
+  @ApiNotFoundResponse({
+    description: 'i18n:merchants.errors.notFound',
+  })
   async skipChecklistItem(
     @Param('id') merchantId: string,
     @Param('itemKey') itemKey: string,
@@ -296,39 +386,48 @@ export class MerchantsController {
   ) {
     // تحقق أن المستخدم مالك المتجر
     if (jwtMerchantId !== merchantId) {
-      throw new HttpException('ممنوع', HttpStatus.FORBIDDEN);
+      throw new HttpException(
+        'i18n:auth.errors.forbidden',
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     // أضف الـ key إلى skippedChecklistItems إن لم يكن موجودًا
     const merchant = await this.svc.findOne(merchantId);
-    if (!merchant) throw new NotFoundException('التاجر غير موجود');
+    if (!merchant)
+      throw new NotFoundException('i18n:merchants.errors.notFound');
 
-    if (!merchant.skippedChecklistItems.includes(itemKey)) {
-      merchant.skippedChecklistItems.push(itemKey);
-      await merchant.save();
+    const merchantDoc = merchant as any;
+    if (!merchantDoc.skippedChecklistItems.includes(itemKey)) {
+      merchantDoc.skippedChecklistItems.push(itemKey);
+      await merchantDoc.save();
     }
 
     return {
-      message: 'تم التخطي',
-      skippedChecklistItems: merchant.skippedChecklistItems,
+      message: 'i18n:merchants.checklist.messages.itemSkipped',
+      skippedChecklistItems: merchantDoc.skippedChecklistItems,
     };
   }
 
   @Patch(':id/onboarding/basic')
   @ApiOperation({ summary: 'حفظ معلومات onboarding الأساسية' })
-  @ApiParam({ name: 'id', description: 'معرّف التاجر' })
+  @ApiParam({ name: 'id', description: 'معرف التاجر' })
   @ApiBody({ type: OnboardingBasicDto })
   @ApiOkResponse({ description: 'تم حفظ معلومات onboarding بنجاح' })
-  @ApiNotFoundResponse({ description: 'التاجر غير موجود' })
+  @ApiNotFoundResponse({
+    description: 'i18n:merchants.errors.notFound',
+  })
   saveBasic(@Param('id') id: string, @Body() dto: OnboardingBasicDto) {
     return this.svc.saveBasicInfo(id, dto);
   }
 
   @Post(':id/workflow/ensure')
   @ApiOperation({ summary: 'إنشاء أو تحديث workflow للتاجر' })
-  @ApiParam({ name: 'id', description: 'معرّف التاجر' })
+  @ApiParam({ name: 'id', description: 'معرف التاجر' })
   @ApiOkResponse({ description: 'تم إنشاء أو تحديث workflow بنجاح' })
-  @ApiNotFoundResponse({ description: 'التاجر غير موجود' })
+  @ApiNotFoundResponse({
+    description: 'i18n:merchants.errors.notFound',
+  })
   async ensureWorkflow(@Param('id') id: string) {
     const wfId = await this.svc.ensureWorkflow(id);
     return { workflowId: wfId };
@@ -337,9 +436,11 @@ export class MerchantsController {
   @Public()
   @Get(':id/ai/store-context')
   @ApiOperation({ summary: 'جلب سياق المتجر' })
-  @ApiParam({ name: 'id', description: 'معرّف التاجر' })
+  @ApiParam({ name: 'id', description: 'معرف التاجر' })
   @ApiOkResponse({ description: 'تم جلب سياق المتجر بنجاح' })
-  @ApiNotFoundResponse({ description: 'التاجر غير موجود' })
+  @ApiNotFoundResponse({
+    description: 'i18n:merchants.errors.notFound',
+  })
   async aiStoreContext(@Param('id') id: string) {
     return this.svc.getStoreContext(id);
   }
@@ -347,7 +448,7 @@ export class MerchantsController {
   @ApiOperation({
     summary: 'تعيين مصدر المنتج (مع تأكيد كلمة المرور واختيار وضع المزامنة)',
   })
-  @ApiParam({ name: 'id', description: 'معرّف التاجر' })
+  @ApiParam({ name: 'id', description: 'معرف التاجر' })
   @ApiBody({ type: UpdateProductSourceDto })
   @ApiOkResponse({ description: 'تم التبديل وربما بدأت المزامنة' })
   @Patch(':id/product-source')
@@ -358,21 +459,32 @@ export class MerchantsController {
     @CurrentUserId() userId: string, // ✅ كان مفقود
     @CurrentUser() user: { role: Role }, // لدور ADMIN
   ) {
-    assertOwnerOrAdmin(merchantId, jwtMerchantId, user.role);
+    assertOwnerOrAdmin(
+      merchantId,
+      jwtMerchantId,
+      user.role,
+      this.translationService,
+    );
 
     // اجلب المستخدم للتحقق من كلمة المرور
     const account = await this.userModel
       .findById(userId)
       .select('+password role email name')
       .exec();
-    if (!account) throw new BadRequestException('User not found');
+    if (!account)
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.userNotFound'),
+      );
 
     // نطلب كلمة المرور إذا كان المصدر ليس INTERNAL أو عند sync فوري
     if (dto.source !== ProductSource.INTERNAL || dto.syncMode === 'immediate') {
       if (!dto.confirmPassword)
         throw new BadRequestException('كلمة المرور مطلوبة للتأكيد');
       const ok = await bcrypt.compare(dto.confirmPassword, account.password);
-      if (!ok) throw new BadRequestException('كلمة المرور غير صحيحة');
+      if (!ok)
+        throw new BadRequestException(
+          this.translationService.translate('auth.errors.invalidCredentials'),
+        );
     }
 
     // 1) بدّل المصدر

@@ -1,9 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { ConfigService } from '@nestjs/config';
 import { io as SocketClient, Socket } from 'socket.io-client';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 
 describe('Merchant Complete Journey (E2E)', () => {
@@ -17,6 +16,13 @@ describe('Merchant Complete Journey (E2E)', () => {
     password: 'SecurePass123!',
     businessName: 'Test Store',
     phoneNumber: '+966501234567',
+  };
+
+  const customerData = {
+    name: 'Ahmed Al-Rashid',
+    email: 'ahmed@customer.com',
+    phone: '+966505555555',
+    address: 'Riyadh, Saudi Arabia',
   };
 
   let accessToken: string;
@@ -201,13 +207,6 @@ describe('Merchant Complete Journey (E2E)', () => {
   });
 
   describe('4. Order Creation & Management', () => {
-    const customerData = {
-      name: 'Ahmed Al-Rashid',
-      email: 'ahmed@customer.com',
-      phone: '+966505555555',
-      address: 'Riyadh, Saudi Arabia',
-    };
-
     const orderData = {
       sessionId,
       customer: customerData,

@@ -1,0 +1,77 @@
+{
+  "validation": {
+    "required": "This field is required",
+    "string": "Must be a string",
+    "email": "Must be a valid email address",
+    "number": "Must be a number",
+    "boolean": "Must be a boolean value (true/false)",
+    "date": "Must be a valid date",
+    "url": "Must be a valid URL",
+    "phone": "Must be a valid phone number",
+    "min": "Must be greater than or equal to {value}",
+    "max": "Must be less than or equal to {value}",
+    "minLength": "Must be at least {value} characters long",
+    "maxLength": "Must be at most {value} characters long",
+    "pattern": "Invalid format",
+    "enum": "Must be one of: {values}",
+    "array": "Must be an array",
+    "arrayNotEmpty": "Array must contain at least one element",
+    "object": "Must be an object",
+    "mongoId": "Invalid identifier",
+    "matches": "Invalid format",
+    "positive": "Must be a positive number",
+    "negative": "Must be a negative number",
+    "integer": "Must be an integer",
+    "decimal": "Must be a decimal number",
+    "isIn": "Must be one of: {values}",
+    "notIn": "Cannot be one of: {values}",
+    "equals": "Must equal {value}",
+    "notEquals": "Cannot equal {value}",
+    "contains": "Must contain {value}",
+    "notContains": "Cannot contain {value}",
+    "isEmpty": "Must be empty",
+    "notEmpty": "Cannot be empty",
+
+    "custom": {
+      "strongPassword": "Password must contain uppercase, lowercase, number, and special character",
+      "validSlug": "Slug must contain only English letters, numbers, and hyphens",
+      "validPhone": "Phone number must be in valid format",
+      "validPrice": "Price must be a positive number",
+      "validQuantity": "Quantity must be a positive integer",
+      "validPercentage": "Percentage must be between 0 and 100",
+      "validUrl": "URL must be valid and use secure protocol (https)",
+      "fileSize": "File size must be less than {maxSize} MB",
+      "fileType": "File type must be one of: {types}",
+      "duplicateEntry": "This entry already exists in the system"
+    },
+
+    "fields": {
+      "name": "Name",
+      "email": "Email",
+      "password": "Password",
+      "phone": "Phone number",
+      "address": "Address",
+      "city": "City",
+      "country": "Country",
+      "description": "Description",
+      "price": "Price",
+      "quantity": "Quantity",
+      "category": "Category",
+      "image": "Image",
+      "file": "File",
+      "url": "URL",
+      "date": "Date",
+      "time": "Time"
+    },
+
+    "messages": {
+      "fieldRequired": "Field '{field}' is required",
+      "fieldInvalid": "Field '{field}' is invalid",
+      "fieldTooShort": "Field '{field}' is too short (minimum {min} characters)",
+      "fieldTooLong": "Field '{field}' is too long (maximum {max} characters)",
+      "fieldOutOfRange": "Field '{field}' is out of allowed range ({min} - {max})",
+      "invalidFormat": "Field '{field}' has invalid format",
+      "duplicateValue": "Field '{field}' value already exists"
+    }
+  }
+}

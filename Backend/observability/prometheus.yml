@@ -1,62 +1,81 @@
+# Prometheus configuration for Kaleem API
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    cluster: kaleem
+    cluster: 'kaleem-production'
+    region: 'middle-east'
 
+# قواعد التنبيه
+rule_files:
+  - 'alerts/*.yml'
+
+# إعدادات التنبيه
 alerting:
   alertmanagers:
     - static_configs:
-        - targets: ['kaleem-alertmanager:9093'] # كان alertmanager:9093
+        - targets:
+            - alertmanager:9093
 
-rule_files:
-  - /etc/prometheus/alerts/*.yml
-
+# أهداف المراقبة
 scrape_configs:
-  - job_name: 'prometheus'
+  # ===== التطبيق الرئيسي =====
+  - job_name: 'kaleem-api'
     static_configs:
-      - targets: ['localhost:9090'] # كان prometheus:9090
+      - targets: ['api:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      format: ['prometheus']
 
-  - job_name: 'rabbitmq'
+  # ===== العمال =====
+  - job_name: 'kaleem-workers'
     static_configs:
-      - targets: ['kaleem-rabbitmq:15692'] # كان rabbitmq:15692
+      - targets:
+          - 'ai-reply-worker:9101'
+          - 'webhook-dispatcher:9102'
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # ===== قواعد البيانات =====
+  - job_name: 'mongodb'
+    static_configs:
+      - targets: ['mongodb-exporter:9216']
+    scrape_interval: 30s
 
   - job_name: 'redis'
     static_configs:
-      - targets: ['kaleem-redis-exporter:9121'] # كان redis-exporter:9121
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
 
-  - job_name: 'mongodb'
+  # ===== RabbitMQ =====
+  - job_name: 'rabbitmq'
     static_configs:
-      - targets: ['kaleem-mongodb-exporter:9216'] # كان mongodb-exporter:9216
+      - targets: ['rabbitmq:15692']
+    scrape_interval: 30s
+
+  # ===== النظام =====
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
 
   - job_name: 'cadvisor'
     static_configs:
-      - targets: ['kaleem-cadvisor:8080'] # كان cadvisor:8080
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
 
-  - job_name: 'api'
-    metrics_path: /metrics
+  # ===== Prometheus نفسه =====
+  - job_name: 'prometheus'
     static_configs:
-      - targets: ['kaleem-api:3000'] # كان api:3000
+      - targets: ['localhost:9090']
+    scrape_interval: 60s
 
-  - job_name: 'ai-reply-worker'
-    metrics_path: /metrics
-    static_configs:
-      - targets: ['kaleem-ai-reply:9101'] # كان ai-reply-worker:9101
-
-  - job_name: 'webhook-dispatcher'
-    metrics_path: /metrics
-    static_configs:
-      - targets: ['kaleem-webhook-dispatcher:9102'] # كان webhook-dispatcher:9102
-
-  - job_name: 'indexing-worker'
-    metrics_path: /metrics
-    static_configs:
-      - targets: ['kaleem-indexing:9103'] # كان indexing-worker:9103
-
+  # ===== OpenTelemetry Collector =====
   - job_name: 'otel-collector'
     static_configs:
       - targets: ['otel-collector:8889']
-
-  - job_name: 'node'
-    static_configs:
-      - targets: ['kaleem-node-exporter:9100']
+    scrape_interval: 30s
+# إعدادات التخزين (handled via command line args in docker-compose)

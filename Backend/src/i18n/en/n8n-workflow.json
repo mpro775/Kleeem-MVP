@@ -1,0 +1,67 @@
+{
+  "operations": {
+    "create": {
+      "summary": "Create New Workflow",
+      "description": "Create a new N8N workflow"
+    },
+    "findAll": {
+      "summary": "Retrieve All Workflows",
+      "description": "Get list of all workflows"
+    },
+    "findOne": {
+      "summary": "Retrieve Specific Workflow",
+      "description": "Get details of specific workflow"
+    },
+    "update": {
+      "summary": "Update Workflow",
+      "description": "Update existing workflow data"
+    },
+    "remove": {
+      "summary": "Delete Workflow",
+      "description": "Permanently delete workflow"
+    },
+    "execute": {
+      "summary": "Execute Workflow",
+      "description": "Execute N8N workflow"
+    },
+    "status": {
+      "summary": "Workflow Status",
+      "description": "Check workflow execution status"
+    }
+  },
+  "responses": {
+    "success": {
+      "created": "Workflow created successfully",
+      "found": "Workflow found successfully",
+      "updated": "Workflow updated successfully",
+      "deleted": "Workflow deleted successfully",
+      "executed": "Workflow executed successfully",
+      "statusRetrieved": "Workflow status retrieved successfully"
+    },
+    "error": {
+      "notFound": "Workflow not found",
+      "badRequest": "Invalid request data",
+      "unauthorized": "Unauthorized access",
+      "forbidden": "Access forbidden",
+      "executionFailed": "Workflow execution failed",
+      "statusFailed": "Failed to retrieve workflow status"
+    }
+  },
+  "fields": {
+    "name": "Workflow Name",
+    "description": "Workflow Description",
+    "nodes": "Nodes",
+    "connections": "Connections",
+    "status": "Status",
+    "lastExecuted": "Last Executed",
+    "executionTime": "Execution Time"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "running": "Running",
+    "completed": "Completed",
+    "failed": "Failed",
+    "paused": "Paused"
+  }
+}

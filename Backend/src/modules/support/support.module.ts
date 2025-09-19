@@ -11,6 +11,8 @@ import {
 } from './schemas/support-ticket.schema';
 import { SupportController } from './support.controller';
 import * as Minio from 'minio';
+import { SUPPORT_REPOSITORY } from './tokens';
+import { SupportMongoRepository } from './repositories/support.mongo.repository';
 
 @Module({
   imports: [
@@ -21,7 +23,8 @@ import * as Minio from 'minio';
     ]),
   ],
   controllers: [SupportController],
-  providers: [SupportService,
+  providers: [
+    SupportService,
     {
       provide: 'MINIO_CLIENT',
       useFactory: () =>
@@ -33,6 +36,7 @@ import * as Minio from 'minio';
           secretKey: process.env.MINIO_SECRET_KEY!,
         }),
     },
+    { provide: SUPPORT_REPOSITORY, useClass: SupportMongoRepository },
   ],
   exports: [SupportService],
 })

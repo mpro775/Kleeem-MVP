@@ -1,4 +1,3 @@
-// src/modules/support/support.service.ts
 import {
   BadRequestException,
   Injectable,
@@ -6,25 +5,25 @@ import {
   Inject,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import {
-  SupportTicket,
-  SupportTicketDocument,
-} from './schemas/support-ticket.schema';
-import { CreateContactDto } from './dto/create-contact.dto';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import * as Minio from 'minio';
 import { unlink } from 'node:fs/promises';
+
+import { CreateContactDto } from './dto/create-contact.dto';
+import { SUPPORT_REPOSITORY } from './tokens';
+import {
+  SupportRepository,
+  SupportTicketEntity,
+} from './repositories/support.repository';
 
 @Injectable()
 export class SupportService {
   private readonly logger = new Logger(SupportService.name);
 
   constructor(
-    @InjectModel(SupportTicket.name)
-    private readonly Ticket: Model<SupportTicketDocument>,
+    @Inject(SUPPORT_REPOSITORY)
+    private readonly repo: SupportRepository,
     private readonly http: HttpService,
     @Inject('MINIO_CLIENT') private readonly minio: Minio.Client,
   ) {}
@@ -58,7 +57,6 @@ export class SupportService {
       ''
     ).replace(/\/+$/, '');
     if (cdn) return `${cdn}/${bucket}/${key}`;
-    // افتراضي آمن: رابط موقّع لمدة ساعة
     return await this.minio.presignedGetObject(bucket, key, 3600);
   }
 
@@ -78,7 +76,20 @@ export class SupportService {
     }
   }
 
-  async notifyChannels(ticket: SupportTicketDocument) {
+  async notifyChannels(
+    ticket: Pick<
+      SupportTicketEntity,
+      | '_id'
+      | 'ticketNumber'
+      | 'name'
+      | 'email'
+      | 'phone'
+      | 'topic'
+      | 'subject'
+      | 'message'
+      | 'status'
+    > & { createdAt?: Date },
+  ) {
     const title = `🎫 New Ticket: ${ticket.ticketNumber}`;
     const text = [
       `*Name:* ${ticket.name}`,
@@ -102,6 +113,7 @@ export class SupportService {
         this.logger.warn('Slack notify failed');
       }
     }
+
     if (
       process.env.SUPPORT_TELEGRAM_BOT_TOKEN &&
       process.env.SUPPORT_TELEGRAM_CHAT_ID
@@ -119,6 +131,7 @@ export class SupportService {
         this.logger.warn('Telegram notify failed');
       }
     }
+
     if (process.env.SUPPORT_N8N_WEBHOOK_URL) {
       try {
         await firstValueFrom(
@@ -132,7 +145,7 @@ export class SupportService {
             subject: ticket.subject,
             message: ticket.message,
             status: ticket.status,
-            createdAt: (ticket as any).createdAt || new Date(),
+            createdAt: ticket.createdAt || new Date(),
           }),
         );
       } catch {
@@ -155,14 +168,12 @@ export class SupportService {
 
       try {
         if (f.buffer && f.buffer.length) {
-          // memoryStorage
           await this.minio.putObject(bucket, key, f.buffer, f.buffer.length, {
             'Content-Type': f.mimetype,
             'Cache-Control': 'private, max-age=0, no-store',
           });
-        } else if (f.path) {
-          // diskStorage
-          await this.minio.fPutObject(bucket, key, f.path, {
+        } else if ((f as any).path) {
+          await this.minio.fPutObject(bucket, key, (f as any).path, {
             'Content-Type': f.mimetype,
             'Cache-Control': 'private, max-age=0, no-store',
           });
@@ -177,7 +188,7 @@ export class SupportService {
           size: f.size,
           storage: 'minio' as const,
           storageKey: key,
-          url, // ثابت عبر CDN أو موقّع لساعة
+          url,
         });
       } catch (e) {
         this.logger.error(
@@ -186,7 +197,6 @@ export class SupportService {
         );
         throw new InternalServerErrorException('SUPPORT_UPLOAD_FAILED');
       } finally {
-        // نظّف الملف المؤقت إن وُجد
         if ((f as any).path) {
           await unlink((f as any).path).catch(() => null);
         }
@@ -206,18 +216,16 @@ export class SupportService {
       source?: 'landing' | 'merchant';
     },
   ) {
-    if (dto.website) throw new BadRequestException('Spam detected');
+    if ((dto as any).website) throw new BadRequestException('Spam detected');
 
-    const ok = await this.verifyRecaptcha(dto.recaptchaToken);
+    const ok = await this.verifyRecaptcha((dto as any).recaptchaToken);
     if (!ok) throw new BadRequestException('reCAPTCHA failed');
 
     const ticketNumber = this.generateTicketNumber();
-
-    // 🔼 ارفع المرفقات إلى MinIO
     const attachments = await this.uploadFilesToMinio(ticketNumber, files);
 
-    const created = await this.Ticket.create({
-      ...dto,
+    const created = await this.repo.create({
+      ...(dto as any),
       ticketNumber,
       status: 'open',
       source: meta?.source || 'landing',
@@ -228,7 +236,7 @@ export class SupportService {
       createdBy: meta?.userId,
     });
 
-    this.notifyChannels(created).catch(() => undefined);
+    this.notifyChannels(created as any).catch(() => undefined);
     return created;
   }
 }

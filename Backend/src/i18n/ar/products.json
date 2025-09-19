@@ -1,0 +1,74 @@
+{
+  "products": {
+    "errors": {
+      "notFound": "المنتج غير موجود",
+      "outOfStock": "المنتج غير متوفر حاليًا",
+      "invalidPrice": "السعر غير صحيح",
+      "duplicateName": "اسم المنتج موجود بالفعل",
+      "invalidCategory": "الفئة غير صحيحة",
+      "insufficientStock": "الكمية المتوفرة غير كافية",
+      "invalidVariant": "المتغير غير صحيح",
+      "maxVariantsExceeded": "تم تجاوز الحد الأقصى للمتغيرات"
+    },
+    "messages": {
+      "created": "تم إنشاء المنتج بنجاح",
+      "updated": "تم تحديث المنتج بنجاح",
+      "deleted": "تم حذف المنتج بنجاح",
+      "activated": "تم تفعيل المنتج بنجاح",
+      "deactivated": "تم إلغاء تفعيل المنتج بنجاح",
+      "stockUpdated": "تم تحديث المخزون بنجاح",
+      "priceUpdated": "تم تحديث السعر بنجاح",
+      "configSaved": "تم حفظ إعدادات المنتجات بنجاح",
+      "imagesUploaded": "تم رفع الصور بنجاح",
+      "availabilityUpdated": "تم تحديث توفر المنتج بنجاح"
+    },
+    "operations": {
+      "create": {
+        "summary": "إنشاء منتج جديد (للتاجر)",
+        "description": "إنشاء منتج جديد في النظام"
+      },
+      "update": {
+        "summary": "تحديث منتج (لصاحب المنتج فقط)",
+        "description": "تحديث بيانات المنتج المحدد"
+      },
+      "delete": {
+        "summary": "حذف منتج",
+        "description": "حذف المنتج من النظام نهائياً"
+      },
+      "get": {
+        "summary": "جلب منتج واحد حسب المعرّف",
+        "description": "الحصول على تفاصيل المنتج المحدد"
+      },
+      "list": {
+        "summary": "جلب المنتجات مع cursor pagination",
+        "description": "الحصول على قائمة المنتجات مع معلومات الـ pagination"
+      },
+      "search": {
+        "summary": "البحث في المنتجات",
+        "description": "البحث في المنتجات بناءً على استعلام النص"
+      },
+      "setup": {
+        "summary": "إعداد تكوين المنتجات للتاجر",
+        "description": "إعداد الإعدادات الأساسية للمنتجات للتاجر"
+      },
+      "upload": {
+        "summary": "رفع صور المنتج",
+        "description": "رفع صور للمنتج المحدد"
+      },
+      "availability": {
+        "summary": "تحديث توفر المنتج",
+        "description": "تحديث حالة توفر المنتج"
+      }
+    },
+    "fields": {
+      "name": "اسم المنتج",
+      "description": "وصف المنتج",
+      "price": "السعر",
+      "category": "الفئة",
+      "stock": "المخزون",
+      "sku": "رمز المنتج",
+      "images": "الصور",
+      "variants": "المتغيرات"
+    }
+  }
+}

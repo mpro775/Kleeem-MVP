@@ -1,0 +1,66 @@
+{
+  "operations": {
+    "create": {
+      "summary": "Create Webhook",
+      "description": "Create a new webhook to receive notifications"
+    },
+    "findAll": {
+      "summary": "Retrieve Webhooks",
+      "description": "Retrieve list of all webhooks"
+    },
+    "findOne": {
+      "summary": "Retrieve Specific Webhook",
+      "description": "Retrieve details of a specific webhook"
+    },
+    "update": {
+      "summary": "Update Webhook",
+      "description": "Update existing webhook settings"
+    },
+    "remove": {
+      "summary": "Delete Webhook",
+      "description": "Delete a specific webhook"
+    },
+    "test": {
+      "summary": "Test Webhook",
+      "description": "Send a test request to the webhook"
+    },
+    "retry": {
+      "summary": "Retry Webhook",
+      "description": "Retry sending a failed webhook"
+    },
+    "logs": {
+      "summary": "Webhook Logs",
+      "description": "View webhook delivery logs"
+    }
+  },
+  "responses": {
+    "success": {
+      "created": "Webhook created successfully",
+      "updated": "Webhook updated successfully",
+      "deleted": "Webhook deleted successfully",
+      "tested": "Webhook test sent successfully",
+      "retried": "Webhook retried successfully"
+    },
+    "error": {
+      "notFound": "Webhook not found",
+      "invalidUrl": "Invalid URL",
+      "failed": "Webhook delivery failed",
+      "timeout": "Webhook timeout"
+    }
+  },
+  "fields": {
+    "url": "URL",
+    "events": "Events",
+    "secret": "Secret Key",
+    "status": "Status",
+    "lastTriggered": "Last Triggered",
+    "retryCount": "Retry Count"
+  },
+  "events": {
+    "orderCreated": "Order Created",
+    "orderUpdated": "Order Updated",
+    "paymentReceived": "Payment Received",
+    "productCreated": "Product Created",
+    "productUpdated": "Product Updated"
+  }
+}

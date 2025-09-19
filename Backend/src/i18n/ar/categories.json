@@ -1,0 +1,60 @@
+{
+  "operations": {
+    "create": {
+      "summary": "إضافة فئة",
+      "description": "إنشاء فئة جديدة في النظام"
+    },
+    "findAll": {
+      "summary": "جلب الفئات",
+      "description": "استرجاع جميع الفئات (flat أو tree)"
+    },
+    "findOne": {
+      "summary": "جلب فئة محددة",
+      "description": "استرجاع تفاصيل فئة محددة"
+    },
+    "breadcrumbs": {
+      "summary": "جلب مسار الفئة",
+      "description": "استرجاع مسار الفئة في التسلسل الهرمي"
+    },
+    "subtree": {
+      "summary": "جلب الشجرة الفرعية",
+      "description": "استرجاع جميع الفئات الفرعية"
+    },
+    "move": {
+      "summary": "نقل الفئة",
+      "description": "نقل/ترتيب الفئة داخل التسلسل الهرمي"
+    },
+    "remove": {
+      "summary": "حذف الفئة",
+      "description": "حذف فئة محددة"
+    },
+    "uploadImage": {
+      "summary": "رفع صورة الفئة",
+      "description": "رفع وتحويل صورة الفئة (≤ 2MB، webp)"
+    },
+    "update": {
+      "summary": "تعديل الفئة",
+      "description": "تحديث بيانات فئة محددة"
+    }
+  },
+  "responses": {
+    "success": {
+      "created": "تم إنشاء الفئة بنجاح",
+      "found": "تم جلب الفئات بنجاح",
+      "updated": "تم تعديل الفئة بنجاح",
+      "deleted": "تم حذف الفئة بنجاح"
+    },
+    "error": {
+      "notFound": "الفئة غير موجودة",
+      "badRequest": "بيانات الفئة غير صالحة",
+      "unsupportedFormat": "صيغة الصورة غير مدعومة (png/jpg/webp فقط)",
+      "noFile": "لم يتم إرفاق ملف"
+    }
+  },
+  "fields": {
+    "merchantId": "معرف التاجر",
+    "tree": "عرض شجري",
+    "cascade": "الحذف المتتالي",
+    "file": "الملف"
+  }
+}

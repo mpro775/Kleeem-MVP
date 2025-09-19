@@ -1,0 +1,147 @@
+{
+  "messages": {
+    "success": {
+      "operationCompleted": "Operation completed successfully",
+      "dataSaved": "Data saved successfully",
+      "dataUpdated": "Data updated successfully",
+      "dataDeleted": "Data deleted successfully",
+      "dataRetrieved": "Data retrieved successfully",
+      "requestProcessed": "Request processed successfully",
+      "fileUploaded": "File uploaded successfully",
+      "emailSent": "Email sent successfully",
+      "notificationSent": "Notification sent successfully",
+      "integrationConnected": "Integration connected successfully",
+      "settingsUpdated": "Settings updated successfully"
+    },
+
+    "info": {
+      "processingRequest": "Processing request...",
+      "loadingData": "Loading data...",
+      "savingData": "Saving data...",
+      "connecting": "Connecting...",
+      "syncing": "Syncing...",
+      "uploading": "Uploading...",
+      "downloading": "Downloading...",
+      "pleaseWait": "Please wait...",
+      "operationInProgress": "Operation in progress"
+    },
+
+    "warning": {
+      "unsavedChanges": "You have unsaved changes",
+      "confirmDelete": "Are you sure you want to delete?",
+      "confirmAction": "Are you sure you want to proceed?",
+      "sessionExpiring": "Your session will expire soon",
+      "dataLossWarning": "You may lose some data",
+      "quotaApproaching": "Approaching quota limit",
+      "maintenanceScheduled": "Maintenance scheduled soon"
+    },
+
+    "confirmation": {
+      "deleteItem": "Do you want to delete this item?",
+      "deleteMultipleItems": "Do you want to delete {count} items?",
+      "saveChanges": "Do you want to save the changes?",
+      "discardChanges": "Do you want to discard the changes?",
+      "logout": "Do you want to logout?",
+      "resetSettings": "Do you want to reset settings?",
+      "clearData": "Do you want to clear the data?"
+    },
+
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "processing": "Processing",
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived",
+      "suspended": "Suspended"
+    },
+
+    "actions": {
+      "create": "Create",
+      "read": "Read",
+      "update": "Update",
+      "delete": "Delete",
+      "edit": "Edit",
+      "view": "View",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "submit": "Submit",
+      "reset": "Reset",
+      "refresh": "Refresh",
+      "search": "Search",
+      "filter": "Filter",
+      "sort": "Sort",
+      "export": "Export",
+      "import": "Import",
+      "download": "Download",
+      "upload": "Upload",
+      "sync": "Sync",
+      "connect": "Connect",
+      "disconnect": "Disconnect"
+    },
+
+    "navigation": {
+      "home": "Home",
+      "dashboard": "Dashboard",
+      "profile": "Profile",
+      "settings": "Settings",
+      "help": "Help",
+      "support": "Support",
+      "logout": "Logout",
+      "login": "Login",
+      "register": "Register",
+      "back": "Back",
+      "next": "Next",
+      "previous": "Previous",
+      "first": "First",
+      "last": "Last"
+    },
+
+    "pagination": {
+      "showing": "Showing {from} to {to} of {total} results",
+      "page": "Page {current} of {total}",
+      "perPage": "Items per page",
+      "noResults": "No results found",
+      "loadMore": "Load more",
+      "showAll": "Show all"
+    },
+
+    "forms": {
+      "required": "Required",
+      "optional": "Optional",
+      "placeholder": "Enter {field}...",
+      "selectPlaceholder": "Select {field}...",
+      "loading": "Loading...",
+      "noOptions": "No options available",
+      "searchPlaceholder": "Search..."
+    },
+
+    "notifications": {
+      "success": "Success",
+      "error": "Error",
+      "warning": "Warning",
+      "info": "Info",
+      "dismiss": "Dismiss",
+      "viewAll": "View all",
+      "markAsRead": "Mark as read",
+      "markAllAsRead": "Mark all as read"
+    },
+
+    "system": {
+      "welcome": "Welcome to the system",
+      "goodbye": "Goodbye",
+      "maintenance": "System under maintenance",
+      "offline": "Offline",
+      "online": "Online",
+      "syncing": "Syncing",
+      "synced": "Synced",
+      "updating": "Updating",
+      "updated": "Updated"
+    }
+  }
+}

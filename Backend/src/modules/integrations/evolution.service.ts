@@ -40,11 +40,9 @@ export class EvolutionService {
         accept: 'application/json',
         'content-type': 'application/json',
       },
-      // validateStatus: () => true, // لو تحب تتعامل مع كل الحالات يدويًا
     });
   }
 
-  /** حذف الجلسة إذا كانت موجودة ثم إنشاء جديدة بتوكن جديد */
   async ensureFreshInstance(
     instanceName: string,
   ): Promise<{ qr: string; token: string }> {
@@ -139,7 +137,6 @@ export class EvolutionService {
     }
   }
 
-  /** تعيين Webhook حسب الوثائق الجديدة */
   async setWebhook(
     instanceName: string,
     url: string,

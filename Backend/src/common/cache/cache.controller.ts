@@ -103,7 +103,7 @@ export class CacheController {
       await this.cacheService.delete(testKey);
 
       const isHealthy =
-        retrieved && retrieved.timestamp === testValue.timestamp;
+        retrieved && (retrieved as any).timestamp === testValue.timestamp;
 
       return {
         success: true,

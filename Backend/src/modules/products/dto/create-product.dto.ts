@@ -10,6 +10,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { I18nMessage } from '../../../common/validators/i18n-validator';
 import { Currency } from '../enums/product.enums';
 import { OfferDto } from './offer.dto';
 
@@ -20,20 +21,24 @@ export enum ProductSource {
 }
 
 export class CreateProductDto {
-  @IsOptional() @IsString() originalUrl?: string;
-  @IsOptional() @IsString() sourceUrl?: string;
-  @IsOptional() @IsString() externalId?: string;
-  @IsOptional() @IsString() platform?: string;
+  @IsOptional()
+  @IsString(I18nMessage('validation.string'))
+  originalUrl?: string;
+  @IsOptional() @IsString(I18nMessage('validation.string')) sourceUrl?: string;
+  @IsOptional() @IsString(I18nMessage('validation.string')) externalId?: string;
+  @IsOptional() @IsString(I18nMessage('validation.string')) platform?: string;
 
-  @IsString() name!: string;
-  @IsOptional() @IsString() description?: string;
+  @IsString(I18nMessage('validation.string')) name!: string;
+  @IsOptional()
+  @IsString(I18nMessage('validation.string'))
+  description?: string;
 
   @Type(() => Number)
-  @IsNumber()
+  @IsNumber({}, I18nMessage('validation.number'))
   price!: number;
 
   @IsOptional()
-  @IsEnum(Currency)
+  @IsEnum(Currency, I18nMessage('validation.enum'))
   currency?: Currency = Currency.SAR;
 
   @IsOptional()
@@ -41,27 +46,30 @@ export class CreateProductDto {
   @Type(() => OfferDto)
   offer?: OfferDto;
 
-  @IsOptional() @IsBoolean() isAvailable?: boolean = true;
+  @IsOptional()
+  @IsBoolean(I18nMessage('validation.boolean'))
+  isAvailable?: boolean = true;
 
-  @IsString() category!: string;
+  @IsString(I18nMessage('validation.string'))
+  category!: string;
 
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
+  @IsArray(I18nMessage('validation.array'))
+  @IsString(I18nMessage('validation.string', { each: true }))
   specsBlock?: string[] = [];
 
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
+  @IsArray(I18nMessage('validation.array'))
+  @IsString(I18nMessage('validation.string', { each: true }))
   keywords?: string[] = [];
 
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
+  @IsArray(I18nMessage('validation.array'))
+  @IsString(I18nMessage('validation.string', { each: true }))
   images?: string[] = [];
 
   @IsOptional()
-  @IsEnum(ProductSource)
+  @IsEnum(ProductSource, I18nMessage('validation.enum'))
   source?: ProductSource = ProductSource.MANUAL;
 
   @ApiPropertyOptional({
@@ -71,22 +79,22 @@ export class CreateProductDto {
     description: 'خصائص متعددة القيم: مفتاح → مصفوفة قيم',
   })
   @IsOptional()
-  @IsObject()
+  @IsObject(I18nMessage('validation.object'))
   attributes?: Record<string, string[]>;
 
   @IsOptional()
-  @IsString()
+  @IsString(I18nMessage('validation.string'))
   lowQuantity?: string;
 
   @IsOptional()
-  @IsString()
+  @IsString(I18nMessage('validation.string'))
   slug?: string;
-  
+
   @IsOptional()
-  @IsString()
+  @IsString(I18nMessage('validation.string'))
   storefrontSlug?: string;
-  
+
   @IsOptional()
-  @IsString()
+  @IsString(I18nMessage('validation.string'))
   storefrontDomain?: string;
 }

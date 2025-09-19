@@ -8,6 +8,8 @@ import { Category, CategorySchema } from './schemas/category.schema';
 import { MulterModule } from '@nestjs/platform-express';
 import * as Minio from 'minio';
 import { Product, ProductSchema } from '../products/schemas/product.schema';
+import { MongoCategoriesRepository } from './repositories/mongo-categories.repository';
+import { CommonModule } from '../../common/config/common.module';
 
 @Module({
   imports: [
@@ -16,10 +18,15 @@ import { Product, ProductSchema } from '../products/schemas/product.schema';
       { name: Product.name, schema: ProductSchema },
     ]),
     MulterModule.register({ dest: './uploads' }),
+    CommonModule, // للوصول إلى TranslationService
   ],
   controllers: [CategoriesController],
   providers: [
     CategoriesService,
+    {
+      provide: 'CategoriesRepository',
+      useClass: MongoCategoriesRepository,
+    },
     {
       provide: 'MINIO_CLIENT',
       useFactory: () =>

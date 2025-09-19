@@ -11,6 +11,12 @@ export type ProductDocument = HydratedDocument<Product>;
   toObject: { virtuals: true },
 })
 export class Product {
+  _id: Types.ObjectId;
+
+  // Timestamps (added automatically by timestamps: true)
+  createdAt?: Date;
+  updatedAt?: Date;
+
   @Prop({ type: Types.ObjectId, ref: 'Merchant', required: true })
   merchantId: Types.ObjectId;
 

@@ -15,6 +15,8 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { createClient } from 'redis';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import { Gauge } from 'prom-client';
 
 @WebSocketGateway({
   path: '/api/chat',
@@ -45,6 +47,8 @@ export class ChatGateway
   constructor(
     private readonly jwtService: JwtService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    @InjectMetric('websocket_active_connections')
+    private readonly wsGauge: Gauge<string>,
   ) {}
 
   async onModuleInit() {
@@ -90,6 +94,9 @@ export class ChatGateway
       this.logger.debug(
         `WebSocket client connected: ${client.id} (session: ${sessionId})`,
       );
+
+      // تتبع الاتصالات النشطة
+      this.wsGauge.inc({ namespace: 'chat' });
     } catch (error) {
       this.logger.error(`WebSocket connection error: ${error.message}`);
       client.emit('error', { message: 'Connection failed' });
@@ -167,6 +174,10 @@ export class ChatGateway
   handleDisconnect(client: Socket) {
     // ✅ D2: تنظيف rate limiting عند قطع الاتصال
     this.messageRates.delete(client.id);
+
+    // تتبع الاتصالات النشطة
+    this.wsGauge.dec({ namespace: 'chat' });
+
     // console.log('Client disconnected', client.id);
   }
 

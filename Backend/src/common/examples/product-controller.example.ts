@@ -12,11 +12,7 @@ import {
   UseInterceptors,
   UseFilters,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import {
   AuthGuard,
   ResponseInterceptor,
@@ -27,11 +23,15 @@ import {
   ApiDeletedResponse,
   CurrentUser,
   CurrentUserId,
-  PaginationDto,
+  CursorDto,
   ProductNotFoundError,
   OutOfStockError,
 } from '../index';
-import { ProductServiceExample, CreateProductDto, ProductDto } from './product-service.example';
+import {
+  ProductServiceExample,
+  CreateProductDto,
+  ProductDto,
+} from './product-service.example';
 
 @ApiTags('المنتجات')
 @Controller('products')
@@ -46,8 +46,8 @@ export class ProductControllerExample {
   @ApiOperation({ summary: 'الحصول على قائمة المنتجات' })
   @ApiSuccessResponse(ProductDto, 'تم جلب المنتجات بنجاح')
   async getProducts(
-    @Query() pagination: PaginationDto,
-    @CurrentUser('merchantId') merchantId: string
+    @Query() pagination: CursorDto,
+    @CurrentUser('merchantId') merchantId: string,
   ) {
     return this.productService.getProducts(pagination, merchantId);
   }
@@ -72,7 +72,7 @@ export class ProductControllerExample {
   @ApiCreatedResponse(ProductDto, 'تم إنشاء المنتج بنجاح')
   async createProduct(
     @Body() createProductDto: CreateProductDto,
-    @CurrentUser('merchantId') merchantId: string
+    @CurrentUser('merchantId') merchantId: string,
   ) {
     return this.productService.createProduct(createProductDto, merchantId);
   }
@@ -83,10 +83,14 @@ export class ProductControllerExample {
   async purchaseProduct(
     @Param('id') productId: string,
     @Body() body: { quantity: number },
-    @CurrentUserId() userId: string
+    @CurrentUserId() userId: string,
   ) {
     try {
-      await this.productService.purchaseProduct(productId, body.quantity, userId);
+      await this.productService.purchaseProduct(
+        productId,
+        body.quantity,
+        userId,
+      );
       return { message: 'تم الشراء بنجاح' };
     } catch (error) {
       if (error instanceof OutOfStockError) {
@@ -102,7 +106,7 @@ export class ProductControllerExample {
   @ApiSuccessResponse(ProductDto, 'تم تحديث المنتج بنجاح')
   async updateProduct(
     @Param('id') id: string,
-    @Body() updateProductDto: Partial<CreateProductDto>
+    @Body() updateProductDto: Partial<CreateProductDto>,
   ) {
     // محاكاة تحديث المنتج
     return { id, ...updateProductDto, updatedAt: new Date() };

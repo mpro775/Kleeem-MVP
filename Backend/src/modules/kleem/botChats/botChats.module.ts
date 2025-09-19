@@ -8,6 +8,8 @@ import {
 import { BotChatsService } from './botChats.service';
 import { BotChatsController } from './botChats.controller';
 import { BotChatsAdminController } from './botChats.admin.controller';
+import { BOT_CHAT_REPOSITORY } from './tokens';
+import { BotChatsMongoRepository } from './repositories/bot-chats.mongo.repository';
 
 @Module({
   imports: [
@@ -15,7 +17,10 @@ import { BotChatsAdminController } from './botChats.admin.controller';
       { name: BotChatSession.name, schema: BotChatSessionSchema },
     ]),
   ],
-  providers: [BotChatsService],
+  providers: [
+    BotChatsService,
+    { provide: BOT_CHAT_REPOSITORY, useClass: BotChatsMongoRepository },
+  ],
   controllers: [BotChatsController, BotChatsAdminController],
   exports: [BotChatsService],
 })

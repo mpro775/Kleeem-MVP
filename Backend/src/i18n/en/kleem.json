@@ -1,0 +1,123 @@
+{
+  "botPrompt": {
+    "operations": {
+      "create": {
+        "summary": "Create New Prompt",
+        "description": "Create a new prompt with specified content"
+      },
+      "list": {
+        "summary": "List Prompts",
+        "description": "Retrieve list of prompts with filtering options"
+      },
+      "get": {
+        "summary": "Get Prompt Details",
+        "description": "Retrieve specific prompt details by ID"
+      },
+      "update": {
+        "summary": "Update Prompt",
+        "description": "Update existing prompt data"
+      },
+      "setActive": {
+        "summary": "Activate/Deactivate Prompt",
+        "description": "Change activation status of specific prompt"
+      },
+      "archive": {
+        "summary": "Archive Prompt",
+        "description": "Archive specific prompt (disable without deleting)"
+      },
+      "remove": {
+        "summary": "Delete Prompt",
+        "description": "Permanently delete a prompt"
+      },
+      "activeSystem": {
+        "summary": "Get Active System Prompt",
+        "description": "Retrieve currently active system prompt"
+      },
+      "activeSystemContent": {
+        "summary": "Get Active Prompt Content",
+        "description": "Retrieve active system prompt content only"
+      },
+      "ping": {
+        "summary": "Check Service Status",
+        "description": "Check if prompts service is working correctly"
+      }
+    },
+    "responses": {
+      "success": {
+        "created": "Prompt created successfully",
+        "found": "Prompt retrieved successfully",
+        "updated": "Prompt updated successfully",
+        "activated": "Activation status changed successfully",
+        "archived": "Prompt archived successfully",
+        "deleted": "Prompt deleted successfully",
+        "serviceOk": "Service is working correctly"
+      },
+      "error": {
+        "notFound": "Prompt not found",
+        "badRequest": "Invalid request data",
+        "forbidden": "Forbidden - Admin access required",
+        "noActiveSystem": "No active system prompt found"
+      }
+    },
+    "fields": {
+      "id": "Prompt ID",
+      "type": "Prompt Type",
+      "content": "Prompt Content",
+      "active": "Activation Status",
+      "archived": "Archive Status",
+      "includeArchived": "Include Archived"
+    }
+  },
+  "botFaq": {
+    "operations": {
+      "create": {
+        "summary": "Create New FAQ",
+        "description": "Create a new FAQ entry in the database"
+      },
+      "bulkImport": {
+        "summary": "Bulk Import FAQs",
+        "description": "Import multiple FAQs from CSV or JSON file"
+      },
+      "list": {
+        "summary": "List FAQs",
+        "description": "Retrieve list of FAQs with search and filter options"
+      },
+      "get": {
+        "summary": "Get Specific FAQ",
+        "description": "Retrieve details of a specific FAQ"
+      },
+      "update": {
+        "summary": "Update FAQ",
+        "description": "Update existing FAQ data"
+      },
+      "remove": {
+        "summary": "Delete FAQ",
+        "description": "Permanently delete an FAQ"
+      }
+    },
+    "responses": {
+      "success": {
+        "created": "FAQ created successfully",
+        "imported": "Import completed successfully",
+        "found": "Data found successfully",
+        "updated": "Updated successfully",
+        "deleted": "Deleted successfully"
+      },
+      "error": {
+        "notFound": "FAQ not found",
+        "badRequest": "Invalid request data",
+        "unauthorized": "Unauthorized",
+        "forbidden": "Access forbidden",
+        "fileError": "File processing error"
+      }
+    },
+    "fields": {
+      "question": "Question",
+      "answer": "Answer",
+      "category": "Category",
+      "tags": "Tags",
+      "active": "Active",
+      "file": "File"
+    }
+  }
+}

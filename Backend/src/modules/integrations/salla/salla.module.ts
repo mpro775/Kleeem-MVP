@@ -13,6 +13,10 @@ import {
 } from '../../merchants/schemas/merchant.schema';
 import { Integration, IntegrationSchema } from '../schemas/integration.schema';
 import { CatalogModule } from '../../catalog/catalog.module';
+import { SALLA_INTEGRATION_REPOSITORY } from './tokens';
+import { SallaIntegrationMongoRepository } from './repositories/integration.mongo.repository';
+import { SALLA_MERCHANT_REPOSITORY } from './tokens';
+import { SallaMerchantMongoRepository } from './repositories/merchant.mongo.repository';
 
 @Module({
   imports: [
@@ -25,7 +29,17 @@ import { CatalogModule } from '../../catalog/catalog.module';
     forwardRef(() => CatalogModule),
   ],
   controllers: [SallaController],
-  providers: [SallaService],
+  providers: [
+    SallaService,
+    {
+      provide: SALLA_INTEGRATION_REPOSITORY,
+      useClass: SallaIntegrationMongoRepository,
+    },
+    {
+      provide: SALLA_MERCHANT_REPOSITORY,
+      useClass: SallaMerchantMongoRepository,
+    },
+  ],
   exports: [SallaService],
 })
 export class SallaModule {}

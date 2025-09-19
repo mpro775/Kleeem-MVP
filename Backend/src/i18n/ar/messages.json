@@ -1,0 +1,147 @@
+{
+  "messages": {
+    "success": {
+      "operationCompleted": "تمت العملية بنجاح",
+      "dataSaved": "تم حفظ البيانات بنجاح",
+      "dataUpdated": "تم تحديث البيانات بنجاح",
+      "dataDeleted": "تم حذف البيانات بنجاح",
+      "dataRetrieved": "تم استرجاع البيانات بنجاح",
+      "requestProcessed": "تم معالجة الطلب بنجاح",
+      "fileUploaded": "تم رفع الملف بنجاح",
+      "emailSent": "تم إرسال البريد الإلكتروني بنجاح",
+      "notificationSent": "تم إرسال الإشعار بنجاح",
+      "integrationConnected": "تم ربط التكامل بنجاح",
+      "settingsUpdated": "تم تحديث الإعدادات بنجاح"
+    },
+
+    "info": {
+      "processingRequest": "جاري معالجة الطلب...",
+      "loadingData": "جاري تحميل البيانات...",
+      "savingData": "جاري حفظ البيانات...",
+      "connecting": "جاري الاتصال...",
+      "syncing": "جاري المزامنة...",
+      "uploading": "جاري رفع الملف...",
+      "downloading": "جاري تحميل الملف...",
+      "pleaseWait": "يرجى الانتظار...",
+      "operationInProgress": "العملية قيد التنفيذ"
+    },
+
+    "warning": {
+      "unsavedChanges": "لديك تغييرات غير محفوظة",
+      "confirmDelete": "هل أنت متأكد من الحذف؟",
+      "confirmAction": "هل أنت متأكد من هذا الإجراء؟",
+      "sessionExpiring": "ستنتهي صلاحية جلستك قريباً",
+      "dataLossWarning": "قد تفقد بعض البيانات",
+      "quotaApproaching": "تقترب من الحد المسموح",
+      "maintenanceScheduled": "صيانة مجدولة قريباً"
+    },
+
+    "confirmation": {
+      "deleteItem": "هل تريد حذف هذا العنصر؟",
+      "deleteMultipleItems": "هل تريد حذف {count} عنصر؟",
+      "saveChanges": "هل تريد حفظ التغييرات؟",
+      "discardChanges": "هل تريد تجاهل التغييرات؟",
+      "logout": "هل تريد تسجيل الخروج؟",
+      "resetSettings": "هل تريد إعادة تعيين الإعدادات؟",
+      "clearData": "هل تريد مسح البيانات؟"
+    },
+
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "pending": "قيد الانتظار",
+      "processing": "قيد المعالجة",
+      "completed": "مكتمل",
+      "failed": "فاشل",
+      "cancelled": "ملغي",
+      "draft": "مسودة",
+      "published": "منشور",
+      "archived": "مؤرشف",
+      "suspended": "معلق"
+    },
+
+    "actions": {
+      "create": "إنشاء",
+      "read": "قراءة",
+      "update": "تحديث",
+      "delete": "حذف",
+      "edit": "تعديل",
+      "view": "عرض",
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "confirm": "تأكيد",
+      "submit": "إرسال",
+      "reset": "إعادة تعيين",
+      "refresh": "تحديث",
+      "search": "بحث",
+      "filter": "تصفية",
+      "sort": "ترتيب",
+      "export": "تصدير",
+      "import": "استيراد",
+      "download": "تحميل",
+      "upload": "رفع",
+      "sync": "مزامنة",
+      "connect": "ربط",
+      "disconnect": "إلغاء الربط"
+    },
+
+    "navigation": {
+      "home": "الرئيسية",
+      "dashboard": "لوحة التحكم",
+      "profile": "الملف الشخصي",
+      "settings": "الإعدادات",
+      "help": "المساعدة",
+      "support": "الدعم",
+      "logout": "تسجيل الخروج",
+      "login": "تسجيل الدخول",
+      "register": "التسجيل",
+      "back": "العودة",
+      "next": "التالي",
+      "previous": "السابق",
+      "first": "الأول",
+      "last": "الأخير"
+    },
+
+    "pagination": {
+      "showing": "عرض {from} إلى {to} من {total} نتيجة",
+      "page": "صفحة {current} من {total}",
+      "perPage": "عدد العناصر في الصفحة",
+      "noResults": "لا توجد نتائج",
+      "loadMore": "تحميل المزيد",
+      "showAll": "عرض الكل"
+    },
+
+    "forms": {
+      "required": "مطلوب",
+      "optional": "اختياري",
+      "placeholder": "أدخل {field}...",
+      "selectPlaceholder": "اختر {field}...",
+      "loading": "جاري التحميل...",
+      "noOptions": "لا توجد خيارات",
+      "searchPlaceholder": "البحث..."
+    },
+
+    "notifications": {
+      "success": "نجح",
+      "error": "خطأ",
+      "warning": "تحذير",
+      "info": "معلومات",
+      "dismiss": "تجاهل",
+      "viewAll": "عرض الكل",
+      "markAsRead": "وضع علامة مقروء",
+      "markAllAsRead": "وضع علامة مقروء للكل"
+    },
+
+    "system": {
+      "welcome": "مرحباً بك في النظام",
+      "goodbye": "وداعاً",
+      "maintenance": "النظام في الصيانة",
+      "offline": "غير متصل",
+      "online": "متصل",
+      "syncing": "جاري المزامنة",
+      "synced": "تم المزامنة",
+      "updating": "جاري التحديث",
+      "updated": "تم التحديث"
+    }
+  }
+}

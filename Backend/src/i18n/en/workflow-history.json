@@ -1,0 +1,70 @@
+{
+  "operations": {
+    "create": {
+      "summary": "Create History Record",
+      "description": "Create a new record in workflow history"
+    },
+    "findAll": {
+      "summary": "Retrieve Workflow History",
+      "description": "Get list of workflow history records"
+    },
+    "findOne": {
+      "summary": "Retrieve Specific Record",
+      "description": "Get details of specific history record"
+    },
+    "findByWorkflow": {
+      "summary": "Records for Specific Workflow",
+      "description": "Get history for specific workflow"
+    },
+    "export": {
+      "summary": "Export History",
+      "description": "Export history records in specified format"
+    },
+    "cleanup": {
+      "summary": "Clean Old Records",
+      "description": "Delete old history records"
+    },
+    "analytics": {
+      "summary": "History Analytics",
+      "description": "Statistics and analytics for history records"
+    }
+  },
+  "responses": {
+    "success": {
+      "created": "History record created successfully",
+      "found": "Records found successfully",
+      "exported": "Export completed successfully",
+      "cleaned": "Cleanup completed successfully",
+      "archived": "Records archived successfully"
+    },
+    "error": {
+      "notFound": "Record not found",
+      "badRequest": "Invalid request data",
+      "unauthorized": "Unauthorized access",
+      "forbidden": "Access forbidden",
+      "exportFailed": "Export failed",
+      "cleanupFailed": "Cleanup failed"
+    }
+  },
+  "fields": {
+    "workflowId": "Workflow ID",
+    "status": "Status",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "duration": "Duration",
+    "error": "Error",
+    "result": "Result",
+    "executionId": "Execution ID"
+  },
+  "status": {
+    "success": "Success",
+    "failed": "Failed",
+    "running": "Running",
+    "pending": "Pending",
+    "cancelled": "Cancelled",
+    "timeout": "Timeout"
+  },
+  "messages": {
+    "archived": "Old records archived successfully"
+  }
+}

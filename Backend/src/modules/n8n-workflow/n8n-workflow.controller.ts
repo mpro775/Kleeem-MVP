@@ -10,7 +10,8 @@ import {
   Req,
   BadRequestException,
 } from '@nestjs/common';
-import { N8nWorkflowService, WorkflowDefinition } from './n8n-workflow.service';
+import { N8nWorkflowService } from './n8n-workflow.service';
+import { WorkflowDefinition } from './types';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UpdateWorkflowDto } from './dto/update-workflow.dto';
