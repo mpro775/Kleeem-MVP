@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PromptVersionService } from './prompt-version.service';
 import { PromptBuilderService } from './prompt-builder.service';
 import { buildHbsContext, stripGuardSections } from './prompt-utils';
@@ -10,6 +10,7 @@ export class MerchantPromptService {
   constructor(
     private readonly versions: PromptVersionService,
     private readonly promptBuilder: PromptBuilderService,
+    @Inject('MerchantsRepository')
     private readonly repo: MerchantsRepository,
   ) {}
 

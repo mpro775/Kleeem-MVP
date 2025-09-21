@@ -84,7 +84,7 @@ export class Product {
   @Prop({ default: [] })
   keywords: string[];
 
-  @Prop({ unique: true, sparse: true })
+  @Prop({  sparse: true })
   uniqueKey: string;
 
   @Prop({ type: String, enum: Object.values(Currency), default: Currency.SAR })

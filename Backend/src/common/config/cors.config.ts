@@ -75,6 +75,7 @@ export const corsOptions: CorsOptions = {
     'Authorization',
     'Content-Type',
     'X-Request-Id',
+    'x-request-id',
     'X-Idempotency-Key',
     'X-Signature',
     'X-Timestamp',

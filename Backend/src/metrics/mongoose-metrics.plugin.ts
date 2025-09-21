@@ -1,50 +1,52 @@
 // src/metrics/mongoose-metrics.plugin.ts
 import { Histogram } from 'prom-client';
-import { Connection, Query } from 'mongoose';
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import { Connection } from 'mongoose';
+import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
+import { DATABASE_QUERY_DURATION_SECONDS } from './metrics.module';
 
 @Injectable()
 export class MongooseMetricsPlugin implements OnModuleInit {
   constructor(
-    private readonly conn: Connection,
-    @InjectMetric('database_query_duration_seconds')
+    @InjectConnection() private readonly conn: Connection,
+    @Inject(DATABASE_QUERY_DURATION_SECONDS)
     private readonly dbQueryDuration: Histogram<string>,
   ) {}
 
   onModuleInit() {
-    const plugin = (schema: any) => {
-      schema.pre(
-        /^find|count|update|aggregate|delete|insert/i,
-        function (this: Query<any, any>, next: Function) {
-          (this as any).__start = process.hrtime.bigint();
-          next();
-        },
-      );
+    const histogram = this.dbQueryDuration; // 🤝 التقط المرجع في الإغلاق
 
-      schema.post(
-        /^find|count|update|aggregate|delete|insert/i,
-        function (this: Query<any, any>, _res: any, next: Function) {
-          const op = (this.op || 'unknown').toString();
-          const coll = (this as any).mongooseCollection?.name || 'unknown';
-          const start = (this as any).__start as bigint | undefined;
-          if (start) {
-            const sec = Number(process.hrtime.bigint() - start) / 1e9;
-            // نستخدم status=ok هنا كليبل ثابت (أضف مسار للأخطاء عندك إن رغبت)
-            (global as any).__dbHistogram?.observe?.(
-              { operation: op, collection: coll, status: 'ok' },
-              sec,
-            );
-          }
-          next();
-        },
-      );
+    const attach = (schema: any, op: string) => {
+      schema.pre(op, function (this: any, next: Function) {
+        this.__start = process.hrtime.bigint();
+        next();
+      });
+
+      schema.post(op, function (this: any, _res: any, next: Function) {
+        const coll =
+          this?.mongooseCollection?.name ||
+          this?.model?.collection?.name ||
+          'unknown';
+
+        const start: bigint | undefined = this.__start;
+        if (start) {
+          const sec = Number(process.hrtime.bigint() - start) / 1e9;
+          histogram.observe({ operation: op, collection: coll, status: 'ok' }, sec);
+        }
+        next();
+      });
     };
 
-    // تطبيق على كل السكيمات
-    (this.conn as any).plugin(plugin);
+    const plugin = (schema: any) => {
+      // عرّف العمليات صراحةً بدل Regex لالتقاط اسمها بالـ closure
+      const ops = [
+        'find', 'findOne', 'count', 'countDocuments',
+        'updateOne', 'updateMany', 'deleteOne', 'deleteMany',
+        'aggregate', 'insertMany',
+      ];
+      for (const op of ops) attach(schema, op);
+    };
 
-    // خزن المرجع عالمياً لاستخدامه داخل الهوكس
-    (global as any).__dbHistogram = this.dbQueryDuration;
+    (this.conn as any).plugin(plugin);
   }
 }

@@ -5,9 +5,8 @@ import { APP_GUARD } from '@nestjs/core';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import * as redisStore from 'cache-manager-ioredis';
 import { BullModule, BullModuleOptions } from '@nestjs/bull';
-import { I18nModule, I18nJsonLoader } from 'nestjs-i18n';
+import { I18nModule, I18nJsonLoader, HeaderResolver, AcceptLanguageResolver, QueryResolver } from 'nestjs-i18n';
 
 import { LoggerModule } from 'nestjs-pino';
 
@@ -52,7 +51,7 @@ import { RabbitModule } from './infra/rabbit/rabbit.module';
 import { OutboxModule } from './common/outbox/outbox.module';
 import { OutboxDispatcher } from './common/outbox/outbox.dispatcher';
 import { MetricsModule } from './metrics/metrics.module';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { InstructionsModule } from './modules/instructions/instructions.module';
 import { AiModule } from './modules/ai/ai.module';
 import { SupportModule } from './modules/support/support.module';
@@ -67,6 +66,7 @@ import {
   ErrorManagementModule,
   CommonServicesModule,
 } from './common';
+
 import { PublicModule } from './modules/public/public.module';
 import { CacheModule } from './common/cache/cache.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -114,6 +114,7 @@ console.log(`[I18N] path -> ${i18nPath} | ts=${isTsRuntime}`);
             'req.headers["x-evolution-apikey"]',
             'req.headers.apikey',
             'req.headers["x-timestamp"]',
+            
             'req.headers["x-idempotency-key"]',
             'req.headers["set-cookie"]',
             // Body fields حساسة
@@ -166,6 +167,7 @@ console.log(`[I18N] path -> ${i18nPath} | ts=${isTsRuntime}`);
       },
     }),
     ThrottlerModule.forRoot([{ ttl: 60, limit: 20 }]),
+
     MetricsModule,
     SystemModule,
     CommonModule,
@@ -204,8 +206,12 @@ console.log(`[I18N] path -> ${i18nPath} | ts=${isTsRuntime}`);
         path: resolveI18nPath(),
         watch: process.env.NODE_ENV !== 'production',
       },
+      resolvers: [
+        { use: QueryResolver, options: ['lang', 'locale'] }, // ?lang=ar
+        new HeaderResolver(['x-lang']),                      // X-Lang: ar
+        AcceptLanguageResolver,                              // Accept-Language
+      ],
     }),
-
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
@@ -278,6 +284,7 @@ console.log(`[I18N] path -> ${i18nPath} | ts=${isTsRuntime}`);
   providers: [
     AppService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     ...AmqpMetricsProviders,
     AmqpMetrics,
     // 1) Guard للأدوار

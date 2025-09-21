@@ -5,7 +5,7 @@ import { BotPromptService } from './botPrompt.service';
 import { BotPromptController } from './botPrompt.controller';
 import { PromptSandboxController } from './prompt-sandbox.controller';
 import { SettingsModule } from '../settings/settings.module';
-import { VectorModule } from '../../../vector/vector.module';
+import { VectorModule } from '../../vector/vector.module';
 import { IntentService } from '../intent/intent.service';
 import { CtaService } from '../cta/cta.service';
 import { BOT_PROMPT_REPOSITORY } from './tokens';

@@ -11,6 +11,7 @@ import { SettingsModule } from './settings/settings.module';
 import { VectorModule } from '../vector/vector.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BotFaqModule } from './botFaq/botFaq.module';
+import { MetricsModule } from '../../metrics/metrics.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { BotFaqModule } from './botFaq/botFaq.module';
     SettingsModule,
     VectorModule,
     EventEmitterModule.forRoot(),
+    MetricsModule,
   ],
   controllers: [KleemChatController, KleemWebhookController],  // ← مهم
   providers: [KleemChatService, KleemGateway],                 // ← أضف الـ Gateway هنا

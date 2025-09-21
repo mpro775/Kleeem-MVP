@@ -36,24 +36,25 @@ export enum UserRole {
 
 @Schema({
   timestamps: true,
+  versionKey: false,              // يغنيك عن delete ret.__v
   toJSON: {
     virtuals: true,
-    transform(_doc, ret) {
+    transform(_doc, ret: any) {   // 👈 هنا
       ret.id = ret._id?.toString();
       delete ret._id;
-      delete ret.__v;
-      delete ret.password; // اخفِ كلمة السر
+      delete ret.password;        // لو موجودة (select:false غالبًا غير موجودة)
       return ret;
     },
+  },
+  toObject: {
+    virtuals: true,               // (اختياري) لو تستخدم toObject
   },
 })
 export class User {
   @Prop({
     required: true,
-    unique: true,
     lowercase: true,
     trim: true,
-    index: true,
   })
   email: string;
 

@@ -46,7 +46,7 @@ export class SupportTicket {
   @Prop({ type: [AttachmentMetaSchema], default: [] })
   attachments!: AttachmentMeta[];
 
-  @Prop({ type: String, index: true, unique: true })
+  @Prop({ type: String})
   ticketNumber!: string;
 
   @Prop({ type: Types.ObjectId, ref: 'Merchant', index: true })

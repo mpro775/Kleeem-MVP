@@ -6,10 +6,10 @@ import { MessageService } from './message.service';
 import { MessageController } from './message.controller';
 import { ChatLinksController } from './chat-links.controller';
 import { ChatModule } from '../chat/chat.module';
-import { InstructionsModule } from '../../instructions/instructions.module';
 import { AiModule } from '../ai/ai.module';
 import { MESSAGE_SESSION_REPOSITORY } from './tokens';
 import { MessageMongoRepository } from './repositories/message.mongo.repository';
+import { InstructionsModule } from '../instructions/instructions.module';
 @Module({
   imports: [
     MongooseModule.forFeature([

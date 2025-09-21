@@ -4,7 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { BotFaq, BotFaqSchema } from './schemas/botFaq.schema';
 import { BotFaqService } from './botFaq.service';
 import { BotFaqController, BotFaqPublicController } from './botFaq.controller';
-import { VectorModule } from '../../../vector/vector.module';
+import { VectorModule } from '../../vector/vector.module';
 import { seconds, ThrottlerModule } from '@nestjs/throttler';
 import { BOT_FAQ_REPOSITORY } from './tokens';
 import { BotFaqMongoRepository } from './repositories/bot-faq.mongo.repository';

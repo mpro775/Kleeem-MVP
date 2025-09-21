@@ -12,6 +12,9 @@ import { MerchantsModule } from '../merchants/merchants.module';
 import { HttpModule } from '@nestjs/axios';
 import { PublicChatWidgetController } from './public-chat-widget.controller';
 import { MongoChatWidgetRepository } from './repositories/mongo-chat-widget.repository';
+import { MetricsModule } from '../../metrics/metrics.module';
+import { JwtModule } from '@nestjs/jwt';
+import { CacheModule } from '../../common/cache/cache.module';
 
 @Module({
   imports: [
@@ -19,8 +22,10 @@ import { MongoChatWidgetRepository } from './repositories/mongo-chat-widget.repo
       { name: ChatWidgetSettings.name, schema: ChatWidgetSettingsSchema },
     ]),
     forwardRef(() => MerchantsModule),
-
     HttpModule,
+    MetricsModule,
+    JwtModule,
+    CacheModule,
   ],
   providers: [
     ChatGateway,

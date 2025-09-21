@@ -115,8 +115,6 @@ export class Merchant {
 
   @Prop({
     type: String,
-    unique: true,
-    index: true,
     trim: true,
     lowercase: true,
     match: /^[a-z](?:[a-z0-9-]{1,48}[a-z0-9])$/,

@@ -10,7 +10,7 @@ export class BotFaq extends Document {
   @Prop({ required: true, trim: true })
   answer: string;
 
-  @Prop({ default: 'active', enum: ['active', 'deleted'], index: true })
+  @Prop({ default: 'active', enum: ['active', 'deleted'] })
   status: 'active' | 'deleted';
 
   @Prop({

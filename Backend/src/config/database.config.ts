@@ -67,13 +67,8 @@ import { MetricsModule } from '../metrics/metrics.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [
-    {
-      provide: MongooseMetricsPlugin,
-      useFactory: (conn: Connection) => new MongooseMetricsPlugin(conn),
-      inject: [getConnectionToken()],
-    },
-  ],
+  providers: [MongooseMetricsPlugin],
+
   exports: [MongooseModule],
 })
 export class DatabaseConfigModule {}

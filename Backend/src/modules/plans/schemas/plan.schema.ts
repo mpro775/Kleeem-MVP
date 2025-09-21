@@ -5,7 +5,7 @@ export type PlanDocument = Plan & Document;
 
 @Schema({ timestamps: true, versionKey: false })
 export class Plan {
-  @Prop({ required: true, unique: true, trim: true, index: true })
+  @Prop({ required: true, unique: true, trim: true })
   name: string;
 
   @Prop({ required: true, min: 0 })

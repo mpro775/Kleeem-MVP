@@ -36,10 +36,18 @@ export const DatabaseMetricsProvider = makeHistogramProvider({
   buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2],
 });
 
+// Injection token for database metrics
+export const DATABASE_QUERY_DURATION_SECONDS = 'DATABASE_QUERY_DURATION_SECONDS';
+
 export const ActiveConnectionsProvider = makeGaugeProvider({
   name: 'websocket_connections_active',
   help: 'Number of active WebSocket connections',
   labelNames: ['gateway', 'authenticated'],
+});
+export const HttpRequestsTotalProvider = makeCounterProvider({
+  name: 'http_requests_total',
+  help: 'Total HTTP requests',
+  labelNames: ['method', 'route', 'status_code'],
 });
 
 export const WsActiveGauge = makeGaugeProvider({
@@ -63,6 +71,13 @@ export const CacheHitRateGauge = makeGaugeProvider({
   ],
   providers: [
     HttpRequestDurationProvider,
+    HttpRequestsTotalProvider,
+    {
+      provide: 'HTTP_REQUESTS_TOTAL',
+      useFactory: (counter) => counter,
+      inject: ['PROM_METRIC_HTTP_REQUESTS_TOTAL'],
+    },
+    
     {
       provide: HTTP_REQUEST_DURATION_SECONDS,
       useFactory: (histogram) => histogram,
@@ -75,6 +90,11 @@ export const CacheHitRateGauge = makeGaugeProvider({
       inject: ['PROM_METRIC_HTTP_ERRORS_TOTAL'],
     },
     DatabaseMetricsProvider,
+    {
+      provide: DATABASE_QUERY_DURATION_SECONDS,
+      useFactory: (histogram) => histogram,
+      inject: ['PROM_METRIC_DATABASE_QUERY_DURATION_SECONDS'],
+    },
     ActiveConnectionsProvider,
     WsActiveGauge,
     CacheHitRateGauge,
@@ -100,6 +120,11 @@ export const CacheHitRateGauge = makeGaugeProvider({
       provide: HTTP_ERRORS_TOTAL,
       useFactory: (counter) => counter,
       inject: ['PROM_METRIC_HTTP_ERRORS_TOTAL'],
+    },
+    {
+      provide: DATABASE_QUERY_DURATION_SECONDS,
+      useFactory: (histogram) => histogram,
+      inject: ['PROM_METRIC_DATABASE_QUERY_DURATION_SECONDS'],
     },
     ActiveConnectionsProvider,
     WsActiveGauge,

@@ -15,7 +15,7 @@ export class OutboxEvent {
   @Prop({ required: true }) routingKey!: string;
 
   // states: pending -> publishing -> published
-  @Prop({ default: 'pending', index: true })
+  @Prop({ default: 'pending' })
   status!: 'pending' | 'publishing' | 'published';
 
   @Prop({ default: 0 }) attempts!: number;

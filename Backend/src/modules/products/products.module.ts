@@ -49,6 +49,7 @@ import { ErrorManagementModule } from '../../common/error-management.module';
 import { CacheModule } from '../../common/cache/cache.module';
 import { CommonServicesModule } from '../../common/services/common-services.module';
 import { OutboxModule } from '../../common/outbox/outbox.module';
+import { MetricsModule } from '../../metrics/metrics.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { OutboxModule } from '../../common/outbox/outbox.module';
     ErrorManagementModule,
     CacheModule,
     CommonServicesModule,
+    MetricsModule,
   ],
   controllers: [ProductsController],
   providers: [
