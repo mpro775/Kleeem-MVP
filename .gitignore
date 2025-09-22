@@ -4,3 +4,15 @@
 .env.*
 Backend/env
 
+
+# Secrets
+.env
+.env.*
+Backend/env
+
+
+# Secrets
+.env
+.env.*
+Backend/env
+
