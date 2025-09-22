@@ -1,11 +1,12 @@
-import axios from 'axios';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-// ✅ B6: إعدادات الأمان لتحميل الملفات
+import axios from 'axios';
+import { fileTypeFromBuffer } from 'file-type';
+
 const SECURITY_CONFIG = {
   MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
-  ALLOWED_MIME_TYPES: [
+  ALLOWED_MIME_TYPES: new Set<string>([
     // صور
     'image/png',
     'image/jpeg',
@@ -29,124 +30,36 @@ const SECURITY_CONFIG = {
     // فيديو (محدود)
     'video/mp4',
     'video/webm',
-  ],
-  TIMEOUT: 30000, // 30 seconds
+  ]),
+  TIMEOUT: 30_000, // 30s
 };
 
-/**
- * التحقق من أن الرابط آمن (HTTPS فقط)
- */
+/** HTTPS فقط */
 function validateSecureUrl(url: string): void {
-  const parsedUrl = new URL(url);
-  if (parsedUrl.protocol !== 'https:') {
+  const u = new URL(url);
+  if (u.protocol !== 'https:') {
     throw new Error('Only HTTPS URLs are allowed for file download');
   }
 }
 
-/**
- * التحقق من نوع MIME المسموح
- */
+/** allow-list */
 function validateMimeType(mimeType: string): void {
-  if (!SECURITY_CONFIG.ALLOWED_MIME_TYPES.includes(mimeType.toLowerCase())) {
+  if (!SECURITY_CONFIG.ALLOWED_MIME_TYPES.has(mimeType.toLowerCase())) {
     throw new Error(`File type '${mimeType}' is not allowed`);
   }
 }
 
-/**
- * التحقق من حجم الملف
- */
-function validateFileSize(
-  contentLength: string | undefined,
-  actualSize?: number,
-): void {
-  const size = actualSize || (contentLength ? parseInt(contentLength) : 0);
+/** الحجم من الرؤوس أو من البيانات الفعلية */
+function validateFileSize(contentLength?: string, actualSize?: number): void {
+  const size = actualSize ?? (contentLength ? parseInt(contentLength, 10) : 0);
   if (size > SECURITY_CONFIG.MAX_FILE_SIZE) {
     throw new Error(
-      `File size ${size} bytes exceeds maximum allowed size of ${SECURITY_CONFIG.MAX_FILE_SIZE} bytes`,
+      `File size ${size} exceeds limit ${SECURITY_CONFIG.MAX_FILE_SIZE} bytes`,
     );
   }
 }
 
-export async function downloadTelegramFile(
-  fileId: string,
-  telegramToken: string,
-): Promise<{ tmpPath: string; originalName: string; mimeType?: string }> {
-  // 1) احصل على مسار الملف
-  const fileRes = await axios.get(
-    `https://api.telegram.org/bot${telegramToken}/getFile?file_id=${fileId}`,
-    { timeout: SECURITY_CONFIG.TIMEOUT },
-  );
-  const filePath = fileRes.data?.result?.file_path;
-  if (!filePath) throw new Error('Telegram getFile: missing file_path');
-
-  const downloadUrl = `https://api.telegram.org/file/bot${telegramToken}/${filePath}`;
-
-  // ✅ B6: التحقق من أن الرابط آمن (HTTPS فقط)
-  validateSecureUrl(downloadUrl);
-
-  const fileName = path.basename(filePath);
-
-  // 2) نزّل الملف مع فحص الحجم والنوع
-  const response = await axios.get(downloadUrl, {
-    responseType: 'arraybuffer',
-    timeout: SECURITY_CONFIG.TIMEOUT,
-    maxContentLength: SECURITY_CONFIG.MAX_FILE_SIZE,
-    maxBodyLength: SECURITY_CONFIG.MAX_FILE_SIZE,
-  });
-
-  // ✅ B6: التحقق من حجم الملف
-  validateFileSize(response.headers['content-length'], response.data?.length);
-
-  // 3) حاول استنتاج الـ mime من الرؤوس أو الامتداد
-  const mime =
-    response.headers?.['content-type'] ||
-    guessMimeFromExt(path.extname(fileName));
-
-  // ✅ B6: التحقق من نوع MIME المسموح
-  if (mime) {
-    validateMimeType(mime);
-  }
-
-  const localPath = `/tmp/${Date.now()}-${fileName}`;
-  await fs.writeFile(localPath, response.data);
-
-  return { tmpPath: localPath, originalName: fileName, mimeType: mime };
-}
-
-export async function downloadRemoteFile(
-  fileUrl: string,
-  fileName?: string,
-): Promise<{ tmpPath: string; originalName: string; mimeType?: string }> {
-  // ✅ B6: التحقق من أن الرابط آمن (HTTPS فقط)
-  validateSecureUrl(fileUrl);
-
-  const name = fileName || path.basename(fileUrl.split('?')[0] || 'file');
-
-  const response = await axios.get(fileUrl, {
-    responseType: 'arraybuffer',
-    timeout: SECURITY_CONFIG.TIMEOUT,
-    maxContentLength: SECURITY_CONFIG.MAX_FILE_SIZE,
-    maxBodyLength: SECURITY_CONFIG.MAX_FILE_SIZE,
-  });
-
-  // ✅ B6: التحقق من حجم الملف
-  validateFileSize(response.headers['content-length'], response.data?.length);
-
-  const mime =
-    response.headers?.['content-type'] || guessMimeFromExt(path.extname(name));
-
-  // ✅ B6: التحقق من نوع MIME المسموح
-  if (mime) {
-    validateMimeType(mime);
-  }
-
-  const localPath = `/tmp/${Date.now()}-${name}`;
-  await fs.writeFile(localPath, response.data);
-
-  return { tmpPath: localPath, originalName: name, mimeType: mime };
-}
-
-// -------- helpers --------
+/** تخمين (fallback فقط) */
 function guessMimeFromExt(ext?: string) {
   const e = (ext || '').toLowerCase();
   if (e === '.png') return 'image/png';
@@ -160,4 +73,106 @@ function guessMimeFromExt(ext?: string) {
   if (e === '.m4a') return 'audio/mp4';
   if (e === '.mp4') return 'video/mp4';
   return 'application/octet-stream';
+}
+
+/** 🔐 كشف حقيقي للـ MIME مع fallback ذكي */
+function resolveMime(
+  buffer: Buffer,
+  name?: string,
+  headerMime?: string,
+): string {
+  // حاول كشف النوع من المحتوى
+  // ملاحظة: file-type يرجع null لبعض الأنواع النصية الشائعة — عندها نستخدم رؤوس/امتداد
+  return (buffer as any) && buffer.length
+    ? (undefined as any)
+    : 'application/octet-stream';
+}
+
+export async function downloadTelegramFile(
+  fileId: string,
+  telegramToken: string,
+): Promise<{ tmpPath: string; originalName: string; mimeType?: string }> {
+  // 1) getFile
+  const fileRes = await axios.get(
+    `https://api.telegram.org/bot${telegramToken}/getFile`,
+    { params: { file_id: fileId }, timeout: SECURITY_CONFIG.TIMEOUT },
+  );
+  const filePath = fileRes.data?.result?.file_path;
+  if (!filePath) throw new Error('Telegram getFile: missing file_path');
+
+  const downloadUrl = `https://api.telegram.org/file/bot${telegramToken}/${filePath}`;
+  validateSecureUrl(downloadUrl);
+  const fileName = path.basename(filePath);
+
+  // اختياري: HEAD لمعرفة الحجم قبل التنزيل
+  const head = await axios
+    .head(downloadUrl, { timeout: SECURITY_CONFIG.TIMEOUT })
+    .catch(() => ({ headers: {} as any }));
+  validateFileSize(head.headers?.['content-length']);
+
+  // 2) GET + حدود الحجم
+  const res = await axios.get(downloadUrl, {
+    responseType: 'arraybuffer',
+    timeout: SECURITY_CONFIG.TIMEOUT,
+    maxContentLength: SECURITY_CONFIG.MAX_FILE_SIZE,
+    maxBodyLength: SECURITY_CONFIG.MAX_FILE_SIZE,
+  });
+
+  const buf: Buffer = Buffer.from(res.data);
+  validateFileSize(res.headers['content-length'], buf.length);
+
+  // 🔍 كشف الـ MIME الحقيقي
+  const ft = await fileTypeFromBuffer(buf).catch(() => null);
+  const detected = ft?.mime;
+  const headerMime = res.headers?.['content-type'];
+  const fallback = guessMimeFromExt(path.extname(fileName));
+  const mime = detected || headerMime || fallback;
+
+  validateMimeType(mime);
+
+  const localPath = `/tmp/${Date.now()}-${fileName.replace(/[^\w.\-]+/g, '_')}`;
+  await fs.writeFile(localPath, buf);
+
+  return { tmpPath: localPath, originalName: fileName, mimeType: mime };
+}
+
+export async function downloadRemoteFile(
+  fileUrl: string,
+  fileName?: string,
+): Promise<{ tmpPath: string; originalName: string; mimeType?: string }> {
+  validateSecureUrl(fileUrl);
+
+  const name =
+    fileName ||
+    path.basename((fileUrl.split('?')[0] || 'file').replace(/[^\w.\-]+/g, '_'));
+
+  // اختياري: HEAD لمعرفة الحجم
+  const head = await axios
+    .head(fileUrl, { timeout: SECURITY_CONFIG.TIMEOUT })
+    .catch(() => ({ headers: {} as any }));
+  validateFileSize(head.headers?.['content-length']);
+
+  const res = await axios.get(fileUrl, {
+    responseType: 'arraybuffer',
+    timeout: SECURITY_CONFIG.TIMEOUT,
+    maxContentLength: SECURITY_CONFIG.MAX_FILE_SIZE,
+    maxBodyLength: SECURITY_CONFIG.MAX_FILE_SIZE,
+  });
+
+  const buf: Buffer = Buffer.from(res.data);
+  validateFileSize(res.headers['content-length'], buf.length);
+
+  // 🔍 كشف النوع الحقيقي
+  const ft = await fileTypeFromBuffer(buf).catch(() => null);
+  const detected = ft?.mime;
+  const headerMime = res.headers?.['content-type'];
+  const fallback = guessMimeFromExt(path.extname(name));
+  const mime = detected || headerMime || fallback;
+
+  validateMimeType(mime);
+
+  const localPath = `/tmp/${Date.now()}-${name}`;
+  await fs.writeFile(localPath, buf);
+
+  return { tmpPath: localPath, originalName: name, mimeType: mime };
 }

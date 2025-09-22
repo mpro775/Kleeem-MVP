@@ -20,6 +20,7 @@ import {
   NotFoundException,
   UploadedFiles,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -28,24 +29,25 @@ import {
   ApiBody,
   ApiOkResponse,
 } from '@nestjs/swagger';
-import { Types } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
-import { ProductsService } from './products.service';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
-import { ProductResponseDto } from './dto/product-response.dto';
-import { GetProductsDto } from './dto/get-products.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { Public } from '../../common/decorators/public.decorator';
+import { Types } from 'mongoose';
+
 import {
   ApiCreatedResponse as CommonApiCreatedResponse,
   CurrentUser, // ✅ موجود عندك
   CurrentMerchantId, // ✅ موجود عندك
 } from '../../common';
-import { ProductSetupConfigDto } from './dto/product-setup-config.dto';
-import { ProductSetupConfigService } from './product-setup-config.service';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { Public } from '../../common/decorators/public.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TranslationService } from '../../common/services/translation.service';
+
+import { CreateProductDto } from './dto/create-product.dto';
+import { GetProductsDto } from './dto/get-products.dto';
+import { ProductResponseDto } from './dto/product-response.dto';
+import { ProductSetupConfigDto } from './dto/product-setup-config.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductSetupConfigService } from './product-setup-config.service';
+import { ProductsService } from './products.service';
 
 @ApiTags('المنتجات')
 @ApiBearerAuth()
@@ -143,11 +145,25 @@ export class ProductsController {
       );
     }
 
-    const result = await this.productsService.getPublicProducts(
-      merchantId,
-      dto,
-    );
+    const result = await this.productsService.listByMerchant(merchantId, dto);
 
+    return {
+      items: plainToInstance(ProductResponseDto, result.items, {
+        excludeExtraneousValues: true,
+      }),
+      meta: result.meta,
+    };
+  }
+
+  // مسار عام مبني على المتجر (storeSlug)
+  @Public()
+  @Get('public/:storeSlug')
+  @ApiOperation({ summary: 'Public list by store slug' })
+  async getPublicProducts(
+    @Param('storeSlug') storeSlug: string,
+    @Query() dto: GetProductsDto,
+  ) {
+    const result = await this.productsService.getPublicProducts(storeSlug, dto);
     return {
       items: plainToInstance(ProductResponseDto, result.items, {
         excludeExtraneousValues: true,

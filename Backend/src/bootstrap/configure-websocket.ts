@@ -1,8 +1,10 @@
 // WebSocket configuration
 import { IoAdapter } from '@nestjs/platform-socket.io';
-import { ServerOptions } from 'socket.io';
-import { INestApplication } from '@nestjs/common';
+
 import { corsOptions } from '../common/config/cors.config';
+
+import type { INestApplication } from '@nestjs/common';
+import type { ServerOptions } from 'socket.io';
 
 // WebSocket configuration constants
 const PING_TIMEOUT = 60000;

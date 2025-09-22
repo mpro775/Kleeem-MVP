@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+
 import { AnalyticsService } from '../analytics.service';
 import { AnalyticsRepository } from '../repositories/analytics.repository';
 

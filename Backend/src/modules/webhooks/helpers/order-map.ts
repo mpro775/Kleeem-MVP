@@ -1,5 +1,5 @@
 // helpers/order-map.ts (أو أي مكان مركزي)
-import { Order as OrderType } from './order';
+import type { Order as OrderType } from './order';
 
 export function mapOrderDocumentToOrder(orderDoc: any): OrderType {
   return {

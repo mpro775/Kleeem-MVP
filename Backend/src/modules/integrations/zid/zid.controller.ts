@@ -12,6 +12,8 @@ import {
   HttpCode,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
 import {
   ApiTags,
   ApiOperation,
@@ -20,19 +22,20 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { Response, Request } from 'express';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
-import { Public } from '../../../common/decorators/public.decorator';
-import { ZidService } from './zid.service';
-import { InjectModel } from '@nestjs/mongoose';
+import * as jwt from 'jsonwebtoken';
 import { Model, Types } from 'mongoose';
+import { RabbitService } from 'src/infra/rabbit/rabbit.service';
+import { CatalogService } from 'src/modules/catalog/catalog.service';
+
+import { Public } from '../../../common/decorators/public.decorator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import {
   Merchant,
   MerchantDocument,
 } from '../../merchants/schemas/merchant.schema';
-import * as jwt from 'jsonwebtoken';
-import { ConfigService } from '@nestjs/config';
-import { CatalogService } from 'src/modules/catalog/catalog.service';
-import { RabbitService } from 'src/infra/rabbit/rabbit.service';
+
+import { ZidService } from './zid.service';
+
 interface ZidWebhookPayload {
   event?: string;
   data?: unknown;

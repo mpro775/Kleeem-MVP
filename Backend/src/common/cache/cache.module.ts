@@ -1,13 +1,15 @@
-import { Module, Global } from '@nestjs/common';
 import { CacheModule as NestCacheModule } from '@nestjs/cache-manager';
-import { ScheduleModule } from '@nestjs/schedule';
+import { Module, Global } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import * as redisStore from 'cache-manager-ioredis';
-import { CacheService } from './cache.service';
+
+import { MetricsModule } from '../../metrics/metrics.module';
+
 import { CacheWarmerService } from './cache-warmer.service';
 import { CacheController } from './cache.controller';
 import { CacheMetrics } from './cache.metrics';
-import { MetricsModule } from '../../metrics/metrics.module';
+import { CacheService } from './cache.service';
 
 @Global()
 @Module({

@@ -1,5 +1,5 @@
-import { ClientSession, Types } from 'mongoose';
-import { MessageSession } from '../schemas/message.schema';
+import type { MessageSession } from '../schemas/message.schema';
+import type { ClientSession, Types } from 'mongoose';
 
 export type MessageItem = {
   _id: Types.ObjectId;

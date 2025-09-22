@@ -1,9 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { PlansService } from './plans.service';
-import { PLAN_REPOSITORY } from './tokens';
-import { PlanRepository } from './repositories/plan.repository';
 import { NotFoundException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
+
+import { PlansService } from './plans.service';
+import { PlanRepository } from './repositories/plan.repository';
+import { PLAN_REPOSITORY } from './tokens';
 
 describe('PlansService', () => {
   let service: PlansService;

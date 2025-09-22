@@ -1,4 +1,5 @@
 // src/modules/users/dto/create-user.dto.ts
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsEmail,
@@ -8,9 +9,9 @@ import {
   IsBoolean,
   IsNotEmpty,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '../schemas/user.schema';
+
 import { I18nMessage } from '../../../common/validators/i18n-validator';
+import { UserRole } from '../schemas/user.schema';
 
 export class CreateUserDto {
   id: string;

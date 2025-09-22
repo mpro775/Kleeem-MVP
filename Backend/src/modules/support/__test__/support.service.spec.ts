@@ -1,9 +1,10 @@
+import { HttpService } from '@nestjs/axios';
 import { Test, TestingModule } from '@nestjs/testing';
+import { of } from 'rxjs';
+
+import { SupportRepository } from '../repositories/support.repository';
 import { SupportService } from '../support.service';
 import { SUPPORT_REPOSITORY } from '../tokens';
-import { SupportRepository } from '../repositories/support.repository';
-import { HttpService } from '@nestjs/axios';
-import { of } from 'rxjs';
 
 describe('SupportService', () => {
   let service: SupportService;

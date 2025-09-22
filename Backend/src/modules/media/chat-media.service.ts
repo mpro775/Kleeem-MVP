@@ -1,9 +1,14 @@
 // src/media/chat-media.service.ts
+import { unlink } from 'node:fs/promises';
+
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { Client as MinioClient } from 'minio';
-import { unlink } from 'node:fs/promises';
 function cdnBase() {
-  return (process.env.ASSETS_CDN_BASE_URL || process.env.MINIO_PUBLIC_URL || '').replace(/\/+$/, '');
+  return (
+    process.env.ASSETS_CDN_BASE_URL ||
+    process.env.MINIO_PUBLIC_URL ||
+    ''
+  ).replace(/\/+$/, '');
 }
 @Injectable()
 export class ChatMediaService {
@@ -22,10 +27,13 @@ export class ChatMediaService {
   private async ensureBucket(bucket: string) {
     const exists = await this.minio.bucketExists(bucket).catch(() => false);
     if (!exists) {
-      await this.minio.makeBucket(bucket, process.env.MINIO_REGION || 'us-east-1');
+      await this.minio.makeBucket(
+        bucket,
+        process.env.MINIO_REGION || 'us-east-1',
+      );
     }
   }
-  
+
   private publicUrlFor(bucket: string, key: string) {
     const base = cdnBase();
     return base ? `${base}/${bucket}/${key}` : '';
@@ -50,28 +58,38 @@ export class ChatMediaService {
     return await this.minio.presignedGetObject(bucket, key, 3600);
   }
 
-  async uploadChatMedia(merchantId: string, filePath: string, originalName: string, mimeType: string) {
+  async uploadChatMedia(
+    merchantId: string,
+    filePath: string,
+    originalName: string,
+    mimeType: string,
+  ) {
     const bucket = process.env.MINIO_BUCKET!;
     await this.ensureBucket(bucket);
-  
+
     const safeName = originalName.replace(/[^\w.\-]+/g, '_');
     const storageKey = `chat-media/${merchantId}/${Date.now()}-${safeName}`;
-  
+
     await this.minio.fPutObject(bucket, storageKey, filePath, {
       'Content-Type': mimeType,
       'Cache-Control': 'public, max-age=31536000, immutable',
     });
-  
+
     await unlink(filePath).catch(() => null);
-  
+
     // إن كان عندك CDN مفعّل: ارجع رابط https عام
     const publicUrl = this.publicUrlFor(bucket, storageKey);
     if (publicUrl) {
       return { storageKey, url: publicUrl };
     }
-  
+
     // وإلا: presigned (fallback)
-    const presignedUrl = await this.minio.presignedUrl('GET', bucket, storageKey, 7 * 24 * 60 * 60);
+    const presignedUrl = await this.minio.presignedUrl(
+      'GET',
+      bucket,
+      storageKey,
+      7 * 24 * 60 * 60,
+    );
     return { storageKey, presignedUrl };
   }
 }

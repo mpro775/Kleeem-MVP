@@ -1,7 +1,8 @@
 // CSRF protection configuration
-import { INestApplication } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import csurf from 'csurf';
+
+import type { INestApplication } from '@nestjs/common';
 
 export function configureCsrf(app: INestApplication): void {
   app.use(cookieParser(process.env.COOKIE_SECRET));

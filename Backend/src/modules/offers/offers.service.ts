@@ -1,10 +1,11 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { PRODUCT_REPOSITORY, MERCHANT_REPOSITORY } from './tokens';
+
+import { MerchantRepository } from './repositories/merchant.repository';
 import {
   ProductRepository,
   ProductLean,
 } from './repositories/product.repository';
-import { MerchantRepository } from './repositories/merchant.repository';
+import { PRODUCT_REPOSITORY, MERCHANT_REPOSITORY } from './tokens';
 
 @Injectable()
 export class OffersService {

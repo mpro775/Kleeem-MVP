@@ -12,7 +12,6 @@ import {
   BadRequestException,
   UseGuards,
 } from '@nestjs/common';
-import { InstructionsService } from './instructions.service';
 import {
   ApiTags,
   ApiOperation,
@@ -25,10 +24,13 @@ import {
   ApiUnauthorizedResponse,
   ApiNotFoundResponse,
 } from '@nestjs/swagger';
-import { MessageService } from '../messaging/message.service';
-import { GeminiService } from '../ai/gemini.service';
 import { CurrentMerchantId, CurrentUser } from 'src/common';
+
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { GeminiService } from '../ai/gemini.service';
+import { MessageService } from '../messaging/message.service';
+
+import { InstructionsService } from './instructions.service';
 
 type Role = 'ADMIN' | 'MERCHANT' | 'MEMBER';
 

@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Types } from 'mongoose';
+
 import { OffersService } from '../offers.service';
-import { PRODUCT_REPOSITORY, MERCHANT_REPOSITORY } from '../tokens';
+import { MerchantRepository } from '../repositories/merchant.repository';
 import {
   ProductRepository,
   ProductLean,
 } from '../repositories/product.repository';
-import { MerchantRepository } from '../repositories/merchant.repository';
-import { Types } from 'mongoose';
+import { PRODUCT_REPOSITORY, MERCHANT_REPOSITORY } from '../tokens';
 
 describe('OffersService', () => {
   let service: OffersService;

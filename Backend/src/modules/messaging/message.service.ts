@@ -8,17 +8,19 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ClientSession, Types } from 'mongoose';
+import { removeStopwords, ara, eng } from 'stopword';
+
+import { GeminiService } from '../ai/gemini.service';
+import { ChatGateway } from '../chat/chat.gateway';
+
 import { CreateMessageDto } from './dto/create-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
-import { removeStopwords, ara, eng } from 'stopword';
-import { ChatGateway } from '../chat/chat.gateway';
-import { GeminiService } from '../ai/gemini.service';
-import { MESSAGE_SESSION_REPOSITORY } from './tokens';
 import {
   MessageItem,
   MessageRepository,
   MessageSessionEntity,
 } from './repositories/message.repository';
+import { MESSAGE_SESSION_REPOSITORY } from './tokens';
 
 @Injectable()
 export class MessageService {

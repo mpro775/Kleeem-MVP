@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { Webhook } from '../schemas/webhook.schema';
+import type { Webhook } from '../schemas/webhook.schema';
+import type { Types } from 'mongoose';
 
 export type WebhookEntity = Webhook & {
   _id: Types.ObjectId;

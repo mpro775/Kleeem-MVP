@@ -23,17 +23,19 @@ import {
   ApiOkResponse,
   ApiCreatedResponse,
 } from '@nestjs/swagger';
-import { ChatWidgetService } from './chat-widget.service';
-import { UpdateWidgetSettingsDto } from './dto/update-widget-settings.dto';
-import { RolesGuard } from 'src/common/guards/roles.guard';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { HandoffDto } from './dto/handoff.dto';
 import { Public } from 'src/common/decorators/public.decorator';
+import { ErrorResponse } from 'src/common/dto/error-response.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
 } from '../../common';
-import { ErrorResponse } from 'src/common/dto/error-response.dto';
+
+import { ChatWidgetService } from './chat-widget.service';
+import { HandoffDto } from './dto/handoff.dto';
+import { UpdateWidgetSettingsDto } from './dto/update-widget-settings.dto';
 
 @ApiTags('ودجة الدردشة')
 @ApiBearerAuth()

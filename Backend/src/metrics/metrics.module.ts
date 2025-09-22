@@ -6,10 +6,12 @@ import {
   makeCounterProvider,
   makeGaugeProvider,
 } from '@willsoto/nestjs-prometheus';
+
 import { HttpMetricsInterceptor } from '../common/interceptors/http-metrics.interceptor';
+
 import { BusinessMetrics, BusinessMetricsProviders } from './business.metrics';
-import { SecurityMetrics, SecurityMetricsProviders } from './security.metrics';
 import { ProductMetrics, ProductMetricsProviders } from './product.metrics';
+import { SecurityMetrics, SecurityMetricsProviders } from './security.metrics';
 
 export const HttpRequestDurationProvider = makeHistogramProvider({
   name: 'http_request_duration_seconds',
@@ -37,7 +39,8 @@ export const DatabaseMetricsProvider = makeHistogramProvider({
 });
 
 // Injection token for database metrics
-export const DATABASE_QUERY_DURATION_SECONDS = 'DATABASE_QUERY_DURATION_SECONDS';
+export const DATABASE_QUERY_DURATION_SECONDS =
+  'DATABASE_QUERY_DURATION_SECONDS';
 
 export const ActiveConnectionsProvider = makeGaugeProvider({
   name: 'websocket_connections_active',
@@ -77,7 +80,7 @@ export const CacheHitRateGauge = makeGaugeProvider({
       useFactory: (counter) => counter,
       inject: ['PROM_METRIC_HTTP_REQUESTS_TOTAL'],
     },
-    
+
     {
       provide: HTTP_REQUEST_DURATION_SECONDS,
       useFactory: (histogram) => histogram,

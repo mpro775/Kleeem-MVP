@@ -1,5 +1,7 @@
 // src/features/chat/chat.gateway.ts (أو حيث تضعه)
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { OnModuleInit, Inject, Logger } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -9,14 +11,12 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { JwtService } from '@nestjs/jwt';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
 import { createAdapter } from '@socket.io/redis-adapter';
-import { createClient } from 'redis';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import { Cache } from 'cache-manager';
 import { Gauge } from 'prom-client';
+import { createClient } from 'redis';
+import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
   path: '/api/chat',
@@ -116,7 +116,7 @@ export class ChatGateway
       }
 
       // التحقق من صحة التوكن
-      const decoded = this.jwtService.verify(token) as any;
+      const decoded = this.jwtService.verify(token);
       if (!decoded?.jti) {
         return false;
       }

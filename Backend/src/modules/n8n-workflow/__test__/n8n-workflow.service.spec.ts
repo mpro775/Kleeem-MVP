@@ -1,10 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { N8nWorkflowService } from '../n8n-workflow.service';
-import { N8N_CLIENT } from '../tokens';
-import { N8nClientRepository } from '../repositories/n8n-client.repository';
-import { WorkflowHistoryService } from '../../workflow-history/workflow-history.service';
-import { MerchantsService } from '../../merchants/merchants.service';
 import { HttpException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+
+import { MerchantsService } from '../../merchants/merchants.service';
+import { WorkflowHistoryService } from '../../workflow-history/workflow-history.service';
+import { N8nWorkflowService } from '../n8n-workflow.service';
+import { N8nClientRepository } from '../repositories/n8n-client.repository';
+import { N8N_CLIENT } from '../tokens';
 
 const historyMock = {
   create: jest.fn(),

@@ -88,6 +88,6 @@ StorefrontSchema.pre('save', async function (next) {
     }
     next();
   } catch (e) {
-    next(e as any);
+    next(e);
   }
 });

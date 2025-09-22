@@ -4,3 +4,9 @@ dist/
 .DS_Store
 *.log
 coverageqdrant_data/
+
+# Secrets
+.env
+.env.*
+Backend/env
+

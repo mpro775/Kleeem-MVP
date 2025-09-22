@@ -1,14 +1,17 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
+
 import { AiReplyWorkerModule } from './ai-reply.worker.module';
 import { startMetricsServer } from './shared/metrics';
 
+const METRICS_PORT = 9101;
+
 async function bootstrap() {
-  const port = Number(process.env.METRICS_PORT || 9101);
+  const port = Number(process.env.METRICS_PORT || METRICS_PORT);
   startMetricsServer(port);
   await NestFactory.createApplicationContext(AiReplyWorkerModule, {
     logger: ['log', 'error', 'warn'],
   });
-  console.log('🤖 AI Reply worker started');
 }
-bootstrap();
+
+void bootstrap();

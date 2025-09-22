@@ -1,13 +1,14 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ProductCommandsService } from '../product-commands.service';
 import { ConfigService } from '@nestjs/config';
+import { Test, TestingModule } from '@nestjs/testing';
+
+import { CacheService } from '../../../../common/cache/cache.service';
+import { OutboxService } from '../../../../common/outbox/outbox.service';
+import { TranslationService } from '../../../../common/services/translation.service';
+import { CategoriesService } from '../../../categories/categories.service';
+import { StorefrontService } from '../../../storefront/storefront.service';
+import { ProductCommandsService } from '../product-commands.service';
 import { ProductIndexService } from '../product-index.service';
 import { ProductMediaService } from '../product-media.service';
-import { CacheService } from '../../../../common/cache/cache.service';
-import { StorefrontService } from '../../../storefront/storefront.service';
-import { CategoriesService } from '../../../categories/categories.service';
-import { TranslationService } from '../../../../common/services/translation.service';
-import { OutboxService } from '../../../../common/outbox/outbox.service';
 
 const mockSession = {
   withTransaction: jest.fn(),

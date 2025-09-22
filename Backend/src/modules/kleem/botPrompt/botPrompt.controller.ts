@@ -10,16 +10,7 @@ import {
   HttpStatus,
   HttpCode,
 } from '@nestjs/common';
-import { BotPromptService } from './botPrompt.service';
-import { CreateBotPromptDto } from './dto/create-botPrompt.dto';
-import { UpdateBotPromptDto } from './dto/update-botPrompt.dto';
-import { SetActiveKaleemDto } from './dto/set-active.dto';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Roles } from 'src/common/decorators/roles.decorator';
 import { UseGuards } from '@nestjs/common';
-import { Public } from 'src/common/decorators/public.decorator';
-import { TranslationService } from '../../../common/services/translation.service';
 import {
   ApiTags,
   ApiOperation,
@@ -34,6 +25,17 @@ import {
   ApiForbiddenResponse,
   ApiNotFoundResponse,
 } from '@nestjs/swagger';
+import { Public } from 'src/common/decorators/public.decorator';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+
+import { TranslationService } from '../../../common/services/translation.service';
+
+import { BotPromptService } from './botPrompt.service';
+import { CreateBotPromptDto } from './dto/create-botPrompt.dto';
+import { SetActiveKaleemDto } from './dto/set-active.dto';
+import { UpdateBotPromptDto } from './dto/update-botPrompt.dto';
 import { BotPrompt } from './schemas/botPrompt.schema';
 @ApiTags('kleem.botPrompt')
 @ApiBearerAuth()

@@ -1,5 +1,6 @@
-import { Provider } from '@nestjs/common';
 import { Counter, Gauge } from 'prom-client';
+
+import type { Provider } from '@nestjs/common';
 
 export const METRIC_HTTP_DURATION = 'HTTP_REQUEST_DURATION_SECONDS';
 export const METRIC_HTTP_TOTAL = 'HTTP_REQUESTS_TOTAL';

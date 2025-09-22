@@ -1,12 +1,13 @@
 // src/common/error-management.module.ts
 import { Module, Global, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ErrorManagementService } from './services/error-management.service';
-import { SentryService } from './services/sentry.service';
+
+import { ErrorMonitoringController } from './controllers/error-monitoring.controller';
+import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { ErrorLoggingInterceptor } from './interceptors/error-logging.interceptor';
 import { PerformanceTrackingInterceptor } from './interceptors/performance-tracking.interceptor';
-import { AllExceptionsFilter } from './filters/all-exceptions.filter';
-import { ErrorMonitoringController } from './controllers/error-monitoring.controller';
+import { ErrorManagementService } from './services/error-management.service';
+import { SentryService } from './services/sentry.service';
 
 @Global()
 @Module({

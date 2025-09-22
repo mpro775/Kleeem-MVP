@@ -1,8 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { Lead } from './schemas/lead.schema';
+
 import { CreateLeadDto } from './dto/create-lead.dto';
-import { LEAD_REPOSITORY } from './tokens';
 import { LeadRepository } from './repositories/lead.repository';
+import { Lead } from './schemas/lead.schema';
+import { LEAD_REPOSITORY } from './tokens';
 
 function normalizePhone(p?: string) {
   if (!p) return undefined;

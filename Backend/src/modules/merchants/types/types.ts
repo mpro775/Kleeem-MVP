@@ -1,4 +1,4 @@
-import { PlanTier } from '../schemas/subscription-plan.schema';
+import type { PlanTier } from '../schemas/subscription-plan.schema';
 
 export interface MerchantStatusResponse {
   status: 'active' | 'inactive' | 'suspended';

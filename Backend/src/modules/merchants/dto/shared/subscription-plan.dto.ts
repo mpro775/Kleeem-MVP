@@ -1,4 +1,5 @@
 // src/merchants/dto/subscription-plan.dto.ts
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEnum,
   IsDateString,
@@ -8,7 +9,7 @@ import {
   IsString,
   IsNotEmpty,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import { PlanTier } from '../../schemas/subscription-plan.schema';
 
 /**

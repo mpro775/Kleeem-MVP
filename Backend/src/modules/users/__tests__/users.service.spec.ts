@@ -1,7 +1,8 @@
 import { Test } from '@nestjs/testing';
-import { UsersService } from '../users.service';
-import { UsersRepository } from '../repositories/users.repository';
+
 import { PaginationResult } from '../../../common/dto/pagination.dto';
+import { UsersRepository } from '../repositories/users.repository';
+import { UsersService } from '../users.service';
 
 describe('UsersService', () => {
   let svc: UsersService;

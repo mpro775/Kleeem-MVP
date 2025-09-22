@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+
 import { BotChatsService } from '../botChats.service';
-import { BOT_CHAT_REPOSITORY } from '../tokens';
 import { BotChatRepository } from '../repositories/bot-chats.repository';
+import { BOT_CHAT_REPOSITORY } from '../tokens';
 
 describe('BotChatsService', () => {
   let service: BotChatsService;

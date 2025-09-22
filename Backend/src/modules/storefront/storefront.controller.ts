@@ -13,6 +13,7 @@ import {
   UseInterceptors,
   Header,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -23,21 +24,21 @@ import {
   ApiExtraModels,
   ApiConsumes,
 } from '@nestjs/swagger';
-import { StorefrontService } from './storefront.service';
+
+import {
+  ApiSuccessResponse,
+  ApiCreatedResponse as CommonApiCreatedResponse,
+} from '../../common';
+import { Public } from '../../common/decorators/public.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+
 import {
   CreateStorefrontDto,
   UpdateStorefrontDto,
   BannerDto,
 } from './dto/create-storefront.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { Public } from '../../common/decorators/public.decorator';
-import {
-  ApiSuccessResponse,
-  ApiCreatedResponse as CommonApiCreatedResponse,
- 
-} from '../../common';
 import { UpdateStorefrontByMerchantDto } from './dto/update-storefront-by-merchant.dto';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { StorefrontService } from './storefront.service';
 /**
  * واجهة تحكم المتجر
  * تتعامل مع عمليات إدارة واجهة المتجر وإعداداتها
@@ -151,7 +152,7 @@ export class StorefrontController {
   async myOrders(
     @Param('merchantId') merchantId: string,
     @Query('sessionId') sessionId: string,
-    @Query('phone') phone?: string,          // ✅ دعم الهاتف مباشرة من الطلب
+    @Query('phone') phone?: string, // ✅ دعم الهاتف مباشرة من الطلب
     @Query('limit') limit = '50',
   ) {
     if (!merchantId || (!sessionId && !phone)) {

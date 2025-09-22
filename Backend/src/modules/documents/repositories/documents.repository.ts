@@ -1,5 +1,5 @@
-import { Types, HydratedDocument } from 'mongoose';
-import { DocumentSchemaClass } from '../schemas/document.schema';
+import type { DocumentSchemaClass } from '../schemas/document.schema';
+import type { Types, HydratedDocument } from 'mongoose';
 
 export interface DocumentsRepository {
   create(

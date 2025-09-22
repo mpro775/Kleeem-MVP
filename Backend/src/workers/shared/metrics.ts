@@ -1,18 +1,28 @@
 import http from 'http';
+
 import * as client from 'prom-client';
 
 const register = new client.Registry();
 
-export function startMetricsServer(port: number) {
-  http
-    .createServer((req, res) => {
-      if (req.url === '/metrics') {
+export async function startMetricsServer(port: number): Promise<void> {
+  const server = http.createServer(async (req, res) => {
+    if (req.url === '/metrics') {
+      try {
         res.writeHead(200, { 'Content-Type': register.contentType });
-        register.metrics().then((metrics) => res.end(metrics));
-      } else {
-        res.writeHead(404);
-        res.end();
+        const metrics = await register.metrics();
+        res.end(metrics);
+      } catch (error) {
+        console.error('Metrics error:', error);
+        res.writeHead(500);
+        res.end('Internal Server Error');
       }
-    })
-    .listen(port, () => console.log(`📈 metrics on :${port}`));
+    } else {
+      res.writeHead(404);
+      res.end();
+    }
+  });
+
+  return new Promise((resolve) => {
+    server.listen(port, () => resolve());
+  });
 }

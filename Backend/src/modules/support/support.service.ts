@@ -1,3 +1,6 @@
+import { unlink } from 'node:fs/promises';
+
+import { HttpService } from '@nestjs/axios';
 import {
   BadRequestException,
   Injectable,
@@ -5,17 +8,15 @@ import {
   Inject,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
 import * as Minio from 'minio';
-import { unlink } from 'node:fs/promises';
+import { firstValueFrom } from 'rxjs';
 
 import { CreateContactDto } from './dto/create-contact.dto';
-import { SUPPORT_REPOSITORY } from './tokens';
 import {
   SupportRepository,
   SupportTicketEntity,
 } from './repositories/support.repository';
+import { SUPPORT_REPOSITORY } from './tokens';
 
 @Injectable()
 export class SupportService {
@@ -191,10 +192,7 @@ export class SupportService {
           url,
         });
       } catch (e) {
-        this.logger.error(
-          `Failed to upload support attachment: ${safe}`,
-          e as any,
-        );
+        this.logger.error(`Failed to upload support attachment: ${safe}`, e);
         throw new InternalServerErrorException('SUPPORT_UPLOAD_FAILED');
       } finally {
         if ((f as any).path) {

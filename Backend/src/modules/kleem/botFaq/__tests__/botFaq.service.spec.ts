@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BotFaqService } from '../botFaq.service';
-import { BOT_FAQ_REPOSITORY } from '../tokens';
-import { BotFaqRepository } from '../repositories/bot-faq.repository';
+
 import { VectorService } from '../../../vector/vector.service';
+import { BotFaqService } from '../botFaq.service';
+import { BotFaqRepository } from '../repositories/bot-faq.repository';
+import { BOT_FAQ_REPOSITORY } from '../tokens';
 
 describe('BotFaqService', () => {
   let service: BotFaqService;

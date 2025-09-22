@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
@@ -9,9 +10,9 @@ import {
   IsPhoneNumber,
   MinLength,
   MaxLength,
-  IsNotEmpty
+  IsNotEmpty,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import { AddressDto } from '../shared/address.dto';
 
 /**
@@ -24,7 +25,7 @@ export class OnboardingBasicDto {
     example: 'متجر الإلكترونيات الحديث',
     minLength: 3,
     maxLength: 100,
-    required: true
+    required: true,
   })
   @IsString({ message: 'يجب أن يكون اسم التاجر نصيًا' })
   @IsNotEmpty({ message: 'اسم التاجر مطلوب' })
@@ -36,7 +37,7 @@ export class OnboardingBasicDto {
     description: 'نوع النشاط التجاري',
     example: 'شركة تجارية',
     maxLength: 100,
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString({ message: 'يجب أن يكون نوع النشاط التجاري نصيًا' })
@@ -47,7 +48,7 @@ export class OnboardingBasicDto {
     description: 'وصف النشاط التجاري',
     example: 'متخصصون في بيع الأجهزة الإلكترونية والمنزلية',
     maxLength: 1000,
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString({ message: 'يجب أن يكون وصف النشاط التجاري نصيًا' })
@@ -57,7 +58,7 @@ export class OnboardingBasicDto {
   @ApiPropertyOptional({
     description: 'رقم هاتف التواصل',
     example: '+966501234567',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString({ message: 'يجب أن يكون رقم الهاتف نصيًا' })
@@ -68,7 +69,7 @@ export class OnboardingBasicDto {
     description: 'فئات المنتجات/الخدمات',
     type: [String],
     example: ['إلكترونيات', 'أجهزة منزلية'],
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsArray({ message: 'يجب أن تكون الفئات مصفوفة' })
@@ -80,7 +81,7 @@ export class OnboardingBasicDto {
     description: 'فئة مخصصة في حالة عدم وجود الفئة المطلوبة',
     example: 'منتجات فريدة من نوعها',
     maxLength: 100,
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString({ message: 'يجب أن تكون الفئة المخصصة نصية' })
@@ -91,7 +92,7 @@ export class OnboardingBasicDto {
     description: 'رابط شعار التاجر',
     example: 'https://example.com/logo.png',
     format: 'url',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsUrl({}, { message: 'يجب إدخال رابط صحيح للشعار' })
@@ -100,7 +101,7 @@ export class OnboardingBasicDto {
   @ApiPropertyOptional({
     description: 'عناوين التاجر',
     type: () => [AddressDto],
-    required: false
+    required: false,
   })
   @IsOptional()
   @ValidateNested({ each: true })

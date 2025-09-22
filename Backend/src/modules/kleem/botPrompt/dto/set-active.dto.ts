@@ -1,5 +1,6 @@
-import { IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsBoolean } from 'class-validator';
+
 import { I18nMessage } from '../../../../common/validators/i18n-validator';
 
 export class SetActiveKaleemDto {

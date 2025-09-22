@@ -1,4 +1,4 @@
-import { BotRuntimeSettings } from '../botRuntimeSettings.schema';
+import type { BotRuntimeSettings } from '../botRuntimeSettings.schema';
 
 export interface SettingsRepository {
   findOneLean(): Promise<BotRuntimeSettings | null>;

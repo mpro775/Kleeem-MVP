@@ -1,7 +1,15 @@
-import { Controller, Get, Query, BadRequestException, UseGuards } from '@nestjs/common';
-import { OffersService } from './offers.service';
+import {
+  Controller,
+  Get,
+  Query,
+  BadRequestException,
+  UseGuards,
+} from '@nestjs/common';
+
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+
+import { OffersService } from './offers.service';
 
 @Controller('offers')
 @UseGuards(JwtAuthGuard)

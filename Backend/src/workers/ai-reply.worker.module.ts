@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+
 import { AiIncomingConsumer } from './ai-incoming.consumer'; // عدّل المسار
 
 @Module({

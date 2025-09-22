@@ -7,8 +7,10 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import type { Request } from 'express';
+
 import { shouldBypass } from './bypass.util';
+
+import type { Request } from 'express';
 
 export interface ApiResponseData<T = any> {
   success: boolean;

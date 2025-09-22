@@ -1,6 +1,8 @@
-import { registerDecorator, ValidationOptions } from 'class-validator';
-import { TranslationService } from '../services/translation.service';
+import { registerDecorator } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
+
+import type { TranslationService } from '../services/translation.service';
+import type { ValidationOptions } from 'class-validator';
 
 /**
  * Custom validation decorator للرسائل المترجمة
@@ -30,7 +32,7 @@ export function I18nMessageWithContext(
   context: Record<string, any>,
   validationOptions?: ValidationOptions,
 ) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'I18nMessageWithContext',
       target: object.constructor,

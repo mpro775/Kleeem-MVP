@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { SourceUrl } from '../schemas/source-url.schema';
+import type { SourceUrl } from '../schemas/source-url.schema';
+import type { Types } from 'mongoose';
 
 export type SourceUrlEntity = SourceUrl & {
   _id: Types.ObjectId;

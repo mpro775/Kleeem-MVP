@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { Order } from '../../orders/schemas/order.schema';
+import type { Order } from '../../orders/schemas/order.schema';
+import type { Types } from 'mongoose';
 
 export type OrderEntity = Order & { _id: Types.ObjectId; createdAt?: Date };
 

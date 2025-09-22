@@ -1,5 +1,6 @@
-import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
+import { validate } from 'class-validator';
+
 import { BotReplyDto } from './bot-reply.dto';
 
 describe('BotReplyDto', () => {

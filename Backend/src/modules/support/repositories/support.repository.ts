@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { SupportTicket } from '../schemas/support-ticket.schema';
+import type { SupportTicket } from '../schemas/support-ticket.schema';
+import type { Types } from 'mongoose';
 
 export type SupportTicketEntity = SupportTicket & {
   _id: Types.ObjectId;

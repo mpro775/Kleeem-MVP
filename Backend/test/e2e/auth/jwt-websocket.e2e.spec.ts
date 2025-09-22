@@ -1,8 +1,9 @@
 // test/e2e/auth/jwt-websocket.e2e.spec.ts
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import { Test, TestingModule } from '@nestjs/testing';
 import { io, Socket } from 'socket.io-client';
+import request from 'supertest';
+
 import { AppModule } from '../../../src/app.module';
 
 describe('JWT & WebSocket E2E (H4)', () => {

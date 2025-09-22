@@ -1,5 +1,6 @@
 // src/merchants/dto/merchant-status.response.ts
 import { ApiProperty } from '@nestjs/swagger';
+
 import { PlanTier } from '../../schemas/subscription-plan.schema';
 
 export class MerchantStatusResponse {

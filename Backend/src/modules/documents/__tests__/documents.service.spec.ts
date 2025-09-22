@@ -1,7 +1,8 @@
+import { getQueueToken } from '@nestjs/bull';
 import { Test } from '@nestjs/testing';
+
 import { DocumentsService } from '../documents.service';
 import { DocumentsRepository } from '../repositories/documents.repository';
-import { getQueueToken } from '@nestjs/bull';
 
 describe('DocumentsService', () => {
   let service: DocumentsService;

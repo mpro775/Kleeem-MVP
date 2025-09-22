@@ -5,15 +5,16 @@ import {
   NestInterceptor,
   Logger,
 } from '@nestjs/common';
-import { Observable, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
 import { Inject } from '@nestjs/common';
 import { Counter, Histogram } from 'prom-client';
+import { Observable, throwError } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 import {
-  METRIC_HTTP_DURATION,
-  METRIC_HTTP_ERRORS,
-  METRIC_HTTP_TOTAL,
-} from 'src/metrics/metrics.providers';
+  HTTP_ERRORS_TOTAL,
+  HTTP_REQUEST_DURATION_SECONDS,
+} from 'src/metrics/metrics.module';
+
+import { shouldBypass } from './bypass.util';
 
 /**
  * Interceptor لقياس أداء HTTP requests
@@ -23,16 +24,23 @@ export class HttpMetricsInterceptor implements NestInterceptor {
   private readonly logger = new Logger(HttpMetricsInterceptor.name);
 
   constructor(
-    @Inject(METRIC_HTTP_DURATION)
+    @Inject(HTTP_REQUEST_DURATION_SECONDS)
     private readonly httpDuration: Histogram<string>,
-    @Inject(METRIC_HTTP_ERRORS) private readonly httpErrors: Counter<string>,
-    @Inject(METRIC_HTTP_TOTAL) private readonly httpTotal: Counter<string>,
+
+    @Inject('HTTP_REQUESTS_TOTAL')
+    private readonly httpTotal: Counter<string>,
+
+    @Inject(HTTP_ERRORS_TOTAL)
+    private readonly httpErrors: Counter<string>,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const req = context.switchToHttp().getRequest();
     const res = context.switchToHttp().getResponse();
     const startTime = process.hrtime.bigint();
+    if (context.getType<'http'>() !== 'http') return next.handle();
+
+    if (shouldBypass(req)) return next.handle();
 
     // استخراج معلومات الطلب
     const method = req.method;
@@ -41,7 +49,7 @@ export class HttpMetricsInterceptor implements NestInterceptor {
     const ip = req.ip || req.connection.remoteAddress;
 
     // إضافة request ID للتتبع
-    const requestId = req.headers['X-Request-Id'] || this.generateRequestId();
+    const requestId = req.headers['x-request-id'] || this.generateRequestId();
     req.requestId = requestId;
     res.setHeader('X-Request-ID', requestId);
 
@@ -80,10 +88,10 @@ export class HttpMetricsInterceptor implements NestInterceptor {
     startTime: bigint,
   ): void {
     const duration = Number(process.hrtime.bigint() - startTime) / 1e9;
-    const status = statusCode.toString();
+    const status_code = statusCode.toString();
 
-    this.httpDuration.labels(method, route, status).observe(duration);
-    this.httpTotal.labels(method, route, status).inc();
+    this.httpDuration.labels(method, route, status_code).observe(duration);
+    this.httpTotal.labels(method, route, status_code).inc();
 
     if (duration > 1) {
       this.logger.warn(

@@ -20,9 +20,11 @@ import {
   ApiForbiddenResponse,
   ApiQuery,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { CatalogService } from './catalog.service';
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
+
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+
+import { CatalogService } from './catalog.service';
 
 @ApiTags('الكتالوج')
 @ApiBearerAuth()

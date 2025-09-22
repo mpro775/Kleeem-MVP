@@ -1,9 +1,10 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import axios from 'axios';
-import { decryptSecret } from './utils/secrets.util';
-import { ChannelsRepository } from './repositories/channels.repository';
 import { Types } from 'mongoose';
+
+import { ChannelsRepository } from './repositories/channels.repository';
 import { ChannelProvider } from './schemas/channel.schema';
+import { decryptSecret } from './utils/secrets.util';
 
 @Injectable()
 export class WhatsappCloudService {

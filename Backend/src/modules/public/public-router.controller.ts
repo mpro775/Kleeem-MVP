@@ -1,19 +1,29 @@
 // src/modules/public/public-router.controller.ts
-import { Controller, Get, Param, NotFoundException, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Param,
+  NotFoundException,
+  UseGuards,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Model, Types } from 'mongoose';
-import { Merchant, MerchantDocument } from '../merchants/schemas/merchant.schema';
+import { Public } from 'src/common/decorators/public.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+
 import {
   ChatWidgetSettings,
   ChatWidgetSettingsDocument,
 } from '../chat/schema/chat-widget.schema';
 import {
+  Merchant,
+  MerchantDocument,
+} from '../merchants/schemas/merchant.schema';
+import {
   Storefront,
   StorefrontDocument,
 } from '../storefront/schemas/storefront.schema';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('Public Router')
 @UseGuards(JwtAuthGuard)

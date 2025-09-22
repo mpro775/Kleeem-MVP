@@ -1,16 +1,18 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { StorefrontService } from '../storefront/storefront.service';
+
 import {
   ChannelProvider,
   ChannelStatus,
   ChannelDocument,
 } from '../channels/schemas/channel.schema';
+import { StorefrontService } from '../storefront/storefront.service';
+
+import { MerchantChecklistRepository } from './repositories/merchant-checklist.repository';
 import {
   ChecklistGroup,
   ChecklistItem,
 } from './types/merchant-checklist.service.types'; // ← ملف أنواع بسيط سنضيفه بالأسفل
-import { MerchantChecklistRepository } from './repositories/merchant-checklist.repository';
 
 @Injectable()
 export class MerchantChecklistService {
@@ -265,7 +267,7 @@ export class MerchantChecklistService {
         {
           key: 'banners',
           title: 'البانرات',
-          isComplete: !!(storefront as any)?.banners?.length,
+          isComplete: !!storefront?.banners?.length,
           message: 'أضف بانرات لمتجرك',
           actionPath: '/dashboard/banners',
           skippable: true,

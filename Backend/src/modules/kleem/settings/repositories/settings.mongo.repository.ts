@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+
 import { BotRuntimeSettings } from '../botRuntimeSettings.schema';
+
 import { SettingsRepository } from './settings.repository';
 
 @Injectable()
@@ -27,6 +29,6 @@ export class SettingsMongoRepository implements SettingsRepository {
       .findOneAndUpdate({}, patch as any, { upsert: true, new: true })
       .lean<BotRuntimeSettings>()
       .exec();
-    return doc!;
+    return doc;
   }
 }

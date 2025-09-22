@@ -1,4 +1,5 @@
 import { IsString, MinLength } from 'class-validator';
+
 import { I18nMessage } from '../../../common/validators/i18n-validator';
 
 export class ChangePasswordDto {

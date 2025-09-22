@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { OffersService } from './offers.service';
 
-import { PRODUCT_REPOSITORY, MERCHANT_REPOSITORY } from './tokens';
-import { ProductMongoRepository } from './repositories/product.mongo.repository';
-import { MerchantMongoRepository } from './repositories/merchant.mongo.repository';
-
-import { Product, ProductSchema } from '../products/schemas/product.schema';
 import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
+import { Product, ProductSchema } from '../products/schemas/product.schema';
+
+import { OffersService } from './offers.service';
+import { MerchantMongoRepository } from './repositories/merchant.mongo.repository';
+import { ProductMongoRepository } from './repositories/product.mongo.repository';
+import { PRODUCT_REPOSITORY, MERCHANT_REPOSITORY } from './tokens';
 
 @Module({
   imports: [

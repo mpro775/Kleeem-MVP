@@ -1,9 +1,14 @@
 // src/common/filters/all-exceptions.filter.ts
 import {
-  ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus,
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
-import type { Request, Response } from 'express';
 import { Logger } from '@nestjs/common';
+
+import type { Request, Response } from 'express';
 
 /** فلتر استثناءات موحّد يعيد عقد أخطاء ثابت */
 @Catch()
@@ -29,29 +34,34 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const res = exception.getResponse();
-      
+
       // لو الاستثناء أصلاً صيغ كعقد موحّد
       if (typeof res === 'object' && res !== null && 'code' in (res as any)) {
-        payload = { 
-          requestId, 
-          status, 
+        payload = {
+          requestId,
+          status,
           timestamp: new Date().toISOString(),
-          ...(res as any) 
+          ...(res as any),
         };
       } else {
         payload = {
           status,
           code: 'HTTP_EXCEPTION',
-          message: typeof res === 'string' ? res : (res as any)?.message ?? 'خطأ',
+          message:
+            typeof res === 'string' ? res : ((res as any)?.message ?? 'خطأ'),
           requestId,
           timestamp: new Date().toISOString(),
         };
       }
     }
     // معالجة أخطاء MongoDB
-    else if (exception && typeof exception === 'object' && 'name' in exception) {
+    else if (
+      exception &&
+      typeof exception === 'object' &&
+      'name' in exception
+    ) {
       const mongoError = exception as any;
-      
+
       switch (mongoError.name) {
         case 'ValidationError':
           status = HttpStatus.BAD_REQUEST;
@@ -64,7 +74,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
             timestamp: new Date().toISOString(),
           };
           break;
-          
+
         case 'CastError':
           status = HttpStatus.BAD_REQUEST;
           payload = {
@@ -76,7 +86,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
             timestamp: new Date().toISOString(),
           };
           break;
-          
+
         case 'MongoServerError':
           if (mongoError.code === 11000) {
             status = HttpStatus.CONFLICT;
@@ -100,7 +110,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
             };
           }
           break;
-          
+
         default:
           // أخطاء MongoDB أخرى
           status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -115,7 +125,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     }
     // معالجة أخطاء Axios (HTTP requests)
-    else if (exception && typeof exception === 'object' && 'isAxiosError' in exception) {
+    else if (
+      exception &&
+      typeof exception === 'object' &&
+      'isAxiosError' in exception
+    ) {
       const axiosError = exception as any;
       status = axiosError.response?.status || HttpStatus.BAD_GATEWAY;
       payload = {
@@ -133,7 +147,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
       };
     }
     // معالجة أخطاء JWT
-    else if (exception && typeof exception === 'object' && 'name' in exception) {
+    else if (
+      exception &&
+      typeof exception === 'object' &&
+      'name' in exception
+    ) {
       const jwtError = exception as any;
       if (jwtError.name === 'JsonWebTokenError') {
         status = HttpStatus.UNAUTHORIZED;
@@ -174,9 +192,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   private formatMongoValidationError(error: any): any {
     const details: any = {};
-    
+
     if (error.errors) {
-      Object.keys(error.errors).forEach(key => {
+      Object.keys(error.errors).forEach((key) => {
         const fieldError = error.errors[key];
         details[key] = {
           message: fieldError.message,
@@ -185,7 +203,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         };
       });
     }
-    
+
     return details;
   }
 }

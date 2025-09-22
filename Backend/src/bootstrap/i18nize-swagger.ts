@@ -1,5 +1,5 @@
-import { OpenAPIObject } from '@nestjs/swagger';
-import { I18nService } from 'nestjs-i18n';
+import type { OpenAPIObject } from '@nestjs/swagger';
+import type { I18nService } from 'nestjs-i18n';
 
 export function i18nizeSwagger(
   doc: OpenAPIObject,

@@ -72,8 +72,12 @@ export class CookieService {
     const options = {
       ...this.getSecureCookieOptions(),
       maxAge: expiresInSeconds * 1000,
+      // Additional security for refresh token
+      httpOnly: true, // Prevent JavaScript access
+      secure: true, // HTTPS only in production
+      sameSite: 'strict', // Strict same-site policy
     };
-    res.cookie('refreshToken', refreshToken, options);
+    res.cookie('refreshToken', refreshToken, options as CookieOptions);
   }
 
   clearAuthCookies(res: Response): void {

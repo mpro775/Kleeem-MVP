@@ -1,4 +1,4 @@
-import { WorkflowDefinition } from '../types';
+import type { WorkflowDefinition } from '../types';
 
 export interface WorkflowCreatePayload {
   name: string;

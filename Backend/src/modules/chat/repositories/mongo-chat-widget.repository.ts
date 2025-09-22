@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+
 import {
   ChatWidgetSettings,
   ChatWidgetSettingsDocument,
@@ -43,7 +44,7 @@ export class MongoChatWidgetRepository {
       )
       .lean<ChatWidgetSettings>()
       .exec();
-    return doc as ChatWidgetSettings;
+    return doc;
   }
 
   async setWidgetSlug(merchantId: string | Types.ObjectId, slug: string) {
@@ -87,6 +88,6 @@ export class MongoChatWidgetRepository {
       .select('publicSlug')
       .lean<{ publicSlug?: string }>()
       .exec();
-    return (doc?.publicSlug ?? null) as string | null;
+    return doc?.publicSlug ?? null;
   }
 }

@@ -1,7 +1,7 @@
 // src/modules/products/services/product-media.service.ts
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import * as Minio from 'minio';
 import sharp from 'sharp';
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 
 @Injectable()
 export class ProductMediaService {

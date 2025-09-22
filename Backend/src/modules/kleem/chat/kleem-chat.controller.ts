@@ -8,10 +8,6 @@ import {
   UseGuards,
   HttpStatus,
 } from '@nestjs/common';
-import { KleemChatService } from './kleem-chat.service';
-import { BotChatsService } from '../botChats/botChats.service';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { Public } from 'src/common/decorators/public.decorator';
 import {
   ApiTags,
   ApiOperation,
@@ -35,6 +31,12 @@ import {
   Min,
   MaxLength,
 } from 'class-validator';
+import { Public } from 'src/common/decorators/public.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+
+import { BotChatsService } from '../botChats/botChats.service';
+
+import { KleemChatService } from './kleem-chat.service';
 
 // DTOs for request/response schemas
 class SendKaleemMessageDto {

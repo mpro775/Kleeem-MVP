@@ -1,6 +1,7 @@
-import { IsObject, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { WorkflowDefinition } from '../types';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsObject, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+
+import { WorkflowDefinition } from '../types';
 
 /**
  * نموذج تحديث سير العمل

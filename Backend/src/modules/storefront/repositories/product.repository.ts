@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { Product } from '../../products/schemas/product.schema';
+import type { Product } from '../../products/schemas/product.schema';
+import type { Types } from 'mongoose';
 
 export type ProductEntity = Product & {
   _id: Types.ObjectId;

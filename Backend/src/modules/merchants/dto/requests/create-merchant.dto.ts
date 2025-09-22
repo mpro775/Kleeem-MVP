@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsString,
@@ -15,14 +16,14 @@ import {
   IsBoolean,
   Matches,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { I18nMessage } from '../../../../common/validators/i18n-validator';
 
+import { I18nMessage } from '../../../../common/validators/i18n-validator';
 import { AddressDto } from '../shared/address.dto';
 import { SubscriptionPlanDto } from '../shared/subscription-plan.dto';
-import { QuickConfigDto } from './quick-config.dto';
 import { WorkingHourDto } from '../shared/working-hours.dto';
+
 import { AdvancedTemplateDto } from './advanced-template.dto';
+import { QuickConfigDto } from './quick-config.dto';
 
 /**
  * بيانات إنشاء تاجر جديد

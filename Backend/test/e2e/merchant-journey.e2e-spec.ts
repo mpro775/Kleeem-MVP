@@ -1,8 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { io as SocketClient, Socket } from 'socket.io-client';
 import request from 'supertest';
+
 import { AppModule } from '../../src/app.module';
 
 describe('Merchant Complete Journey (E2E)', () => {

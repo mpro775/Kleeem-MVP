@@ -1,33 +1,34 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types, FilterQuery } from 'mongoose';
 import dayjs from 'dayjs';
+import { Model, Types, FilterQuery } from 'mongoose';
 
-import {
-  MessageSession,
-  MessageSessionDocument,
-} from '../../messaging/schemas/message.schema';
-import {
-  Product,
-  ProductDocument,
-} from '../../products/schemas/product.schema';
-import { Order, OrderDocument } from '../../orders/schemas/order.schema';
-import {
-  MissingResponse,
-  MissingResponseDocument,
-} from '../schemas/missing-response.schema';
-import {
-  KleemMissingResponse,
-  KleemMissingResponseDocument,
-} from '../schemas/kleem-missing-response.schema';
 import {
   Channel,
   ChannelDocument,
   ChannelProvider,
   ChannelStatus,
 } from '../../channels/schemas/channel.schema';
-import { AnalyticsRepository } from './analytics.repository';
+import {
+  MessageSession,
+  MessageSessionDocument,
+} from '../../messaging/schemas/message.schema';
+import { Order, OrderDocument } from '../../orders/schemas/order.schema';
+import {
+  Product,
+  ProductDocument,
+} from '../../products/schemas/product.schema';
 import { KeywordCount, ChannelCount, TopProduct } from '../analytics.service';
+import {
+  KleemMissingResponse,
+  KleemMissingResponseDocument,
+} from '../schemas/kleem-missing-response.schema';
+import {
+  MissingResponse,
+  MissingResponseDocument,
+} from '../schemas/missing-response.schema';
+
+import { AnalyticsRepository } from './analytics.repository';
 
 @Injectable()
 export class MongoAnalyticsRepository implements AnalyticsRepository {

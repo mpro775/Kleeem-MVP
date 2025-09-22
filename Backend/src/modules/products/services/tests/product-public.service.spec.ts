@@ -1,9 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
+
 import { ProductPublicService } from '../product-public.service';
 
 const repo = {
   listPublicByMerchant: jest.fn(),
-  findPublicBySlugWithMerchant: jest.fn()
+  findPublicBySlugWithMerchant: jest.fn(),
 };
 const storefronts = { findBySlug: jest.fn() };
 
@@ -26,7 +27,7 @@ describe('ProductPublicService', () => {
     storefronts.findBySlug.mockResolvedValue(null);
 
     const result = await svc.getPublicProducts('not-found', {
-      limit: 10
+      limit: 10,
     } as any);
 
     expect(storefronts.findBySlug).toHaveBeenCalledWith('not-found');
@@ -40,11 +41,11 @@ describe('ProductPublicService', () => {
   it('getPublicProducts -> returns products when storefront exists', async () => {
     const storefront = {
       merchantId: '507f1f77bcf86cd799439011',
-      slug: 'test-store'
+      slug: 'test-store',
     };
     const productsResult = {
       items: [{ _id: 'p1', name: 'Product 1' }],
-      meta: { hasMore: true, nextCursor: 'cursor123', count: 1 }
+      meta: { hasMore: true, nextCursor: 'cursor123', count: 1 },
     };
 
     storefronts.findBySlug.mockResolvedValue(storefront);
@@ -52,39 +53,39 @@ describe('ProductPublicService', () => {
 
     const result = await svc.getPublicProducts('test-store', {
       limit: 10,
-      cursor: 'prevCursor'
+      cursor: 'prevCursor',
     } as any);
 
     expect(storefronts.findBySlug).toHaveBeenCalledWith('test-store');
     expect(repo.listPublicByMerchant).toHaveBeenCalledWith(
       expect.any(Object), // ObjectId
-      { limit: 10, cursor: 'prevCursor' }
+      { limit: 10, cursor: 'prevCursor' },
     );
     expect(result).toBe(productsResult);
   });
 
   it('getPublicProducts -> passes correct parameters to repository', async () => {
     const storefront = {
-      merchantId: '507f1f77bcf86cd799439011'
+      merchantId: '507f1f77bcf86cd799439011',
     };
     const dto = {
       limit: 20,
       cursor: 'abc123',
       category: 'electronics',
-      search: 'laptop'
+      search: 'laptop',
     };
 
     storefronts.findBySlug.mockResolvedValue(storefront);
     repo.listPublicByMerchant.mockResolvedValue({
       items: [],
-      meta: { hasMore: false, nextCursor: null, count: 0 }
+      meta: { hasMore: false, nextCursor: null, count: 0 },
     });
 
     await svc.getPublicProducts('store-slug', dto as any);
 
     expect(repo.listPublicByMerchant).toHaveBeenCalledWith(
       expect.any(Object),
-      dto
+      dto,
     );
   });
 
@@ -100,12 +101,12 @@ describe('ProductPublicService', () => {
 
   it('getPublicBySlug -> returns product when storefront exists', async () => {
     const storefront = {
-      merchantId: '507f1f77bcf86cd799439011'
+      merchantId: '507f1f77bcf86cd799439011',
     };
     const product = {
       _id: '507f1f77bcf86cd799439012',
       name: 'Test Product',
-      slug: 'product-slug'
+      slug: 'product-slug',
     };
 
     storefronts.findBySlug.mockResolvedValue(storefront);
@@ -116,14 +117,14 @@ describe('ProductPublicService', () => {
     expect(storefronts.findBySlug).toHaveBeenCalledWith('store-slug');
     expect(repo.findPublicBySlugWithMerchant).toHaveBeenCalledWith(
       'product-slug',
-      expect.any(Object) // ObjectId
+      expect.any(Object), // ObjectId
     );
     expect(result).toBe(product);
   });
 
   it('getPublicBySlug -> returns null when product not found', async () => {
     const storefront = {
-      merchantId: '507f1f77bcf86cd799439011'
+      merchantId: '507f1f77bcf86cd799439011',
     };
 
     storefronts.findBySlug.mockResolvedValue(storefront);
@@ -136,7 +137,7 @@ describe('ProductPublicService', () => {
 
   it('getPublicBySlug -> converts merchantId to ObjectId correctly', async () => {
     const storefront = {
-      merchantId: '507f1f77bcf86cd799439011'
+      merchantId: '507f1f77bcf86cd799439011',
     };
 
     storefronts.findBySlug.mockResolvedValue(storefront);
@@ -147,8 +148,8 @@ describe('ProductPublicService', () => {
     expect(repo.findPublicBySlugWithMerchant).toHaveBeenCalledWith(
       'product',
       expect.objectContaining({
-        toString: expect.any(Function)
-      })
+        toString: expect.any(Function),
+      }),
     );
   });
 
@@ -163,11 +164,11 @@ describe('ProductPublicService', () => {
     repo.listPublicByMerchant
       .mockResolvedValueOnce({
         items: [{ name: 'Product A' }],
-        meta: { hasMore: false, nextCursor: null, count: 1 }
+        meta: { hasMore: false, nextCursor: null, count: 1 },
       })
       .mockResolvedValueOnce({
         items: [{ name: 'Product B' }],
-        meta: { hasMore: false, nextCursor: null, count: 1 }
+        meta: { hasMore: false, nextCursor: null, count: 1 },
       });
 
     // Test first store

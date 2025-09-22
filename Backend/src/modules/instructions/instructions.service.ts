@@ -1,6 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { Instruction } from './schemas/instruction.schema';
+
 import { InstructionsRepository } from './repositories/instructions.repository';
+import { Instruction } from './schemas/instruction.schema';
 
 @Injectable()
 export class InstructionsService {

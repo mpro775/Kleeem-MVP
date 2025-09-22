@@ -1,9 +1,7 @@
 // src/common/decorators/current-user.decorator.ts
-import {
-  createParamDecorator,
-  ExecutionContext,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { createParamDecorator, UnauthorizedException } from '@nestjs/common';
+
+import type { ExecutionContext } from '@nestjs/common';
 
 export type Role = 'ADMIN' | 'MERCHANT' | 'MEMBER';
 export interface JwtPayload {

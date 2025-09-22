@@ -1,19 +1,20 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ProductQueriesService } from '../product-queries.service';
 import { ConfigService } from '@nestjs/config';
+import { Test, TestingModule } from '@nestjs/testing';
+
+import { ProductQueriesService } from '../product-queries.service';
 
 const repo = {
   findById: jest.fn(),
   searchHeuristics: jest.fn(),
   searchText: jest.fn(),
-  findAllByMerchant: jest.fn()
+  findAllByMerchant: jest.fn(),
 };
 const t = {
   translate: (k: string) => k,
-  translateProduct: (k: string) => k
+  translateProduct: (k: string) => k,
 };
 const cfg = {
-  get: (k: string) => (k.endsWith('heuristicTopN') ? 10 : 20)
+  get: (k: string) => (k.endsWith('heuristicTopN') ? 10 : 20),
 };
 
 describe('ProductQueriesService', () => {
@@ -39,14 +40,14 @@ describe('ProductQueriesService', () => {
     const result = await svc.findOne('507f1f77bcf86cd799439011');
 
     expect(repo.findById).toHaveBeenCalledWith(
-      expect.any(Object) // ObjectId
+      expect.any(Object), // ObjectId
     );
     expect(result).toBe(product);
   });
 
   it('findOne -> throws BadRequestException for invalid ObjectId', async () => {
     await expect(svc.findOne('invalid-id')).rejects.toThrow(
-      'validation.mongoId'
+      'validation.mongoId',
     );
     expect(repo.findById).not.toHaveBeenCalled();
   });
@@ -55,7 +56,7 @@ describe('ProductQueriesService', () => {
     repo.findById.mockResolvedValue(null);
 
     await expect(svc.findOne('507f1f77bcf86cd799439011')).rejects.toThrow(
-      'errors.notFound'
+      'errors.notFound',
     );
   });
 
@@ -75,12 +76,15 @@ describe('ProductQueriesService', () => {
     repo.searchHeuristics.mockResolvedValue(heuristicsResult);
     repo.searchText.mockResolvedValue([{ _id: 't1' }]);
 
-    const result = await svc.searchCatalog('507f1f77bcf86cd799439011', 'test query');
+    const result = await svc.searchCatalog(
+      '507f1f77bcf86cd799439011',
+      'test query',
+    );
 
     expect(repo.searchHeuristics).toHaveBeenCalledWith(
       expect.any(Object), // ObjectId
       'test query',
-      10
+      10,
     );
     expect(repo.searchText).not.toHaveBeenCalled();
     expect(result).toBe(heuristicsResult);
@@ -91,13 +95,16 @@ describe('ProductQueriesService', () => {
     repo.searchHeuristics.mockResolvedValue([]);
     repo.searchText.mockResolvedValue(textResult);
 
-    const result = await svc.searchCatalog('507f1f77bcf86cd799439011', 'test query');
+    const result = await svc.searchCatalog(
+      '507f1f77bcf86cd799439011',
+      'test query',
+    );
 
     expect(repo.searchHeuristics).toHaveBeenCalled();
     expect(repo.searchText).toHaveBeenCalledWith(
       expect.any(Object), // ObjectId
       'test query',
-      10
+      10,
     );
     expect(result).toBe(textResult);
   });
@@ -106,7 +113,10 @@ describe('ProductQueriesService', () => {
     repo.searchHeuristics.mockResolvedValue([]);
     repo.searchText.mockRejectedValue(new Error('search failed'));
 
-    const result = await svc.searchCatalog('507f1f77bcf86cd799439011', 'test query');
+    const result = await svc.searchCatalog(
+      '507f1f77bcf86cd799439011',
+      'test query',
+    );
 
     expect(repo.searchHeuristics).toHaveBeenCalled();
     expect(repo.searchText).toHaveBeenCalled();
@@ -117,7 +127,10 @@ describe('ProductQueriesService', () => {
     repo.searchHeuristics.mockResolvedValue([]);
     repo.searchText.mockRejectedValue(new Error('search failed'));
 
-    const result = await svc.searchCatalog('507f1f77bcf86cd799439011', 'test query');
+    const result = await svc.searchCatalog(
+      '507f1f77bcf86cd799439011',
+      'test query',
+    );
 
     expect(result).toEqual([]);
   });

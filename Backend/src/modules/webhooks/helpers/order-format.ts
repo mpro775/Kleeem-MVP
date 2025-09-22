@@ -1,6 +1,6 @@
 // helpers/order-format.ts
 
-import { Order } from './order';
+import type { Order } from './order';
 
 /** يبني رسالة مختصرة للطلبات */
 export function buildOrdersListMessage(orders: Order[]): { text: string } {

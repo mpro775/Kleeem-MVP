@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
-import { User, UserDocument } from '../../users/schemas/user.schema';
 import {
   Merchant,
   MerchantDocument,
 } from '../../merchants/schemas/merchant.schema';
+import { User, UserDocument } from '../../users/schemas/user.schema';
 import {
   EmailVerificationToken,
   EmailVerificationTokenDocument,
@@ -15,6 +15,7 @@ import {
   PasswordResetToken,
   PasswordResetTokenDocument,
 } from '../schemas/password-reset-token.schema';
+
 import { AuthRepository } from './auth.repository';
 
 @Injectable()

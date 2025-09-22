@@ -1,11 +1,11 @@
-import { Types } from 'mongoose';
-import {
+import type {
   KeywordCount,
   ChannelCount,
   TopProduct,
 } from '../../analytics/analytics.service';
-import { MissingResponseDocument } from '../schemas/missing-response.schema';
-import { KleemMissingResponseDocument } from '../schemas/kleem-missing-response.schema';
+import type { KleemMissingResponseDocument } from '../schemas/kleem-missing-response.schema';
+import type { MissingResponseDocument } from '../schemas/missing-response.schema';
+import type { Types } from 'mongoose';
 
 export interface AnalyticsRepository {
   // Sessions

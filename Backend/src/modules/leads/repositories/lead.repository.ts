@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { Lead } from '../schemas/lead.schema';
+import type { Lead } from '../schemas/lead.schema';
+import type { Types } from 'mongoose';
 
 export type LeadEntity = Lead & {
   _id: Types.ObjectId;

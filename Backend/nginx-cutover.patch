@@ -30,7 +30,7 @@ index 0000000..f9c2d33
 +# يعرّف: ربط request-id في اللوج + منطقة الـ rate-limit + فورمات اللوج
 +# =====================================================================
 +
-+# اربط X-Request-Id القادم من التطبيق (Nest) مع اللوج
++# اربط x-request-id القادم من التطبيق (Nest) مع اللوج
 +map $upstream_http_x_request_id $req_id {
 +  default $upstream_http_x_request_id;
 +}

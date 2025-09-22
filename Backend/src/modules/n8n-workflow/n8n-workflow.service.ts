@@ -7,16 +7,16 @@
   forwardRef,
 } from '@nestjs/common';
 
-import templateJson from './workflow-template.json';
-
-import { WorkflowHistoryService } from '../workflow-history/workflow-history.service';
 import { MerchantsService } from '../merchants/merchants.service';
-import { N8N_CLIENT } from './tokens';
+import { WorkflowHistoryService } from '../workflow-history/workflow-history.service';
+
 import {
   N8nClientRepository,
   WorkflowCreatePayload,
 } from './repositories/n8n-client.repository';
+import { N8N_CLIENT } from './tokens';
 import { WorkflowDefinition } from './types';
+import templateJson from './workflow-template.json';
 
 function setWebhookPath(raw: any, merchantId: string) {
   const hook = Array.isArray(raw?.nodes)
@@ -126,7 +126,7 @@ export class N8nWorkflowService {
     try {
       await this.n8n.setActive(wfId, true);
     } catch (e) {
-      this.logger.warn(`activate failed`, e as any);
+      this.logger.warn(`activate failed`, e);
     }
 
     await this.merchants.update(merchantId, { workflowId: wfId });
@@ -223,7 +223,7 @@ export class N8nWorkflowService {
     try {
       await this.n8n.setActive(wfId, true);
     } catch (e) {
-      this.logger.warn(`activate failed`, e as any);
+      this.logger.warn(`activate failed`, e);
     }
 
     await this.merchants.update(targetMerchantId, { workflowId: wfId });

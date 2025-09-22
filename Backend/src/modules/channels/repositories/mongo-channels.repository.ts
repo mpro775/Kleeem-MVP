@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, HydratedDocument, Model, Types } from 'mongoose';
+
 import {
   Channel,
   ChannelDocument,
   ChannelProvider,
 } from '../schemas/channel.schema';
-import { ChannelsRepository } from './channels.repository';
+
+import { ChannelsRepository, ChannelSecretsLean } from './channels.repository';
 
 @Injectable()
 export class MongoChannelsRepository implements ChannelsRepository {
@@ -30,6 +32,38 @@ export class MongoChannelsRepository implements ChannelsRepository {
 
   async findLeanById(id: string | Types.ObjectId) {
     return this.model.findById(id).lean();
+  }
+
+  async findByIdWithSecrets(
+    id: string | Types.ObjectId,
+  ): Promise<ChannelSecretsLean | null> {
+    return this.model
+      .findById(id)
+      .select(
+        [
+          '_id',
+          'merchantId',
+          'provider',
+          'isDefault',
+          'enabled',
+          'deletedAt',
+          'webhookUrl',
+
+          // WhatsApp Cloud:
+          'appSecretEnc',
+          'verifyTokenHash',
+          'accessTokenEnc',
+          'phoneNumberId',
+
+          // Telegram:
+          'botTokenEnc',
+
+          // WhatsApp QR:
+          'sessionId',
+        ].join(' '),
+      )
+      .lean<ChannelSecretsLean>()
+      .exec();
   }
 
   async deleteOneById(id: string | Types.ObjectId): Promise<void> {

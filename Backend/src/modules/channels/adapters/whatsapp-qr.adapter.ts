@@ -2,16 +2,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
+
+import { EvolutionService } from '../../integrations/evolution.service';
+import { ChannelDocument, ChannelStatus } from '../schemas/channel.schema';
+import { mapEvoStatus } from '../utils/evo-status.util';
+import { encryptSecret } from '../utils/secrets.util';
+
 import {
   ChannelAdapter,
   ConnectResult,
   Status,
   WebhookResult,
 } from './channel-adapter';
-import { ChannelDocument, ChannelStatus } from '../schemas/channel.schema';
-import { EvolutionService } from '../../integrations/evolution.service';
-import { encryptSecret } from '../utils/secrets.util';
-import { mapEvoStatus } from '../utils/evo-status.util';
 
 @Injectable()
 export class WhatsAppQrAdapter implements ChannelAdapter {
@@ -25,17 +27,23 @@ export class WhatsAppQrAdapter implements ChannelAdapter {
   async connect(c: ChannelDocument): Promise<ConnectResult> {
     const instanceName = `whatsapp_${c.merchantId}_${c.id}`;
     await this.evo.deleteInstance(instanceName).catch(() => undefined);
-  
+
     const token = uuidv4();
     const { qr, instanceId } = await this.evo.startSession(instanceName, token);
-  
+
     // اضبط Webhook لواتساب QR على مسارنا
     const rawBase = this.config.get('PUBLIC_WEBHOOK_BASE') || '';
     const base = rawBase.replace(/\/+$/, '');
     const hooksBase = /\/webhooks$/i.test(base) ? base : `${base}/webhooks`;
     const webhookUrl = `${hooksBase}/whatsapp_qr/${c.id}`;
-    await this.evo.setWebhook(instanceName, webhookUrl, ['MESSAGES_UPSERT'], true, true);
-  
+    await this.evo.setWebhook(
+      instanceName,
+      webhookUrl,
+      ['MESSAGES_UPSERT'],
+      true,
+      true,
+    );
+
     // خزّن
     c.sessionId = instanceName;
     c.instanceId = instanceId;
@@ -45,7 +53,7 @@ export class WhatsAppQrAdapter implements ChannelAdapter {
     c.enabled = true;
     c.status = ChannelStatus.PENDING;
     await c.save();
-  
+
     // محاولة فورية لقراءة الحالة وتحديثها
     try {
       const inst = await this.evo.getStatus(instanceName);
@@ -56,7 +64,7 @@ export class WhatsAppQrAdapter implements ChannelAdapter {
         await c.save();
       }
     } catch {}
-  
+
     return { mode: 'qr', qr, webhookUrl };
   }
 

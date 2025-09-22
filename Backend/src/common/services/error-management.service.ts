@@ -1,6 +1,8 @@
 // src/common/services/error-management.service.ts
 import { Injectable, Logger } from '@nestjs/common';
+
 import { ERROR_CODES } from '../constants/error-codes';
+
 import { SentryService, SentryContext } from './sentry.service';
 
 export interface ErrorLogEntry {
@@ -44,11 +46,11 @@ export class ErrorManagementService {
    */
   async logError(
     error: Error | string,
-    context: ErrorContext = {}
+    context: ErrorContext = {},
   ): Promise<string> {
     const errorId = this.generateErrorId();
     const timestamp = new Date();
-    
+
     const errorMessage = typeof error === 'string' ? error : error.message;
     const errorCode = this.extractErrorCode(error);
     const severity = this.determineSeverity(errorCode);
@@ -59,7 +61,10 @@ export class ErrorManagementService {
       timestamp,
       code: errorCode,
       message: errorMessage,
-      details: typeof error === 'object' ? { name: error.name, stack: error.stack } : undefined,
+      details:
+        typeof error === 'object'
+          ? { name: error.name, stack: error.stack }
+          : undefined,
       severity,
       category,
       ...context,
@@ -94,11 +99,16 @@ export class ErrorManagementService {
         },
       };
 
-      const sentryEventId = this.sentryService.captureException(error, sentryContext);
+      const sentryEventId = this.sentryService.captureException(
+        error,
+        sentryContext,
+      );
       errorEntry.sentryEventId = sentryEventId;
 
       if (sentryEventId) {
-        this.logger.debug(`Error also captured in Sentry with ID: ${sentryEventId}`);
+        this.logger.debug(
+          `Error also captured in Sentry with ID: ${sentryEventId}`,
+        );
       }
     }
 
@@ -113,7 +123,7 @@ export class ErrorManagementService {
    */
   async logSecurityError(
     activity: string,
-    context: ErrorContext = {}
+    context: ErrorContext = {},
   ): Promise<string> {
     const errorId = this.generateErrorId();
     const timestamp = new Date();
@@ -161,7 +171,7 @@ export class ErrorManagementService {
     const sentryEventId = this.sentryService.captureMessage(
       `Security violation: ${activity}`,
       'error',
-      sentryContext
+      sentryContext,
     );
     errorEntry.sentryEventId = sentryEventId;
 
@@ -175,7 +185,7 @@ export class ErrorManagementService {
   async logIntegrationError(
     serviceName: string,
     error: Error | string,
-    context: ErrorContext = {}
+    context: ErrorContext = {},
   ): Promise<string> {
     const errorId = this.generateErrorId();
     const timestamp = new Date();
@@ -222,7 +232,10 @@ export class ErrorManagementService {
       },
     };
 
-    const sentryEventId = this.sentryService.captureException(error, sentryContext);
+    const sentryEventId = this.sentryService.captureException(
+      error,
+      sentryContext,
+    );
     errorEntry.sentryEventId = sentryEventId;
 
     await this.persistError(errorEntry);
@@ -235,7 +248,7 @@ export class ErrorManagementService {
   async logBusinessError(
     code: string,
     message: string,
-    context: ErrorContext = {}
+    context: ErrorContext = {},
   ): Promise<string> {
     const errorId = this.generateErrorId();
     const timestamp = new Date();
@@ -282,7 +295,7 @@ export class ErrorManagementService {
       const sentryEventId = this.sentryService.captureMessage(
         message,
         'warning',
-        sentryContext
+        sentryContext,
       );
       errorEntry.sentryEventId = sentryEventId;
     }
@@ -297,7 +310,7 @@ export class ErrorManagementService {
   startPerformanceTracking(
     name: string,
     operation: string,
-    context: ErrorContext = {}
+    context: ErrorContext = {},
   ): any {
     const sentryContext: SentryContext = {
       userId: context.userId,
@@ -319,13 +332,15 @@ export class ErrorManagementService {
   /**
    * الحصول على إحصائيات الأخطاء
    */
-  async getErrorStats(filters: {
-    merchantId?: string;
-    severity?: string;
-    category?: string;
-    from?: Date;
-    to?: Date;
-  } = {}): Promise<{
+  async getErrorStats(
+    filters: {
+      merchantId?: string;
+      severity?: string;
+      category?: string;
+      from?: Date;
+      to?: Date;
+    } = {},
+  ): Promise<{
     total: number;
     bySeverity: Record<string, number>;
     byCategory: Record<string, number>;
@@ -385,7 +400,9 @@ export class ErrorManagementService {
     return ERROR_CODES.INTERNAL_ERROR;
   }
 
-  private determineSeverity(code: string): 'low' | 'medium' | 'high' | 'critical' {
+  private determineSeverity(
+    code: string,
+  ): 'low' | 'medium' | 'high' | 'critical' {
     const criticalCodes = [
       ERROR_CODES.DATABASE_ERROR,
       ERROR_CODES.EXTERNAL_SERVICE_ERROR,
@@ -412,7 +429,9 @@ export class ErrorManagementService {
     return 'low';
   }
 
-  private determineCategory(code: string): 'business' | 'technical' | 'security' | 'integration' {
+  private determineCategory(
+    code: string,
+  ): 'business' | 'technical' | 'security' | 'integration' {
     const securityCodes = [
       ERROR_CODES.UNAUTHORIZED,
       ERROR_CODES.FORBIDDEN,

@@ -1,6 +1,6 @@
 // src/modules/webhook/dto/handle-webhook.dto.ts
-import { IsString, IsNotEmpty, IsObject, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsObject, IsOptional } from 'class-validator';
 
 export class HandleWebhookDto {
   @ApiProperty({

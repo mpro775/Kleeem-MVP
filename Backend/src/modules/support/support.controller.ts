@@ -1,4 +1,7 @@
 // src/modules/support/support.controller.ts
+import { randomUUID } from 'crypto';
+import { extname, join } from 'path';
+
 import {
   BadRequestException,
   Body,
@@ -11,17 +14,16 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { randomUUID } from 'crypto';
+import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
+import { diskStorage } from 'multer';
+import { Public } from 'src/common/decorators/public.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+
 import { CreateContactDto } from './dto/create-contact.dto';
 import { SupportService } from './support.service';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { Public } from 'src/common/decorators/public.decorator';
 
 // عدّل المسار حسب مشروعك:
 // import { Public } from 'src/common/decorators/public.decorator';
@@ -112,10 +114,8 @@ export class SupportController {
     const uploaded = files?.files ?? [];
 
     const created = await this.service.create(dto, uploaded, {
-      ip:
-        (Array.isArray((req as any).ips) && (req as any).ips[0]) ||
-        (req as any).ip,
-      userAgent: (req as any).headers?.['user-agent'],
+      ip: (Array.isArray(req.ips) && req.ips[0]) || req.ip,
+      userAgent: req.headers?.['user-agent'],
     });
 
     return {

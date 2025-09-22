@@ -1,3 +1,4 @@
+import { CacheInterceptor } from '@nestjs/cache-manager';
 import {
   Controller,
   Get,
@@ -11,11 +12,7 @@ import {
   BadRequestException,
   Req,
 } from '@nestjs/common';
-import { CacheInterceptor } from '@nestjs/cache-manager';
-import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { InjectModel } from '@nestjs/mongoose';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -26,18 +23,25 @@ import {
   ApiUnauthorizedResponse,
   ApiNotFoundResponse,
 } from '@nestjs/swagger';
+import * as bcrypt from 'bcrypt';
+
+
+import { Model } from 'mongoose';
 import { ConfirmPasswordDto } from 'src/common/dto/confirm-password.dto';
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
   CurrentUser,
 } from '../../common';
-import { NotificationsPrefsDto } from './dto/notifications-prefs.dto';
-import * as bcrypt from 'bcrypt';
-import { User, UserDocument } from './schemas/user.schema';
-import { Model } from 'mongoose';
-import { InjectModel } from '@nestjs/mongoose';
+
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TranslationService } from '../../common/services/translation.service';
+
+import { CreateUserDto } from './dto/create-user.dto';
+import { NotificationsPrefsDto } from './dto/notifications-prefs.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { User, UserDocument } from './schemas/user.schema';
+import { UsersService } from './users.service';
 
 @ApiTags('المستخدمون')
 @ApiBearerAuth()

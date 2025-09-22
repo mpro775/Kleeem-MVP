@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { BotFaq } from '../schemas/botFaq.schema';
+import type { BotFaq } from '../schemas/botFaq.schema';
+import type { Types } from 'mongoose';
 
 export type BotFaqLean = BotFaq & { _id: Types.ObjectId };
 

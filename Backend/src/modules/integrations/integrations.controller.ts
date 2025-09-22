@@ -5,20 +5,22 @@ import {
   UseGuards,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { Integration, IntegrationDocument } from './schemas/integration.schema';
 import {
   Merchant,
   MerchantDocument,
 } from '../merchants/schemas/merchant.schema';
+
+import { Integration, IntegrationDocument } from './schemas/integration.schema';
 
 type ProviderState = {
   active: boolean;

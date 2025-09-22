@@ -1,16 +1,16 @@
 // src/vector/vector.service.ts
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { I18nService } from 'nestjs-i18n';
-import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Cache } from 'cache-manager';
+import { I18nService } from 'nestjs-i18n';
 import { v5 as uuidv5 } from 'uuid';
 
-import { QdrantWrapper } from './utils/qdrant.client';
-import { EmbeddingsClient } from './utils/embeddings.client';
 import { Collections, Namespaces } from './utils/collections';
-
+import { EmbeddingsClient } from './utils/embeddings.client';
+import { geminiRerankTopN } from './utils/geminiRerank';
+import { QdrantWrapper } from './utils/qdrant.client';
 import {
   BotFaqSearchItem,
   DocumentData,
@@ -19,7 +19,6 @@ import {
   SearchResult,
   WebData,
 } from './utils/types';
-import { geminiRerankTopN } from './utils/geminiRerank';
 
 // ===== Helpers ثابتة للـ UUID =====
 const qdrantIdForProduct = (mongoId: any) =>
@@ -129,12 +128,11 @@ export class VectorService implements OnModuleInit {
       seen.add(val);
 
       if (val instanceof Date) return [val.toISOString()];
-      if (typeof (val as any).toHexString === 'function')
-        return [(val as any).toHexString()];
+      if (typeof val.toHexString === 'function') return [val.toHexString()];
       if (isBufferLike(val)) return [`[Buffer:${val.data.length}]`];
 
-      if (typeof (val as any).toString === 'function') {
-        const s = (val as any).toString();
+      if (typeof val.toString === 'function') {
+        const s = val.toString();
         if (isMongoObjectIdHex(s)) return [s];
       }
 
@@ -398,7 +396,7 @@ export class VectorService implements OnModuleInit {
     if (!filtered.length) return [];
 
     const candidates = filtered.map((item: any) => {
-      const p = item.payload as any;
+      const p = item.payload;
       return `اسم المنتج: ${p.name ?? ''}${p.price ? ` - السعر: ${p.price}` : ''}`;
     });
 
@@ -407,7 +405,7 @@ export class VectorService implements OnModuleInit {
     try {
       const r = await geminiRerankTopN({ query: text, candidates, topN: topK });
       if (Array.isArray(r) && r.length) {
-        if (typeof r[0] === 'number') rerankedIdx = r as number[];
+        if (typeof r[0] === 'number') rerankedIdx = r;
         else if (
           typeof (r as any)[0] === 'object' &&
           'index' in (r as any)[0]
@@ -425,7 +423,7 @@ export class VectorService implements OnModuleInit {
 
     const pick = (i: number) => {
       const item = filtered[i];
-      const p = item.payload as any;
+      const p = item.payload;
       const url = this.resolveProductUrl(p);
 
       return {
@@ -657,7 +655,7 @@ export class VectorService implements OnModuleInit {
       if (Array.isArray(rr) && rr.length) {
         // إذا كانت مصفوفة فهارس مباشرة
         if (typeof rr[0] === 'number') {
-          return (rr as number[])
+          return rr
             .filter((i) => i >= 0 && i < all.length)
             .slice(0, topK)
             .map((i) => all[i]);

@@ -1,3 +1,6 @@
+import { createHmac, timingSafeEqual } from 'crypto';
+
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   Controller,
   Post,
@@ -12,32 +15,8 @@ import {
   HttpCode,
   Inject,
 } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
-import { MessageService } from '../messaging/message.service';
-import { Public } from 'src/common/decorators/public.decorator';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { normalizeIncomingMessage } from './schemas/utils/normalize-incoming';
-import axios from 'axios';
-import { InjectConnection } from '@nestjs/mongoose';
-import { ClientSession, Connection, Types } from 'mongoose';
-import { OrdersService } from '../orders/orders.service';
-import {
-  buildOrderDetailsMessage,
-  buildOrdersListMessage,
-} from './helpers/order-format';
-import { mapOrderDocumentToOrder } from './helpers/order-map';
-import {
-  downloadRemoteFile,
-  downloadTelegramFile,
-} from './schemas/utils/download-files';
-import { ChatMediaService } from '../media/chat-media.service';
-import { EvolutionService } from '../integrations/evolution.service';
 import { ConfigService } from '@nestjs/config';
-import { ChatGateway } from '../chat/chat.gateway';
-import { OutboxService } from 'src/common/outbox/outbox.service';
-import { TranslationService } from '../../common/services/translation.service';
-import { createHmac, timingSafeEqual } from 'crypto';
+import { InjectConnection } from '@nestjs/mongoose';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -46,13 +25,45 @@ import {
   ApiParam,
   ApiBody,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import axios from 'axios';
 import * as bcrypt from 'bcrypt';
+import { Cache } from 'cache-manager';
+
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+
+import { OrdersService } from '../orders/orders.service';
+import { normalizeIncomingMessage } from './schemas/utils/normalize-incoming';
+import { ClientSession, Connection, Types } from 'mongoose';
+import { Public } from 'src/common/decorators/public.decorator';
+
+import { mapOrderDocumentToOrder } from './helpers/order-map';
+import {
+  downloadRemoteFile,
+  downloadTelegramFile,
+} from './schemas/utils/download-files';
+
+import { ChatMediaService } from '../media/chat-media.service';
+import { EvolutionService } from '../integrations/evolution.service';
+
+
+import { ChatGateway } from '../chat/chat.gateway';
+
+import { OutboxService } from 'src/common/outbox/outbox.service';
+
+import { TranslationService } from '../../common/services/translation.service';
+
 
 import { ChannelProvider } from '../channels/schemas/channel.schema';
 import { decryptSecret } from '../channels/utils/secrets.util';
+import { MessageService } from '../messaging/message.service';
+import {
+  buildOrderDetailsMessage,
+  buildOrdersListMessage,
+} from './helpers/order-format';
 
-import { CHANNEL_REPOSITORY } from './tokens';
 import { ChannelRepository } from './repositories/channel.repository';
+import { CHANNEL_REPOSITORY } from './tokens';
 
 // ================= Utils =================
 function detectOrderIntent(msg: string): {
@@ -252,6 +263,12 @@ export class WebhooksController {
   @Public()
   @Post('incoming/:merchantId')
   @HttpCode(200)
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.WEBHOOKS_INCOMING_TTL || '10'),
+      limit: parseInt(process.env.WEBHOOKS_INCOMING_LIMIT || '1'),
+    },
+  })
   @ApiOperation({ summary: 'معالجة الرسائل الواردة من القنوات' })
   @ApiParam({ name: 'merchantId', description: 'معرّف التاجر' })
   @ApiBody({
@@ -678,7 +695,7 @@ export class WebhooksController {
           },
         })
         .catch(() => {});
-      // eslint-disable-next-line no-console
+
       console.error('Webhook error:', err);
       return {
         sessionId: normalized.sessionId,
@@ -692,6 +709,12 @@ export class WebhooksController {
 
   @Public()
   @Post('bot-reply/:merchantId')
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.WEBHOOKS_BOT_REPLY_TTL || '10'),
+      limit: parseInt(process.env.WEBHOOKS_BOT_REPLY_LIMIT || '1'),
+    },
+  })
   @ApiOperation({ summary: 'معالجة ردود البوت الآلية' })
   @ApiParam({ name: 'merchantId', description: 'معرّف التاجر' })
   @ApiBody({
@@ -746,6 +769,12 @@ export class WebhooksController {
 
   @Public()
   @Post(':merchantId/test-bot-reply')
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.WEBHOOKS_TEST_BOT_REPLY_TTL || '10'),
+      limit: parseInt(process.env.WEBHOOKS_TEST_BOT_REPLY_LIMIT || '1'),
+    },
+  })
   @ApiOperation({ summary: 'إرسال ردّ التستنج إلى الداشبورد فقط' })
   @ApiParam({ name: 'merchantId', description: 'معرّف التاجر' })
   @ApiBody({
@@ -816,6 +845,12 @@ export class WebhooksController {
   }
 
   @Post('agent-reply/:merchantId')
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.WEBHOOKS_AGENT_REPLY_TTL || '10'),
+      limit: parseInt(process.env.WEBHOOKS_AGENT_REPLY_LIMIT || '1'),
+    },
+  })
   @ApiOperation({ summary: 'معالجة ردود الموظفين' })
   @ApiParam({ name: 'merchantId', description: 'معرّف التاجر' })
   @ApiBody({

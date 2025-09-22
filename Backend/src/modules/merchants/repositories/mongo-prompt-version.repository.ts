@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+
 import { Merchant, MerchantDocument } from '../schemas/merchant.schema';
+
 import { PromptVersionRepository } from './prompt-version.repository';
 
 @Injectable()

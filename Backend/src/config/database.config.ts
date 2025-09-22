@@ -1,10 +1,10 @@
 // src/config/database.config.ts
 import { Module } from '@nestjs/common';
-import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { Connection } from 'mongoose';
-import { MongooseMetricsPlugin } from '../metrics/mongoose-metrics.plugin';
+import { MongooseModule } from '@nestjs/mongoose';
+
 import { MetricsModule } from '../metrics/metrics.module';
+import { MongooseMetricsPlugin } from '../metrics/mongoose-metrics.plugin';
 
 @Module({
   imports: [
@@ -41,27 +41,25 @@ import { MetricsModule } from '../metrics/metrics.module';
             isProduction &&
             !isLocalConnection &&
             !isNonSSLServer);
+        const isProd = nodeEnv === 'production';
 
         return {
-          uri: mongoUri,
-          // ✅ تحسينات الأداء والاتصال
-          autoIndex: !isProduction,
-          maxPoolSize: 20, // حد أقصى للاتصالات المتزامنة
-          minPoolSize: 5, // حد أدنى للاتصالات المحجوزة
-          serverSelectionTimeoutMS: 5000, // مهلة اختيار الخادم
-          socketTimeoutMS: 20000, // مهلة المقبس
-          connectTimeoutMS: 10000, // مهلة الاتصال الأولي
-          retryWrites: true, // إعادة محاولة الكتابة عند الفشل
-          retryReads: true, // إعادة محاولة القراءة عند الفشل
-          maxIdleTimeMS: 30000, // وقت الخمول الأقصى للاتصال
-          heartbeatFrequencyMS: 10000, // تردد فحص حالة الخادم
-          // تحسينات إضافية للإنتاج مع الاتصالات عن بعد فقط
-          ...(enableSSL && {
-            ssl: true,
-            tlsInsecure: false, // تمكين التحقق من شهادة SSL
-            readPreference: 'primaryPreferred', // تفضيل القراءة من الأساسي
-            writeConcern: { w: 'majority', j: true, wtimeout: 10000 },
-          }),
+          uri: mongoUri.replace('directConnection=true', ''), // إن وُجد
+          autoIndex: !isProd,
+          maxPoolSize: 50,
+          minPoolSize: 10,
+          serverSelectionTimeoutMS: 5000,
+          socketTimeoutMS: 45000,
+          connectTimeoutMS: 10000,
+          maxIdleTimeMS: 30000,
+          heartbeatFrequencyMS: 10000,
+          retryWrites: true,
+          retryReads: true,
+          // مراقبة في التطوير فقط:
+          monitorCommands: !isProd,
+          ...(enableSSL && { ssl: true, tlsInsecure: false }),
+          readPreference: 'primary',
+          writeConcern: { w: 'majority', j: true, wtimeout: 10000 },
         };
       },
       inject: [ConfigService],

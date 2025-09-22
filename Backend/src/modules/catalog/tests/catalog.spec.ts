@@ -5,12 +5,12 @@
 // Arrange – Act – Assert
 
 import 'reflect-metadata';
-import { Types } from 'mongoose';
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Types } from 'mongoose';
 
-import { CatalogService } from '../catalog.service';
 import { CatalogController } from '../catalog.controller';
+import { CatalogService } from '../catalog.service';
 
 describe('CatalogService (unit)', () => {
   let service: CatalogService;
@@ -49,7 +49,9 @@ describe('CatalogService (unit)', () => {
     merchantModelMock.findById.mockReturnValue(leanResult(null));
 
     // Act + Assert
-    await expect(service.syncForMerchant(merchantId)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.syncForMerchant(merchantId)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
     expect(merchantModelMock.findById).toHaveBeenCalledWith(merchantId);
   });
 
@@ -79,9 +81,24 @@ describe('CatalogService (unit)', () => {
     expect(String(passedObjId)).toBe(merchantId);
 
     expect(productsMock.upsertExternalProduct).toHaveBeenCalledTimes(3);
-    expect(productsMock.upsertExternalProduct).toHaveBeenNthCalledWith(1, merchantId, 'zid', zidList[0]);
-    expect(productsMock.upsertExternalProduct).toHaveBeenNthCalledWith(2, merchantId, 'zid', zidList[1]);
-    expect(productsMock.upsertExternalProduct).toHaveBeenNthCalledWith(3, merchantId, 'zid', zidList[2]);
+    expect(productsMock.upsertExternalProduct).toHaveBeenNthCalledWith(
+      1,
+      merchantId,
+      'zid',
+      zidList[0],
+    );
+    expect(productsMock.upsertExternalProduct).toHaveBeenNthCalledWith(
+      2,
+      merchantId,
+      'zid',
+      zidList[1],
+    );
+    expect(productsMock.upsertExternalProduct).toHaveBeenNthCalledWith(
+      3,
+      merchantId,
+      'zid',
+      zidList[2],
+    );
 
     expect(out).toEqual({ imported: 2, updated: 1 });
   });
@@ -90,7 +107,10 @@ describe('CatalogService (unit)', () => {
     // Arrange
     const merchantId = new Types.ObjectId().toHexString();
     merchantModelMock.findById.mockReturnValue(
-      leanResult({ _id: new Types.ObjectId(merchantId), productSource: 'salla' }),
+      leanResult({
+        _id: new Types.ObjectId(merchantId),
+        productSource: 'salla',
+      }),
     );
 
     const sallaList = [{ id: 'a' }, { id: 'b' }];
@@ -110,8 +130,18 @@ describe('CatalogService (unit)', () => {
     expect(String(passedObjId)).toBe(merchantId);
 
     expect(productsMock.upsertExternalProduct).toHaveBeenCalledTimes(2);
-    expect(productsMock.upsertExternalProduct).toHaveBeenNthCalledWith(1, merchantId, 'salla', sallaList[0]);
-    expect(productsMock.upsertExternalProduct).toHaveBeenNthCalledWith(2, merchantId, 'salla', sallaList[1]);
+    expect(productsMock.upsertExternalProduct).toHaveBeenNthCalledWith(
+      1,
+      merchantId,
+      'salla',
+      sallaList[0],
+    );
+    expect(productsMock.upsertExternalProduct).toHaveBeenNthCalledWith(
+      2,
+      merchantId,
+      'salla',
+      sallaList[1],
+    );
 
     expect(out).toEqual({ imported: 1, updated: 1 });
   });
@@ -120,7 +150,10 @@ describe('CatalogService (unit)', () => {
     // Arrange
     const merchantId = new Types.ObjectId().toHexString();
     merchantModelMock.findById.mockReturnValue(
-      leanResult({ _id: new Types.ObjectId(merchantId), productSource: 'internal' }),
+      leanResult({
+        _id: new Types.ObjectId(merchantId),
+        productSource: 'internal',
+      }),
     );
 
     // Act
@@ -144,9 +177,7 @@ describe('CatalogController (unit)', () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CatalogController],
-      providers: [
-        { provide: CatalogService, useValue: serviceMock },
-      ],
+      providers: [{ provide: CatalogService, useValue: serviceMock }],
     }).compile();
 
     controller = module.get(CatalogController);

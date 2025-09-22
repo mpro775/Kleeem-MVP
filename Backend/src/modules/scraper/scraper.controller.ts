@@ -6,8 +6,6 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ScraperService } from './scraper.service';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -18,6 +16,10 @@ import {
   ApiUnauthorizedResponse,
   ApiInternalServerErrorResponse,
 } from '@nestjs/swagger';
+
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+
+import { ScraperService } from './scraper.service';
 
 class ScrapeUrlDto {
   url: string;

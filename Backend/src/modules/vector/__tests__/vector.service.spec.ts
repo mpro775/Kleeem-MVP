@@ -1,9 +1,11 @@
-import { Test } from '@nestjs/testing';
 import { VectorService } from '../vector.service';
 import { QdrantWrapper } from '../utils/qdrant.client';
-import { EmbeddingsClient } from '../utils/embeddings.client';
+
 import { ConfigService } from '@nestjs/config';
+import { Test } from '@nestjs/testing';
+
 import { Collections } from '../utils/collections';
+import { EmbeddingsClient } from '../utils/embeddings.client';
 
 // ⚠️ موك لدالة إعادة الترتيب
 jest.mock('../geminiRerank', () => ({

@@ -161,8 +161,6 @@ services:
   api:
     build: .
     container_name: kaleem-api
-    ports:
-      - '3000:3000'
     depends_on:
       rabbitmq: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -176,6 +174,7 @@ services:
       - EVOLUTION_API_URL=http://evolution_api:8080
       - EVOLUTION_API_KEY=any-secret-key
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318/v1/traces
+    expose: ['3000']
     volumes:
       - /opt/kaleem/uploads:/app/uploads
     restart: unless-stopped
@@ -298,6 +297,19 @@ services:
       - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+    networks: [backnet]
+    restart: unless-stopped
+
+
+  lb:
+    image: nginx:alpine
+    container_name: kaleem-lb
+    depends_on:
+      - api
+    ports:
+      - "8088:80"          # يستقبل على 8088 على هوست، داخليًا 80
+    volumes:
+      - ./nginx.lb.conf:/etc/nginx/nginx.conf:ro
     networks: [backnet]
     restart: unless-stopped
 
@@ -553,8 +565,8 @@ volumes:
   prom_data:
   hf_cache:
   loki_data:
-  glitchtip_pg: # ← مفقود
-  tempo_data: # ← مفقود
+  glitchtip_pg: 
+  tempo_data: 
 
 networks:
   backnet:

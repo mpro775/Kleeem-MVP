@@ -1,19 +1,41 @@
+// src/workers/ai-incoming.consumer.ts
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import amqp from 'amqplib';
+import amqp, { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
 import axios from 'axios';
+
+type AiIncomingPayload = {
+  merchantId: string;
+  sessionId: string;
+  channel: string;
+  text: string;
+  metadata?: Record<string, unknown>;
+  transport?: string;
+};
 
 @Injectable()
 export class AiIncomingConsumer implements OnModuleInit {
   private readonly logger = new Logger(AiIncomingConsumer.name);
-  private ch!: amqp.Channel;
 
-  constructor(private cfg: ConfigService) {}
+  private conn: ChannelModel | null = null; // 👈 اتصال
+  private ch: Channel | null = null; // 👈 قناة
 
-  async onModuleInit() {
-    const url = this.cfg.get<string>('RABBIT_URL')!;
-    const conn = await amqp.connect(url);
-    this.ch = await conn.createChannel();
+  constructor(private readonly cfg: ConfigService) {}
+
+  async onModuleInit(): Promise<void> {
+    const url = this.cfg.get<string>('RABBIT_URL');
+    if (!url) {
+      this.logger.error('RABBIT_URL is not set');
+      return;
+    }
+
+    // Connection
+    this.conn = await amqp.connect(url);
+
+    // Channel
+    this.ch = await this.conn.createChannel();
+
+    // Queue & DLQ
     await this.ch.assertQueue('ai.reply-worker.q', {
       durable: true,
       arguments: {
@@ -21,15 +43,19 @@ export class AiIncomingConsumer implements OnModuleInit {
         'x-dead-letter-routing-key': 'ai.reply-worker.q.dlq',
       },
     });
-    this.ch.consume('ai.reply-worker.q', (m) => this.consume(m), {
+
+    await this.ch.consume('ai.reply-worker.q', (m) => this.consume(m), {
       noAck: false,
     });
   }
 
-  private async consume(m?: amqp.ConsumeMessage | null) {
-    if (!m) return;
+  private async consume(m: ConsumeMessage | null): Promise<void> {
+    if (!m || !this.ch) return;
+
     try {
-      const payload = JSON.parse(m.content.toString());
+      const content = m.content.toString();
+      const payload: AiIncomingPayload = JSON.parse(content);
+
       const base = (
         process.env.N8N_BASE_URL ||
         process.env.N8N_BASE ||
@@ -38,14 +64,17 @@ export class AiIncomingConsumer implements OnModuleInit {
       const pathTpl =
         process.env.N8N_INCOMING_PATH || '/webhook/ai-agent-{merchantId}';
       const url = base + pathTpl.replace('{merchantId}', payload.merchantId);
-      // payload = { merchantId, sessionId, channel, text, metadata, transport? }
+
       await axios.post(url, payload, {
-        headers: { 'X-Worker-Token': process.env.WORKER_TOKEN! },
+        headers: { 'X-Worker-Token': process.env.WORKER_TOKEN ?? '' },
       });
+
       this.ch.ack(m);
-    } catch (e) {
-      this.logger.error('AI bridge failed', (e as Error).message);
-      this.ch.nack(m, false, false); // DLQ
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Unknown error');
+      this.logger.error(`AI bridge failed: ${error.message}`);
+      // DLQ: requeue=false
+      this.ch.nack(m, false, false);
     }
   }
 }

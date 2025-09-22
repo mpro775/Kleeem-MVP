@@ -8,9 +8,12 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import type { Request, Response } from 'express';
-import { shouldBypass } from './bypass.util';
+
 import { sanitizeBody } from '../utils/logger.utils';
+
+import { shouldBypass } from './bypass.util';
+
+import type { Request, Response } from 'express';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {

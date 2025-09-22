@@ -41,6 +41,8 @@ export class RollbackDto {
     default: false,
   })
   @IsOptional()
-  @IsBoolean({ message: 'يجب أن تكون activateAfterRollback منطقية (true/false)' })
+  @IsBoolean({
+    message: 'يجب أن تكون activateAfterRollback منطقية (true/false)',
+  })
   activateAfterRollback?: boolean = false;
 }

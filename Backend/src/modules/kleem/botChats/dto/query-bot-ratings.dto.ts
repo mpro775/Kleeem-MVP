@@ -1,6 +1,6 @@
 // src/modules/kleem/botChats/dto/query-bot-ratings.dto.ts
-import { IsOptional, IsIn, IsInt, Min, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsOptional, IsIn, IsInt, Min, IsString } from 'class-validator';
 
 export class QueryBotRatingsDto {
   @IsOptional()

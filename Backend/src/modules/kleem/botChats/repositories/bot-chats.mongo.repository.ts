@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, PipelineStage } from 'mongoose';
+
 import { BotChatSession } from '../schemas/botChats.schema';
+
 import {
   AppendMessage,
   BotChatRepository,

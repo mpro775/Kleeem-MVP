@@ -1,11 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Merchant, MerchantDocument } from '../schemas/merchant.schema';
-import {
-  Product,
-  ProductDocument,
-} from '../../products/schemas/product.schema';
+
 import {
   Category,
   CategoryDocument,
@@ -15,6 +11,12 @@ import {
   ChannelDocument,
   ChannelProvider,
 } from '../../channels/schemas/channel.schema';
+import {
+  Product,
+  ProductDocument,
+} from '../../products/schemas/product.schema';
+import { Merchant, MerchantDocument } from '../schemas/merchant.schema';
+
 import { MerchantChecklistRepository } from './merchant-checklist.repository';
 
 @Injectable()

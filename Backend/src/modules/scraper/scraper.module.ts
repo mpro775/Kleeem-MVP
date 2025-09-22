@@ -1,13 +1,13 @@
 // src/modules/scraper/scraper.module.ts
-import { Module, forwardRef } from '@nestjs/common';
-import { BullModule } from '@nestjs/bull';
 import { HttpModule } from '@nestjs/axios'; // ← استيراد هذا
-
-import { ScraperService } from './scraper.service';
-import { ScraperController } from './scraper.controller';
+import { BullModule } from '@nestjs/bull';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { ProductsModule } from '../products/products.module';
 import { VectorModule } from '../vector/vector.module';
+
+import { ScraperController } from './scraper.controller';
+import { ScraperService } from './scraper.service';
 
 @Module({
   imports: [

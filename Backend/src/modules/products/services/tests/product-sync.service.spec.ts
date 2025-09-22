@@ -1,9 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
+
 import { ProductSyncService } from '../product-sync.service';
 
 const repo = {
   findByExternal: jest.fn(),
-  upsertExternal: jest.fn()
+  upsertExternal: jest.fn(),
 };
 const indexer = { upsert: jest.fn() };
 const storefronts = { findByMerchant: jest.fn() };
@@ -34,30 +35,30 @@ describe('ProductSyncService', () => {
       stock: 10,
       raw: {
         description: 'Test description',
-        images: [{ url: 'http://example.com/image.jpg' }]
-      }
+        images: [{ url: 'http://example.com/image.jpg' }],
+      },
     };
 
     repo.findByExternal.mockResolvedValue(null);
     repo.upsertExternal.mockResolvedValue({
       _id: '507f1f77bcf86cd799439011',
-      merchantId: '507f1f77bcf86cd799439012'
+      merchantId: '507f1f77bcf86cd799439012',
     });
     storefronts.findByMerchant.mockResolvedValue({
       slug: 'test-store',
-      domain: 'test.com'
+      domain: 'test.com',
     });
     categories.findOne.mockResolvedValue({ name: 'Test Category' });
 
     const result = await svc.upsertExternalProduct(
       '507f1f77bcf86cd799439012',
       'zid',
-      externalProduct as any
+      externalProduct as any,
     );
 
     expect(repo.findByExternal).toHaveBeenCalledWith(
       expect.any(Object), // ObjectId
-      'ext1'
+      'ext1',
     );
     expect(repo.upsertExternal).toHaveBeenCalled();
     expect(storefronts.findByMerchant).toHaveBeenCalled();
@@ -65,41 +66,41 @@ describe('ProductSyncService', () => {
     expect(indexer.upsert).toHaveBeenCalled();
     expect(result).toEqual({
       created: true,
-      id: '507f1f77bcf86cd799439011'
+      id: '507f1f77bcf86cd799439011',
     });
   });
 
   it('upsertExternalProduct -> returns created false when updating existing', async () => {
     const existingProduct = {
       _id: '507f1f77bcf86cd799439011',
-      merchantId: '507f1f77bcf86cd799439012'
+      merchantId: '507f1f77bcf86cd799439012',
     };
     const externalProduct = {
       externalId: 'ext1',
       title: 'Updated Product',
       price: 149.99,
       stock: 5,
-      raw: {}
+      raw: {},
     };
 
     repo.findByExternal.mockResolvedValue(existingProduct);
     repo.upsertExternal.mockResolvedValue(existingProduct);
     storefronts.findByMerchant.mockResolvedValue({
-      slug: 'test-store'
+      slug: 'test-store',
     });
     categories.findOne.mockResolvedValue(null);
 
     const result = await svc.upsertExternalProduct(
       '507f1f77bcf86cd799439012',
       'zid',
-      externalProduct as any
+      externalProduct as any,
     );
 
     expect(repo.findByExternal).toHaveBeenCalled();
     expect(repo.upsertExternal).toHaveBeenCalled();
     expect(result).toEqual({
       created: false,
-      id: '507f1f77bcf86cd799439011'
+      id: '507f1f77bcf86cd799439011',
     });
   });
 
@@ -107,27 +108,27 @@ describe('ProductSyncService', () => {
     const externalProduct = {
       externalId: 'ext1',
       title: 'Test Product',
-      raw: {}
+      raw: {},
     };
 
     repo.findByExternal.mockResolvedValue(null);
     repo.upsertExternal.mockResolvedValue({
       _id: '507f1f77bcf86cd799439011',
-      merchantId: '507f1f77bcf86cd799439012'
+      merchantId: '507f1f77bcf86cd799439012',
     });
     storefronts.findByMerchant.mockResolvedValue(null);
 
     await svc.upsertExternalProduct(
       '507f1f77bcf86cd799439012',
       'zid',
-      externalProduct as any
+      externalProduct as any,
     );
 
     expect(storefronts.findByMerchant).toHaveBeenCalled();
     expect(indexer.upsert).toHaveBeenCalledWith(
       expect.any(Object),
       null, // null storefront
-      null  // null category
+      null, // null category
     );
   });
 
@@ -135,34 +136,34 @@ describe('ProductSyncService', () => {
     const externalProduct = {
       externalId: 'ext1',
       title: 'Test Product',
-      raw: {}
+      raw: {},
     };
 
     repo.findByExternal.mockResolvedValue(null);
     repo.upsertExternal.mockResolvedValue({
       _id: '507f1f77bcf86cd799439011',
       merchantId: '507f1f77bcf86cd799439012',
-      category: '507f1f77bcf86cd799439013'
+      category: '507f1f77bcf86cd799439013',
     });
     storefronts.findByMerchant.mockResolvedValue({
-      slug: 'test-store'
+      slug: 'test-store',
     });
     categories.findOne.mockResolvedValue(null);
 
     await svc.upsertExternalProduct(
       '507f1f77bcf86cd799439012',
       'zid',
-      externalProduct as any
+      externalProduct as any,
     );
 
     expect(categories.findOne).toHaveBeenCalledWith(
       '507f1f77bcf86cd799439013',
-      '507f1f77bcf86cd799439012'
+      '507f1f77bcf86cd799439012',
     );
     expect(indexer.upsert).toHaveBeenCalledWith(
       expect.any(Object),
       expect.any(Object),
-      null // null category name
+      null, // null category name
     );
   });
 
@@ -170,29 +171,29 @@ describe('ProductSyncService', () => {
     const externalProduct = {
       externalId: 'ext1',
       title: 'Test Product',
-      raw: {}
+      raw: {},
     };
 
     repo.findByExternal.mockResolvedValue(null);
     repo.upsertExternal.mockResolvedValue({
       _id: '507f1f77bcf86cd799439011',
-      merchantId: '507f1f77bcf86cd799439012'
+      merchantId: '507f1f77bcf86cd799439012',
     });
     storefronts.findByMerchant.mockResolvedValue({
-      slug: 'test-store'
+      slug: 'test-store',
     });
 
     // Test with salla provider
     await svc.upsertExternalProduct(
       '507f1f77bcf86cd799439012',
       'salla',
-      externalProduct as any
+      externalProduct as any,
     );
 
     expect(repo.upsertExternal).toHaveBeenCalledWith(
       expect.objectContaining({
-        platform: 'salla'
-      })
+        platform: 'salla',
+      }),
     );
   });
 
@@ -205,33 +206,33 @@ describe('ProductSyncService', () => {
           { url: 'http://example.com/image1.jpg' },
           { url: 'http://example.com/image2.jpg' },
           { url: '' },
-          { url: null }
-        ]
-      }
+          { url: null },
+        ],
+      },
     };
 
     repo.findByExternal.mockResolvedValue(null);
     repo.upsertExternal.mockResolvedValue({
       _id: '507f1f77bcf86cd799439011',
-      merchantId: '507f1f77bcf86cd799439012'
+      merchantId: '507f1f77bcf86cd799439012',
     });
     storefronts.findByMerchant.mockResolvedValue({
-      slug: 'test-store'
+      slug: 'test-store',
     });
 
     await svc.upsertExternalProduct(
       '507f1f77bcf86cd799439012',
       'zid',
-      externalProduct as any
+      externalProduct as any,
     );
 
     expect(repo.upsertExternal).toHaveBeenCalledWith(
       expect.objectContaining({
         images: [
           'http://example.com/image1.jpg',
-          'http://example.com/image2.jpg'
-        ]
-      })
+          'http://example.com/image2.jpg',
+        ],
+      }),
     );
   });
 
@@ -240,28 +241,28 @@ describe('ProductSyncService', () => {
       externalId: 'ext1',
       title: 'Test Product',
       price: '99.99',
-      raw: {}
+      raw: {},
     };
 
     repo.findByExternal.mockResolvedValue(null);
     repo.upsertExternal.mockResolvedValue({
       _id: '507f1f77bcf86cd799439011',
-      merchantId: '507f1f77bcf86cd799439012'
+      merchantId: '507f1f77bcf86cd799439012',
     });
     storefronts.findByMerchant.mockResolvedValue({
-      slug: 'test-store'
+      slug: 'test-store',
     });
 
     await svc.upsertExternalProduct(
       '507f1f77bcf86cd799439012',
       'zid',
-      externalProduct as any
+      externalProduct as any,
     );
 
     expect(repo.upsertExternal).toHaveBeenCalledWith(
       expect.objectContaining({
-        price: 99.99
-      })
+        price: 99.99,
+      }),
     );
   });
 });

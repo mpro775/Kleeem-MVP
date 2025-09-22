@@ -1,5 +1,6 @@
-import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
+import { validate } from 'class-validator';
+
 import { HandleWebhookDto } from './handle-webhook.dto';
 
 describe('HandleWebhookDto', () => {

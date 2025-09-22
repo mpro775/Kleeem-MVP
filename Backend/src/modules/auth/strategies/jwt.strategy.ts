@@ -1,8 +1,9 @@
 // src/modules/auth/strategies/jwt.strategy.ts
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { ConfigService } from '@nestjs/config';
+
 import type { Request } from 'express';
 
 type Role = 'ADMIN' | 'MERCHANT' | 'MEMBER';

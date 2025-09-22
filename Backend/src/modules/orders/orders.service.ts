@@ -1,11 +1,13 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { OrdersRepository } from './repositories/orders.repository';
-import { CreateOrderDto } from './dto/create-order.dto';
-import { GetOrdersDto } from './dto/get-orders.dto';
-import { Order } from './schemas/order.schema';
-import { Order as OrderType } from '../webhooks/helpers/order';
+
 import { PaginationResult } from '../../common/dto/pagination.dto';
 import { LeadsService } from '../leads/leads.service';
+import { Order as OrderType } from '../webhooks/helpers/order';
+
+import { CreateOrderDto } from './dto/create-order.dto';
+import { GetOrdersDto } from './dto/get-orders.dto';
+import { OrdersRepository } from './repositories/orders.repository';
+import { Order } from './schemas/order.schema';
 import { normalizePhone } from './utils/phone.util';
 
 @Injectable()

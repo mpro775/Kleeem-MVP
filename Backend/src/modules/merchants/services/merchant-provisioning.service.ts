@@ -4,13 +4,15 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { MerchantsRepository } from '../repositories/merchants.repository';
-import { CreateMerchantDto } from '../dto/requests/create-merchant.dto';
+
+import { TranslationService } from '../../../common/services/translation.service';
+import { BusinessMetrics } from '../../../metrics/business.metrics';
 import { N8nWorkflowService } from '../../n8n-workflow/n8n-workflow.service';
 import { StorefrontService } from '../../storefront/storefront.service';
+import { CreateMerchantDto } from '../dto/requests/create-merchant.dto';
+import { MerchantsRepository } from '../repositories/merchants.repository';
+
 import { PromptBuilderService } from './prompt-builder.service';
-import { BusinessMetrics } from '../../../metrics/business.metrics';
-import { TranslationService } from '../../../common/services/translation.service';
 
 @Injectable()
 export class MerchantProvisioningService {

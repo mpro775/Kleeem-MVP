@@ -1,20 +1,21 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { Types } from 'mongoose';
+import { HydratedDocument } from 'mongoose';
+
 import { ChannelAdapter } from './adapters/channel-adapter';
 import { TelegramAdapter } from './adapters/telegram.adapter';
+import { WebchatAdapter } from './adapters/webchat.adapter';
 import { WhatsAppCloudAdapter } from './adapters/whatsapp-cloud.adapter';
 import { WhatsAppQrAdapter } from './adapters/whatsapp-qr.adapter';
-import { WebchatAdapter } from './adapters/webchat.adapter';
+import { CreateChannelDto } from './dto/create-channel.dto';
+import { UpdateChannelDto } from './dto/update-channel.dto';
+import { ChannelsRepository } from './repositories/channels.repository';
 import {
   ChannelProvider,
   ChannelStatus,
   Channel,
   ChannelDocument,
 } from './schemas/channel.schema';
-import { CreateChannelDto } from './dto/create-channel.dto';
-import { UpdateChannelDto } from './dto/update-channel.dto';
-import { ChannelsRepository } from './repositories/channels.repository';
-import { HydratedDocument } from 'mongoose';
 
 @Injectable()
 export class ChannelsService {

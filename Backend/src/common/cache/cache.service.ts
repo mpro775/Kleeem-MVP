@@ -1,11 +1,12 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Interval } from '@nestjs/schedule';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Cache } from 'cache-manager';
 import * as Redis from 'ioredis';
-import { CacheMetrics } from './cache.metrics';
-import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { Gauge } from 'prom-client';
-import { Interval } from '@nestjs/schedule';
+
+import { CacheMetrics } from './cache.metrics';
 
 type Entry<T> = { v: T; e: number };
 
@@ -198,6 +199,28 @@ export class CacheService {
       return cached;
     }
 
+    // lock اختياري باستخدام redis للحماية من thundering herd
+    if (this.redis) {
+      const lockKey = `lock:fill:${key}`;
+      const got = await this.redis.set(lockKey, '1', 'EX', 5, 'NX'); // 5s
+      if (got !== 'OK') {
+        // منتظر أحد يملأ الكاش
+        await new Promise((res) => setTimeout(res, 150)); // backoff صغير
+        const again = await this.get<T>(key);
+        if (again !== undefined) return again;
+        // ما زال فاضي—نحاول مرة واحدة نملأه نحن (لتفادي الجمود)
+      } else {
+        try {
+          const value = await fn();
+          await this.set(key, value, ttlSeconds);
+          return value;
+        } finally {
+          await this.redis.del(lockKey);
+        }
+      }
+    }
+
+    // fallback لو ما فيه redis
     try {
       this.log.debug(`Executing function for cache key: ${key}`);
       const value = await fn();
@@ -229,22 +252,27 @@ export class CacheService {
       if (this.redis && typeof (this.redis as any).scanStream === 'function') {
         const stream = (this.redis as any).scanStream({
           match: pattern,
-          count: 200,
+          count: 500,
         });
+        const pipeline = this.redis.pipeline();
+        let batch = 0;
 
         await new Promise<void>((resolve, reject) => {
-          stream.on('data', async (keys: string[]) => {
-            if (keys && keys.length > 0) {
-              try {
-                await this.redis!.del(...keys);
-              } catch (e) {
-                this.log.warn(
-                  `Failed to delete some keys during invalidate: ${(e as Error).message}`,
-                );
+          stream.on('data', (keys: string[]) => {
+            if (!keys?.length) return;
+            for (const k of keys) {
+              pipeline.del(k);
+              batch++;
+              if (batch >= 1000) {
+                pipeline.exec();
+                batch = 0;
               }
             }
           });
-          stream.on('end', () => resolve());
+          stream.on('end', async () => {
+            if (batch > 0) await pipeline.exec();
+            resolve();
+          });
           stream.on('error', (err: Error) => reject(err));
         });
       }
@@ -289,12 +317,18 @@ export class CacheService {
     try {
       this.l1.clear();
 
-      // مسح L2 (Redis) إذا كان متوفراً
-      if (this.redis && typeof this.redis.flushdb === 'function') {
+      // مسح L2 (Redis) إذا كان متوفراً - محمي في الإنتاج
+      if (process.env.NODE_ENV !== 'production' && this.redis?.flushdb) {
         await this.redis.flushdb();
+      } else if (this.redis) {
+        // بديل آمن في الإنتاج: امسح namespace فقط إن عندك prefix معروف
+        // أو لا تمسح L2 إطلاقاً هنا
+        this.log.warn(
+          'Cache clear skipped in production environment - Redis not cleared',
+        );
       }
 
-      this.log.warn('Cache cleared completely');
+      this.log.warn('Cache cleared (L1 only in production)');
     } catch (error) {
       this.log.error('Cache clear error:', (error as Error).message);
       throw error;
@@ -352,13 +386,20 @@ export class CacheService {
   }
 
   /**
+   * هروب الرموز الخاصة في regex
+   */
+  private escapeRegex(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /**
    * مطابقة النمط مع المفتاح
    */
   private matchPattern(key: string, pattern: string): boolean {
-    // تحويل نمط Redis glob إلى regex
-    const regexPattern = pattern.replace(/\*/g, '.*').replace(/\?/g, '.');
-
-    const regex = new RegExp(`^${regexPattern}$`);
+    // حوّل glob إلى regex مع الهروب أولاً
+    const esc = this.escapeRegex(pattern);
+    const rx = esc.replace(/\\\*/g, '.*').replace(/\\\?/g, '.');
+    const regex = new RegExp(`^${rx}$`);
     return regex.test(key);
   }
 

@@ -1,9 +1,9 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { AppService } from './app.service';
-import * as Sentry from '@sentry/node';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+
+import { AppService } from './app.service';
 import { Public } from './common/decorators/public.decorator';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Controller()
 @ApiTags('App')
@@ -18,7 +18,7 @@ export class AppController {
   }
   @Public()
   @Get('test-error')
-  testError() {
+  testError(): void {
     throw new Error('Backend test error');
   }
 }

@@ -1,15 +1,17 @@
 // src/media/media.service.ts
-import { Injectable } from '@nestjs/common';
-import { MediaHandlerDto, MediaType } from './dto/media-handler.dto';
-import { extname } from 'path';
-import axios from 'axios';
-import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
-import Tesseract from 'tesseract.js';
-import pdfParse from 'pdf-parse';
+import * as fs from 'fs/promises';
+import { extname } from 'path';
+
+import { Injectable } from '@nestjs/common';
+import axios from 'axios';
 import mammoth from 'mammoth';
-import * as xlsx from 'xlsx';
 import * as mime from 'mime-types';
+import pdfParse from 'pdf-parse';
+import Tesseract from 'tesseract.js';
+import * as xlsx from 'xlsx';
+
+import { MediaHandlerDto, MediaType } from './dto/media-handler.dto';
 
 @Injectable()
 export class MediaService {
@@ -121,5 +123,4 @@ export class MediaService {
     }
     return '[لا يمكن قراءة الملف]';
   }
-  
 }

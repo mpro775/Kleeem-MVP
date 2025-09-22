@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { Match } from 'src/common/decorators/match.decorator';
+
 import { I18nMessage } from '../../../common/validators/i18n-validator';
 
 export class RegisterDto {

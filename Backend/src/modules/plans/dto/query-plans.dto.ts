@@ -1,6 +1,6 @@
 // dto/query-plans.dto.ts
-import { IsOptional, IsIn, IsNumberString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsIn, IsNumberString } from 'class-validator';
 export class QueryPlansDto {
   @ApiPropertyOptional({ enum: ['true', 'false'] }) @IsOptional() isActive?:
     | 'true'

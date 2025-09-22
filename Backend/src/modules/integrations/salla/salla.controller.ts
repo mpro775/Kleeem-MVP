@@ -1,4 +1,6 @@
 // src/integrations/salla/salla.controller.ts
+import * as crypto from 'crypto';
+
 import {
   Controller,
   Get,
@@ -12,6 +14,8 @@ import {
   HttpCode,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
 import {
   ApiTags,
   ApiOperation,
@@ -21,21 +25,20 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { Response, Request } from 'express';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import * as jwt from 'jsonwebtoken';
+import { Model } from 'mongoose';
+import { Types } from 'mongoose';
+import { RabbitService } from 'src/infra/rabbit/rabbit.service';
+import { CatalogService } from 'src/modules/catalog/catalog.service';
+
 import { Public } from '../../../common/decorators/public.decorator';
-import { SallaService } from './salla.service';
-import { InjectModel } from '@nestjs/mongoose';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import {
   Merchant,
   MerchantDocument,
 } from '../../merchants/schemas/merchant.schema';
-import { Model } from 'mongoose';
-import * as jwt from 'jsonwebtoken';
-import { ConfigService } from '@nestjs/config';
-import { Types } from 'mongoose';
-import { CatalogService } from 'src/modules/catalog/catalog.service';
-import { RabbitService } from 'src/infra/rabbit/rabbit.service';
-import * as crypto from 'crypto';
+
+import { SallaService } from './salla.service';
 
 @ApiTags('تكامل سلة')
 @ApiBearerAuth()

@@ -1,11 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseModule } from '@nestjs/mongoose';
 import { HttpModule } from '@nestjs/axios';
-import { IntegrationsModule } from '../integrations.module';
-import { IntegrationsController } from '../integrations.controller';
-import { EvolutionService } from '../evolution.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
 
 import { MerchantsModule } from '../../merchants/merchants.module';
+import { EvolutionService } from '../evolution.service';
+import { IntegrationsController } from '../integrations.controller';
+import { IntegrationsModule } from '../integrations.module';
 import { SallaModule } from '../salla/salla.module';
 import { ZidModule } from '../zid/zid.module';
 

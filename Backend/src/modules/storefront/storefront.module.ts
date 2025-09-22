@@ -1,20 +1,27 @@
 // src/storefront/storefront.module.ts
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
-import { Product, ProductSchema } from '../products/schemas/product.schema';
-import { StorefrontController } from './storefront.controller';
-import { StorefrontService } from './storefront.service';
+import { MulterModule } from '@nestjs/platform-express';
+import * as Minio from 'minio';
+
 import {
   Category,
   CategorySchema,
 } from '../categories/schemas/category.schema';
-import { Storefront, StorefrontSchema } from './schemas/storefront.schema';
-import { VectorModule } from '../vector/vector.module';
-import { MulterModule } from '@nestjs/platform-express';
-import * as Minio from 'minio';
-import { Order, OrderSchema } from '../orders/schemas/order.schema';
 import { LeadsModule } from '../leads/leads.module';
+import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
+import { Order, OrderSchema } from '../orders/schemas/order.schema';
+import { Product, ProductSchema } from '../products/schemas/product.schema';
+import { VectorModule } from '../vector/vector.module';
+
+import { StorefrontCategoryMongoRepository } from './repositories/category.mongo.repository';
+import { StorefrontMerchantMongoRepository } from './repositories/merchant.mongo.repository';
+import { StorefrontOrderMongoRepository } from './repositories/order.mongo.repository';
+import { StorefrontProductMongoRepository } from './repositories/product.mongo.repository';
+import { StorefrontMongoRepository } from './repositories/storefront.mongo.repository';
+import { Storefront, StorefrontSchema } from './schemas/storefront.schema';
+import { StorefrontController } from './storefront.controller';
+import { StorefrontService } from './storefront.service';
 import {
   STOREFRONT_REPOSITORY,
   STOREFRONT_PRODUCT_REPOSITORY,
@@ -22,11 +29,6 @@ import {
   STOREFRONT_MERCHANT_REPOSITORY,
   STOREFRONT_ORDER_REPOSITORY,
 } from './tokens';
-import { StorefrontMongoRepository } from './repositories/storefront.mongo.repository';
-import { StorefrontProductMongoRepository } from './repositories/product.mongo.repository';
-import { StorefrontCategoryMongoRepository } from './repositories/category.mongo.repository';
-import { StorefrontMerchantMongoRepository } from './repositories/merchant.mongo.repository';
-import { StorefrontOrderMongoRepository } from './repositories/order.mongo.repository';
 @Module({
   imports: [
     MongooseModule.forFeature([

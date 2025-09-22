@@ -1,8 +1,11 @@
+import { randomUUID } from 'crypto';
+
 import { RequestMethod } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NestExpressApplication } from '@nestjs/platform-express';
-import { randomUUID } from 'crypto';
+
 import { setupApp } from '../common/config/app.config';
+
+import type { NestExpressApplication } from '@nestjs/platform-express';
 
 export function configureAppBasics(app: NestExpressApplication): void {
   const config = app.get(ConfigService);

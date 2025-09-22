@@ -1,8 +1,9 @@
 // src/modules/merchants/services/prompt-builder.service.ts
 import { Injectable } from '@nestjs/common';
 import * as Handlebars from 'handlebars';
-import { MerchantDocument } from '../schemas/merchant.schema';
+
 import { InstructionsService } from '../../instructions/instructions.service'; // ← جديد
+import { MerchantDocument } from '../schemas/merchant.schema';
 
 const MANDATORY_TOOLING = [
   // الأدوات:

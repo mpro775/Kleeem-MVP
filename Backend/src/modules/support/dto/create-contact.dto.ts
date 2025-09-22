@@ -1,4 +1,5 @@
 // src/modules/support/dto/create-contact.dto.ts
+import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsIn,
@@ -8,8 +9,8 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+
 import { CONTACT_TOPIC_VALUES, ContactTopic } from '../support.enums';
-import { Transform } from 'class-transformer';
 
 export class CreateContactDto {
   @IsString()

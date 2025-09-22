@@ -1,13 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { MerchantPromptController } from '../controllers/merchant-prompt.controller';
-import { MerchantsService } from '../merchants.service';
-import { PromptVersionService } from '../services/prompt-version.service';
-import { PromptPreviewService } from '../services/prompt-preview.service';
+
 import { StorefrontService } from '../../storefront/storefront.service';
-import { PromptBuilderService } from '../services/prompt-builder.service';
-import { QuickConfigDto } from '../dto/requests/quick-config.dto';
+import { MerchantPromptController } from '../controllers/merchant-prompt.controller';
 import { AdvancedTemplateDto } from '../dto/requests/advanced-template.dto';
 import { PreviewPromptDto } from '../dto/requests/preview-prompt.dto';
+import { QuickConfigDto } from '../dto/requests/quick-config.dto';
+import { MerchantsService } from '../merchants.service';
+import { PromptBuilderService } from '../services/prompt-builder.service';
+import { PromptPreviewService } from '../services/prompt-preview.service';
+import { PromptVersionService } from '../services/prompt-version.service';
 
 describe('MerchantPromptController', () => {
   let controller: MerchantPromptController;

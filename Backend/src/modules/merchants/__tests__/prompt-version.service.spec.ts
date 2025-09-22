@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
-import { PromptVersionService } from '../services/prompt-version.service';
+
 import { PromptVersionRepository } from '../repositories/prompt-version.repository';
+import { PromptVersionService } from '../services/prompt-version.service';
 
 describe('PromptVersionService', () => {
   let service: PromptVersionService;

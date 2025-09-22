@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { Instruction } from '../schemas/instruction.schema';
+import type { Instruction } from '../schemas/instruction.schema';
+import type { Types } from 'mongoose';
 
 export interface FindAllParams {
   merchantId?: string;

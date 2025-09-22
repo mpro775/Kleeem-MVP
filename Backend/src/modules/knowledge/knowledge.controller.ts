@@ -9,6 +9,7 @@ import {
   HttpCode,
   Req,
 } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common/decorators/core/use-guards.decorator';
 import {
   ApiTags,
   ApiOperation,
@@ -18,10 +19,11 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
-import { KnowledgeService } from './knowledge.service';
-import { RolesGuard } from '../../common/guards/roles.guard';
+
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { UseGuards } from '@nestjs/common/decorators/core/use-guards.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
+
+import { KnowledgeService } from './knowledge.service';
 
 @ApiTags('المعرفة - ربط المواقع')
 @ApiBearerAuth()
@@ -56,7 +58,7 @@ export class KnowledgeController {
   async uploadUrls(
     @Param('merchantId') merchantId: string,
     @Body('urls') urls: string[],
-    @Req() req: any,                           // ⬅️ جديد
+    @Req() req: any, // ⬅️ جديد
   ) {
     // مرّر userId لصاحب العملية لغايات الإشعار
     return this.svc.addUrls(merchantId, urls, req.user?.userId);

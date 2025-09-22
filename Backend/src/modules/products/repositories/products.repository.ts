@@ -1,7 +1,7 @@
-import { Types, ClientSession } from 'mongoose';
-import { Product, ProductDocument } from '../schemas/product.schema';
-import { GetProductsDto } from '../dto/get-products.dto';
-import { PaginationResult } from '../../../common/dto/pagination.dto';
+import type { PaginationResult } from '../../../common/dto/pagination.dto';
+import type { GetProductsDto } from '../dto/get-products.dto';
+import type { Product, ProductDocument } from '../schemas/product.schema';
+import type { Types, ClientSession } from 'mongoose';
 
 export interface ProductsRepository {
   // basic CRUD (+session اختياري)
@@ -25,8 +25,8 @@ export interface ProductsRepository {
   findPublicBySlug(storeSlug: string, productSlug: string): Promise<any | null>;
   // جديدة: تعتمد merchantId مباشرة
   findPublicBySlugWithMerchant(
-    productSlug: string,
     merchantId: Types.ObjectId,
+    productSlug: string,
   ): Promise<any | null>;
 
   // paginated lists

@@ -1,8 +1,9 @@
 // src/metrics/mongoose-metrics.plugin.ts
-import { Histogram } from 'prom-client';
-import { Connection } from 'mongoose';
 import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
+import { Histogram } from 'prom-client';
+
 import { DATABASE_QUERY_DURATION_SECONDS } from './metrics.module';
 
 @Injectable()
@@ -31,7 +32,10 @@ export class MongooseMetricsPlugin implements OnModuleInit {
         const start: bigint | undefined = this.__start;
         if (start) {
           const sec = Number(process.hrtime.bigint() - start) / 1e9;
-          histogram.observe({ operation: op, collection: coll, status: 'ok' }, sec);
+          histogram.observe(
+            { operation: op, collection: coll, status: 'ok' },
+            sec,
+          );
         }
         next();
       });
@@ -40,9 +44,16 @@ export class MongooseMetricsPlugin implements OnModuleInit {
     const plugin = (schema: any) => {
       // عرّف العمليات صراحةً بدل Regex لالتقاط اسمها بالـ closure
       const ops = [
-        'find', 'findOne', 'count', 'countDocuments',
-        'updateOne', 'updateMany', 'deleteOne', 'deleteMany',
-        'aggregate', 'insertMany',
+        'find',
+        'findOne',
+        'count',
+        'countDocuments',
+        'updateOne',
+        'updateMany',
+        'deleteOne',
+        'deleteMany',
+        'aggregate',
+        'insertMany',
       ];
       for (const op of ops) attach(schema, op);
     };

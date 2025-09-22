@@ -1,12 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { v5 as uuidv5 } from 'uuid';
-import { BotFaq } from './schemas/botFaq.schema';
+
+import { VectorService } from '../../vector/vector.service';
+
+import { BulkImportDto } from './dto/bulk-import.dto';
 import { CreateBotFaqDto } from './dto/create-botFaq.dto';
 import { UpdateBotFaqDto } from './dto/update-botFaq.dto';
-import { BulkImportDto } from './dto/bulk-import.dto';
-import { VectorService } from '../../vector/vector.service';
-import { BOT_FAQ_REPOSITORY } from './tokens';
 import { BotFaqRepository } from './repositories/bot-faq.repository';
+import { BotFaq } from './schemas/botFaq.schema';
+import { BOT_FAQ_REPOSITORY } from './tokens';
 
 type BotFaqPayload = {
   faqId: string;
@@ -86,7 +88,7 @@ export class BotFaqService {
         vectorStatus: 'failed',
       } as any);
       // طباعة مختصرة للخطأ (بدون رمي تفاصيل حساسة)
-      // eslint-disable-next-line no-console
+
       console.error(
         '[BotFaq.create] upsert failed:',
         e?.response?.data ?? e?.message,
@@ -132,7 +134,7 @@ export class BotFaqService {
         doc = await this.repo.updateById(id, { vectorStatus: 'ok' } as any);
       } catch (e: any) {
         await this.repo.updateById(id, { vectorStatus: 'failed' } as any);
-        // eslint-disable-next-line no-console
+
         console.error(
           '[BotFaq.update] upsert failed:',
           e?.response?.data ?? e?.message,
@@ -181,9 +183,9 @@ export class BotFaqService {
             question: (d as any).question,
             answer: (d as any).answer,
             type: 'faq',
-            source: ((d as any).source as any) ?? 'manual',
+            source: (d as any).source ?? 'manual',
             tags: (d as any).tags ?? [],
-            locale: ((d as any).locale as any) ?? 'ar',
+            locale: (d as any).locale ?? 'ar',
           },
         });
       }

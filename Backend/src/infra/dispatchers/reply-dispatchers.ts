@@ -1,7 +1,8 @@
 // src/infra/dispatchers/reply-dispatchers.ts
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { RabbitService } from '../rabbit/rabbit.service';
+
 import { ChannelsDispatcherService } from '../../modules/channels/channels-dispatcher.service';
+import { RabbitService } from '../rabbit/rabbit.service';
 
 @Injectable()
 export class ReplyDispatchers implements OnModuleInit {
@@ -34,7 +35,7 @@ export class ReplyDispatchers implements OnModuleInit {
         { queue: 'webchat.out.q', prefetch: 20, assert: false }, // ⬅️ مهم
       );
     } catch (e) {
-      this.log.error('ReplyDispatchers subscriptions failed', e as any);
+      this.log.error('ReplyDispatchers subscriptions failed', e);
     }
   }
 

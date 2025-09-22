@@ -1,3 +1,5 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsString,
   IsNotEmpty,
@@ -5,8 +7,6 @@ import {
   Length,
   ValidateIf,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
 
 export class AddressDto {
   @IsString({ message: 'يجب أن يكون اسم الشارع نصيًا' })

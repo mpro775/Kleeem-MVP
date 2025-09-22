@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, HydratedDocument } from 'mongoose';
+
 import {
   DocumentDocument,
   DocumentSchemaClass,
 } from '../schemas/document.schema';
+
 import { DocumentsRepository } from './documents.repository';
 
 @Injectable()

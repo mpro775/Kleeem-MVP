@@ -7,14 +7,16 @@ import {
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { chromium } from 'playwright';
-import { VectorService } from '../vector/vector.service';
 import { OutboxService } from 'src/common/outbox/outbox.service';
+
 import { NotificationsService } from '../notifications/notifications.service';
-import { SOURCE_URL_REPOSITORY } from './tokens';
+import { VectorService } from '../vector/vector.service';
+
 import {
   SourceUrlRepository,
   SourceUrlEntity,
 } from './repositories/source-url.repository';
+import { SOURCE_URL_REPOSITORY } from './tokens';
 
 function isUsefulChunk(text: string): boolean {
   const arabicCount = (text.match(/[\u0600-\u06FF]/g) || []).length;

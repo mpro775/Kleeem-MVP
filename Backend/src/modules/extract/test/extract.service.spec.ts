@@ -1,15 +1,19 @@
 // src/extract/extract.service.spec.ts
 // يغطي ExtractService.extractFromUrl مع إصلاح نوع AxiosResponse عبر config.headers
-import { ExtractService, ExtractResult } from '../extract.service';
+import { faker } from '@faker-js/faker';
 import { HttpService } from '@nestjs/axios';
+import { Logger } from '@nestjs/common';
+import { AxiosResponse } from 'axios';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 import { of, throwError } from 'rxjs';
-import { AxiosResponse } from 'axios';
-import { Logger } from '@nestjs/common';
-import { faker } from '@faker-js/faker';
+
+import { ExtractService, ExtractResult } from '../extract.service';
 
 // مُساعد لصنع AxiosResponse صحيح النوع (Axios v1 يتطلب config.headers)
-function makeAxiosResponse<T>(data: T, init?: Partial<AxiosResponse<T>>): AxiosResponse<T> {
+function makeAxiosResponse<T>(
+  data: T,
+  init?: Partial<AxiosResponse<T>>,
+): AxiosResponse<T> {
   return {
     data,
     status: 200,
@@ -45,7 +49,9 @@ describe('ExtractService', () => {
       availability: 'in_stock',
     };
 
-    http.get.mockReturnValue(of(makeAxiosResponse<{ data: ExtractResult }>({ data: payload })) as any);
+    http.get.mockReturnValue(
+      of(makeAxiosResponse<{ data: ExtractResult }>({ data: payload })) as any,
+    );
 
     const result = await service.extractFromUrl(url);
 
@@ -58,7 +64,9 @@ describe('ExtractService', () => {
 
   it('يعيد {} عندما تكون الاستجابة بلا حقول ذات معنى (partial/empty payload)', async () => {
     const url = '';
-    http.get.mockReturnValue(of(makeAxiosResponse<{ data: ExtractResult }>({ data: {} })) as any);
+    http.get.mockReturnValue(
+      of(makeAxiosResponse<{ data: ExtractResult }>({ data: {} })) as any,
+    );
 
     const result = await service.extractFromUrl(url);
 
@@ -73,7 +81,9 @@ describe('ExtractService', () => {
     const url = faker.internet.url();
     const error = new Error('network down');
     http.get.mockReturnValue(throwError(() => error) as any);
-    const loggerSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    const loggerSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation();
 
     const result = await service.extractFromUrl(url);
 
@@ -87,7 +97,9 @@ describe('ExtractService', () => {
     const url = faker.internet.url();
     const weirdErr: any = {}; // بلا message
     http.get.mockReturnValue(throwError(() => weirdErr) as any);
-    const loggerSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    const loggerSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation();
 
     const result = await service.extractFromUrl(url);
 

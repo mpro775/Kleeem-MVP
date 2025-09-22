@@ -1,16 +1,18 @@
 // src/modules/channels/adapters/telegram.adapter.ts
-import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
+
+import { ChannelDocument } from '../schemas/channel.schema';
+import { decryptSecret, encryptSecret } from '../utils/secrets.util';
+
 import {
   ChannelAdapter,
   ConnectResult,
   Status,
   WebhookResult,
 } from './channel-adapter';
-import { ChannelDocument } from '../schemas/channel.schema';
-import { decryptSecret, encryptSecret } from '../utils/secrets.util';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class TelegramAdapter implements ChannelAdapter {

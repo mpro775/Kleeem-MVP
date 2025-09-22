@@ -1,14 +1,16 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { UsersRepository } from './users.repository';
-import { User, UserDocument } from '../schemas/user.schema';
-import { CreateUserDto } from '../dto/create-user.dto';
-import { UpdateUserDto } from '../dto/update-user.dto';
-import { NotificationsPrefsDto } from '../dto/notifications-prefs.dto';
-import { GetUsersDto } from '../dto/get-users.dto';
-import { PaginationService } from '../../../common/services/pagination.service';
+
 import { PaginationResult } from '../../../common/dto/pagination.dto';
+import { PaginationService } from '../../../common/services/pagination.service';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { GetUsersDto } from '../dto/get-users.dto';
+import { NotificationsPrefsDto } from '../dto/notifications-prefs.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
+import { User, UserDocument } from '../schemas/user.schema';
+
+import { UsersRepository } from './users.repository';
 
 @Injectable()
 export class MongoUsersRepository implements UsersRepository {

@@ -8,11 +8,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { CacheService } from './cache.service';
-import { CacheWarmerService } from './cache-warmer.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { Roles } from '../decorators/roles.decorator';
 import { UserRole } from '../../modules/users/schemas/user.schema';
+import { Roles } from '../decorators/roles.decorator';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+
+import { CacheWarmerService } from './cache-warmer.service';
+import { CacheService } from './cache.service';
 
 @ApiTags('Cache Management')
 @Controller('admin/cache')

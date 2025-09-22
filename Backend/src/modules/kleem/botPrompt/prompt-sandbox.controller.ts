@@ -18,15 +18,17 @@ import {
   ApiInternalServerErrorResponse,
 } from '@nestjs/swagger';
 import axios from 'axios';
+import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { SandboxDto } from './dto/sandbox.dto';
-import { BotPromptService } from './botPrompt.service';
-import { SettingsService } from '../settings/settings.service';
-import { IntentService } from '../intent/intent.service';
-import { CtaService } from '../cta/cta.service';
 import { VectorService } from 'src/modules/vector/vector.service';
+
+import { CtaService } from '../cta/cta.service';
+import { IntentService } from '../intent/intent.service';
+import { SettingsService } from '../settings/settings.service';
+
+import { BotPromptService } from './botPrompt.service';
+import { SandboxDto } from './dto/sandbox.dto';
 
 // helper بسيط لاستبدال المتغيّرات {KEY}
 function renderPrompt(tpl: string, vars: Record<string, string>) {
@@ -59,7 +61,8 @@ export class PromptSandboxController {
   @Post('sandbox')
   @ApiOperation({
     summary: 'اختبار نموذج البرومبت',
-    description: 'إرسال رسالة إلى نموذج البرومبت والحصول على الرد مع معلومات إضافية'
+    description:
+      'إرسال رسالة إلى نموذج البرومبت والحصول على الرد مع معلومات إضافية',
   })
   @ApiBody({ type: SandboxDto })
   @ApiCreatedResponse({
@@ -67,7 +70,10 @@ export class PromptSandboxController {
     schema: {
       type: 'object',
       properties: {
-        systemPrompt: { type: 'string', description: 'نص البرومبت النهائي بعد استبدال المتغيرات' },
+        systemPrompt: {
+          type: 'string',
+          description: 'نص البرومبت النهائي بعد استبدال المتغيرات',
+        },
         knowledge: {
           type: 'array',
           items: {
@@ -75,23 +81,32 @@ export class PromptSandboxController {
             properties: {
               question: { type: 'string' },
               answer: { type: 'string' },
-              score: { type: 'number' }
-            }
+              score: { type: 'number' },
+            },
           },
-          description: 'المعرفة المسترجعة من الأسئلة الشائعة'
+          description: 'المعرفة المسترجعة من الأسئلة الشائعة',
         },
         highIntent: { type: 'string', description: 'النية المستخلصة من النص' },
-        ctaAllowed: { type: 'boolean', description: 'هل مسموح بعرض دعوة للعمل' },
+        ctaAllowed: {
+          type: 'boolean',
+          description: 'هل مسموح بعرض دعوة للعمل',
+        },
         result: {
           type: 'object',
           properties: {
             raw: { type: 'string', description: 'الرد الخام من النموذج' },
-            final: { type: 'string', description: 'الرد النهائي بعد التعديلات' },
-            latencyMs: { type: 'number', description: 'زمن الاستجابة بالمللي ثانية' }
-          }
-        }
-      }
-    }
+            final: {
+              type: 'string',
+              description: 'الرد النهائي بعد التعديلات',
+            },
+            latencyMs: {
+              type: 'number',
+              description: 'زمن الاستجابة بالمللي ثانية',
+            },
+          },
+        },
+      },
+    },
   })
   @ApiBadRequestResponse({
     description: 'طلب غير صالح - النص مطلوب',
@@ -100,9 +115,9 @@ export class PromptSandboxController {
       properties: {
         statusCode: { type: 'number', example: 400 },
         message: { type: 'string', example: 'text is required' },
-        error: { type: 'string', example: 'Bad Request' }
-      }
-    }
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
   })
   @ApiForbiddenResponse({
     description: 'غير مصرح - يجب أن تكون مسؤولاً',
@@ -111,9 +126,9 @@ export class PromptSandboxController {
       properties: {
         statusCode: { type: 'number', example: 403 },
         message: { type: 'string', example: 'Forbidden resource' },
-        error: { type: 'string', example: 'Forbidden' }
-      }
-    }
+        error: { type: 'string', example: 'Forbidden' },
+      },
+    },
   })
   @ApiInternalServerErrorResponse({
     description: 'خطأ داخلي في الخادم',
@@ -122,9 +137,9 @@ export class PromptSandboxController {
       properties: {
         statusCode: { type: 'number', example: 500 },
         message: { type: 'string', example: 'حدث خطأ غير متوقع' },
-        error: { type: 'string', example: 'Internal Server Error' }
-      }
-    }
+        error: { type: 'string', example: 'Internal Server Error' },
+      },
+    },
   })
   async sandbox(@Body() body: SandboxDto) {
     const text = body.text?.trim();

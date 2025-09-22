@@ -1,11 +1,12 @@
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Types } from 'mongoose';
+
+import { OutboxService } from '../../../common/outbox/outbox.service';
+import { NotificationsService } from '../../notifications/notifications.service';
+import { VectorService } from '../../vector/vector.service';
 import { KnowledgeService } from '../knowledge.service';
 import { SOURCE_URL_REPOSITORY } from '../tokens';
-import { VectorService } from '../../vector/vector.service';
-import { NotificationsService } from '../../notifications/notifications.service';
-import { OutboxService } from '../../../common/outbox/outbox.service';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { Types } from 'mongoose';
 
 const repoMock = {
   createMany: jest.fn(),

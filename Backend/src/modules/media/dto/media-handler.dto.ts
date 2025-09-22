@@ -1,6 +1,6 @@
 // src/media/dto/media-handler.dto.ts
-import { IsString, IsNotEmpty, IsEnum, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsEnum, IsOptional } from 'class-validator';
 
 export enum MediaType {
   TEXT = 'text',
@@ -9,7 +9,7 @@ export enum MediaType {
   PHOTO = 'photo',
   IMAGE = 'image',
   DOCUMENT = 'document',
-  PDF = 'pdf'
+  PDF = 'pdf',
 }
 
 const MediaTypeLabels = {
@@ -19,7 +19,7 @@ const MediaTypeLabels = {
   [MediaType.PHOTO]: 'صورة فوتوغرافية',
   [MediaType.IMAGE]: 'صورة',
   [MediaType.DOCUMENT]: 'مستند',
-  [MediaType.PDF]: 'ملف PDF'
+  [MediaType.PDF]: 'ملف PDF',
 } as const;
 
 export class MediaHandlerDto {
@@ -30,15 +30,15 @@ export class MediaHandlerDto {
     example: MediaType.IMAGE,
     examples: Object.entries(MediaTypeLabels).map(([value, description]) => ({
       value,
-      description
-    }))
+      description,
+    })),
   })
   @IsEnum(MediaType, { message: 'نوع الوسائط غير صالح' })
   type: MediaType;
 
   @ApiProperty({
     description: 'رابط الملف',
-    example: 'https://example.com/files/example.jpg'
+    example: 'https://example.com/files/example.jpg',
   })
   @IsString({ message: 'يجب أن يكون رابط الملف نصيًا' })
   @IsNotEmpty({ message: 'رابط الملف مطلوب' })
@@ -46,7 +46,7 @@ export class MediaHandlerDto {
 
   @ApiPropertyOptional({
     description: 'معرف الجلسة (اختياري)',
-    example: 'session_123456789'
+    example: 'session_123456789',
   })
   @IsOptional()
   @IsString({ message: 'يجب أن يكون معرف الجلسة نصيًا' })
@@ -55,7 +55,7 @@ export class MediaHandlerDto {
   @ApiPropertyOptional({
     description: 'قناة الاتصال',
     example: 'whatsapp',
-    enum: ['whatsapp', 'telegram', 'webchat', 'other']
+    enum: ['whatsapp', 'telegram', 'webchat', 'other'],
   })
   @IsOptional()
   @IsString({ message: 'يجب أن تكون القناة نصية' })
@@ -63,7 +63,7 @@ export class MediaHandlerDto {
 
   @ApiPropertyOptional({
     description: 'نوع MIME للملف (اختياري)',
-    example: 'image/jpeg'
+    example: 'image/jpeg',
   })
   @IsOptional()
   @IsString({ message: 'يجب أن يكون نوع MIME نصيًا' })

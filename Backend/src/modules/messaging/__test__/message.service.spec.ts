@@ -1,13 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Types } from 'mongoose';
+
+import { GeminiService } from '../../ai/gemini.service';
+import { ChatGateway } from '../../chat/chat.gateway';
 import { MessageService } from '../message.service';
-import { MESSAGE_SESSION_REPOSITORY } from '../tokens';
 import {
   MessageRepository,
   MessageSessionEntity,
 } from '../repositories/message.repository';
-import { ChatGateway } from '../../chat/chat.gateway';
-import { GeminiService } from '../../ai/gemini.service';
-import { Types } from 'mongoose';
+import { MESSAGE_SESSION_REPOSITORY } from '../tokens';
 
 describe('MessageService', () => {
   let service: MessageService;

@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { ChannelProvider } from '../../channels/schemas/channel.schema';
+import type { ChannelProvider } from '../../channels/schemas/channel.schema';
+import type { Types } from 'mongoose';
 
 export type ChannelLean = {
   _id: Types.ObjectId;

@@ -1,9 +1,10 @@
 // src/modules/storefront-leads/storefront-leads.controller.ts
 import { Controller, Post, Body, Param } from '@nestjs/common';
-import { LeadsService } from '../leads/leads.service';
+import { UseGuards } from '@nestjs/common';
+
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { UseGuards } from '@nestjs/common';
+import { LeadsService } from '../leads/leads.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('storefront/merchant/:merchantId/leads')

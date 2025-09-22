@@ -1,7 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { CleanupCoordinatorService } from '../cleanup-coordinator.service';
 import { getModelToken } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
 import { Model } from 'mongoose';
+
+import { CleanupCoordinatorService } from '../cleanup-coordinator.service';
 
 describe('CleanupCoordinatorService', () => {
   let service: CleanupCoordinatorService;

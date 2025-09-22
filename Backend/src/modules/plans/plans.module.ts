@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Plan, PlanSchema } from './schemas/plan.schema';
-import { PlansService } from './plans.service';
+
 import { PlansController } from './plans.controller';
-import { PLAN_REPOSITORY } from './tokens';
+import { PlansService } from './plans.service';
 import { PlanMongoRepository } from './repositories/plan.mongo.repository';
+import { Plan, PlanSchema } from './schemas/plan.schema';
+import { PLAN_REPOSITORY } from './tokens';
 
 @Module({
   imports: [

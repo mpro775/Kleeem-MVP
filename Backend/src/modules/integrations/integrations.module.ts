@@ -1,14 +1,16 @@
+import { HttpModule } from '@nestjs/axios'; // <-- أضف هذا السطر
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { HttpModule } from '@nestjs/axios'; // <-- أضف هذا السطر
+
 // import { IntegrationsService } from './integrations.service';
-import { IntegrationsController } from './integrations.controller';
-import { Integration, IntegrationSchema } from './schemas/integration.schema';
 import { MerchantsModule } from '../merchants/merchants.module';
-import { EvolutionService } from './evolution.service';
-import { SallaModule } from './salla/salla.module';
-import { ZidModule } from './zid/zid.module';
 import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
+
+import { EvolutionService } from './evolution.service';
+import { IntegrationsController } from './integrations.controller';
+import { SallaModule } from './salla/salla.module';
+import { Integration, IntegrationSchema } from './schemas/integration.schema';
+import { ZidModule } from './zid/zid.module';
 
 @Module({
   imports: [

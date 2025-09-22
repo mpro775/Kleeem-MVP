@@ -1,4 +1,4 @@
-import { MerchantDocument } from '../schemas/merchant.schema';
+import type { MerchantDocument } from '../schemas/merchant.schema';
 
 export interface PromptVersionRepository {
   /** يجلب التاجر للاستخدام الداخلي أو يرمي NotFoundException */

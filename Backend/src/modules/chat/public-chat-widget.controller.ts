@@ -17,9 +17,10 @@ import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
 } from '@nestjs/swagger';
-import { ChatWidgetService } from './chat-widget.service';
 import { Public } from 'src/common/decorators/public.decorator';
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
+
+import { ChatWidgetService } from './chat-widget.service';
 import {
   CreateSessionDto,
   CreateSessionResponseDto,

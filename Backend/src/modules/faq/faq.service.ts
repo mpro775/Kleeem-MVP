@@ -6,11 +6,13 @@ import {
   Inject,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { Faq } from './schemas/faq.schema';
-import { VectorService } from '../vector/vector.service';
-import { NotificationsService } from '../notifications/notifications.service';
 import { OutboxService } from 'src/common/outbox/outbox.service';
+
+import { NotificationsService } from '../notifications/notifications.service';
+import { VectorService } from '../vector/vector.service';
+
 import { FaqRepository } from './repositories/faq.repository';
+import { Faq } from './schemas/faq.schema';
 
 @Injectable()
 export class FaqService {

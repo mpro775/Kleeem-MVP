@@ -14,10 +14,9 @@ export class SubscriptionPlan {
   @Prop({ required: true, enum: Object.values(PlanTier) })
   tier: PlanTier;
 
-
   @Prop({ type: Types.ObjectId, ref: 'Plan', required: false })
   planId?: Types.ObjectId;
-  
+
   @Prop({ required: true })
   startDate: Date;
 

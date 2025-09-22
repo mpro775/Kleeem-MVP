@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { Notification } from '../schemas/notification.schema';
+import type { Notification } from '../schemas/notification.schema';
+import type { Types } from 'mongoose';
 
 export type Severity = 'info' | 'success' | 'warning' | 'error';
 

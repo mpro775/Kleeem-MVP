@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Model, Document, FilterQuery } from 'mongoose';
+
 import {
   CursorDto,
   PaginationResult,
@@ -36,7 +37,12 @@ export class PaginationService {
     } = options;
 
     // إنشاء الـ filter مع الـ cursor
-    const filter = createCursorFilter(baseFilter, dto.cursor, sortField);
+    const filter = createCursorFilter(
+      baseFilter,
+      dto.cursor,
+      sortField,
+      sortOrder,
+    );
 
     // إنشاء الـ sort object
     const sort = {
@@ -45,38 +51,45 @@ export class PaginationService {
     };
 
     // حد أقصى للـ limit
-    const limit = Math.min(dto.limit || 20, 100);
+    const limit = Math.min(dto.limit ?? 20, 100);
 
-    // بناء الاستعلام مع معالجة أفضل للأنواع
-    const baseQuery = model.find(filter).sort(sort).limit(limit);
+    // بناء الاستعلام مع limit + 1 للتحقق من وجود المزيد
+    const q = model
+      .find(filter)
+      .sort(sort)
+      .limit(limit + 1);
 
     if (populate) {
-      baseQuery.populate(populate);
+      q.populate(populate);
     }
 
     if (select) {
-      baseQuery.select(select);
+      q.select(select);
     }
 
-    // تنفيذ الاستعلام مع معالجة النوع حسب lean
-    const items = lean ? await baseQuery.lean().exec() : await baseQuery.exec();
+    // تنفيذ الاستعلام
+    const docs = lean ? await q.lean().exec() : await q.exec();
 
-    // إنشاء الـ cursor للصفحة التالية
-    const lastItem = items[items.length - 1] as any;
+    // حساب hasMore وتقطيع النتيجة
+    const hasMore = docs.length > limit;
+    const items = hasMore ? docs.slice(0, limit) : docs;
+
+    // إنشاء الـ cursor للصفحة التالية (فقط إذا كان هناك المزيد)
+    const last = items[items.length - 1] as any;
     let nextCursor: string | undefined;
 
-    if (lastItem) {
-      const timestampValue = lastItem[sortField];
-      const timestamp =
-        timestampValue instanceof Date ? timestampValue.getTime() : Date.now();
-      nextCursor = encodeCursor(timestamp, String(lastItem._id));
+    if (last) {
+      const tsVal = last[sortField];
+      const ts =
+        tsVal instanceof Date ? tsVal.getTime() : new Date(tsVal).getTime();
+      nextCursor = encodeCursor(ts, String(last._id));
     }
 
     return {
       items: items as T[],
       meta: {
-        nextCursor,
-        hasMore: items.length === limit,
+        nextCursor: hasMore ? nextCursor : undefined,
+        hasMore,
         count: items.length,
       },
     } as PaginationResult<T>;

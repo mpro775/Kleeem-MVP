@@ -10,9 +10,6 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { MessageService } from './message.service';
-import { CreateMessageDto } from './dto/create-message.dto';
-import { UpdateMessageDto } from './dto/update-message.dto';
 import {
   ApiBadRequestResponse,
   ApiBody,
@@ -25,9 +22,14 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
+
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { GeminiService } from '../ai/gemini.service';
+
+import { CreateMessageDto } from './dto/create-message.dto';
 import { RateMessageDto } from './dto/rate-message.dto'; // ✅
+import { UpdateMessageDto } from './dto/update-message.dto';
+import { MessageService } from './message.service';
 
 interface InstructionResult {
   badReply: string;

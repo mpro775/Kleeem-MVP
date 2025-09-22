@@ -14,13 +14,6 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { Public } from 'src/common/decorators/public.decorator';
-import { seconds, Throttle } from '@nestjs/throttler';
-import { BotFaqService } from './botFaq.service';
-import { CreateBotFaqDto } from './dto/create-botFaq.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -31,9 +24,18 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { BulkImportDto } from './dto/bulk-import.dto';
-import { UpdateBotFaqDto } from './dto/update-botFaq.dto';
+import { seconds, Throttle } from '@nestjs/throttler';
+import { Public } from 'src/common/decorators/public.decorator';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+
 import { TranslationService } from '../../../common/services/translation.service';
+
+import { BotFaqService } from './botFaq.service';
+import { BulkImportDto } from './dto/bulk-import.dto';
+import { CreateBotFaqDto } from './dto/create-botFaq.dto';
+import { UpdateBotFaqDto } from './dto/update-botFaq.dto';
 
 @ApiTags('kleem.botFaq')
 @ApiBearerAuth()

@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsMongoId, IsOptional } from 'class-validator';
 import { Expose } from 'class-transformer'; // أضف هذا
+import { IsMongoId, IsOptional } from 'class-validator';
+
 import { Currency } from '../enums/product.enums';
 export class ProductResponseDto {
   @ApiProperty({ description: 'المعرف الفريد للمنتج' })
@@ -58,7 +59,8 @@ export class ProductResponseDto {
   keywords: string[];
 
   @ApiProperty({ description: 'المواصفات الإضافية', type: [String] })
-  @Expose() attributes?: Record<string, string[]>;
+  @Expose()
+  attributes?: Record<string, string[]>;
 
   @Expose() currency?: Currency;
 
@@ -95,11 +97,17 @@ export class ProductResponseDto {
   @Expose()
   errorState?: string;
 
-  @ApiProperty({ description: 'السلاج المخصص للمنتج', example: 'my-product-slug' })
+  @ApiProperty({
+    description: 'السلاج المخصص للمنتج',
+    example: 'my-product-slug',
+  })
   @Expose()
   slug?: string;
 
-  @ApiProperty({ description: 'السلاج المخصص للمتجر', example: 'my-store-slug' })
+  @ApiProperty({
+    description: 'السلاج المخصص للمتجر',
+    example: 'my-store-slug',
+  })
   @Expose()
   storefrontSlug?: string;
 

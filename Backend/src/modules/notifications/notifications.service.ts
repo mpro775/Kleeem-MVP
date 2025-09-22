@@ -1,13 +1,15 @@
 // src/modules/notifications/notifications.service.ts
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+
+import { UsersService } from '../users/users.service';
+
 import {
   Notification,
   NotificationDocument,
 } from './schemas/notification.schema';
-import { UsersService } from '../users/users.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 
 type NotifyInput = {
   userId: string;
@@ -64,11 +66,7 @@ export class NotificationsService {
       title: input.title,
       body: input.body,
       data: input.data,
-      severity: (input.severity ?? 'info') as
-        | 'info'
-        | 'success'
-        | 'warning'
-        | 'error',
+      severity: input.severity ?? 'info',
       ts: Date.now(),
     };
 

@@ -19,11 +19,13 @@ import {
   ApiBody,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { VectorService } from './vector.service';
-import { SemanticRequestDto } from './dto/semantic-request.dto';
-import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+
+import { Public } from '../../common/decorators/public.decorator';
 import { TranslationService } from '../../common/services/translation.service';
+
+import { SemanticRequestDto } from './dto/semantic-request.dto';
+import { VectorService } from './vector.service';
 
 /**
  * واجهة تحكم البحث الدلالي

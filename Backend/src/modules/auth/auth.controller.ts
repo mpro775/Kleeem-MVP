@@ -13,13 +13,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { Response } from 'express';
-import { I18nService } from 'nestjs-i18n';
-import { AuthService } from './auth.service';
-import { CookieService } from './services/cookie.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-
+import { JwtService } from '@nestjs/jwt';
 import {
   ApiTags,
   ApiOperation,
@@ -31,22 +25,31 @@ import {
   ApiTooManyRequestsResponse,
   ApiBearerAuth,
   ApiSecurity,
-  ApiResponse,
 } from '@nestjs/swagger';
-import { Public } from 'src/common/decorators/public.decorator';
-import { CurrentUser } from '../../common';
-import { VerifyEmailDto } from './dto/verify-email.dto';
-import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { Throttle } from '@nestjs/throttler';
+import { Response } from 'express';
+import { I18nService } from 'nestjs-i18n';
+import { Public } from 'src/common/decorators/public.decorator';
+
+
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+
 import { TranslationService } from '../../common/services/translation.service';
-import { JwtService } from '@nestjs/jwt';
+
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
-import { TokenPairDto } from './dto/token-pair.dto';
+import { CurrentUser } from '../../common';
+import { AuthService } from './auth.service';
 import { AccessOnlyDto } from './dto/access-only.dto';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { TokenPairDto } from './dto/token-pair.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { CookieService } from './services/cookie.service';
 
 @ApiTags('i18n:auth.tags.authentication')
 @Controller('auth')
@@ -68,7 +71,12 @@ export class AuthController {
       transformOptions: { enableImplicitConversion: true },
     }),
   )
-  @Throttle({ default: { ttl: 60, limit: 5 } }) // 5 requests per minute
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.AUTH_REGISTER_TTL || '60'),
+      limit: parseInt(process.env.AUTH_REGISTER_LIMIT || '5'),
+    },
+  })
   @ApiOperation({
     operationId: 'auth_register',
     summary: 'i18n:auth.operations.register.summary',
@@ -132,7 +140,12 @@ export class AuthController {
       transform: true,
     }),
   )
-  @Throttle({ default: { ttl: 60, limit: 5 } }) // 5 requests per minute
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.AUTH_LOGIN_TTL || '60'),
+      limit: parseInt(process.env.AUTH_LOGIN_LIMIT || '5'),
+    },
+  })
   @ApiSecurity('csrf')
   @ApiOperation({
     operationId: 'auth_login',
@@ -182,11 +195,26 @@ export class AuthController {
       refreshTokenTTL,
     );
 
+    // Get CSRF token from session and send it
+    const decoded = this.jwtService.decode(result.refreshToken);
+    if (decoded?.jti) {
+      const csrfToken = await this.authService.getSessionCsrfToken(decoded.jti);
+      if (csrfToken) {
+        this.cookieService.setSecureCookie(res, 'csrf-token', csrfToken);
+        res.setHeader('X-CSRF-Token', csrfToken);
+      }
+    }
+
     return result;
   }
   @Public()
   @Post('resend-verification')
-  @Throttle({ default: { ttl: 60, limit: 3 } }) // 3 requests per minute
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.AUTH_RESEND_VERIFICATION_TTL || '60'),
+      limit: parseInt(process.env.AUTH_RESEND_VERIFICATION_LIMIT || '3'),
+    },
+  })
   @ApiSecurity('csrf')
   @ApiOperation({
     operationId: 'auth_resendVerification',
@@ -209,7 +237,12 @@ export class AuthController {
   // مسار التحقق من الكود
   @Public()
   @Post('verify-email')
-  @Throttle({ default: { ttl: 60, limit: 5 } }) // 5 requests per minute
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.AUTH_VERIFY_EMAIL_TTL || '60'),
+      limit: parseInt(process.env.AUTH_VERIFY_EMAIL_LIMIT || '5'),
+    },
+  })
   @ApiSecurity('csrf')
   @ApiOperation({
     operationId: 'auth_verifyEmail',
@@ -237,7 +270,12 @@ export class AuthController {
       transform: true,
     }),
   )
-  @Throttle({ default: { ttl: 300, limit: 3 } }) // 3 requests per 5 minutes per IP
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.AUTH_FORGOT_PASSWORD_TTL || '300'),
+      limit: parseInt(process.env.AUTH_FORGOT_PASSWORD_LIMIT || '3'),
+    },
+  })
   @ApiSecurity('csrf')
   @ApiOperation({
     operationId: 'auth_forgotPassword',
@@ -257,7 +295,12 @@ export class AuthController {
 
   // (اختياري) لتجربة صحة الرابط قبل عرض صفحة إعادة التعيين
   @Get('reset-password/validate')
-  @Throttle({ default: { ttl: 60, limit: 30 } })
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.AUTH_RESET_PASSWORD_TTL || '60'),
+      limit: parseInt(process.env.AUTH_RESET_PASSWORD_LIMIT || '30'),
+    },
+  })
   @ApiOperation({
     operationId: 'auth_validateResetToken',
     summary: 'Validate reset token',
@@ -286,7 +329,12 @@ export class AuthController {
       transform: true,
     }),
   )
-  @Throttle({ default: { ttl: 300, limit: 5 } }) // 5 requests per 5 minutes
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.AUTH_RESET_PASSWORD_TTL || '300'),
+      limit: parseInt(process.env.AUTH_RESET_PASSWORD_LIMIT || '5'),
+    },
+  })
   @ApiSecurity('csrf')
   @ApiOperation({
     operationId: 'auth_resetPassword',
@@ -325,7 +373,12 @@ export class AuthController {
       transform: true,
     }),
   )
-  @Throttle({ default: { ttl: 300, limit: 5 } }) // 5 requests per 5 minutes
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.AUTH_CHANGE_PASSWORD_TTL || '300'),
+      limit: parseInt(process.env.AUTH_CHANGE_PASSWORD_LIMIT || '5'),
+    },
+  })
   @ApiBearerAuth('bearer')
   @ApiSecurity('csrf')
   @ApiOperation({
@@ -348,7 +401,12 @@ export class AuthController {
   // ✅ C2: نقاط التحكم الجديدة للتوكنات
   @Public()
   @Post('refresh')
-  @Throttle({ default: { ttl: 60, limit: 10 } }) // 10 requests per minute
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.AUTH_REFRESH_TTL || '60'),
+      limit: parseInt(process.env.AUTH_REFRESH_LIMIT || '10'),
+    },
+  })
   @ApiSecurity('csrf')
   @ApiOperation({
     operationId: 'auth_refresh',
@@ -390,6 +448,19 @@ export class AuthController {
       ip: req.ip,
     };
 
+    // CSRF protection: validate token from header against cookie
+    const csrfFromHeader = req.headers['x-csrf-token'] as string;
+    const csrfFromCookie = req.cookies?.['csrf-token'];
+    if (
+      !csrfFromHeader ||
+      !csrfFromCookie ||
+      csrfFromHeader !== csrfFromCookie
+    ) {
+      throw new UnauthorizedException(
+        this.translationService.translate('auth.errors.csrfTokenInvalid'),
+      );
+    }
+
     // استخدام refresh token من الكوكيز أو من الـ body
     const refreshToken = bodyRefreshToken || req.cookies?.refreshToken;
 
@@ -420,6 +491,16 @@ export class AuthController {
       result.refreshToken,
       refreshTokenTTL,
     );
+
+    // Get CSRF token from session and send it
+    const decoded = this.jwtService.decode(result.refreshToken);
+    if (decoded?.jti) {
+      const csrfToken = await this.authService.getSessionCsrfToken(decoded.jti);
+      if (csrfToken) {
+        this.cookieService.setSecureCookie(res, 'csrf-token', csrfToken);
+        res.setHeader('X-CSRF-Token', csrfToken);
+      }
+    }
 
     return result;
   }
@@ -469,6 +550,8 @@ export class AuthController {
     if (refreshToken) {
       const decoded = this.jwtService.verify(refreshToken, {
         secret: process.env.JWT_SECRET,
+        issuer: process.env.JWT_ISSUER,
+        audience: process.env.JWT_AUDIENCE,
       });
       if (decoded?.sub !== me) {
         throw new UnauthorizedException('Invalid token owner');
@@ -481,15 +564,16 @@ export class AuthController {
       try {
         const decoded: any = this.jwtService.verify(access, {
           secret: process.env.JWT_SECRET,
+          issuer: process.env.JWT_ISSUER,
+          audience: process.env.JWT_AUDIENCE,
         });
         if (decoded?.jti) {
           // خزّنه في blacklist لمدة ما تبقى من عمره
           const now = Math.floor(Date.now() / 1000);
           const ttlSec = Math.max(1, (decoded.exp || now) - now);
-          await this.authService['tokenService']['store'].addToBlacklist(
-            decoded.jti,
-            ttlSec,
-          );
+          await this.authService
+            .getTokenService()
+            .blacklistAccessJti(decoded.jti, ttlSec);
         }
       } catch {
         /* تجاهل */

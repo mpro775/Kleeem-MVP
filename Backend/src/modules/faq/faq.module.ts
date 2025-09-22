@@ -1,13 +1,15 @@
 // src/modules/faq/faq.module.ts
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Faq, FaqSchema } from './schemas/faq.schema';
-import { FaqService } from './faq.service';
-import { FaqController } from './faq.controller';
-import { VectorModule } from '../vector/vector.module';
-import { NotificationsModule } from '../notifications/notifications.module';
+
 import { OutboxModule } from '../../common/outbox/outbox.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { VectorModule } from '../vector/vector.module';
+
+import { FaqController } from './faq.controller';
+import { FaqService } from './faq.service';
 import { MongoFaqRepository } from './repositories/mongo-faq.repository';
+import { Faq, FaqSchema } from './schemas/faq.schema';
 
 @Module({
   imports: [

@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+
 import { BotPrompt } from '../schemas/botPrompt.schema';
+
 import { BotPromptLean, BotPromptRepository } from './bot-prompt.repository';
 
 @Injectable()

@@ -1,3 +1,5 @@
+import { promises as fs } from 'fs';
+
 import {
   Injectable,
   NotFoundException,
@@ -6,17 +8,18 @@ import {
   Logger,
   Inject,
 } from '@nestjs/common';
-import { Types, ClientSession } from 'mongoose';
 import * as Minio from 'minio';
-import { promises as fs } from 'fs';
-import slugify from 'slugify';
+import { Types, ClientSession } from 'mongoose';
 import sharp from 'sharp';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
-import { MoveCategoryDto } from './dto/move-category.dto';
-import { CategoryDocument } from './schemas/category.schema';
-import { CategoriesRepository } from './repositories/categories.repository';
+import slugify from 'slugify';
+
 import { CategoryNotFoundError } from '../../common/errors/business-errors';
+
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { MoveCategoryDto } from './dto/move-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CategoriesRepository } from './repositories/categories.repository';
+import { CategoryDocument } from './schemas/category.schema';
 
 const unlink = fs.unlink;
 
@@ -365,7 +368,7 @@ export class CategoriesService {
       await cat.save();
       return url;
     } catch (e) {
-      this.logger.error('MinIO upload failed', e as any);
+      this.logger.error('MinIO upload failed', e);
       throw new InternalServerErrorException('STORAGE_UPLOAD_FAILED');
     } finally {
       await unlink(file.path).catch(() => null);

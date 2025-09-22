@@ -6,12 +6,13 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { RequestWithUser } from '../interfaces/request-with-user.interface';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) { }
+  constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     // 1) احترم @Public() على مستوى الهاندلر أو الكلاس
@@ -22,11 +23,10 @@ export class RolesGuard implements CanActivate {
     if (isPublic) return true;
 
     // 2) اقرأ الأدوار من الهاندلر أو الكلاس (الأقرب يغلب)
-    const requiredRoles =
-      this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
-        context.getHandler(),
-        context.getClass(),
-      ]);
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(
+      ROLES_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
     // إذا ما فيه @Roles => لا تقييد
     if (!requiredRoles || requiredRoles.length === 0) return true;

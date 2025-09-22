@@ -1,12 +1,14 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { getModelToken, getConnectionToken } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
 import { Connection, Model, ClientSession } from 'mongoose';
-import { WebhooksService } from './webhooks.service';
-import { Webhook } from './schemas/webhook.schema';
-import { MessageService } from '../messaging/message.service';
+
 import { OutboxService } from '../../common/outbox/outbox.service';
+import { MessageService } from '../messaging/message.service';
+
 import { BotReplyDto } from './dto/bot-reply.dto';
+import { Webhook } from './schemas/webhook.schema';
+import { WebhooksService } from './webhooks.service';
 
 describe('WebhooksService', () => {
   let service: WebhooksService;

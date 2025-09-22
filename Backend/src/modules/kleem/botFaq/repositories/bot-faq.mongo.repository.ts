@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+
 import { BotFaq } from '../schemas/botFaq.schema';
+
 import { BotFaqLean, BotFaqRepository } from './bot-faq.repository';
 
 @Injectable()
@@ -53,7 +55,7 @@ export class BotFaqMongoRepository implements BotFaqRepository {
 
   async insertMany(items: Partial<BotFaq>[]): Promise<BotFaqLean[]> {
     const docs = await this.model.insertMany(items as any[]);
-    return docs.map((d) => d.toObject() as any);
+    return docs.map((d) => d.toObject());
   }
 
   async updateManyByIds(ids: string[], patch: Partial<BotFaq>): Promise<void> {

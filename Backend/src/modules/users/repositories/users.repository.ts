@@ -1,10 +1,10 @@
-import { Types } from 'mongoose';
-import { PaginationResult } from '../../../common/dto/pagination.dto';
-import { CreateUserDto } from '../dto/create-user.dto';
-import { UpdateUserDto } from '../dto/update-user.dto';
-import { NotificationsPrefsDto } from '../dto/notifications-prefs.dto';
-import { GetUsersDto } from '../dto/get-users.dto';
-import { UserDocument } from '../schemas/user.schema';
+import type { PaginationResult } from '../../../common/dto/pagination.dto';
+import type { CreateUserDto } from '../dto/create-user.dto';
+import type { GetUsersDto } from '../dto/get-users.dto';
+import type { NotificationsPrefsDto } from '../dto/notifications-prefs.dto';
+import type { UpdateUserDto } from '../dto/update-user.dto';
+import type { UserDocument } from '../schemas/user.schema';
+import type { Types } from 'mongoose';
 
 export interface UsersRepository {
   create(data: CreateUserDto): Promise<UserDocument>;

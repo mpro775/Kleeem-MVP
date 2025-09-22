@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 import { IsEnum, IsString, Matches } from 'class-validator';
+import { Document } from 'mongoose';
 
 export enum WeekDay {
   Sunday = 'Sunday',

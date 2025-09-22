@@ -14,9 +14,8 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { UseInterceptors } from '@nestjs/common';
-import { Response } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -30,8 +29,11 @@ import {
   ApiResponse,
   ApiProduces,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { Response } from 'express';
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { Ok, Created } from 'src/common/swagger/swagger';
+
 import { DocumentsService } from './documents.service';
 import {
   MerchantParamDto,
@@ -40,7 +42,6 @@ import {
   PaginatedDocumentsDto,
 } from './dto/common.dto';
 import { UploadResponseDto } from './dto/upload.dto';
-import { Ok, Created } from 'src/common/swagger/swagger';
 
 @ApiTags('المستندات')
 @ApiBearerAuth()

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+
 import { ChatMediaService } from './chat-media.service';
 
 @Module({

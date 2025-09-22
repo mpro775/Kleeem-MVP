@@ -1,6 +1,7 @@
-import { IsOptional, IsInt, Min, Max } from 'class-validator';
-import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsOptional, IsInt, Min, Max } from 'class-validator';
+import { Types } from 'mongoose';
 
 /**
  * DTO موحد للـ Cursor Pagination
@@ -72,19 +73,21 @@ export function createCursorFilter(
   baseFilter: any,
   cursor?: string,
   sortField: string = 'createdAt',
+  sortOrder: 1 | -1 = -1, // NEW: مرّر اتجاه الفرز
 ): any {
   const filter = { ...baseFilter };
-  const decodedCursor = decodeCursor(cursor);
+  const decoded = decodeCursor(cursor);
+  if (!decoded) return filter;
 
-  if (decodedCursor) {
-    filter.$or = [
-      { [sortField]: { $lt: new Date(decodedCursor.t) } },
-      {
-        [sortField]: new Date(decodedCursor.t),
-        _id: { $lt: decodedCursor.id },
-      },
-    ];
-  }
+  const op = sortOrder === -1 ? '$lt' : '$gt';
+  const cursorDate = new Date(decoded.t);
+  const cursorId = Types.ObjectId.isValid(decoded.id)
+    ? new Types.ObjectId(decoded.id)
+    : decoded.id; // fallback لكن يفضّل دائمًا ObjectId
 
+  filter.$or = [
+    { [sortField]: { [op]: cursorDate } },
+    { [sortField]: cursorDate, _id: { [op]: cursorId } },
+  ];
   return filter;
 }

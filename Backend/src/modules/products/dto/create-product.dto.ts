@@ -1,4 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -9,9 +10,10 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+
 import { I18nMessage } from '../../../common/validators/i18n-validator';
 import { Currency } from '../enums/product.enums';
+
 import { OfferDto } from './offer.dto';
 
 export enum ProductSource {

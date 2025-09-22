@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { ZidService } from '../integrations/zid/zid.service';
+
 import { SallaService } from '../integrations/salla/salla.service';
+import { ZidService } from '../integrations/zid/zid.service';
 import { ProductsService } from '../products/products.service';
+
 import { CatalogRepository } from './repositories/catalog.repository';
 
 @Injectable()

@@ -2,17 +2,18 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
-  UsageCounter,
-  UsageCounterSchema,
-} from './schemas/usage-counter.schema';
-import { UsageService } from './usage.service';
-import { PlansModule } from 'src/modules/plans/plans.module';
-import {
   Merchant,
   MerchantSchema,
 } from 'src/modules/merchants/schemas/merchant.schema';
+import { PlansModule } from 'src/modules/plans/plans.module';
+
+import {
+  UsageCounter,
+  UsageCounterSchema,
+} from './schemas/usage-counter.schema';
 import { UsageLimitResolver } from './usage-limit.resolver';
 import { UsageController } from './usage.controller';
+import { UsageService } from './usage.service';
 
 @Module({
   imports: [
@@ -24,6 +25,6 @@ import { UsageController } from './usage.controller';
   ],
   controllers: [UsageController],
   providers: [UsageService, UsageLimitResolver],
-      exports: [UsageService],
+  exports: [UsageService],
 })
 export class UsageModule {}

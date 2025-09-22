@@ -1,9 +1,10 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
+
 import { AppModule } from '../../src/app.module';
-import { ProductsService } from '../../src/modules/products/products.service';
 import { MerchantsService } from '../../src/modules/merchants/merchants.service';
+import { ProductsService } from '../../src/modules/products/products.service';
 import { Product } from '../../src/modules/products/schemas/product.schema';
 
 describe('Products E2E', () => {

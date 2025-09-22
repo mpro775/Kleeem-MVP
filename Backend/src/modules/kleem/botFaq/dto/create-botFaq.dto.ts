@@ -1,4 +1,6 @@
 // src/modules/kleem/botFaq/dto/create-botFaq.dto.ts
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsString,
   IsOptional,
@@ -8,8 +10,6 @@ import {
   IsIn,
   ArrayMaxSize,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateBotFaqDto {
   @ApiProperty({
@@ -27,7 +27,8 @@ export class CreateBotFaqDto {
 
   @ApiProperty({
     description: 'إجابة السؤال',
-    example: 'يمكنك إعادة تعيين كلمة المرور من خلال النقر على "نسيت كلمة المرور" في صفحة تسجيل الدخول.',
+    example:
+      'يمكنك إعادة تعيين كلمة المرور من خلال النقر على "نسيت كلمة المرور" في صفحة تسجيل الدخول.',
     maxLength: 3000,
     required: true,
   })

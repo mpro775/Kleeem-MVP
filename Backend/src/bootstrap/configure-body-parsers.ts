@@ -1,6 +1,7 @@
 // Body parser configuration
-import { INestApplication } from '@nestjs/common';
 import * as bodyParser from 'body-parser';
+
+import type { INestApplication } from '@nestjs/common';
 
 export function configureBodyParsers(app: INestApplication): void {
   const captureRawBody = (req: any, _res: any, buf: Buffer) => {

@@ -1,8 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { MerchantCacheService } from '../merchant-cache.service';
 import { ConfigService } from '@nestjs/config';
-import { PromptBuilderService } from '../prompt-builder.service';
+import { Test, TestingModule } from '@nestjs/testing';
+
 import { TranslationService } from '../../../../common/services/translation.service';
+import { MerchantCacheService } from '../merchant-cache.service';
+import { PromptBuilderService } from '../prompt-builder.service';
 
 const repo = { findOne: jest.fn(), getStatus: jest.fn() };
 const prompt = { compileTemplate: jest.fn() };

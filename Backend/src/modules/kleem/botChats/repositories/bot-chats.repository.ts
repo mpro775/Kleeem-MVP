@@ -1,5 +1,5 @@
-import { FilterQuery, PipelineStage, Types } from 'mongoose';
-import { BotChatSession } from '../schemas/botChats.schema';
+import type { BotChatSession } from '../schemas/botChats.schema';
+import type { FilterQuery, PipelineStage, Types } from 'mongoose';
 
 export type AppendMessage = {
   role: 'user' | 'bot';

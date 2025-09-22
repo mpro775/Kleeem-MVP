@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import { TranslationService } from './translation.service';
-import { PaginationService } from './pagination.service';
+
 import { EnvironmentValidatorService } from './environment-validator.service';
+import { PaginationService } from './pagination.service';
+import { TranslationService } from './translation.service';
 
 @Module({
   providers: [

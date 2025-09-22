@@ -1,4 +1,6 @@
 // src/infra/rabbit/rabbit.service.ts
+import { randomUUID } from 'crypto';
+
 import {
   Injectable,
   OnModuleInit,
@@ -7,7 +9,6 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import amqp, { Connection, Channel, Options, ConsumeMessage } from 'amqplib';
-import { randomUUID } from 'crypto';
 
 type OnMessage = (
   msg: any,
@@ -86,7 +87,7 @@ export class RabbitService implements OnModuleInit, OnModuleDestroy {
       await this.ch?.close();
       await this.conn?.close();
     } catch (err) {
-      this.logger.error('Error while closing RabbitMQ connection', err as any);
+      this.logger.error('Error while closing RabbitMQ connection', err);
     }
   }
 

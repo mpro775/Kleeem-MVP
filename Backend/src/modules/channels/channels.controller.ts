@@ -26,13 +26,15 @@ import {
   ApiForbiddenResponse,
   ApiCreatedResponse,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { ChannelsService } from './channels.service';
-import { CreateChannelDto } from './dto/create-channel.dto';
-import { UpdateChannelDto } from './dto/update-channel.dto';
-import { ConnectActionDto } from './dto/connect-action.dto';
-import { SendMessageDto } from './dto/send-message.dto';
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
+
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+
+import { ChannelsService } from './channels.service';
+import { ConnectActionDto } from './dto/connect-action.dto';
+import { CreateChannelDto } from './dto/create-channel.dto';
+import { SendMessageDto } from './dto/send-message.dto';
+import { UpdateChannelDto } from './dto/update-channel.dto';
 
 @ApiTags('القنوات')
 @ApiBearerAuth()

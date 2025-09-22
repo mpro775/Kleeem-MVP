@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+
+import { SettingsRepository } from '../repositories/settings.repository';
 import { SettingsService } from '../settings.service';
 import { SETTINGS_REPOSITORY } from '../tokens';
-import { SettingsRepository } from '../repositories/settings.repository';
 
 describe('SettingsService', () => {
   let service: SettingsService;

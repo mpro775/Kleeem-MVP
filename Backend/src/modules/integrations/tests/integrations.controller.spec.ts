@@ -1,10 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
+
+import { Merchant } from '../../merchants/schemas/merchant.schema';
 import { IntegrationsController } from '../integrations.controller';
 import { Integration } from '../schemas/integration.schema';
-import { Merchant } from '../../merchants/schemas/merchant.schema';
 
 describe('IntegrationsController', () => {
   let controller: IntegrationsController;

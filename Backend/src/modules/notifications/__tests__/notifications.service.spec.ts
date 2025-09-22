@@ -1,10 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { NotificationsService } from '../notifications.service';
-import { NOTIFICATION_REPOSITORY } from '../tokens';
-import { NotificationRepository } from '../repositories/notification.repository';
-import { UsersService } from '../../users/users.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Test, TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
+
+import { UsersService } from '../../users/users.service';
+import { NotificationsService } from '../notifications.service';
+import { NotificationRepository } from '../repositories/notification.repository';
+import { NOTIFICATION_REPOSITORY } from '../tokens';
 
 describe('NotificationsService', () => {
   let service: NotificationsService;

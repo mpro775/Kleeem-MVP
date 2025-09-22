@@ -1,15 +1,16 @@
 // src/modules/documents/documents.module.ts
+import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { BullModule } from '@nestjs/bull';
 import { MulterModule } from '@nestjs/platform-express';
 
-import { DocumentSchemaClass, DocumentSchema } from './schemas/document.schema';
-import { DocumentsService } from './documents.service';
-import { DocumentsController } from './documents.controller';
-import { DocumentProcessor } from './processors/document.processor';
 import { VectorModule } from '../vector/vector.module';
+
+import { DocumentsController } from './documents.controller';
+import { DocumentsService } from './documents.service';
+import { DocumentProcessor } from './processors/document.processor';
 import { MongoDocumentsRepository } from './repositories/mongo-documents.repository';
+import { DocumentSchemaClass, DocumentSchema } from './schemas/document.schema';
 
 @Module({
   imports: [

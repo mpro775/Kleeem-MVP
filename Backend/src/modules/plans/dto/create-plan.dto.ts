@@ -1,4 +1,5 @@
 // dto/create-plan.dto.ts
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsNumber,
@@ -9,7 +10,6 @@ import {
   Min,
   IsArray,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreatePlanDto {
   @ApiProperty({ example: 'Pro Monthly' })
@@ -61,4 +61,3 @@ export class CreatePlanDto {
   @Min(0)
   trialPeriodDays?: number;
 }
-

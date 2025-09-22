@@ -1,15 +1,16 @@
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
+
+import { BusinessMetrics } from '../../../metrics/business.metrics';
+import { ChatWidgetService } from '../../chat/chat-widget.service';
+import { N8nWorkflowService } from '../../n8n-workflow/n8n-workflow.service';
+import { StorefrontService } from '../../storefront/storefront.service';
+import { CleanupCoordinatorService } from '../cleanup-coordinator.service';
 import { MerchantsService } from '../merchants.service';
 import { MerchantsRepository } from '../repositories/merchants.repository';
 import { PromptBuilderService } from '../services/prompt-builder.service';
-import { PromptVersionService } from '../services/prompt-version.service';
 import { PromptPreviewService } from '../services/prompt-preview.service';
-import { StorefrontService } from '../../storefront/storefront.service';
-import { CleanupCoordinatorService } from '../cleanup-coordinator.service';
-import { N8nWorkflowService } from '../../n8n-workflow/n8n-workflow.service';
-import { BusinessMetrics } from '../../../metrics/business.metrics';
-import { ChatWidgetService } from '../../chat/chat-widget.service';
-import { ConfigService } from '@nestjs/config';
+import { PromptVersionService } from '../services/prompt-version.service';
 
 describe('MerchantsService', () => {
   let service: MerchantsService;

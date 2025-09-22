@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { Plan } from '../schemas/plan.schema';
+import type { Plan } from '../schemas/plan.schema';
+import type { Types } from 'mongoose';
 
 export type PlanEntity = Plan & {
   _id: Types.ObjectId;

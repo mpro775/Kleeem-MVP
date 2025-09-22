@@ -1,6 +1,7 @@
 // src/modules/auth/dto/login.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsString } from 'class-validator';
+
 import { I18nMessage } from '../../../common/validators/i18n-validator';
 
 export class LoginDto {

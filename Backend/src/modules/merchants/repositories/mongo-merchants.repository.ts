@@ -7,18 +7,19 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Merchant, MerchantDocument } from '../schemas/merchant.schema';
-import { MerchantsRepository } from './merchants.repository';
 
-import { QuickConfig } from '../schemas/quick-config.schema';
-import { MerchantStatusResponse } from '../types/types';
-import { PlanTier } from '../schemas/subscription-plan.schema';
 import {
   CreateMerchantDto,
   UpdateMerchantDto,
   QuickConfigDto,
   OnboardingBasicDto,
 } from '../dto';
+import { Merchant, MerchantDocument } from '../schemas/merchant.schema';
+import { QuickConfig } from '../schemas/quick-config.schema';
+import { PlanTier } from '../schemas/subscription-plan.schema';
+import { MerchantStatusResponse } from '../types/types';
+
+import { MerchantsRepository } from './merchants.repository';
 
 const SLUG_RE = /^[a-z](?:[a-z0-9-]{1,48}[a-z0-9])$/;
 
@@ -73,7 +74,7 @@ export class MongoMerchantsRepository implements MerchantsRepository {
     for (const [k, v] of Object.entries(dto)) {
       if (v !== undefined) {
         if (k === 'subscription' && v) {
-          const sub = v as any;
+          const sub = v;
           updateData.subscription = {
             ...v,
             startDate: sub.startDate ? new Date(sub.startDate) : undefined,

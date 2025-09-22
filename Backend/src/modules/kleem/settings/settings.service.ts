@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
+
 import { BotRuntimeSettings } from './botRuntimeSettings.schema';
 import { UpdateBotRuntimeSettingsDto } from './dto/update-settings.dto';
-import { SETTINGS_REPOSITORY } from './tokens';
 import { SettingsRepository } from './repositories/settings.repository';
+import { SETTINGS_REPOSITORY } from './tokens';
 
 @Injectable()
 export class SettingsService {

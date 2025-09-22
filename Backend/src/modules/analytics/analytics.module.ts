@@ -1,30 +1,33 @@
 // src/analytics/analytics.module.ts
 import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+
+import { CommonModule } from '../../common/config/common.module';
+import { Channel, ChannelSchema } from '../channels/schemas/channel.schema';
+import { FaqModule } from '../faq/faq.module';
+import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
 import {
   MessageSession,
   MessageSessionSchema,
 } from '../messaging/schemas/message.schema';
-import { AnalyticsService } from './analytics.service';
-import { AnalyticsController } from './analytics.controller';
-import { ProductsModule } from '../products/products.module';
-import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
-import { Product, ProductSchema } from '../products/schemas/product.schema';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { Order, OrderSchema } from '../orders/schemas/order.schema';
-import {
-  MissingResponse,
-  MissingResponseSchema,
-} from './schemas/missing-response.schema';
+import { ProductsModule } from '../products/products.module';
+import { Product, ProductSchema } from '../products/schemas/product.schema';
+
+import { AnalyticsAdminController } from './analytics.admin.controller';
+import { AnalyticsController } from './analytics.controller';
+import { AnalyticsService } from './analytics.service';
+
+import { MongoAnalyticsRepository } from './repositories/mongo-analytics.repository';
 import {
   KleemMissingResponse,
   KleemMissingResponseSchema,
 } from './schemas/kleem-missing-response.schema';
-import { AnalyticsAdminController } from './analytics.admin.controller';
-import { FaqModule } from '../faq/faq.module';
-import { NotificationsModule } from '../notifications/notifications.module';
-import { Channel, ChannelSchema } from '../channels/schemas/channel.schema';
-import { MongoAnalyticsRepository } from './repositories/mongo-analytics.repository';
-import { CommonModule } from '../../common/config/common.module';
+import {
+  MissingResponse,
+  MissingResponseSchema,
+} from './schemas/missing-response.schema';
 
 @Module({
   imports: [

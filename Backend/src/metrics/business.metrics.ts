@@ -1,6 +1,6 @@
 // src/metrics/business.metrics.ts
-import { InjectMetric, makeCounterProvider } from '@willsoto/nestjs-prometheus';
 import { Injectable } from '@nestjs/common';
+import { InjectMetric, makeCounterProvider } from '@willsoto/nestjs-prometheus';
 import { Counter } from 'prom-client';
 
 export const BusinessMetricsProviders = [

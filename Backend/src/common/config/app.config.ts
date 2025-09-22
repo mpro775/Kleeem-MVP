@@ -1,11 +1,13 @@
 // src/common/config/app.config.ts
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import compression from 'compression';
-import { MiddlewareConsumer, NestModule } from '@nestjs/common';
+import helmet from 'helmet';
+
 import { RequestIdMiddleware } from '../middlewares/request-id.middleware';
+
 import { corsOptions } from './cors.config';
-import { ConfigService } from '@nestjs/config';
+
+import type { MiddlewareConsumer, NestModule } from '@nestjs/common';
+import type { ConfigService } from '@nestjs/config';
 
 export function setupApp(app: any, config: ConfigService) {
   // CORS كما هو (إن رغبت تركه هنا)
@@ -36,7 +38,12 @@ export function setupApp(app: any, config: ConfigService) {
                   'https://cdnjs.cloudflare.com',
                 ],
                 'font-src': ["'self'", 'https://cdnjs.cloudflare.com'],
-                'connect-src': ["'self'"],
+                'connect-src': [
+                  "'self'",
+                  // أضف وجهات خارجية حسب الحاجة:
+                  // "https://sentry.io",
+                  // "https://glitchtip.yourdomain.com"
+                ],
               },
             }
           : false,
@@ -50,21 +57,6 @@ export function setupApp(app: any, config: ConfigService) {
       xPoweredBy: false,
       frameguard: { action: 'deny' },
       noSniff: true,
-      xssFilter: true,
-    }),
-  );
-
-  app.use(
-    rateLimit({
-      windowMs: config.get<number>('vars.rateLimit.windowMs')!,
-      max: config.get<number>('vars.rateLimit.max')!,
-      message: {
-        status: 429,
-        code: config.get<string>('vars.rateLimit.message.code')!,
-        message: config.get<string>('vars.rateLimit.message.text')!,
-      },
-      standardHeaders: true,
-      legacyHeaders: false,
     }),
   );
 

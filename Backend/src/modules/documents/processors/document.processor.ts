@@ -1,18 +1,21 @@
-import { Process, Processor } from '@nestjs/bull';
-import { Job } from 'bull';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { DocumentSchemaClass } from '../schemas/document.schema';
-import { DocumentsService } from '../documents.service';
-import { VectorService } from '../../vector/vector.service';
-import pdfParse from 'pdf-parse';
-import * as XLSX from 'xlsx';
 import { readFileSync } from 'fs';
-import { join } from 'path';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
-import mammoth from 'mammoth'; // ✅ استيراد عصري
+import { join } from 'path';
+
+import { Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Job } from 'bull';
+import mammoth from 'mammoth'; // ✅ استيراد عصري
+import { Model } from 'mongoose';
+import pdfParse from 'pdf-parse';
+
+import * as XLSX from 'xlsx';
+import { VectorService } from '../../vector/vector.service';
+import { DocumentsService } from '../documents.service';
+import { DocumentSchemaClass } from '../schemas/document.schema';
+
 
 interface DocumentJobData {
   docId: string;

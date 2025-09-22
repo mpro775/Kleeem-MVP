@@ -1,15 +1,16 @@
+import { HttpService } from '@nestjs/axios';
 import {
   BadRequestException,
   Injectable,
   NotFoundException,
   Inject,
 } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
-import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { ChatWidgetSettings } from './schema/chat-widget.schema';
+import { v4 as uuidv4 } from 'uuid';
+
 import { UpdateWidgetSettingsDto } from './dto/update-widget-settings.dto';
 import { ChatWidgetRepository } from './repositories/chat-widget.repository';
+import { ChatWidgetSettings } from './schema/chat-widget.schema';
 
 @Injectable()
 export class ChatWidgetService {

@@ -3,14 +3,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-import { QuickConfig, QuickConfigSchema } from './quick-config.schema';
-import { AdvancedConfig, AdvancedConfigSchema } from './advanced-config.schema';
-import { WorkingHour, WorkingHourSchema } from './working-hours.schema';
 import { Address, AddressSchema } from './address.schema';
+import { AdvancedConfig, AdvancedConfigSchema } from './advanced-config.schema';
+import { QuickConfig, QuickConfigSchema } from './quick-config.schema';
 import {
   SubscriptionPlan,
   SubscriptionPlanSchema,
 } from './subscription-plan.schema';
+import { WorkingHour, WorkingHourSchema } from './working-hours.schema';
 function normalizeSlug(input = '') {
   return input
     .trim()

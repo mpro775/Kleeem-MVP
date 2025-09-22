@@ -1,6 +1,7 @@
-import { IsOptional, IsString, IsEnum, IsBoolean } from 'class-validator';
-import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsOptional, IsString, IsEnum, IsBoolean } from 'class-validator';
+
 import { CursorDto } from '../../../common/dto/pagination.dto';
 import { UserRole } from '../schemas/user.schema';
 

@@ -1,13 +1,14 @@
 import { Injectable, Inject, forwardRef, Logger } from '@nestjs/common';
 import { Types } from 'mongoose';
 
-import { ProductsRepository } from '../repositories/products.repository';
-import { ProductIndexService } from './product-index.service';
-import { StorefrontService } from '../../storefront/storefront.service';
 import { CategoriesService } from '../../categories/categories.service';
 import { ExternalProduct } from '../../integrations/types';
+import { StorefrontService } from '../../storefront/storefront.service';
 import { ProductSource } from '../dto/create-product.dto';
+import { ProductsRepository } from '../repositories/products.repository';
 import { Product } from '../schemas/product.schema';
+
+import { ProductIndexService } from './product-index.service';
 
 @Injectable()
 export class ProductSyncService {
@@ -73,7 +74,7 @@ export class ProductSyncService {
         : null;
       await this.indexer.upsert(doc, sf, catName?.name ?? null);
     } catch (e) {
-      this.logger.warn?.('vector upsert (external) failed', e as any);
+      this.logger.warn?.('vector upsert (external) failed', e);
     }
 
     return { created: !existed, id: doc._id.toString() };

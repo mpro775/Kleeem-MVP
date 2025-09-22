@@ -1,11 +1,11 @@
 // src/metrics/security.metrics.ts
+import { Injectable } from '@nestjs/common';
 import {
   InjectMetric,
   makeCounterProvider,
   makeHistogramProvider,
   makeGaugeProvider,
 } from '@willsoto/nestjs-prometheus';
-import { Injectable } from '@nestjs/common';
 import { Counter, Histogram, Gauge } from 'prom-client';
 
 // ✅ G2: مقاييس الأمان والأداء

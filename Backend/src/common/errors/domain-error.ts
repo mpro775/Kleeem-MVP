@@ -7,7 +7,7 @@ export class DomainError extends HttpException {
     code: string,
     message: string,
     status: number = HttpStatus.BAD_REQUEST,
-    details?: any
+    details?: any,
   ) {
     super({ code, message, details }, status);
   }
@@ -16,6 +16,8 @@ export class DomainError extends HttpException {
 // أمثلة سريعة
 export class OutOfStockErrorExample extends DomainError {
   constructor(productId: string) {
-    super('OUT_OF_STOCK', 'المنتج غير متوفر حاليًا', HttpStatus.CONFLICT, { productId });
+    super('OUT_OF_STOCK', 'المنتج غير متوفر حاليًا', HttpStatus.CONFLICT, {
+      productId,
+    });
   }
 }

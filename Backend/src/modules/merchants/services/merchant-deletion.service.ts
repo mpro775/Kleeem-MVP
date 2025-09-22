@@ -1,6 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { MerchantsRepository } from '../repositories/merchants.repository';
+
 import { CleanupCoordinatorService } from '../cleanup-coordinator.service';
+import { MerchantsRepository } from '../repositories/merchants.repository';
+
 import { MerchantCacheService } from './merchant-cache.service';
 
 @Injectable()

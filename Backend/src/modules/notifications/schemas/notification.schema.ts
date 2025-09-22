@@ -23,8 +23,8 @@ export class Notification {
   @Prop({ type: Object })
   data?: Record<string, unknown>;
 
-  @Prop({ enum: ['info','success','warning','error'], default: 'info' })
-  severity: 'info'|'success'|'warning'|'error';
+  @Prop({ enum: ['info', 'success', 'warning', 'error'], default: 'info' })
+  severity: 'info' | 'success' | 'warning' | 'error';
 
   @Prop({ default: false, index: true })
   read: boolean;

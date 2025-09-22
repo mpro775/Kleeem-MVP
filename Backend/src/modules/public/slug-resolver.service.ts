@@ -2,15 +2,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import {
-  Merchant,
-  MerchantDocument,
-} from '../merchants/schemas/merchant.schema';
+
 import {
   Channel,
   ChannelDocument,
   ChannelProvider,
 } from '../channels/schemas/channel.schema';
+import {
+  Merchant,
+  MerchantDocument,
+} from '../merchants/schemas/merchant.schema';
 
 @Injectable()
 export class SlugResolverService {

@@ -1,7 +1,13 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import { RabbitService } from 'src/infra/rabbit/rabbit.service';
-import { CatalogService } from './catalog.service';
+
+import { RedisLockService } from '../../common/locks';
 import { NotificationsService } from '../notifications/notifications.service';
+
+import { CatalogService } from './catalog.service';
+
+import type Redis from 'ioredis';
 
 @Injectable()
 export class CatalogConsumer implements OnModuleInit {
@@ -11,12 +17,36 @@ export class CatalogConsumer implements OnModuleInit {
     private readonly rabbit: RabbitService,
     private readonly catalog: CatalogService,
     private readonly notifications: NotificationsService,
+    private readonly lock: RedisLockService,
+    @InjectRedis() private readonly redis: Redis,
   ) {}
 
   async onModuleInit() {
     await this.rabbit.subscribe('catalog.sync', 'requested', async (msg) => {
       const { merchantId, requestedBy, source } = msg.payload || {};
       if (!merchantId) return;
+
+      // (1) de-dup للرسالة
+      const messageId =
+        msg?.headers?.messageId || msg?.id || `${merchantId}:${Date.now()}`;
+      const dedupeKey = `idem:catalog-sync:${merchantId}:${messageId}`;
+      const isNew = await this.redis.set(dedupeKey, '1', 'EX', 600, 'NX');
+      if (isNew !== 'OK') return; // رسالة مكررة → تجاهل
+
+      // (2) قفل لكل تاجر
+      const lockKey = `catalog-sync:${merchantId}`;
+      const locked = await this.lock.tryLock(lockKey, 10 * 60_000);
+      if (!locked) {
+        // إرسال إشعار "مزامنة قيد التنفيذ"
+        await this.notifications.notifyUser(requestedBy, {
+          type: 'catalog.sync.already_running',
+          title: 'مزامنة قيد التنفيذ',
+          body: 'هناك مزامنة كتالوج نشطة حالياً.',
+          merchantId,
+          severity: 'info',
+        });
+        return;
+      }
 
       try {
         await this.notifications.notifyUser(requestedBy, {
@@ -46,6 +76,8 @@ export class CatalogConsumer implements OnModuleInit {
           merchantId,
           severity: 'error',
         });
+      } finally {
+        await this.lock.unlock(lockKey);
       }
     });
   }

@@ -2,14 +2,13 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
+import { SallaModule } from '../integrations/salla/salla.module';
+import { ZidModule } from '../integrations/zid/zid.module';
+import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
+import { ProductsModule } from '../products/products.module';
+
 import { CatalogController } from './catalog.controller';
 import { CatalogService } from './catalog.service';
-
-import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
-
-import { ZidModule } from '../integrations/zid/zid.module';
-import { SallaModule } from '../integrations/salla/salla.module';
-import { ProductsModule } from '../products/products.module';
 import { MongoCatalogRepository } from './repositories/mongo-catalog.repository';
 
 @Module({

@@ -13,6 +13,7 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+
 import {
   AuthGuard,
   ResponseInterceptor,
@@ -27,6 +28,7 @@ import {
   ProductNotFoundError,
   OutOfStockError,
 } from '../index';
+
 import {
   ProductServiceExample,
   CreateProductDto,

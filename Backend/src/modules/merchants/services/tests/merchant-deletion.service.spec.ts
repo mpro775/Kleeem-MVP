@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
+
 import { MerchantDeletionService } from '../merchant-deletion.service';
 
 const repo = {
   remove: jest.fn(),
   softDelete: jest.fn(),
   restore: jest.fn(),
-  purge: jest.fn()
+  purge: jest.fn(),
 };
 const cleanup = { purgeAll: jest.fn() };
 const cache = { invalidate: jest.fn() };

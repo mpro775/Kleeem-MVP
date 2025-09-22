@@ -6,24 +6,21 @@ import {
   forwardRef,
   Logger,
 } from '@nestjs/common';
-import { Types } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
+import { Types } from 'mongoose';
 
-import { ProductsRepository } from '../repositories/products.repository';
-import { ProductIndexService } from './product-index.service';
-import { ProductMediaService } from './product-media.service';
 import { CacheService } from '../../../common/cache/cache.service';
-
-import { GetProductsDto } from '../dto/get-products.dto';
+import { OutboxService } from '../../../common/outbox/outbox.service';
+import { TranslationService } from '../../../common/services/translation.service';
+import { CategoriesService } from '../../categories/categories.service';
+import { StorefrontService } from '../../storefront/storefront.service';
 import { CreateProductDto, ProductSource } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
-
-import { StorefrontService } from '../../storefront/storefront.service';
-import { CategoriesService } from '../../categories/categories.service';
-import { ExternalProduct } from '../../integrations/types';
+import { ProductsRepository } from '../repositories/products.repository';
 import { Product } from '../schemas/product.schema';
-import { TranslationService } from '../../../common/services/translation.service';
-import { OutboxService } from '../../../common/outbox/outbox.service';
+
+import { ProductIndexService } from './product-index.service';
+import { ProductMediaService } from './product-media.service';
 
 @Injectable()
 export class ProductCommandsService {
@@ -81,25 +78,28 @@ export class ProductCommandsService {
 
     let created!: Product;
     const session = await (this.repo as any).startSession?.();
-    await session.withTransaction(async () => {
-      created = await this.repo.create(data, session);
-      await this.outbox.enqueueEvent(
-        {
-          aggregateType: 'product',
-          aggregateId: created._id.toString(),
-          eventType: 'product.created',
-          exchange: 'products',
-          routingKey: 'product.created',
-          payload: {
-            productId: created._id.toString(),
-            merchantId: created.merchantId.toString(),
+    try {
+      await session.withTransaction(async () => {
+        created = await this.repo.create(data, session);
+        await this.outbox.enqueueEvent(
+          {
+            aggregateType: 'product',
+            aggregateId: created._id.toString(),
+            eventType: 'product.created',
+            exchange: 'products',
+            routingKey: 'product.created',
+            payload: {
+              productId: created._id.toString(),
+              merchantId: created.merchantId.toString(),
+            },
+            dedupeKey: `product.created:${created._id}`,
           },
-          dedupeKey: `product.created:${created._id}`,
-        },
-        session,
-      );
-    });
-    await session.endSession();
+          session,
+        );
+      });
+    } finally {
+      await session.endSession();
+    }
 
     const catName = created.category
       ? await this.categories.findOne(
@@ -126,7 +126,7 @@ export class ProductCommandsService {
     }
     const _id = new Types.ObjectId(id);
 
-    let updated = await this.repo.updateById(_id, dto as any);
+    const updated = await this.repo.updateById(_id, dto as any);
     if (!updated)
       throw new NotFoundException(
         this.translationService.translateProduct('errors.notFound'),
@@ -185,30 +185,33 @@ export class ProductCommandsService {
       );
 
     const session = await (this.repo as any).startSession?.();
-    await session.withTransaction(async () => {
-      const ok = await this.repo.deleteById(_id, session);
-      if (!ok)
-        throw new NotFoundException(
-          this.translationService.translateProduct('errors.notFound'),
-        );
+    try {
+      await session.withTransaction(async () => {
+        const ok = await this.repo.deleteById(_id, session);
+        if (!ok)
+          throw new NotFoundException(
+            this.translationService.translateProduct('errors.notFound'),
+          );
 
-      await this.outbox.enqueueEvent(
-        {
-          aggregateType: 'product',
-          aggregateId: before._id.toString(),
-          eventType: 'product.deleted',
-          exchange: 'products',
-          routingKey: 'product.deleted',
-          payload: {
-            productId: before._id.toString(),
-            merchantId: before.merchantId.toString(),
+        await this.outbox.enqueueEvent(
+          {
+            aggregateType: 'product',
+            aggregateId: before._id.toString(),
+            eventType: 'product.deleted',
+            exchange: 'products',
+            routingKey: 'product.deleted',
+            payload: {
+              productId: before._id.toString(),
+              merchantId: before.merchantId.toString(),
+            },
+            dedupeKey: `product.deleted:${before._id}`,
           },
-          dedupeKey: `product.deleted:${before._id}`,
-        },
-        session,
-      );
-    });
-    await session.endSession();
+          session,
+        );
+      });
+    } finally {
+      await session.endSession();
+    }
 
     // حذف من المتجهات + كنس الكاش
     await this.indexer.removeOne(before._id.toString());

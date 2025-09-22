@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { Faq } from '../schemas/faq.schema';
+import type { Faq } from '../schemas/faq.schema';
+import type { Types } from 'mongoose';
 
 export interface FaqRepository {
   // إنشاء جماعي بحالة pending

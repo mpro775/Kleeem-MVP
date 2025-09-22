@@ -1,9 +1,11 @@
 // src/bootstrap/configure-swagger.ts
-import { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { I18nService } from 'nestjs-i18n';
+
 import { i18nizeSwagger } from './i18nize-swagger';
-import { JwtService } from '@nestjs/jwt';
+
+import type { INestApplication } from '@nestjs/common';
 
 // HTTP status constants
 const HTTP_UNAUTHORIZED = 401;

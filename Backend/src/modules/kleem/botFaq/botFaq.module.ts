@@ -1,14 +1,16 @@
 // src/modules/kleem/botFaq/botFaq.module.ts
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { BotFaq, BotFaqSchema } from './schemas/botFaq.schema';
-import { BotFaqService } from './botFaq.service';
-import { BotFaqController, BotFaqPublicController } from './botFaq.controller';
-import { VectorModule } from '../../vector/vector.module';
 import { seconds, ThrottlerModule } from '@nestjs/throttler';
-import { BOT_FAQ_REPOSITORY } from './tokens';
-import { BotFaqMongoRepository } from './repositories/bot-faq.mongo.repository';
+
 import { CommonModule } from '../../../common/config/common.module';
+import { VectorModule } from '../../vector/vector.module';
+
+import { BotFaqController, BotFaqPublicController } from './botFaq.controller';
+import { BotFaqService } from './botFaq.service';
+import { BotFaqMongoRepository } from './repositories/bot-faq.mongo.repository';
+import { BotFaq, BotFaqSchema } from './schemas/botFaq.schema';
+import { BOT_FAQ_REPOSITORY } from './tokens';
 
 @Module({
   imports: [

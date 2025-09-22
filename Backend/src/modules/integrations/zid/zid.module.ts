@@ -1,26 +1,25 @@
 // src/integrations/zid/zid.module.ts
-import { Module, forwardRef } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { RabbitModule } from 'src/infra/rabbit/rabbit.module';
 
-import { ZidController } from './zid.controller';
-import { ZidService } from './zid.service';
-
+import { CatalogModule } from '../../catalog/catalog.module';
 import {
   Merchant,
   MerchantSchema,
 } from '../../merchants/schemas/merchant.schema';
+import { OrdersModule } from '../../orders/orders.module';
+import { ProductsModule } from '../../products/products.module';
 import { Integration, IntegrationSchema } from '../schemas/integration.schema';
 
-import { ProductsModule } from '../../products/products.module';
-import { OrdersModule } from '../../orders/orders.module';
-import { RabbitModule } from 'src/infra/rabbit/rabbit.module';
-import { CatalogModule } from '../../catalog/catalog.module';
-import { ZID_INTEGRATION_REPOSITORY } from './tokens';
 import { IntegrationMongoRepository } from './repositories/integration.mongo.repository';
-import { ZID_MERCHANT_REPOSITORY } from './tokens';
 import { MerchantMongoRepository } from './repositories/merchant.mongo.repository';
+import { ZID_INTEGRATION_REPOSITORY } from './tokens';
+import { ZID_MERCHANT_REPOSITORY } from './tokens';
+import { ZidController } from './zid.controller';
+import { ZidService } from './zid.service';
 
 @Module({
   imports: [

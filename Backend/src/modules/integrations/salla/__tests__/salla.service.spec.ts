@@ -1,15 +1,16 @@
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Types } from 'mongoose';
+import { of } from 'rxjs';
+
+import { SallaIntegrationRepository } from '../../salla/repositories/integration.repository';
+import { SallaMerchantRepository } from '../../salla/repositories/merchant.repository';
 import { SallaService } from '../../salla/salla.service';
 import {
   SALLA_INTEGRATION_REPOSITORY,
   SALLA_MERCHANT_REPOSITORY,
 } from '../../salla/tokens';
-import { SallaIntegrationRepository } from '../../salla/repositories/integration.repository';
-import { SallaMerchantRepository } from '../../salla/repositories/merchant.repository';
-import { HttpService } from '@nestjs/axios';
-import { ConfigService } from '@nestjs/config';
-import { of } from 'rxjs';
-import { Types } from 'mongoose';
 
 describe('SallaService', () => {
   let service: SallaService;

@@ -1,9 +1,10 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { BotPrompt } from './schemas/botPrompt.schema';
+
 import { CreateBotPromptDto } from './dto/create-botPrompt.dto';
 import { UpdateBotPromptDto } from './dto/update-botPrompt.dto';
-import { BOT_PROMPT_REPOSITORY } from './tokens';
 import { BotPromptRepository } from './repositories/bot-prompt.repository';
+import { BotPrompt } from './schemas/botPrompt.schema';
+import { BOT_PROMPT_REPOSITORY } from './tokens';
 
 @Injectable()
 export class BotPromptService {

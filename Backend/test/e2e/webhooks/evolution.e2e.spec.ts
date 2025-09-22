@@ -1,7 +1,8 @@
 // test/e2e/webhooks/evolution.e2e.spec.ts
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
+
 import { AppModule } from '../../../src/app.module';
 
 describe('Evolution API Webhook E2E (H3)', () => {

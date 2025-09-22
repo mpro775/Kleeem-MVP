@@ -1,10 +1,12 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
+
+import { WorkflowDefinition } from '../types';
+
 import {
   N8nClientRepository,
   WorkflowCreatePayload,
 } from './n8n-client.repository';
-import { WorkflowDefinition } from '../types';
 
 @Injectable()
 export class N8nAxiosRepository implements N8nClientRepository {

@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  api:
+    image: ${KALEEM_API_IMAGE}
+    build: null
+
+  # لو قررت نشر العمال من صور CI لاحقًا، أزل التعليق والمرّر المتغيرات:
+  # ai-reply-worker:
+  #   image: ${KALEEM_AI_REPLY_IMAGE}
+  #   build: null
+  # webhook-dispatcher:
+  #   image: ${KALEEM_WEBHOOK_DISPATCHER_IMAGE}
+  #   build: null
+  # indexing-worker:
+  #   image: ${KALEEM_INDEXING_IMAGE}
+  #   build: null

@@ -8,7 +8,8 @@ export class WsAllExceptionsFilter extends BaseWsExceptionFilter {
   catch(exception: WsException, host: ArgumentsHost) {
     const client = host.switchToWs().getClient();
     const e = exception.getError();
-    const payload = typeof e === 'string' ? { code: 'WS_ERROR', message: e } : e;
+    const payload =
+      typeof e === 'string' ? { code: 'WS_ERROR', message: e } : e;
     try {
       client.emit('error', payload);
     } catch {

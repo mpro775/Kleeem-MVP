@@ -1,7 +1,8 @@
 // src/modules/messaging/messaging.controller.ts
 import { Controller, Post, Param } from '@nestjs/common';
-import { MessageService } from './message.service';
 import { v4 as uuidv4 } from 'uuid';
+
+import { MessageService } from './message.service';
 
 @Controller('chat-links')
 export class ChatLinksController {

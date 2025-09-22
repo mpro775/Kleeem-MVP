@@ -1,8 +1,10 @@
 // src/common/errors/business-errors.ts
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { DomainError } from './domain-error';
+
 import { ERROR_CODES } from '../constants/error-codes';
 import { TranslationService } from '../services/translation.service';
+
+import { DomainError } from './domain-error';
 
 /** أخطاء الأعمال المتخصصة */
 export class BusinessError extends DomainError {

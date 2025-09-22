@@ -1,4 +1,5 @@
 // src/modules/users/dto/update-user.dto.ts
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsEmail,
@@ -7,7 +8,7 @@ import {
   IsBoolean,
   Matches,
 } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+
 import { I18nMessage } from '../../../common/validators/i18n-validator';
 
 export class UpdateUserDto {

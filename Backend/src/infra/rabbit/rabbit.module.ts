@@ -1,5 +1,6 @@
 import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+
 import { RabbitService } from './rabbit.service';
 
 @Global()

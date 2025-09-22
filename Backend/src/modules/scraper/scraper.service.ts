@@ -1,15 +1,16 @@
 // src/modules/products/scraper.service.ts
+import { HttpService } from '@nestjs/axios';
+import { InjectQueue } from '@nestjs/bull';
 import {
   Injectable,
   Logger,
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bullmq';
+import { firstValueFrom } from 'rxjs';
+
 import type { AxiosResponse } from 'axios';
 
 type MinimalResult = { price: number; isAvailable: boolean };

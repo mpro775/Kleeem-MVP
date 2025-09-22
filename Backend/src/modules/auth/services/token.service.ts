@@ -1,7 +1,10 @@
+import { randomUUID, createHash } from 'crypto';
+import { randomBytes } from 'crypto';
+
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { randomUUID } from 'crypto';
+import { JwtService } from '@nestjs/jwt';
+
 import {
   SessionData,
   SessionStore,
@@ -39,6 +42,19 @@ export class TokenService {
     );
   }
 
+  private generateCsrfToken(): string {
+    return randomBytes(32).toString('hex'); // 64 character hex string
+  }
+
+  private hashRefreshToken(token: string): string {
+    const salt =
+      this.config.get<string>('JWT_REFRESH_SALT') ||
+      'default-salt-change-in-production';
+    return createHash('sha256')
+      .update(token + salt)
+      .digest('hex');
+  }
+
   private parseTimeToSeconds(timeStr: string): number {
     const match = timeStr.match(/^(\d+)([smhd])$/);
     if (!match) throw new Error(`Invalid time format: ${timeStr}`);
@@ -70,16 +86,21 @@ export class TokenService {
       jti,
       typ: 'access',
     };
-    const accessToken = this.jwtService.sign(claims, {
-      expiresIn: '15m',
+    const common = {
       issuer: this.config.get('JWT_ISSUER'),
       audience: this.config.get('JWT_AUDIENCE'),
+      algorithm: 'HS256' as const,
+    };
+
+    const accessToken = this.jwtService.sign(claims, {
+      ...common,
+      expiresIn: '15m',
     });
     return { accessToken, jti };
   }
   async createTokenPair(
     payload: Omit<JwtPayload, 'iat' | 'exp' | 'jti'>,
-    sessionInfo?: { userAgent?: string; ip?: string },
+    sessionInfo?: { userAgent?: string; ip?: string; csrfToken?: string },
   ): Promise<TokenPair> {
     const refreshJti = randomUUID();
     const accessJti = randomUUID();
@@ -98,10 +119,18 @@ export class TokenService {
       exp: now + this.REFRESH_TOKEN_TTL,
     };
 
+    const common = {
+      issuer: this.config.get('JWT_ISSUER'),
+      audience: this.config.get('JWT_AUDIENCE'),
+      algorithm: 'HS256' as const,
+    };
+
     const accessToken = this.jwtService.sign(accessPayload, {
+      ...common,
       expiresIn: this.ACCESS_TOKEN_TTL,
     });
     const refreshToken = this.jwtService.sign(refreshPayload, {
+      ...common,
       expiresIn: this.REFRESH_TOKEN_TTL,
     });
 
@@ -113,6 +142,8 @@ export class TokenService {
       lastUsed: now,
       userAgent: sessionInfo?.userAgent,
       ip: sessionInfo?.ip,
+      csrfToken: sessionInfo?.csrfToken || this.generateCsrfToken(),
+      refreshTokenHash: this.hashRefreshToken(refreshToken),
     };
 
     await this.store.setSession(
@@ -134,29 +165,61 @@ export class TokenService {
     sessionInfo?: { userAgent?: string; ip?: string },
   ): Promise<TokenPair> {
     try {
-      const decoded = this.jwtService.decode(refreshToken) as JwtPayload;
+      const decoded = this.jwtService.decode(refreshToken);
       if (!decoded?.jti)
         throw new UnauthorizedException('Invalid refresh token format');
 
       const sess = await this.store.getSession(decoded.jti);
       if (!sess) throw new UnauthorizedException('Session expired or revoked');
 
-      const verified = this.jwtService.verify(refreshToken) as JwtPayload;
+      // Verify refresh token hash matches stored hash
+      const tokenHash = this.hashRefreshToken(refreshToken);
+      if (sess.refreshTokenHash !== tokenHash) {
+        // Token reuse detected - revoke the entire session family
+        await this.revokeAllUserSessions(sess.userId);
+        throw new UnauthorizedException('Token has been compromised');
+      }
+
+      const verified = this.jwtService.verify(refreshToken, {
+        secret: process.env.JWT_SECRET,
+        issuer: process.env.JWT_ISSUER,
+        audience: process.env.JWT_AUDIENCE,
+      });
       if (verified.jti !== decoded.jti)
         throw new UnauthorizedException('Token JTI mismatch');
+
+      // Get old session CSRF token
+      const oldSession = await this.store.getSession(decoded.jti);
+      const csrfToken = oldSession?.csrfToken || this.generateCsrfToken();
 
       // revoke old
       await this.revokeRefreshToken(decoded.jti);
 
-      // issue new
-      return this.createTokenPair(
+      // issue new with preserved CSRF token
+      const newTokens = await this.createTokenPair(
         {
           userId: verified.userId,
           role: verified.role,
           merchantId: verified.merchantId,
         },
-        sessionInfo,
+        { ...sessionInfo, csrfToken },
       );
+
+      // Update lastUsed in the new session
+      const newDecoded = this.jwtService.decode(newTokens.refreshToken);
+      if (newDecoded?.jti) {
+        const newSession = await this.store.getSession(newDecoded.jti);
+        if (newSession) {
+          newSession.lastUsed = Math.floor(Date.now() / 1000);
+          await this.store.setSession(
+            newDecoded.jti,
+            newSession,
+            this.REFRESH_TOKEN_TTL,
+          );
+        }
+      }
+
+      return newTokens;
     } catch (e) {
       if (e instanceof UnauthorizedException) throw e;
       throw new UnauthorizedException('Invalid or expired refresh token');
@@ -176,9 +239,17 @@ export class TokenService {
     await this.store.clearUserSessions(userId);
   }
 
+  async blacklistAccessJti(jti: string, ttlSeconds: number) {
+    await this.store.addToBlacklist(jti, ttlSeconds);
+  }
+
   async validateAccessToken(token: string): Promise<JwtPayload | null> {
     try {
-      const decoded = this.jwtService.verify(token) as JwtPayload;
+      const decoded = this.jwtService.verify(token, {
+        secret: process.env.JWT_SECRET,
+        issuer: process.env.JWT_ISSUER,
+        audience: process.env.JWT_AUDIENCE,
+      });
       if (!decoded?.jti) return null;
       const black = await this.store.isBlacklisted(decoded.jti);
       if (black) return null;
@@ -195,5 +266,10 @@ export class TokenService {
     sess.lastUsed = Math.floor(Date.now() / 1000);
     await this.store.setSession(jti, sess, this.REFRESH_TOKEN_TTL);
     return sess;
+  }
+
+  async getSessionCsrfToken(jti: string): Promise<string | null> {
+    const session = await this.store.getSession(jti);
+    return session?.csrfToken || null;
   }
 }

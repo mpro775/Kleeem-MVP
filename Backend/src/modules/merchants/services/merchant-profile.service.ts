@@ -1,10 +1,12 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { MerchantsRepository } from '../repositories/merchants.repository';
-import { UpdateMerchantDto } from '../dto/requests/update-merchant.dto';
-import { OnboardingBasicDto } from '../dto/requests/onboarding-basic.dto';
-import { PromptBuilderService } from './prompt-builder.service';
+
 import { ChatWidgetService } from '../../chat/chat-widget.service';
+import { OnboardingBasicDto } from '../dto/requests/onboarding-basic.dto';
+import { UpdateMerchantDto } from '../dto/requests/update-merchant.dto';
+import { MerchantsRepository } from '../repositories/merchants.repository';
+
 import { MerchantCacheService } from './merchant-cache.service';
+import { PromptBuilderService } from './prompt-builder.service';
 
 @Injectable()
 export class MerchantProfileService {
@@ -28,7 +30,7 @@ export class MerchantProfileService {
           (dto as any).publicSlug,
         );
       } catch (e) {
-        this.logger.warn(`syncWidgetSlug failed for merchant ${id}`, e as any);
+        this.logger.warn(`syncWidgetSlug failed for merchant ${id}`, e);
       }
     }
 
@@ -37,10 +39,7 @@ export class MerchantProfileService {
       (updated as any).set?.('finalPromptTemplate', compiled);
       await (updated as any).save?.();
     } catch (e) {
-      this.logger.error(
-        'Error compiling prompt template after update',
-        e as any,
-      );
+      this.logger.error('Error compiling prompt template after update', e);
     }
 
     await this.cacheSvc.invalidate(id);

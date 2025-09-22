@@ -1,4 +1,6 @@
 // categories.controller.ts
+import os from 'os';
+
 import {
   Controller,
   Get,
@@ -16,10 +18,7 @@ import {
   UseInterceptors,
   UseGuards,
 } from '@nestjs/common';
-import { CategoriesService } from './categories.service';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
-import { MoveCategoryDto } from './dto/move-category.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -35,17 +34,21 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
 } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import multer from 'multer';
+import { ErrorResponse } from 'src/common/dto/error-response.dto';
+
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
   CurrentUser,
 } from '../../common';
-import { TranslationService } from '../../common/services/translation.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { ErrorResponse } from 'src/common/dto/error-response.dto';
-import multer from 'multer';
-import os from 'os';
+import { TranslationService } from '../../common/services/translation.service';
+
+import { CategoriesService } from './categories.service';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { MoveCategoryDto } from './dto/move-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @ApiTags('categories')
 @ApiBearerAuth()

@@ -5,16 +5,7 @@ import { Injectable, Logger } from '@nestjs/common';
 export class CleanupCoordinatorService {
   private readonly logger = new Logger(CleanupCoordinatorService.name);
 
-  constructor() // @InjectModel(Product.name) private productModel: Model<ProductDocument>, // Inject ما تحتاجه من خدمات/مستودعات:
-  // @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
-  // @InjectModel(Lead.name) private leadModel: Model<LeadDocument>,
-  // @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
-  // @InjectModel(Conversation.name) private convModel: Model<ConversationDocument>,
-  // private readonly qdrant: QdrantService,
-  // private readonly minio: MinioService,
-  // private readonly webhooks: WebhooksService, // (Salla/Zid/Shopify...)
-  // private readonly n8n: N8nService,
-  {}
+  constructor() {} // private readonly n8n: N8nService, // private readonly webhooks: WebhooksService, // (Salla/Zid/Shopify...) // private readonly minio: MinioService, // private readonly qdrant: QdrantService, // @InjectModel(Conversation.name) private convModel: Model<ConversationDocument>, // @InjectModel(Order.name) private orderModel: Model<OrderDocument>, // @InjectModel(Lead.name) private leadModel: Model<LeadDocument>, // @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>, // @InjectModel(Product.name) private productModel: Model<ProductDocument>, // Inject ما تحتاجه من خدمات/مستودعات:
 
   /** تنظيف داخلي للـ DB (حذف/تعطيل كل ما يخص التاجر) */
   async cleanupInternal(merchantId: string) {

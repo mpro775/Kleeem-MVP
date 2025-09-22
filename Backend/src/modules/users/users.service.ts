@@ -1,13 +1,15 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { UsersRepository } from './repositories/users.repository';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { NotificationsPrefsDto } from './dto/notifications-prefs.dto';
-import { GetUsersDto } from './dto/get-users.dto';
+
 import { PaginationResult } from '../../common/dto/pagination.dto';
 import { UserNotFoundError } from '../../common/errors/business-errors';
 import { TranslationService } from '../../common/services/translation.service';
+
+import { CreateUserDto } from './dto/create-user.dto';
+import { GetUsersDto } from './dto/get-users.dto';
+import { NotificationsPrefsDto } from './dto/notifications-prefs.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UsersRepository } from './repositories/users.repository';
 
 @Injectable()
 export class UsersService {

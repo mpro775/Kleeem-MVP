@@ -1,9 +1,9 @@
 // src/vector/embeddings.client.ts
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
-import { firstValueFrom, timeout, catchError, retry, delay } from 'rxjs';
-import { I18nService } from 'nestjs-i18n';
 import { ConfigService } from '@nestjs/config';
+import { I18nService } from 'nestjs-i18n';
+import { firstValueFrom, timeout, catchError, retry, delay } from 'rxjs';
 
 @Injectable()
 export class EmbeddingsClient {

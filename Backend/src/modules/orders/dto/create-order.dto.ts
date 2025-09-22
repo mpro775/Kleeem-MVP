@@ -1,5 +1,11 @@
 ﻿// src/modules/orders/dto/create-order.dto.ts
 import {
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiHideProperty,
+} from '@nestjs/swagger';
+import { Type, Transform } from 'class-transformer';
+import {
   IsString,
   IsArray,
   IsObject,
@@ -14,12 +20,6 @@ import {
   Min,
   IsBoolean,
 } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
-import {
-  ApiProperty,
-  ApiPropertyOptional,
-  ApiHideProperty,
-} from '@nestjs/swagger';
 
 class OrderItemInput {
   @ApiProperty({ description: 'معرّف المنتج', example: '66bdcf0b8f2e12...' })

@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, HydratedDocument, Model, Types } from 'mongoose';
-import { Category, CategoryDocument } from '../schemas/category.schema';
+
 import {
   Product,
   ProductDocument,
 } from '../../products/schemas/product.schema';
+import { Category, CategoryDocument } from '../schemas/category.schema';
+
 import { CategoriesRepository } from './categories.repository';
 
 @Injectable()
@@ -130,7 +132,7 @@ export class MongoCategoriesRepository implements CategoriesRepository {
       .find({ merchantId, $or: [{ _id: rootId }, { ancestors: rootId }] })
       .select('_id')
       .lean();
-    return rows.map((r) => r._id as Types.ObjectId);
+    return rows.map((r) => r._id);
   }
 
   async anyProductsInCategories(

@@ -1,11 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { FilterQuery, PipelineStage } from 'mongoose';
-import { BotChatSession } from './schemas/botChats.schema';
+
 import { QueryBotRatingsDto } from './dto/query-bot-ratings.dto';
 import {
   AppendMessage,
   BotChatRepository,
 } from './repositories/bot-chats.repository';
+import { BotChatSession } from './schemas/botChats.schema';
 import { BOT_CHAT_REPOSITORY } from './tokens';
 
 @Injectable()

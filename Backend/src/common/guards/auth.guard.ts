@@ -19,22 +19,22 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
-    
+
     if (!token) {
       throw new UnauthorizedException('رمز الوصول مطلوب');
     }
-    
+
     try {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_SECRET,
       });
-      
+
       // إضافة المستخدم للطلب
       request['user'] = payload;
     } catch {
       throw new UnauthorizedException('رمز الوصول غير صالح');
     }
-    
+
     return true;
   }
 

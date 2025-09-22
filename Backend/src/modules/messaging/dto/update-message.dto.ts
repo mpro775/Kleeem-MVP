@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsEnum,
@@ -10,7 +11,6 @@ import {
   IsDate,
   IsNotEmpty,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class MessageContentDto {
   @ApiProperty({

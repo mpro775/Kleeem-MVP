@@ -1,7 +1,7 @@
-import { Order } from '../schemas/order.schema';
-import { Order as OrderType } from '../../webhooks/helpers/order';
-import { GetOrdersDto } from '../dto/get-orders.dto';
-import { PaginationResult } from '../../../common/dto/pagination.dto';
+import type { PaginationResult } from '../../../common/dto/pagination.dto';
+import type { Order as OrderType } from '../../webhooks/helpers/order';
+import type { GetOrdersDto } from '../dto/get-orders.dto';
+import type { Order } from '../schemas/order.schema';
 
 export interface OrdersRepository {
   create(data: any): Promise<Order>;

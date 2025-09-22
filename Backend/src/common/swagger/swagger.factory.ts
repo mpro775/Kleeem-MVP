@@ -1,13 +1,11 @@
 // src/common/swagger/swagger.factory.ts
-import { INestApplication } from '@nestjs/common';
-import {
-  DocumentBuilder,
-  SwaggerModule,
-  SwaggerCustomOptions,
-} from '@nestjs/swagger';
-import type { OpenAPIObject } from '@nestjs/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
+
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
+import type { INestApplication } from '@nestjs/common';
+import type { OpenAPIObject, SwaggerCustomOptions } from '@nestjs/swagger';
 
 type AnyObj = Record<string, any>;
 const RESPONSE_TIME_P95_MS = 500;
@@ -54,13 +52,19 @@ function createBaseDoc(
   const doc = SwaggerModule.createDocument(app, config, {
     deepScanRoutes: true,
   }) as OpenAPIObject & AnyObj;
-    (doc as AnyObj).openapi = '3.1.0';
-    // مخططات الأمان: JWT + CSRF (apiKey بالهيدر)
-    (doc.components ||= {}).securitySchemes = {
-      ...(doc.components.securitySchemes || {}),
-      bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-      csrf:   { type: 'apiKey', in: 'header', name: 'X-CSRF-Token', description: 'Anti-CSRF token' },
-      };  doc.components ||= {};
+  (doc as AnyObj).openapi = '3.1.0';
+  // مخططات الأمان: JWT + CSRF (apiKey بالهيدر)
+  (doc.components ||= {}).securitySchemes = {
+    ...(doc.components.securitySchemes || {}),
+    bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+    csrf: {
+      type: 'apiKey',
+      in: 'header',
+      name: 'X-CSRF-Token',
+      description: 'Anti-CSRF token',
+    },
+  };
+  doc.components ||= {};
   doc.components.schemas ||= {};
   return doc;
 }

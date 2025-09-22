@@ -1,7 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Connection, Model, Types } from 'mongoose';
+
 import {
   Integration,
   IntegrationSchema,

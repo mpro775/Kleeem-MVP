@@ -3,7 +3,7 @@ import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-option
 const parseList = (v?: string, fallback: string[] = []) => {
   const items = (v ?? '')
     .split(',')
-    .map(s => s.trim())
+    .map((s) => s.trim())
     .filter(Boolean);
   return items.length ? items : fallback;
 };
@@ -16,7 +16,6 @@ const parseNum = (v?: string, fallback = 0): number => {
   return Number.isFinite(n) ? n : fallback;
 };
 
-
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // 1) Origins الثابتة من env (مع قيم افتراضية مساوية للكود القديم)
@@ -28,8 +27,13 @@ const STATIC_ORIGINS = parseList(process.env.CORS_STATIC_ORIGINS, [
 ]);
 
 // 2) Regex للساب دومين مبني على الدومين في env
-const BASE_DOMAIN = (process.env.CORS_ALLOW_SUBDOMAIN_BASE || 'kaleem-ai.com').trim();
-const ALLOW_PORTS_ON_SUBDOMAINS = parseBool(process.env.CORS_SUBDOMAIN_ALLOW_PORTS, false);
+const BASE_DOMAIN = (
+  process.env.CORS_ALLOW_SUBDOMAIN_BASE || 'kaleem-ai.com'
+).trim();
+const ALLOW_PORTS_ON_SUBDOMAINS = parseBool(
+  process.env.CORS_SUBDOMAIN_ALLOW_PORTS,
+  false,
+);
 const portPart = ALLOW_PORTS_ON_SUBDOMAINS ? '(?::\\d{2,5})?' : '';
 // يسمح بـ https://{anything}.{BASE_DOMAIN} (+ منفذ اختياري إن مفعّل)
 const KALEEM_SUBDOMAIN = new RegExp(
@@ -74,7 +78,7 @@ export const corsOptions: CorsOptions = {
   allowedHeaders: parseList(process.env.CORS_ALLOWED_HEADERS, [
     'Authorization',
     'Content-Type',
-    'X-Request-Id',
+    'x-request-id',
     'x-request-id',
     'X-Idempotency-Key',
     'X-Signature',
@@ -82,7 +86,7 @@ export const corsOptions: CorsOptions = {
   ]),
 
   exposedHeaders: parseList(process.env.CORS_EXPOSED_HEADERS, [
-    'X-Request-Id',
+    'x-request-id',
     'X-RateLimit-Remaining',
     'X-RateLimit-Reset',
   ]),

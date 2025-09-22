@@ -8,8 +8,10 @@ import {
 } from '@nestjs/common';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { ErrorManagementService } from '../services/error-management.service';
+
 import { RequestWithUser } from '../interfaces/request-with-user.interface';
+import { ErrorManagementService } from '../services/error-management.service';
+
 import { shouldBypass } from './bypass.util';
 
 @Injectable()
@@ -33,20 +35,18 @@ export class ErrorLoggingInterceptor implements NestInterceptor {
     const url = (request.originalUrl || request.url || '').split('?')[0];
     const method = request.method;
     const ip = request.ip;
-    const userAgent = request.headers['user-agent'] as string | undefined;
+    const userAgent = request.headers['user-agent'];
     const requestId =
       (request as any).requestId ||
-      (request.headers['X-Request-Id'] as string | undefined) ||
+      (request.headers['x-request-id'] as string | undefined) ||
       undefined;
 
     // نفضّل بيانات الحُرّاس (authUser) ثم JWT payload
     const auth = request.authUser;
     const jwt = request.user;
-    const userId = (auth?._id as any)?.toString?.() || jwt?.userId || undefined;
+    const userId = auth?._id?.toString?.() || jwt?.userId || undefined;
     const merchantId =
-      (auth?.merchantId as any)?.toString?.() ||
-      (jwt?.merchantId as any) ||
-      undefined;
+      auth?.merchantId?.toString?.() || (jwt?.merchantId as any) || undefined;
 
     return next.handle().pipe(
       catchError((error) => {
@@ -66,7 +66,7 @@ export class ErrorLoggingInterceptor implements NestInterceptor {
           })
           .catch((logError) => {
             // لا تمنع مسار الخطأ؛ فقط سجّل فشل التسجيل
-            this.logger.error('Failed to log error', logError as any);
+            this.logger.error('Failed to log error', logError);
           });
 
         // أعد رمي الخطأ لسلسلة المعالجة (Filters / Nest)

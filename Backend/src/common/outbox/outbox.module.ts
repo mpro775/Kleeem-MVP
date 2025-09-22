@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+
 import { OutboxEvent, OutboxEventSchema } from './outbox.schema';
 import { OutboxService } from './outbox.service';
 

@@ -35,7 +35,11 @@ export class Channel {
   @Prop({ default: false })
   enabled: boolean;
 
-  @Prop({ enum: ChannelStatus, default: ChannelStatus.DISCONNECTED, index: true })
+  @Prop({
+    enum: ChannelStatus,
+    default: ChannelStatus.DISCONNECTED,
+    index: true,
+  })
   status: ChannelStatus;
 
   @Prop() accountLabel?: string;
@@ -51,8 +55,8 @@ export class Channel {
   // WhatsApp Cloud
   @Prop() phoneNumberId?: string;
   @Prop() wabaId?: string;
-  @Prop() appSecretEnc?: string;     // توقيع فيسبوك
-  @Prop() verifyTokenHash?: string;  // توكن التحقق (hash)
+  @Prop() appSecretEnc?: string; // توقيع فيسبوك
+  @Prop() verifyTokenHash?: string; // توكن التحقق (hash)
 
   // WhatsApp QR (Evolution)
   @Prop() sessionId?: string;
@@ -79,7 +83,10 @@ export const ChannelSchema = SchemaFactory.createForClass(Channel);
 ChannelSchema.index({ merchantId: 1, provider: 1, status: 1 });
 ChannelSchema.index(
   { merchantId: 1, provider: 1, isDefault: 1 },
-  { unique: true, partialFilterExpression: { isDefault: true, deletedAt: null } },
+  {
+    unique: true,
+    partialFilterExpression: { isDefault: true, deletedAt: null },
+  },
 );
 ChannelSchema.index({ merchantId: 1, provider: 1, deletedAt: 1 });
 

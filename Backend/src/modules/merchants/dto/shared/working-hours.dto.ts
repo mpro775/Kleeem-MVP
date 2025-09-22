@@ -1,5 +1,6 @@
-import { IsEnum, IsString, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum, IsString, Matches } from 'class-validator';
+
 import { WeekDay } from '../../schemas/working-hours.schema';
 
 /**

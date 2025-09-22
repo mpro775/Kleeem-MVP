@@ -1,17 +1,18 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Types } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
 
-import { toDateOrNull } from '../utils/date';
 import { ExternalProduct } from '../types';
+import { toDateOrNull } from '../utils/date';
+
+import { SallaIntegrationRepository } from './repositories/integration.repository';
+import { SallaMerchantRepository } from './repositories/merchant.repository';
 import {
   SALLA_INTEGRATION_REPOSITORY,
   SALLA_MERCHANT_REPOSITORY,
 } from './tokens';
-import { SallaIntegrationRepository } from './repositories/integration.repository';
-import { SallaMerchantRepository } from './repositories/merchant.repository';
 
 interface SallaTokenResponse {
   access_token: string;

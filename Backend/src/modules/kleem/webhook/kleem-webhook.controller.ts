@@ -8,12 +8,8 @@ import {
   BadRequestException,
   HttpStatus,
 } from '@nestjs/common';
-import { BotChatsService } from '../botChats/botChats.service';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { KleemWsMessage } from '../ws/kleem-ws.types';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
-import { Public } from 'src/common/decorators/public.decorator';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   ApiTags,
   ApiOperation,
@@ -25,7 +21,12 @@ import {
   ApiProperty,
   ApiPropertyOptional,
 } from '@nestjs/swagger';
+import { Public } from 'src/common/decorators/public.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+
+import { BotChatsService } from '../botChats/botChats.service';
 import { KleemChatService } from '../chat/kleem-chat.service';
+import { KleemWsMessage } from '../ws/kleem-ws.types';
 
 // DTOs for request/response schemas
 class MessageDto {

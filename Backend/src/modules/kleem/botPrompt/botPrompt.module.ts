@@ -1,16 +1,18 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { BotPrompt, BotPromptSchema } from './schemas/botPrompt.schema';
-import { BotPromptService } from './botPrompt.service';
-import { BotPromptController } from './botPrompt.controller';
-import { PromptSandboxController } from './prompt-sandbox.controller';
-import { SettingsModule } from '../settings/settings.module';
-import { VectorModule } from '../../vector/vector.module';
-import { IntentService } from '../intent/intent.service';
-import { CtaService } from '../cta/cta.service';
-import { BOT_PROMPT_REPOSITORY } from './tokens';
-import { BotPromptMongoRepository } from './repositories/bot-prompt.mongo.repository';
+
 import { CommonModule } from '../../../common/config/common.module';
+import { VectorModule } from '../../vector/vector.module';
+import { CtaService } from '../cta/cta.service';
+import { IntentService } from '../intent/intent.service';
+import { SettingsModule } from '../settings/settings.module';
+
+import { BotPromptController } from './botPrompt.controller';
+import { BotPromptService } from './botPrompt.service';
+import { PromptSandboxController } from './prompt-sandbox.controller';
+import { BotPromptMongoRepository } from './repositories/bot-prompt.mongo.repository';
+import { BotPrompt, BotPromptSchema } from './schemas/botPrompt.schema';
+import { BOT_PROMPT_REPOSITORY } from './tokens';
 
 @Module({
   imports: [

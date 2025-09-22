@@ -1,18 +1,14 @@
+import { ApiProperty, ApiPropertyOptional, ApiResponse } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { 
-  IsBoolean, 
-  IsNumber, 
-  IsOptional, 
-  IsString, 
-  Min, 
-  Max, 
-  IsNotEmpty 
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  Max,
+  IsNotEmpty,
 } from 'class-validator';
-import { 
-  ApiProperty, 
-  ApiPropertyOptional, 
-  ApiResponse 
-} from '@nestjs/swagger';
 
 export class SandboxDto {
   @IsString()
@@ -20,7 +16,7 @@ export class SandboxDto {
   @ApiProperty({
     description: 'نص الرسالة المرسلة إلى البوت',
     example: 'مرحباً، كيف يمكنني الاشتراك في الخدمة؟',
-    required: true
+    required: true,
   })
   text!: string;
 
@@ -29,7 +25,7 @@ export class SandboxDto {
   @ApiPropertyOptional({
     description: 'إرفاق المعرفة من الأسئلة الشائعة',
     example: true,
-    default: true
+    default: true,
   })
   attachKnowledge?: boolean = true;
 
@@ -43,7 +39,7 @@ export class SandboxDto {
     example: 5,
     default: 5,
     minimum: 1,
-    maximum: 20
+    maximum: 20,
   })
   topK?: number = 5;
 
@@ -52,7 +48,7 @@ export class SandboxDto {
   @ApiPropertyOptional({
     description: 'عرض المعاينة فقط دون استدعاء نموذج الذكاء الاصطناعي',
     example: false,
-    default: false
+    default: false,
   })
   dryRun?: boolean = false;
 }

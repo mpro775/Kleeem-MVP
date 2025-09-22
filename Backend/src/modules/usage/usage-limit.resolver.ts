@@ -1,8 +1,9 @@
 // src/modules/usage/usage-limit.resolver.ts
 import { Injectable } from '@nestjs/common';
-import { PlansService } from 'src/modules/plans/plans.service';
-import type { MerchantDocument } from 'src/modules/merchants/schemas/merchant.schema';
 import { PlanTier } from 'src/modules/merchants/schemas/subscription-plan.schema';
+import { PlansService } from 'src/modules/plans/plans.service';
+
+import type { MerchantDocument } from 'src/modules/merchants/schemas/merchant.schema';
 
 @Injectable()
 export class UsageLimitResolver {

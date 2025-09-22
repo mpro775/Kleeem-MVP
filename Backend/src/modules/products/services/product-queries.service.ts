@@ -4,12 +4,12 @@ import {
   NotFoundException,
   Inject,
 } from '@nestjs/common';
-import { Types } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
+import { Types } from 'mongoose';
 
-import { ProductsRepository } from '../repositories/products.repository';
-import { GetProductsDto } from '../dto/get-products.dto';
 import { TranslationService } from '../../../common/services/translation.service';
+import { GetProductsDto } from '../dto/get-products.dto';
+import { ProductsRepository } from '../repositories/products.repository';
 
 @Injectable()
 export class ProductQueriesService {
@@ -35,6 +35,11 @@ export class ProductQueriesService {
 
   async findAllByMerchant(merchantId: Types.ObjectId) {
     return this.repo.findAllByMerchant(merchantId);
+  }
+
+  async listByMerchant(merchantId: string, dto: GetProductsDto) {
+    const mId = new Types.ObjectId(merchantId);
+    return this.repo.list(mId, dto);
   }
 
   // بحث نصّي بسيط داخل الكتالوج (غير المتجهي)

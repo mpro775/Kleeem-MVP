@@ -1,19 +1,27 @@
 // src/modules/products/products.module.ts
+import { BullModule } from '@nestjs/bull';
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { BullModule } from '@nestjs/bull';
 import { MulterModule } from '@nestjs/platform-express';
+import { ScheduleModule } from '@nestjs/schedule';
 import * as Minio from 'minio';
 
-import { Product, ProductSchema } from './schemas/product.schema';
-import {
-  ProductSetupConfig,
-  ProductSetupConfigSchema,
-} from './schemas/product-setup-config.schema';
+import { CacheModule } from '../../common/cache/cache.module';
+import { ErrorManagementModule } from '../../common/error-management.module';
+import { OutboxModule } from '../../common/outbox/outbox.module';
+import { CommonServicesModule } from '../../common/services/common-services.module';
+import { MetricsModule } from '../../metrics/metrics.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
+import { CategoriesModule } from '../categories/categories.module';
 import {
   Category,
   CategorySchema,
 } from '../categories/schemas/category.schema';
+import {
+  ProductSetupConfig,
+  ProductSetupConfigSchema,
+} from './schemas/product-setup-config.schema';
+import { Product, ProductSchema } from './schemas/product.schema';
 import {
   Storefront,
   StorefrontSchema,
@@ -27,29 +35,20 @@ import { ProductSetupConfigService } from './product-setup-config.service';
 import { MongoProductsRepository } from './repositories/mongo-products.repository';
 
 // خدمات مساعدة
+import { ProductCommandsService } from './services/product-commands.service';
 import { ProductIndexService } from './services/product-index.service';
 import { ProductMediaService } from './services/product-media.service';
-import { ProductCommandsService } from './services/product-commands.service';
-import { ProductSyncService } from './services/product-sync.service';
 import { ProductQueriesService } from './services/product-queries.service';
+import { ProductSyncService } from './services/product-sync.service';
 import { ProductPublicService } from './services/product-public.service';
 
 // وحدات مرتبطة
 import { ScraperModule } from '../scraper/scraper.module';
 import { VectorModule } from '../vector/vector.module';
-import { AnalyticsModule } from '../analytics/analytics.module';
 import { ZidModule } from '../integrations/zid/zid.module';
 import { StorefrontModule } from '../storefront/storefront.module';
-import { CategoriesModule } from '../categories/categories.module';
 
-import { ScheduleModule } from '@nestjs/schedule';
 import { ProductsCron } from './utils/products.cron';
-
-import { ErrorManagementModule } from '../../common/error-management.module';
-import { CacheModule } from '../../common/cache/cache.module';
-import { CommonServicesModule } from '../../common/services/common-services.module';
-import { OutboxModule } from '../../common/outbox/outbox.module';
-import { MetricsModule } from '../../metrics/metrics.module';
 
 @Module({
   imports: [

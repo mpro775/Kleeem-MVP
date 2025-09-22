@@ -1,6 +1,7 @@
 // src/modules/products/schemas/product.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+
 import { Currency } from '../enums/product.enums';
 
 export type ProductDocument = HydratedDocument<Product>;
@@ -84,7 +85,7 @@ export class Product {
   @Prop({ default: [] })
   keywords: string[];
 
-  @Prop({  sparse: true })
+  @Prop({ sparse: true })
   uniqueKey: string;
 
   @Prop({ type: String, enum: Object.values(Currency), default: Currency.SAR })
@@ -223,6 +224,16 @@ ProductSchema.index(
     background: true,
   },
 );
+ProductSchema.index(
+  { merchantId: 1, slug: 1, status: 1, isAvailable: 1 },
+  { background: true },
+);
+// فهرس فريد للـslug داخل التاجر (اختياري)
+// لا تجعله فريدًا عالميًا، بل مركّبًا مع merchantId
+ProductSchema.index(
+  { merchantId: 1, slug: 1 },
+  { unique: true, sparse: true, background: true },
+);
 
 // فهرس للفئات والحالة
 ProductSchema.index(
@@ -249,7 +260,14 @@ ProductSchema.index(
   },
   { background: true },
 );
-
+ProductSchema.index(
+  { merchantId: 1, source: 1, externalId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { source: 'api', externalId: { $type: 'string' } },
+    background: true,
+  },
+);
 // فهرس للمصدر
 ProductSchema.index(
   {

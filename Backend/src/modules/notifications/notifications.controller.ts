@@ -9,13 +9,14 @@ import {
   Post,
   Body,
 } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+
 import { NotificationsService } from './notifications.service';
 
 @ApiTags('الإشعارات')

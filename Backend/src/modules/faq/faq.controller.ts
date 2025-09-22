@@ -17,6 +17,7 @@ import {
   ApiResponse,
   ApiQuery,
 } from '@nestjs/swagger';
+
 import { FaqService } from './faq.service';
 
 @ApiTags('الأسئلة الشائعة')

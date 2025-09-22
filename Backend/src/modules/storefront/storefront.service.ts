@@ -1,18 +1,26 @@
+import { unlink } from 'node:fs/promises';
+
 import {
   BadRequestException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FilterQuery, Types } from 'mongoose';
-import { UpdateStorefrontDto } from './dto/update-storefront.dto';
-import { Storefront } from './schemas/storefront.schema';
-import { CreateStorefrontDto } from './dto/create-storefront.dto';
-import { VectorService } from '../vector/vector.service';
 import * as Minio from 'minio';
-import { unlink } from 'node:fs/promises';
+import { FilterQuery, Types } from 'mongoose';
 import sharp from 'sharp';
+
 import { LeadsService } from '../leads/leads.service';
+import { VectorService } from '../vector/vector.service';
+
+import { CreateStorefrontDto } from './dto/create-storefront.dto';
+import { UpdateStorefrontDto } from './dto/update-storefront.dto';
+import { StorefrontCategoryRepository } from './repositories/category.repository';
+import { StorefrontMerchantRepository } from './repositories/merchant.repository';
+import { StorefrontOrderRepository } from './repositories/order.repository';
+import { StorefrontProductRepository } from './repositories/product.repository';
+import { StorefrontRepository } from './repositories/storefront.repository';
+import { Storefront } from './schemas/storefront.schema';
 import {
   STOREFRONT_CATEGORY_REPOSITORY,
   STOREFRONT_MERCHANT_REPOSITORY,
@@ -20,11 +28,6 @@ import {
   STOREFRONT_PRODUCT_REPOSITORY,
   STOREFRONT_REPOSITORY,
 } from './tokens';
-import { StorefrontRepository } from './repositories/storefront.repository';
-import { StorefrontProductRepository } from './repositories/product.repository';
-import { StorefrontMerchantRepository } from './repositories/merchant.repository';
-import { StorefrontCategoryRepository } from './repositories/category.repository';
-import { StorefrontOrderRepository } from './repositories/order.repository';
 
 export interface StorefrontResult {
   merchant: any;

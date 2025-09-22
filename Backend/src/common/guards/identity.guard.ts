@@ -5,15 +5,16 @@ import {
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import { Reflector } from '@nestjs/core';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { RequestWithUser } from '../interfaces/request-with-user.interface';
-import { User, UserDocument } from '../../modules/users/schemas/user.schema';
+
 import {
   Merchant,
   MerchantDocument,
 } from '../../modules/merchants/schemas/merchant.schema';
+import { User, UserDocument } from '../../modules/users/schemas/user.schema';
+import { RequestWithUser } from '../interfaces/request-with-user.interface';
 
 @Injectable()
 export class IdentityGuard implements CanActivate {

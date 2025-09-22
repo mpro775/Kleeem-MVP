@@ -1,5 +1,5 @@
-import { ClientSession, HydratedDocument, Types } from 'mongoose';
-import { Category } from '../schemas/category.schema';
+import type { Category } from '../schemas/category.schema';
+import type { ClientSession, HydratedDocument, Types } from 'mongoose';
 
 export interface CategoriesRepository {
   // CRUD

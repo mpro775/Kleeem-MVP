@@ -1,4 +1,4 @@
-import { BotPrompt } from '../schemas/botPrompt.schema';
+import type { BotPrompt } from '../schemas/botPrompt.schema';
 
 export type BotPromptLean = BotPrompt & { _id: string };
 

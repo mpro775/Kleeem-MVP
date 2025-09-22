@@ -1,18 +1,18 @@
 // src/modules/support/support.module.ts
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { HttpModule } from '@nestjs/axios';
 import { MulterModule } from '@nestjs/platform-express';
+import * as Minio from 'minio';
 
-import { SupportService } from './support.service';
+import { SupportMongoRepository } from './repositories/support.mongo.repository';
 import {
   SupportTicket,
   SupportTicketSchema,
 } from './schemas/support-ticket.schema';
 import { SupportController } from './support.controller';
-import * as Minio from 'minio';
+import { SupportService } from './support.service';
 import { SUPPORT_REPOSITORY } from './tokens';
-import { SupportMongoRepository } from './repositories/support.mongo.repository';
 
 @Module({
   imports: [

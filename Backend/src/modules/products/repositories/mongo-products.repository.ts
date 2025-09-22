@@ -1,11 +1,12 @@
 // src/modules/products/repositories/mongo-products.repository.ts
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, Model, Types } from 'mongoose';
-import { Injectable } from '@nestjs/common';
-import { Product, ProductDocument } from '../schemas/product.schema';
-import { GetProductsDto } from '../dto/get-products.dto';
-import { PaginationService } from '../../../common/services/pagination.service';
+
 import { PaginationResult } from '../../../common/dto/pagination.dto';
+import { PaginationService } from '../../../common/services/pagination.service';
+import { GetProductsDto } from '../dto/get-products.dto';
+import { Product, ProductDocument } from '../schemas/product.schema';
 
 @Injectable()
 export class MongoProductsRepository {

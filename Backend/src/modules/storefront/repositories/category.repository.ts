@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { Category } from '../../categories/schemas/category.schema';
+import type { Category } from '../../categories/schemas/category.schema';
+import type { Types } from 'mongoose';
 
 export type CategoryEntity = Category & { _id: Types.ObjectId; name?: string };
 

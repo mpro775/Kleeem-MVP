@@ -13,15 +13,16 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { MerchantsService } from '../merchants.service';
-import { PromptVersionService } from '../services/prompt-version.service';
-import { PromptPreviewService } from '../services/prompt-preview.service';
-import { QuickConfigDto } from '../dto/requests/quick-config.dto';
+
+import { StorefrontService } from '../../storefront/storefront.service';
 import { AdvancedTemplateDto } from '../dto/requests/advanced-template.dto';
 import { PreviewPromptDto } from '../dto/requests/preview-prompt.dto';
+import { QuickConfigDto } from '../dto/requests/quick-config.dto';
+import { MerchantsService } from '../merchants.service';
 import { MerchantDocument } from '../schemas/merchant.schema';
-import { StorefrontService } from '../../storefront/storefront.service';
 import { PromptBuilderService } from '../services/prompt-builder.service'; // إذا ستستخدمها هنا
+import { PromptPreviewService } from '../services/prompt-preview.service';
+import { PromptVersionService } from '../services/prompt-version.service';
 
 @ApiTags('Merchants • Prompt')
 @Controller('merchants/:id/prompt')

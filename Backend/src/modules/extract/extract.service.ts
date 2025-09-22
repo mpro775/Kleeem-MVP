@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
+import { Injectable, Logger } from '@nestjs/common';
 import { AxiosResponse } from 'axios';
+import { firstValueFrom } from 'rxjs';
 
 export type ExtractResult = {
   name?: string;
@@ -24,9 +24,14 @@ export class ExtractService {
 
   async extractFromUrl(url: string): Promise<ExtractResult> {
     try {
-      const base = (process.env.EXTRACTOR_BASE_URL || 'http://extractor:8001').replace(/\/+$/, '');
+      const base = (
+        process.env.EXTRACTOR_BASE_URL || 'http://extractor:8001'
+      ).replace(/\/+$/, '');
       const resp: AxiosResponse<ExtractApiResponse> = await firstValueFrom(
-        this.http.get<ExtractApiResponse>(`${base}/extract/`, { params: { url }, timeout: 10000 }),
+        this.http.get<ExtractApiResponse>(`${base}/extract/`, {
+          params: { url },
+          timeout: 10000,
+        }),
       );
       return resp.data?.data || {};
     } catch (err: any) {

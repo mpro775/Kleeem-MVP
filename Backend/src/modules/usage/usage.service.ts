@@ -1,20 +1,30 @@
 // src/modules/usage/usage.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { UsageCounter, UsageCounterDocument } from './schemas/usage-counter.schema';
-import { PaymentRequiredException } from 'src/common/exceptions/payment-required.exception';
-import { PlansService } from 'src/modules/plans/plans.service';
-// لو عندك MerchantService؛ وإلا اجلب MerchantModel مباشرة
-import { Merchant, MerchantDocument } from 'src/modules/merchants/schemas/merchant.schema';
 import { InjectConnection } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
 import { Connection } from 'mongoose';
+import { PaymentRequiredException } from 'src/common/exceptions/payment-required.exception';
+import {
+  Merchant,
+  MerchantDocument,
+} from 'src/modules/merchants/schemas/merchant.schema';
+import { PlansService } from 'src/modules/plans/plans.service';
+
+import {
+  UsageCounter,
+  UsageCounterDocument,
+} from './schemas/usage-counter.schema';
+
+// لو عندك MerchantService؛ وإلا اجلب MerchantModel مباشرة
+
 import { UsageLimitResolver } from './usage-limit.resolver';
 
 @Injectable()
 export class UsageService {
   constructor(
-    @InjectModel(UsageCounter.name) private usageModel: Model<UsageCounterDocument>,
+    @InjectModel(UsageCounter.name)
+    private usageModel: Model<UsageCounterDocument>,
     @InjectModel(Merchant.name) private merchantModel: Model<MerchantDocument>,
     private readonly plansService: PlansService,
     private readonly limitResolver: UsageLimitResolver,
@@ -40,7 +50,8 @@ export class UsageService {
     const mId = new Types.ObjectId(merchantId);
 
     const merchant = await this.getMerchantOrThrow(merchantId);
-    const { limit: messageLimit } = await this.limitResolver.resolveForMerchant(merchant);
+    const { limit: messageLimit } =
+      await this.limitResolver.resolveForMerchant(merchant);
 
     const session = await this.connection.startSession();
     try {
@@ -52,8 +63,10 @@ export class UsageService {
         { upsert: true, new: true, session },
       );
 
-      if ((doc.messagesUsed + n) > messageLimit) {
-        throw new PaymentRequiredException('تم استهلاك الحد الشهري للرسائل، فضلاً قم بالترقية.');
+      if (doc.messagesUsed + n > messageLimit) {
+        throw new PaymentRequiredException(
+          'تم استهلاك الحد الشهري للرسائل، فضلاً قم بالترقية.',
+        );
       }
 
       doc.messagesUsed += n;
@@ -71,10 +84,11 @@ export class UsageService {
 
   async getUsage(merchantId: string, monthKey?: string) {
     const key = monthKey ?? this.monthKeyFrom();
-    const doc = await this.usageModel.findOne({ merchantId, monthKey: key }).lean();
+    const doc = await this.usageModel
+      .findOne({ merchantId, monthKey: key })
+      .lean();
     return doc ?? { merchantId, monthKey: key, messagesUsed: 0 };
   }
- 
 
   async getPlanAndLimit(merchantId: string) {
     const merchant = await this.merchantModel.findById(merchantId).lean();
@@ -88,13 +102,13 @@ export class UsageService {
     }
     const plan = await this.plansService.findById(String(planId));
     // إن لم يحدد plan.messageLimit => اعتبر غير محدود
-    const isUnlimited = typeof plan.messageLimit !== 'number' || plan.messageLimit < 0;
-    const messageLimit = isUnlimited ? Number.MAX_SAFE_INTEGER : plan.messageLimit!;
+    const isUnlimited =
+      typeof plan.messageLimit !== 'number' || plan.messageLimit < 0;
+    const messageLimit = isUnlimited
+      ? Number.MAX_SAFE_INTEGER
+      : plan.messageLimit!;
     return { plan, messageLimit, isUnlimited };
   }
-
- 
-
 
   // لإعادة التعيين اليدوي (نادراً ما تحتاجها مع monthKey)
   async resetUsage(merchantId: string, monthKey?: string) {

@@ -103,8 +103,8 @@ export const computePricing = (doc: any) => {
   const hasOffer =
     !!doc?.offer?.enabled && priceOld != null && priceNew != null;
   const discountPct =
-    hasOffer && priceOld! > 0
-      ? Math.max(0, Math.round(((priceOld! - priceNew!) / priceOld!) * 100))
+    hasOffer && priceOld > 0
+      ? Math.max(0, Math.round(((priceOld - priceNew) / priceOld) * 100))
       : null;
   return { price, priceOld, priceNew, effective, hasOffer, discountPct };
 };

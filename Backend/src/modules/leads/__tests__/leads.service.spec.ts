@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+
 import { LeadsService } from '../leads.service';
-import { LEAD_REPOSITORY } from '../tokens';
 import { LeadRepository } from '../repositories/lead.repository';
+import { LEAD_REPOSITORY } from '../tokens';
 
 describe('LeadsService', () => {
   let service: LeadsService;

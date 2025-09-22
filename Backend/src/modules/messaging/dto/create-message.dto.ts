@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsString,
   IsNotEmpty,
@@ -8,7 +9,6 @@ import {
   IsObject,
   IsEnum,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class MessageItemDto {
   @ApiProperty({

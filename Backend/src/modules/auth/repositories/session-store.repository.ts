@@ -6,6 +6,8 @@ export interface SessionData {
   lastUsed: number;
   userAgent?: string;
   ip?: string;
+  csrfToken?: string; // CSRF token for double-submit cookie pattern
+  refreshTokenHash?: string; // Hash of refresh token for validation
 }
 
 export interface SessionStore {

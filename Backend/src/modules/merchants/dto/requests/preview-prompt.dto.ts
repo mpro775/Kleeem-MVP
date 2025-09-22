@@ -8,6 +8,7 @@ import {
   IsObject,
   IsOptional,
 } from 'class-validator';
+
 import { QuickConfigDto } from './quick-config.dto';
 
 export class PreviewPromptDto {

@@ -1,5 +1,8 @@
 // src/modules/merchants/merchants.controller.ts
 
+import { CreateMerchantDto } from './dto/requests/create-merchant.dto';
+import { UpdateMerchantDto } from './dto/requests/update-merchant.dto';
+import { unlink } from 'fs/promises';
 import {
   Controller,
   Get,
@@ -22,9 +25,8 @@ import {
   Query,
   Logger,
 } from '@nestjs/common';
-import { MerchantsService } from './merchants.service';
-
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { InjectModel, ParseObjectIdPipe } from '@nestjs/mongoose';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -36,32 +38,33 @@ import {
   ApiForbiddenResponse,
   ApiNotFoundResponse,
 } from '@nestjs/swagger';
-import { Public } from '../../common/decorators/public.decorator';
+
+import * as bcrypt from 'bcrypt';
+import { Model } from 'mongoose';
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
 } from '../../common';
-import { MerchantChecklistService } from './merchant-checklist.service';
-import { ChecklistGroup } from './types/merchant-checklist.service.types';
+import { NotificationsService } from '../notifications/notifications.service';
+import { CurrentUser, CurrentUserId, CurrentMerchantId } from '../../common';
+import { Public } from '../../common/decorators/public.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { OutboxService } from '../../common/outbox/outbox.service';
+
+
+import { TranslationService } from '../../common/services/translation.service';
+import { CatalogService } from '../catalog/catalog.service';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import { OnboardingBasicDto } from './dto/requests/onboarding-basic.dto';
 import {
   ProductSource,
   UpdateProductSourceDto,
 } from './dto/requests/update-product-source.dto';
-import { CreateMerchantDto } from './dto/requests/create-merchant.dto';
-import { UpdateMerchantDto } from './dto/requests/update-merchant.dto';
-import { unlink } from 'fs/promises';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { InjectModel, ParseObjectIdPipe } from '@nestjs/mongoose';
-import { User, UserDocument } from '../users/schemas/user.schema';
-import { Model } from 'mongoose';
-import * as bcrypt from 'bcrypt';
-import { NotificationsService } from '../notifications/notifications.service';
-import { CatalogService } from '../catalog/catalog.service';
-import { OutboxService } from '../../common/outbox/outbox.service';
-import { CurrentUser, CurrentUserId, CurrentMerchantId } from '../../common';
+import { MerchantChecklistService } from './merchant-checklist.service';
+import { MerchantsService } from './merchants.service';
+import { ChecklistGroup } from './types/merchant-checklist.service.types';
+
 import type { Role } from '../../common/interfaces/jwt-payload.interface';
-import { TranslationService } from '../../common/services/translation.service';
 const SLUG_RE = /^[a-z](?:[a-z0-9-]{1,48}[a-z0-9])$/;
 class SoftDeleteDto {
   reason?: string;

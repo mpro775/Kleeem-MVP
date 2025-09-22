@@ -1,4 +1,5 @@
 // src/analytics/dto/query-kleem-missing-responses.dto.ts
+import { Type } from 'class-transformer';
 import {
   IsOptional,
   IsBooleanString,
@@ -7,7 +8,6 @@ import {
   Min,
   IsString,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class QueryKleemMissingResponsesDto {
   @IsOptional()

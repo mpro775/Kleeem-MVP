@@ -1,14 +1,14 @@
 // src/modules/vector/vector.module.ts
-import { Module, forwardRef } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
+import { Module, forwardRef } from '@nestjs/common';
 
-import { VectorService } from './vector.service';
-import { VectorController } from './vector.controller';
-import { QdrantWrapper } from './utils/qdrant.client';
-import { EmbeddingsClient } from './utils/embeddings.client';
-
-import { ProductsModule } from '../products/products.module';
 import { CommonModule } from '../../common/config/common.module';
+import { ProductsModule } from '../products/products.module';
+
+import { EmbeddingsClient } from './utils/embeddings.client';
+import { QdrantWrapper } from './utils/qdrant.client';
+import { VectorController } from './vector.controller';
+import { VectorService } from './vector.service';
 
 @Module({
   imports: [HttpModule, forwardRef(() => ProductsModule), CommonModule],

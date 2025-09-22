@@ -1,30 +1,41 @@
 // src/modules/webhooks/webhooks.module.ts
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-
-import { WebhooksService } from './webhooks.service';
-import { WebhooksController } from './webhooks.controller';
-import { Webhook, WebhookSchema } from './schemas/webhook.schema';
-
-import { MessagingModule } from '../messaging/message.module';
-import { OrdersModule } from '../orders/orders.module';
-import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
-import { ChatMediaModule } from '../media/chat-media.module';
-import { IntegrationsModule } from '../integrations/integrations.module';
-import { ChatModule } from '../chat/chat.module';
+import { WebhookSignatureGuard } from 'src/common/guards/webhook-signature.guard';
 import { OutboxModule } from 'src/common/outbox/outbox.module';
+
 import { ChannelsModule } from '../channels/channels.module';
+import { ChatModule } from '../chat/chat.module';
+import { IntegrationsModule } from '../integrations/integrations.module';
+import { ChatMediaModule } from '../media/chat-media.module';
+import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
+import { MessagingModule } from '../messaging/message.module';
+import { Webhook, WebhookSchema } from './schemas/webhook.schema';
+import { WebhooksController } from './webhooks.controller';
+import { WebhooksService } from './webhooks.service';
+
+import { OrdersModule } from '../orders/orders.module';
+
+
+
 import { TelegramWebhookController } from './telegram.webhook.controller';
+
 import { NotificationsModule } from '../notifications/notifications.module';
 import { Channel, ChannelSchema } from '../channels/schemas/channel.schema';
+
+import { WhatsAppCloudWebhookController } from './whatsapp-cloud.webhook.controller';
 import { WhatsappQrWebhookController } from './whatsapp-qr.webhook.controller';
 import { ChatWebhooksUnifiedController } from './chat-webhooks-unified.controller';
+
 import { MerchantsModule } from '../merchants/merchants.module';
+
 import { WEBHOOK_REPOSITORY } from './tokens';
 import { WebhookMongoRepository } from './repositories/webhook.mongo.repository';
 import { CHANNEL_REPOSITORY } from './tokens';
 import { ChannelMongoRepository } from './repositories/channel.mongo.repository';
+
 import { CommonModule } from '../../common/config/common.module';
+
 
 @Module({
   imports: [
@@ -50,6 +61,7 @@ import { CommonModule } from '../../common/config/common.module';
     WebhooksService, // خدمة معالجة الـ webhook العامة
     WebhooksController, // لإعادة استخدامه في TelegramWebhookController
     { provide: WEBHOOK_REPOSITORY, useClass: WebhookMongoRepository },
+    WebhookSignatureGuard,
     { provide: CHANNEL_REPOSITORY, useClass: ChannelMongoRepository },
   ],
   controllers: [
@@ -57,6 +69,7 @@ import { CommonModule } from '../../common/config/common.module';
     TelegramWebhookController,
     WhatsappQrWebhookController,
     ChatWebhooksUnifiedController,
+    WhatsAppCloudWebhookController,
   ],
   exports: [WebhooksService],
 })

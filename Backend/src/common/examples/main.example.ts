@@ -1,10 +1,12 @@
 // src/common/examples/main.example.ts
-import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { AppModule } from './app-module.example';
-import { setupApp } from '../index';
 import { ConfigService } from '@nestjs/config';
+import { NestFactory } from '@nestjs/core';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+
+import { setupApp } from '../index';
+
+import { AppModule } from './app-module.example';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

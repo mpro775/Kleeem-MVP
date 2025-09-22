@@ -1,8 +1,9 @@
+import { unlink } from 'node:fs/promises';
+
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable, NotFoundException, Logger, Inject } from '@nestjs/common';
 import { Queue } from 'bull';
-import { InjectQueue } from '@nestjs/bull';
 import { Client as MinioClient } from 'minio';
-import { unlink } from 'node:fs/promises';
 
 import { DocumentsRepository } from './repositories/documents.repository';
 import { DocumentSchemaClass } from './schemas/document.schema';
@@ -58,7 +59,7 @@ export class DocumentsService {
 
       return doc.toObject() as any;
     } catch (error) {
-      this.logger.error('فشل رفع الملف إلى MinIO', error as any);
+      this.logger.error('فشل رفع الملف إلى MinIO', error);
       throw error;
     } finally {
       // حذف الملف المؤقت محليًا دائمًا

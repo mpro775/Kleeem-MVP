@@ -20,6 +20,8 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "moduleResolution": "node",
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,  
+    "types": ["node"]   
+
   }
 }

@@ -1,8 +1,8 @@
 // src/common/services/sentry.service.ts
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
-import { ConfigService } from '@nestjs/config';
 
 export interface SentryContext {
   userId?: string;
@@ -98,7 +98,7 @@ export class SentryService {
         `Sentry initialized (env=${environment}, traces=${tracesSampleRate}, profiles=${profilesSampleRate})`,
       );
     } catch (error) {
-      this.logger.error('Failed to initialize Sentry', error as any);
+      this.logger.error('Failed to initialize Sentry', error);
     }
   }
 

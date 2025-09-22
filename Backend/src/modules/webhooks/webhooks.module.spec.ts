@@ -1,17 +1,19 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
-import { WebhooksModule } from './webhooks.module';
-import { WebhooksService } from './webhooks.service';
-import { WebhooksController } from './webhooks.controller';
-import { Webhook, WebhookSchema } from './schemas/webhook.schema';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Test, TestingModule } from '@nestjs/testing';
+
+import { OutboxModule } from '../../common/outbox/outbox.module';
+import { ChatModule } from '../chat/chat.module';
+import { IntegrationsModule } from '../integrations/integrations.module';
+import { ChatMediaModule } from '../media/chat-media.module';
 import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
 import { MessagingModule } from '../messaging/message.module';
 import { OrdersModule } from '../orders/orders.module';
-import { ChatMediaModule } from '../media/chat-media.module';
-import { IntegrationsModule } from '../integrations/integrations.module';
-import { ChatModule } from '../chat/chat.module';
-import { OutboxModule } from '../../common/outbox/outbox.module';
+
+import { Webhook, WebhookSchema } from './schemas/webhook.schema';
+import { WebhooksController } from './webhooks.controller';
+import { WebhooksModule } from './webhooks.module';
+import { WebhooksService } from './webhooks.service';
 
 describe('WebhooksModule', () => {
   let moduleRef: TestingModule;
@@ -106,7 +108,8 @@ describe('WebhooksModule', () => {
 
   describe('Controller Configuration', () => {
     it('should register WebhooksController', () => {
-      const controllers = Reflect.getMetadata('controllers', WebhooksModule) || [];
+      const controllers =
+        Reflect.getMetadata('controllers', WebhooksModule) || [];
       expect(controllers).toContain(WebhooksController);
     });
   });
@@ -180,12 +183,12 @@ describe('WebhooksModule', () => {
       expect(service).toBeDefined();
 
       // This test verifies the module can handle concurrent access
-      const concurrentRequests = Array.from({ length: 10 }, () => 
-        Promise.resolve(service)
+      const concurrentRequests = Array.from({ length: 10 }, () =>
+        Promise.resolve(service),
       );
 
       const results = await Promise.all(concurrentRequests);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toBe(service);
       });
     });

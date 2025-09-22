@@ -1,4 +1,9 @@
 import {
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiHideProperty,
+} from '@nestjs/swagger';
+import {
   IsBoolean,
   IsEnum,
   IsOptional,
@@ -8,22 +13,17 @@ import {
   MinLength,
   MaxLength,
   ArrayMaxSize,
-  ArrayMinSize
+  ArrayMinSize,
 } from 'class-validator';
-import { 
-  ApiProperty, 
-  ApiPropertyOptional,
-  ApiHideProperty
-} from '@nestjs/swagger';
 
 export class CreateBotPromptDto {
-  @IsEnum(['system', 'user'], { 
-    message: 'النوع يجب أن يكون إما system أو user' 
+  @IsEnum(['system', 'user'], {
+    message: 'النوع يجب أن يكون إما system أو user',
   })
   @ApiProperty({
     description: 'نوع البرومبت',
     enum: ['system', 'user'],
-    example: 'system'
+    example: 'system',
   })
   type: 'system' | 'user';
 
@@ -35,7 +35,7 @@ export class CreateBotPromptDto {
     description: 'محتوى البرومبت',
     minLength: 10,
     maxLength: 10000,
-    example: 'أنت مساعد ذكي يساعد المستخدمين في الإجابة على استفساراتهم.'
+    example: 'أنت مساعد ذكي يساعد المستخدمين في الإجابة على استفساراتهم.',
   })
   content: string;
 
@@ -45,7 +45,7 @@ export class CreateBotPromptDto {
   @ApiPropertyOptional({
     description: 'اسم البرومبت (اختياري)',
     maxLength: 100,
-    example: 'البرومبت الأساسي'
+    example: 'البرومبت الأساسي',
   })
   name?: string;
 
@@ -58,7 +58,7 @@ export class CreateBotPromptDto {
   @ApiPropertyOptional({
     description: 'وسوم للتصنيف والبحث',
     type: [String],
-    example: ['افتراضي', 'دعم فني', 'مبيعات']
+    example: ['افتراضي', 'دعم فني', 'مبيعات'],
   })
   tags?: string[];
 
@@ -67,7 +67,7 @@ export class CreateBotPromptDto {
   @ApiPropertyOptional({
     description: 'حالة تفعيل البرومبت',
     default: false,
-    example: false
+    example: false,
   })
   active: boolean = false;
 }

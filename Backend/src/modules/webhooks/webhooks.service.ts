@@ -1,11 +1,13 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
-import { MessageService } from '../messaging/message.service';
-import { BotReplyDto } from './dto/bot-reply.dto';
 import { OutboxService } from 'src/common/outbox/outbox.service';
-import { WEBHOOK_REPOSITORY } from './tokens';
+
+import { MessageService } from '../messaging/message.service';
+
+import { BotReplyDto } from './dto/bot-reply.dto';
 import { WebhookRepository } from './repositories/webhook.repository';
+import { WEBHOOK_REPOSITORY } from './tokens';
 
 @Injectable()
 export class WebhooksService {

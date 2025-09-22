@@ -1,15 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import axios, { AxiosInstance } from 'axios';
+import { VectorService } from 'src/modules/vector/vector.service';
+
 import { BotChatsService } from '../botChats/botChats.service';
 import { BotPromptService } from '../botPrompt/botPrompt.service';
-import { KleemWsMessage } from '../ws/kleem-ws.types';
-import { SettingsService } from '../settings/settings.service';
-import { IntentService } from '../intent/intent.service';
-import { CtaService } from '../cta/cta.service';
 import { renderPrompt } from '../common/template.service';
-import { VectorService } from 'src/modules/vector/vector.service';
-import { ConfigService } from '@nestjs/config';
+import { CtaService } from '../cta/cta.service';
+import { IntentService } from '../intent/intent.service';
+import { SettingsService } from '../settings/settings.service';
+import { KleemWsMessage } from '../ws/kleem-ws.types';
 
 @Injectable()
 export class KleemChatService {

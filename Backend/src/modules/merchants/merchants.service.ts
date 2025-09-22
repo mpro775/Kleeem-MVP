@@ -1,3 +1,4 @@
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   Injectable,
   Inject,
@@ -5,29 +6,34 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { I18nService } from 'nestjs-i18n';
-import { TranslationService } from '../../common/services/translation.service';
+import { ConfigService } from '@nestjs/config';
 import { Cache } from 'cache-manager';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { MerchantsRepository } from './repositories/merchants.repository';
+import * as Handlebars from 'handlebars';
+import { Types } from 'mongoose';
+import { I18nService } from 'nestjs-i18n';
+
+import { TranslationService } from '../../common/services/translation.service';
+import { BusinessMetrics } from '../../metrics/business.metrics';
+import { ChatWidgetService } from '../chat/chat-widget.service';
+import { N8nWorkflowService } from '../n8n-workflow/n8n-workflow.service';
+
+import { StorefrontService } from '../storefront/storefront.service';
 import { CreateMerchantDto } from './dto/requests/create-merchant.dto';
+import { MerchantsRepository } from './repositories/merchants.repository';
 import { UpdateMerchantDto } from './dto/requests/update-merchant.dto';
 import { QuickConfigDto } from './dto/requests/quick-config.dto';
 import { OnboardingBasicDto } from './dto/requests/onboarding-basic.dto';
 import { PreviewPromptDto } from './dto/requests/preview-prompt.dto';
 import { QuickConfig } from './schemas/quick-config.schema';
-import { MerchantStatusResponse } from './types/types';
-import { Types } from 'mongoose';
-import { N8nWorkflowService } from '../n8n-workflow/n8n-workflow.service';
-import { ConfigService } from '@nestjs/config';
-import { PromptVersionService } from './services/prompt-version.service';
-import { PromptPreviewService } from './services/prompt-preview.service';
 import { PromptBuilderService } from './services/prompt-builder.service';
-import { StorefrontService } from '../storefront/storefront.service';
-import { ChatWidgetService } from '../chat/chat-widget.service';
+import { PromptPreviewService } from './services/prompt-preview.service';
+import { PromptVersionService } from './services/prompt-version.service';
+import { MerchantStatusResponse } from './types/types';
+
+
 import { CleanupCoordinatorService } from './cleanup-coordinator.service';
-import { BusinessMetrics } from '../../metrics/business.metrics';
-import * as Handlebars from 'handlebars';
+
+
 import { buildHbsContext, stripGuardSections } from './services/prompt-utils';
 import { MerchantProvisioningService } from './services/merchant-provisioning.service';
 import { MerchantCacheService } from './services/merchant-cache.service';

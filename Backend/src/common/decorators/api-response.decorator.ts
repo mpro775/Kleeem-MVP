@@ -1,9 +1,11 @@
 // src/common/decorators/api-response.decorator.ts
-import { applyDecorators, Type } from '@nestjs/common';
+import { applyDecorators } from '@nestjs/common';
 import {
   ApiResponse as SwaggerApiResponse,
   getSchemaPath,
 } from '@nestjs/swagger';
+
+import type { Type } from '@nestjs/common';
 
 /** Decorator لتوثيق الاستجابات في Swagger */
 export function ApiResponse<T extends Type<any>>(

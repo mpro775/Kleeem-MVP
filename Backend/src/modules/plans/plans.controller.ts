@@ -12,14 +12,6 @@ import {
   Request,
   Query,
 } from '@nestjs/common';
-import { PlansService } from './plans.service';
-import { CreatePlanDto } from './dto/create-plan.dto';
-import { UpdatePlanDto } from './dto/update-plan.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { ParseObjectIdPipe } from '../../common/pipes/parse-objectid.pipe';
-import { QueryPlansDto } from './dto/query-plans.dto';
 import {
   ApiTags,
   ApiOperation,
@@ -33,6 +25,16 @@ import {
   ApiNotFoundResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+
+import { Roles } from '../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { ParseObjectIdPipe } from '../../common/pipes/parse-objectid.pipe';
+
+import { CreatePlanDto } from './dto/create-plan.dto';
+import { QueryPlansDto } from './dto/query-plans.dto';
+import { UpdatePlanDto } from './dto/update-plan.dto';
+import { PlansService } from './plans.service';
 
 @ApiTags('الخطط')
 @Controller('plans')

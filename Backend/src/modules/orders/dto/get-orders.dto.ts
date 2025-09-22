@@ -1,5 +1,6 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, IsEnum } from 'class-validator';
+
 import { CursorDto } from '../../../common/dto/pagination.dto';
 
 export enum OrderSortBy {

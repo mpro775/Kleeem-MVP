@@ -1,3 +1,4 @@
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   Injectable,
   InternalServerErrorException,
@@ -6,32 +7,33 @@ import {
   Logger,
   Inject,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Cache } from 'cache-manager';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
-import { RegisterDto } from './dto/register.dto';
+import { TranslationService } from '../../common/services/translation.service';
+import { BusinessMetrics } from '../../metrics/business.metrics';
 import { MailService } from '../mail/mail.service';
-import { VerifyEmailDto } from './dto/verify-email.dto';
-import { LoginDto } from './dto/login.dto';
-import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { MerchantsService } from '../merchants/merchants.service';
+
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+
+import { TokenService } from './services/token.service';
+import { toStr } from './utils/id';
+import { generateSecureToken } from './utils/password-reset';
 import {
   generateNumericCode,
   minutesFromNow,
   sha256,
 } from './utils/verification-code';
-import { BusinessMetrics } from '../../metrics/business.metrics';
-import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
-import { ConfigService } from '@nestjs/config';
-import { generateSecureToken } from './utils/password-reset';
-import { ResetPasswordDto } from './dto/reset-password.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { toStr } from './utils/id';
-import { TokenService } from './services/token.service';
 import { AuthRepository } from './repositories/auth.repository';
-import { TranslationService } from '../../common/services/translation.service';
 
 @Injectable()
 export class AuthService {
@@ -192,7 +194,7 @@ export class AuthService {
 
   async logout(refreshToken: string): Promise<{ message: string }> {
     try {
-      const decoded = this.jwtService.decode(refreshToken) as any;
+      const decoded = this.jwtService.decode(refreshToken);
       if (decoded?.jti) {
         await this.tokenService.revokeRefreshToken(decoded.jti);
       }
@@ -213,6 +215,14 @@ export class AuthService {
         'auth.messages.logoutAllSuccess',
       ),
     };
+  }
+
+  getTokenService() {
+    return this.tokenService;
+  }
+
+  async getSessionCsrfToken(jti: string): Promise<string | null> {
+    return this.tokenService.getSessionCsrfToken(jti);
   }
 
   async verifyEmail(dto: VerifyEmailDto) {

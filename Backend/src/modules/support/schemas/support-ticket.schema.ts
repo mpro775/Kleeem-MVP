@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+
 import {
   CONTACT_TOPIC_VALUES,
   ContactTopic,
@@ -46,7 +47,7 @@ export class SupportTicket {
   @Prop({ type: [AttachmentMetaSchema], default: [] })
   attachments!: AttachmentMeta[];
 
-  @Prop({ type: String})
+  @Prop({ type: String })
   ticketNumber!: string;
 
   @Prop({ type: Types.ObjectId, ref: 'Merchant', index: true })

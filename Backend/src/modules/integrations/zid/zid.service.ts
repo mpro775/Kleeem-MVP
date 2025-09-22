@@ -1,12 +1,14 @@
+import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Types } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
-import { HttpService } from '@nestjs/axios';
+
 import { ExternalProduct } from '../types';
-import { ZID_INTEGRATION_REPOSITORY, ZID_MERCHANT_REPOSITORY } from './tokens';
+
 import { IntegrationRepository } from './repositories/integration.repository';
 import { MerchantRepository } from './repositories/merchant.repository';
+import { ZID_INTEGRATION_REPOSITORY, ZID_MERCHANT_REPOSITORY } from './tokens';
 
 export interface ZidOAuthTokenResponse {
   access_token: string;

@@ -1,6 +1,7 @@
 // src/modules/kleem/ws/kleem.gateway.ts
-import { createAdapter } from '@socket.io/redis-adapter';
-import { createClient } from 'redis';
+import { Injectable } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
+import { JwtService } from '@nestjs/jwt';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -11,18 +12,19 @@ import {
   ConnectedSocket,
   OnGatewayInit,
 } from '@nestjs/websockets';
-import { Injectable } from '@nestjs/common';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import { Gauge } from 'prom-client';
+import { createClient } from 'redis';
 import { Server, Socket } from 'socket.io';
-import { JwtService } from '@nestjs/jwt';
+
+import { KleemChatService } from '../chat/kleem-chat.service';
+
 import {
   UserMessagePayload,
   TypingPayload,
   KleemWsMessage,
 } from './kleem-ws.types';
-import { OnEvent } from '@nestjs/event-emitter';
-import { KleemChatService } from '../chat/kleem-chat.service';
-import { InjectMetric } from '@willsoto/nestjs-prometheus';
-import { Gauge } from 'prom-client';
 
 @WebSocketGateway({
   path: '/api/kaleem/ws', // ✅ موحّد

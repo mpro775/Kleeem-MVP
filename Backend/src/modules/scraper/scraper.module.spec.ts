@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+
 import { ScraperModule } from './scraper.module';
 
 describe('ScraperModule', () => {

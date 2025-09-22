@@ -1,9 +1,9 @@
-import { Types } from 'mongoose';
-import {
+import type {
   ChannelProvider,
   ChannelDocument,
 } from '../../channels/schemas/channel.schema';
-import { MerchantDocument } from '../schemas/merchant.schema';
+import type { MerchantDocument } from '../schemas/merchant.schema';
+import type { Types } from 'mongoose';
 
 export interface MerchantChecklistRepository {
   findMerchantLean(

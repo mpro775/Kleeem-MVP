@@ -67,11 +67,15 @@ export class ChatWidgetSettings {
 
 export const ChatWidgetSettingsSchema =
   SchemaFactory.createForClass(ChatWidgetSettings);
-  ChatWidgetSettingsSchema.pre('save', async function(next) {
-    try {
-      const MerchantModel = this.model('Merchant');
-      const m = await MerchantModel.findOne({ _id: (this as any).merchantId }).select('publicSlug') as any;
-      if (m?.publicSlug) (this as any).widgetSlug = m.publicSlug; // مرآة
-      next();
-    } catch (e) { next(e as any); }
-  });
+ChatWidgetSettingsSchema.pre('save', async function (next) {
+  try {
+    const MerchantModel = this.model('Merchant');
+    const m = (await MerchantModel.findOne({
+      _id: (this as any).merchantId,
+    }).select('publicSlug')) as any;
+    if (m?.publicSlug) (this as any).widgetSlug = m.publicSlug; // مرآة
+    next();
+  } catch (e) {
+    next(e);
+  }
+});

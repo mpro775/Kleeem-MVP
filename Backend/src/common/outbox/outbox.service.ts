@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ClientSession, Types } from 'mongoose';
+
 import { OutboxEvent, OutboxEventDocument } from './outbox.schema';
 
 export interface EnqueueEventInput {
@@ -35,16 +36,28 @@ export class OutboxService {
   }
 
   async enqueueEvent(data: EnqueueEventInput, session?: ClientSession) {
-    if (session) return this.addEventInTx(data, session);
     const doc = new this.outboxModel({
       ...data,
       status: 'pending',
       attempts: 0,
       nextAttemptAt: new Date(0),
-      occurredAt: data.occurredAt ?? new Date().toISOString(),
+      occurredAt: data.occurredAt ? new Date(data.occurredAt) : new Date(),
     });
-    await doc.save();
-    return doc;
+
+    try {
+      if (session) {
+        await doc.save({ session });
+      } else {
+        await doc.save();
+      }
+      return doc;
+    } catch (e: any) {
+      if (e?.code === 11000 && e?.message?.includes('dedupeKey')) {
+        // حدث مكرر: تجاهله واعتبره مُسجّل مسبقًا
+        return null;
+      }
+      throw e;
+    }
   }
 
   // المطالبة الذرّية بدُفعة أحداث

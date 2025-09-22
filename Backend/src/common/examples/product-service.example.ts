@@ -1,7 +1,8 @@
 // src/common/examples/product-service.example.ts
 import { Injectable } from '@nestjs/common';
-import { ProductNotFoundError, OutOfStockError, CurrentUser } from '../index';
+
 import { CursorDto, PaginationResult } from '../dto/pagination.dto';
+import { ProductNotFoundError, OutOfStockError, CurrentUser } from '../index';
 
 // مثال على DTO للمنتج
 export class CreateProductDto {

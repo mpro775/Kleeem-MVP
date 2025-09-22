@@ -9,8 +9,10 @@ import {
 import { Response } from 'express';
 import { Observable } from 'rxjs';
 import { tap, finalize } from 'rxjs/operators';
-import { SentryService } from '../services/sentry.service';
+
 import { RequestWithUser } from '../interfaces/request-with-user.interface';
+import { SentryService } from '../services/sentry.service';
+
 import { shouldBypass } from './bypass.util';
 
 @Injectable()
@@ -35,20 +37,18 @@ export class PerformanceTrackingInterceptor implements NestInterceptor {
     const url = (request.originalUrl || request.url || '').split('?')[0];
     const method = request.method;
     const ip = request.ip;
-    const userAgent = request.headers['user-agent'] as string | undefined;
+    const userAgent = request.headers['user-agent'];
     const requestId =
       (request as any).requestId ||
-      (request.headers['X-Request-Id'] as string | undefined) ||
+      (request.headers['x-request-id'] as string | undefined) ||
       undefined;
 
     // نفضّل authUser (محمّل من DB عبر IdentityGuard)، وإلا نأخذ من JWT payload
     const auth = request.authUser;
     const jwt = request.user;
-    const userId = (auth?._id as any)?.toString?.() || jwt?.userId || undefined;
+    const userId = auth?._id?.toString?.() || jwt?.userId || undefined;
     const merchantId =
-      (auth?.merchantId as any)?.toString?.() ||
-      (jwt?.merchantId as any) ||
-      undefined;
+      auth?.merchantId?.toString?.() || (jwt?.merchantId as any) || undefined;
 
     const operationName = `${method} ${url}`;
     const operationType = 'http.server';
@@ -109,7 +109,7 @@ export class PerformanceTrackingInterceptor implements NestInterceptor {
         const duration = Date.now() - startTime;
 
         // قد يتغير الكود أثناء السايكل؛ خذه في النهاية
-        const statusCode = (response?.statusCode as number) ?? undefined;
+        const statusCode = response?.statusCode ?? undefined;
 
         // بيانات أداء
         transaction.setData('duration_ms', duration);

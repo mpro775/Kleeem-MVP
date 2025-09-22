@@ -1,9 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Types } from 'mongoose';
 
-import { ProductsRepository } from '../repositories/products.repository';
-import { GetProductsDto } from '../dto/get-products.dto';
 import { StorefrontService } from '../../storefront/storefront.service';
+import { GetProductsDto } from '../dto/get-products.dto';
+import { ProductsRepository } from '../repositories/products.repository';
 
 @Injectable()
 export class ProductPublicService {
@@ -30,8 +30,8 @@ export class ProductPublicService {
     const sf = await this.storefronts.findBySlug(storeSlug);
     if (!sf) return null;
     return this.repo.findPublicBySlugWithMerchant(
-      productSlug,
       new Types.ObjectId(sf.merchantId),
+      productSlug,
     );
   }
 }

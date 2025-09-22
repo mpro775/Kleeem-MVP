@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { Merchant } from '../../merchants/schemas/merchant.schema';
+import type { Merchant } from '../../merchants/schemas/merchant.schema';
+import type { Types } from 'mongoose';
 
 export type MerchantEntity = Merchant & {
   _id: Types.ObjectId;

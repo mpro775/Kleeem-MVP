@@ -1,4 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
+
+import { LeadsService } from '../../leads/leads.service';
+import { VectorService } from '../../vector/vector.service';
+import { StorefrontCategoryRepository } from '../repositories/category.repository';
+import { StorefrontMerchantRepository } from '../repositories/merchant.repository';
+import { StorefrontOrderRepository } from '../repositories/order.repository';
+import { StorefrontProductRepository } from '../repositories/product.repository';
+import { StorefrontRepository } from '../repositories/storefront.repository';
 import { StorefrontService } from '../storefront.service';
 import {
   STOREFRONT_CATEGORY_REPOSITORY,
@@ -7,13 +15,6 @@ import {
   STOREFRONT_PRODUCT_REPOSITORY,
   STOREFRONT_REPOSITORY,
 } from '../tokens';
-import { StorefrontRepository } from '../repositories/storefront.repository';
-import { StorefrontProductRepository } from '../repositories/product.repository';
-import { StorefrontMerchantRepository } from '../repositories/merchant.repository';
-import { StorefrontCategoryRepository } from '../repositories/category.repository';
-import { StorefrontOrderRepository } from '../repositories/order.repository';
-import { VectorService } from '../../vector/vector.service';
-import { LeadsService } from '../../leads/leads.service';
 
 describe('StorefrontService', () => {
   let service: StorefrontService;

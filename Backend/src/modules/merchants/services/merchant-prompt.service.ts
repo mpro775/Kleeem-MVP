@@ -1,9 +1,11 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { PromptVersionService } from './prompt-version.service';
+import * as Handlebars from 'handlebars';
+
+import { MerchantsRepository } from '../repositories/merchants.repository';
+
 import { PromptBuilderService } from './prompt-builder.service';
 import { buildHbsContext, stripGuardSections } from './prompt-utils';
-import * as Handlebars from 'handlebars';
-import { MerchantsRepository } from '../repositories/merchants.repository';
+import { PromptVersionService } from './prompt-version.service';
 
 @Injectable()
 export class MerchantPromptService {

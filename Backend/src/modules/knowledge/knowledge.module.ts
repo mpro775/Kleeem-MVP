@@ -1,12 +1,14 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+
+import { OutboxModule } from '../../common/outbox/outbox.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { VectorModule } from '../vector/vector.module';
+
 import { KnowledgeService } from './knowledge.service';
+import { SourceUrlMongoRepository } from './repositories/source-url.mongo.repository';
 import { SourceUrl, SourceUrlSchema } from './schemas/source-url.schema';
 import { SOURCE_URL_REPOSITORY } from './tokens';
-import { SourceUrlMongoRepository } from './repositories/source-url.mongo.repository';
-import { VectorModule } from '../vector/vector.module';
-import { NotificationsModule } from '../notifications/notifications.module';
-import { OutboxModule } from '../../common/outbox/outbox.module';
 
 @Module({
   imports: [

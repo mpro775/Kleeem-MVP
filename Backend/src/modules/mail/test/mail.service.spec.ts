@@ -2,10 +2,11 @@
 // يغطي MailService: التهيئة من ConfigService، بناء transporter، إرسال الإيميل بنجاح وفشل، وبناء رابط التفعيل.
 // Arrange–Act–Assert
 
+import { faker } from '@faker-js/faker';
 import { InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
 import { MailService } from '../mail.service';
-import { faker } from '@faker-js/faker';
 
 // --- Mock nodemailer (لا اتصالات حقيقية) ---
 const sendMailMock = jest.fn();

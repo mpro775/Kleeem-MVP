@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsNumber,
   IsOptional,
@@ -8,14 +9,13 @@ import {
   IsUrl,
   IsIn,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateBotRuntimeSettingsDto {
   @ApiPropertyOptional({
     description: 'تاريخ بدء تشغيل البوت بتنسيق ISO 8601',
     example: '2025-01-01T00:00:00.000Z',
     type: String,
-    format: 'date-time'
+    format: 'date-time',
   })
   @IsOptional()
   @IsDateString()
@@ -25,7 +25,7 @@ export class UpdateBotRuntimeSettingsDto {
     description: 'رابط التقديم',
     example: 'https://example.com/apply',
     type: String,
-    format: 'uri'
+    format: 'uri',
   })
   @IsOptional()
   @IsUrl()
@@ -34,7 +34,7 @@ export class UpdateBotRuntimeSettingsDto {
   @ApiPropertyOptional({
     description: 'نص تكاملات الآن',
     example: 'يمكنك دمج أداتنا مع منصتك المفضلة',
-    type: String
+    type: String,
   })
   @IsOptional()
   @IsString()
@@ -43,7 +43,7 @@ export class UpdateBotRuntimeSettingsDto {
   @ApiPropertyOptional({
     description: 'عرض التجربة المجانية',
     example: 'احصل على 14 يوم تجربة مجانية',
-    type: String
+    type: String,
   })
   @IsOptional()
   @IsString()
@@ -52,7 +52,7 @@ export class UpdateBotRuntimeSettingsDto {
   @ApiPropertyOptional({
     description: 'نص الخطوة التالية لليمن',
     example: 'الخطوة التالية لرواد الأعمال في اليمن',
-    type: String
+    type: String,
   })
   @IsOptional()
   @IsString()
@@ -61,7 +61,7 @@ export class UpdateBotRuntimeSettingsDto {
   @ApiPropertyOptional({
     description: 'نص تحديد الموقع الجغرافي لليمن',
     example: 'نحن نخدم العملاء في جميع أنحاء اليمن',
-    type: String
+    type: String,
   })
   @IsOptional()
   @IsString()
@@ -71,7 +71,7 @@ export class UpdateBotRuntimeSettingsDto {
     description: 'عدد الرسائل بين كل دعوة للعمل (CTA)',
     example: 3,
     type: Number,
-    minimum: 1
+    minimum: 1,
   })
   @IsOptional()
   @IsNumber()
@@ -81,7 +81,7 @@ export class UpdateBotRuntimeSettingsDto {
     description: 'الكلمات المفتاحية عالية النية',
     example: ['شراء', 'سعر', 'تسجيل', 'اشتراك'],
     type: [String],
-    isArray: true
+    isArray: true,
   })
   @IsOptional()
   @IsArray()
@@ -92,7 +92,7 @@ export class UpdateBotRuntimeSettingsDto {
     description: 'الكلمات المفتاحية للبيانات الشخصية الحساسة (PII)',
     example: ['رقم الهاتف', 'البريد الإلكتروني', 'العنوان'],
     type: [String],
-    isArray: true
+    isArray: true,
   })
   @IsOptional()
   @IsArray()

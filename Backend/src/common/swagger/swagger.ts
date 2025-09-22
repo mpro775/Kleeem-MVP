@@ -1,5 +1,5 @@
 // src/common/swagger.ts
-import { applyDecorators, Type } from '@nestjs/common';
+import { applyDecorators } from '@nestjs/common';
 import {
   ApiExtraModels,
   ApiOkResponse,
@@ -7,6 +7,8 @@ import {
   ApiCreatedResponse,
 } from '@nestjs/swagger';
 import { ApiResponseDto } from 'src/modules/documents/dto/common.dto';
+
+import type { Type } from '@nestjs/common';
 
 export const Ok = <TModel extends Type<any>>(
   model: TModel,

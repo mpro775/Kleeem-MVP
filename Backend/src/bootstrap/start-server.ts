@@ -1,5 +1,5 @@
 // Server startup configuration
-import { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 
 const DEFAULT_PORT = Number(process.env.APP_DEFAULT_PORT ?? '3000'); // named const avoids "magic number"
 

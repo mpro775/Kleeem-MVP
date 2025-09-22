@@ -1,15 +1,16 @@
 // src/common/guards/jwt-auth.guard.ts
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   Injectable,
   ExecutionContext,
   UnauthorizedException,
   Inject,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
 import { JwtService } from '@nestjs/jwt';
+import { AuthGuard } from '@nestjs/passport';
+import { Cache } from 'cache-manager';
+
 import type { Request } from 'express';
 
 const PUBLIC_PATHS = [
@@ -80,12 +81,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return authHeader.substring(7);
     }
 
-    // التحقق من الكوكيز إذا كان مفعل
-    const cookieToken = req.cookies?.accessToken;
-    if (cookieToken) {
-      return cookieToken;
-    }
-
     return null;
   }
 
@@ -94,25 +89,20 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
    */
   private async validateTokenSession(token: string): Promise<boolean> {
     try {
-      const decoded = this.jwtService.decode(token) as any;
-      if (!decoded?.jti) {
-        return false;
-      }
-      const iat = (decoded?.iat || 0) * 1000;
+      const v = this.jwtService.verify(token, {
+        secret: process.env.JWT_SECRET,
+        issuer: process.env.JWT_ISSUER,
+        audience: process.env.JWT_AUDIENCE,
+      });
+      if (!v?.jti) return false;
+      if (await this.cacheManager.get(`bl:${v.jti}`)) return false;
+
+      // فحص pwdChangedAt
       const pwdAt = await this.cacheManager.get<number>(
-        `pwdChangedAt:${decoded?.sub}`,
+        `pwdChangedAt:${v?.sub}`,
       );
-      if (pwdAt && iat < pwdAt) return false;
-      // التحقق من القائمة السوداء
-      const blacklistKey = `bl:${decoded.jti}`;
-      const isBlacklisted = await this.cacheManager.get(blacklistKey);
+      if (pwdAt && v.iat * 1000 < pwdAt) return false;
 
-      if (isBlacklisted) {
-        return false;
-      }
-
-      // للـ Access Token، نحتاج فقط للتحقق من blacklist
-      // الجلسة تُحفظ مع Refresh Token JTI فقط
       return true;
     } catch (error) {
       return false;

@@ -1,11 +1,13 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { MerchantsRepository } from '../repositories/merchants.repository';
-import { PromptBuilderService } from './prompt-builder.service';
-import { TranslationService } from '../../../common/services/translation.service';
-import { MerchantStatusResponse } from '../types/types';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cache } from 'cache-manager';
+
+import { TranslationService } from '../../../common/services/translation.service';
+import { MerchantsRepository } from '../repositories/merchants.repository';
+import { MerchantStatusResponse } from '../types/types';
+
+import { PromptBuilderService } from './prompt-builder.service';
 
 @Injectable()
 export class MerchantCacheService {

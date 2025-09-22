@@ -1,7 +1,7 @@
 // src/modules/users/schemas/user.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
+import { HydratedDocument, Types } from 'mongoose';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -36,18 +36,19 @@ export enum UserRole {
 
 @Schema({
   timestamps: true,
-  versionKey: false,              // يغنيك عن delete ret.__v
+  versionKey: false, // يغنيك عن delete ret.__v
   toJSON: {
     virtuals: true,
-    transform(_doc, ret: any) {   // 👈 هنا
+    transform(_doc, ret: any) {
+      // 👈 هنا
       ret.id = ret._id?.toString();
       delete ret._id;
-      delete ret.password;        // لو موجودة (select:false غالبًا غير موجودة)
+      delete ret.password; // لو موجودة (select:false غالبًا غير موجودة)
       return ret;
     },
   },
   toObject: {
-    virtuals: true,               // (اختياري) لو تستخدم toObject
+    virtuals: true, // (اختياري) لو تستخدم toObject
   },
 })
 export class User {
