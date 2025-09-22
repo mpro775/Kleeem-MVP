@@ -16,3 +16,9 @@ Backend/env
 .env.*
 Backend/env
 
+
+# Secrets
+Backend/env
+.env
+.env.*
+
