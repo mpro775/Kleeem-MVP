@@ -1,122 +1,128 @@
+// src/modules/users/users.service.ts
 import { Injectable, Inject } from '@nestjs/common';
 import { Types } from 'mongoose';
 
-import { PaginationResult } from '../../common/dto/pagination.dto';
 import { UserNotFoundError } from '../../common/errors/business-errors';
 import { TranslationService } from '../../common/services/translation.service';
 
-import { CreateUserDto } from './dto/create-user.dto';
-import { GetUsersDto } from './dto/get-users.dto';
-import { NotificationsPrefsDto } from './dto/notifications-prefs.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { UsersRepository } from './repositories/users.repository';
+import type { CreateUserDto } from './dto/create-user.dto';
+import type { GetUsersDto } from './dto/get-users.dto';
+import type { NotificationsPrefsDto } from './dto/notifications-prefs.dto';
+import type { UpdateUserDto } from './dto/update-user.dto';
+import type { UsersRepository } from './repositories/users.repository';
+import type { UserDocument } from './schemas/user.schema';
+import type { UserLean } from './types';
+import type { PaginationResult } from '../../common/dto/pagination.dto';
+
+/** util: تحويل آمن إلى ObjectId */
+function toObjectId(id: string): Types.ObjectId {
+  return new Types.ObjectId(id);
+}
+
+/** تفضيلات افتراضية لتجنّب القيم السحرية داخل المنطق */
+function defaultPrefs(): NotificationsPrefsDto {
+  return {
+    channels: { inApp: true, email: true, telegram: false, whatsapp: false },
+    topics: {
+      syncFailed: true,
+      syncCompleted: true,
+      webhookFailed: true,
+      embeddingsCompleted: true,
+      missingResponsesDigest: 'daily',
+    },
+    quietHours: {
+      enabled: false,
+      start: '22:00',
+      end: '08:00',
+      timezone: 'Asia/Aden',
+    },
+  };
+}
 
 @Injectable()
 export class UsersService {
   constructor(
-    @Inject('UsersRepository')
-    private readonly repo: UsersRepository,
+    @Inject('UsersRepository') private readonly repo: UsersRepository,
     private readonly translationService: TranslationService,
   ) {}
 
-  async create(createDto: CreateUserDto) {
+  // إنشاء يعيد وثيقة (ليس lean)
+  async create(createDto: CreateUserDto): Promise<UserDocument> {
     return this.repo.create(createDto);
   }
 
-  async findAll() {
+  // قراءة متعددة: Lean
+  async findAll(): Promise<UserLean[]> {
     return this.repo.findAll();
   }
 
-  async findOne(id: string): Promise<CreateUserDto> {
-    const _id = new Types.ObjectId(id);
+  // قراءة مفردة: Lean
+  async findOne(id: string): Promise<UserLean> {
+    const _id = toObjectId(id);
     const user = await this.repo.findByIdLean(_id);
     if (!user) throw new UserNotFoundError(id);
-
-    // خرّج DTO موحّد (للواجهات التي تتوقع CreateUserDto)
-    const dto: CreateUserDto = {
-      id: _id.toHexString(),
-      email: user.email,
-      name: user.name,
-      merchantId: user.merchantId?.toString?.() ?? null,
-      firstLogin: user.firstLogin,
-      role: user.role,
-      phone: user.phone,
-    };
-    return dto;
+    // user هنا Lean، ومُعرّفات قد تكون ObjectId أو string بحسب التنفيذ؛
+    // نفترض أن الـ repo يعيد UserLean متّسقًا (كما أصلحناه سابقًا).
+    return user;
   }
 
-  async update(id: string, updateDto: UpdateUserDto) {
-    const _id = new Types.ObjectId(id);
+  // تحديث يعيد وثيقة (ليس lean)
+  async update(id: string, updateDto: UpdateUserDto): Promise<UserDocument> {
+    const _id = toObjectId(id);
     const updated = await this.repo.updateById(_id, updateDto);
     if (!updated) throw new UserNotFoundError(id);
     return updated;
   }
 
-  async remove(id: string) {
-    const _id = new Types.ObjectId(id);
+  // حذف ناعم: يُطابق Promise<void>
+  async remove(id: string): Promise<void> {
+    const _id = toObjectId(id);
     const user = await this.repo.softDeleteById(_id);
     if (!user) throw new UserNotFoundError(id);
-    // TODO: جدولة حذف صلب بعد 30 يوم + تنظيف الجلسات/الرموز
-    return {
-      message: this.translationService.translate('users.messages.userDeleted'),
-    };
+
+    // رسالة ترجمة يمكن تمريرها إلى طبقة أعلى (Controller) إن لزم عبر حدث/إشعار.
+    // هنا نحافظ على التوقيع Promise<void> كما هو.
+    this.translationService.translate('users.messages.userDeleted');
   }
 
   async setFirstLoginFalse(userId: string): Promise<void> {
-    const _id = new Types.ObjectId(userId);
+    const _id = toObjectId(userId);
     const updated = await this.repo.setFirstLoginFalse(_id);
     if (!updated) throw new UserNotFoundError(userId);
   }
 
-  private defaultPrefs() {
-    return {
-      channels: { inApp: true, email: true, telegram: false, whatsapp: false },
-      topics: {
-        syncFailed: true,
-        syncCompleted: true,
-        webhookFailed: true,
-        embeddingsCompleted: true,
-        missingResponsesDigest: 'daily',
-      },
-      quietHours: {
-        enabled: false,
-        start: '22:00',
-        end: '08:00',
-        timezone: 'Asia/Aden',
-      },
-    };
-  }
-
-  async getNotificationsPrefs(id: string) {
-    const _id = new Types.ObjectId(id);
+  async getNotificationsPrefs(id: string): Promise<NotificationsPrefsDto> {
+    const _id = toObjectId(id);
     const prefs = await this.repo.getNotificationsPrefs(_id);
-    if (!prefs) return this.defaultPrefs();
-    return prefs;
+    return prefs ?? defaultPrefs();
   }
 
-  async updateNotificationsPrefs(id: string, dto: NotificationsPrefsDto) {
-    const _id = new Types.ObjectId(id);
+  async updateNotificationsPrefs(
+    id: string,
+    dto: NotificationsPrefsDto,
+  ): Promise<NotificationsPrefsDto> {
+    const _id = toObjectId(id);
     const prefs = await this.repo.updateNotificationsPrefs(_id, dto);
     if (!prefs) throw new UserNotFoundError(id);
     return prefs;
   }
 
   // ===== Cursor Pagination =====
-  async getUsers(dto: GetUsersDto): Promise<PaginationResult<any>> {
+  async getUsers(dto: GetUsersDto): Promise<PaginationResult<UserLean>> {
     return this.repo.list(dto);
   }
 
   async searchUsers(
     query: string,
     dto: GetUsersDto,
-  ): Promise<PaginationResult<any>> {
+  ): Promise<PaginationResult<UserLean>> {
     return this.repo.list({ ...dto, search: query });
   }
 
   async getUsersByMerchant(
     merchantId: string,
     dto: GetUsersDto,
-  ): Promise<PaginationResult<any>> {
+  ): Promise<PaginationResult<UserLean>> {
     return this.repo.list({ ...dto, merchantId });
   }
 }

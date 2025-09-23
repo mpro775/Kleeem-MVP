@@ -3,8 +3,8 @@ import type { MerchantDocument } from '../schemas/merchant.schema';
 
 export function buildHbsContext(
   m: MerchantDocument,
-  testVars: Record<string, any>,
-) {
+  testVars: Record<string, unknown>,
+): Record<string, unknown> {
   return {
     merchantName: m.name,
     categories: m.categories ?? [],

@@ -12,6 +12,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { LeadsService } from './leads.service';
+import { Lead } from './schemas/lead.schema';
 @ApiTags('العملاء المحتملين')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -45,7 +46,7 @@ export class LeadsController {
   createLead(
     @Param('merchantId') merchantId: string,
     @Body() dto: CreateLeadDto,
-  ) {
+  ): Promise<Lead> {
     return this.leadsService.create(merchantId, dto);
   }
 
@@ -67,7 +68,7 @@ export class LeadsController {
     status: 403,
     description: 'غير مصرح - لا تملك الصلاحيات الكافية',
   })
-  getLeads(@Param('merchantId') merchantId: string) {
+  getLeads(@Param('merchantId') merchantId: string): Promise<Lead[]> {
     return this.leadsService.findAllForMerchant(merchantId);
   }
 }

@@ -1,340 +1,423 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Types } from 'mongoose';
+// src/modules/merchants/services/merchant-checklist.service.ts
+import { Inject, Injectable } from '@nestjs/common';
 
 import {
   ChannelProvider,
   ChannelStatus,
-  ChannelDocument,
 } from '../channels/schemas/channel.schema';
 import { StorefrontService } from '../storefront/storefront.service';
 
 import { MerchantChecklistRepository } from './repositories/merchant-checklist.repository';
 import {
+  ACTION_PATHS,
+  CHECK_KEYS,
+  hasNonEmptyString,
+} from './types/merchant-checklist.types';
+
+import type {
   ChecklistGroup,
   ChecklistItem,
-} from './types/merchant-checklist.service.types'; // ← ملف أنواع بسيط سنضيفه بالأسفل
+  MinimalChannel,
+  MinimalMerchant,
+  ProductSource,
+} from './types/merchant-checklist.types';
+
+/** ثوابت المعاني لتجنّب الأرقام/النصوص السحرية */
+const MIN_SLUG_LENGTH = 3 as const;
+const QUICK_DEFAULTS = {
+  dialect: 'خليجي',
+  tone: 'ودّي',
+  includeClosingPhrase: true,
+  closingText: 'هل أقدر أساعدك بشي ثاني؟ 😊',
+} as const;
+
+type CountsAndChannels = {
+  productCount: number;
+  categoryCount: number;
+  tgCh: MinimalChannel | null;
+  waQrCh: MinimalChannel | null;
+  waApiCh: MinimalChannel | null;
+  webCh: MinimalChannel | null;
+};
+
+function isConnected(c?: MinimalChannel | null): boolean {
+  return Boolean(c?.enabled) && c?.status === ChannelStatus.CONNECTED;
+}
+
+function inferSource(m: MinimalMerchant): ProductSource {
+  const sallaActive = Boolean(m.productSourceConfig?.salla?.active);
+  const zidActive = Boolean(m.productSourceConfig?.zid?.active);
+  if (zidActive) return 'zid';
+  if (sallaActive) return 'salla';
+  return 'internal';
+}
+
+function getPublicSlugStatus(m: MinimalMerchant): {
+  slug: string;
+  has: boolean;
+  enabled: boolean;
+} {
+  const slug = (m.publicSlug ?? '').trim();
+  const enabled = m.publicSlugEnabled !== false;
+  const has = slug.length >= MIN_SLUG_LENGTH;
+  return { slug, has, enabled };
+}
+
+function isNonDefaultString(v: string | undefined, def: string): boolean {
+  const a = (v ?? '').trim();
+  const b = (def ?? '').trim();
+  return a.length > 0 && a !== b;
+}
+
+function getStorefrontBannersCount(storefront: unknown): number {
+  if (
+    storefront &&
+    typeof storefront === 'object' &&
+    'banners' in storefront &&
+    Array.isArray((storefront as { banners: unknown }).banners)
+  ) {
+    return (storefront as { banners: unknown[] }).banners.length;
+  }
+  return 0;
+}
+
+function hasValidAddress(m: MinimalMerchant): boolean {
+  if (!Array.isArray(m.addresses) || m.addresses.length === 0) return false;
+  const a = m.addresses[0];
+  return (
+    hasNonEmptyString(a?.street) &&
+    hasNonEmptyString(a?.city) &&
+    hasNonEmptyString(a?.country)
+  );
+}
+
+/** يبني عناصر "معلومات المتجر" */
+function buildStoreInfo(
+  m: MinimalMerchant,
+  skipped: readonly string[],
+): ChecklistItem[] {
+  const slugState = getPublicSlugStatus(m);
+
+  return [
+    {
+      key: CHECK_KEYS.logo,
+      title: 'شعار المتجر',
+      isComplete: hasNonEmptyString(m.logoUrl),
+      isSkipped: skipped.includes(CHECK_KEYS.logo),
+      message: hasNonEmptyString(m.logoUrl) ? undefined : 'ارفع شعار المتجر',
+      actionPath: ACTION_PATHS.merchantInfo,
+      skippable: true,
+    },
+    {
+      key: CHECK_KEYS.address,
+      title: 'عنوان المتجر',
+      isComplete: hasValidAddress(m),
+      isSkipped: skipped.includes(CHECK_KEYS.address),
+      message: 'اكمل حقول العنوان (الشارع، المدينة، الدولة)',
+      actionPath: ACTION_PATHS.merchantInfo,
+      skippable: true,
+    },
+    {
+      key: CHECK_KEYS.publicSlug,
+      title: 'السلاج الموحّد (الرابط العام)',
+      isComplete: slugState.has && slugState.enabled,
+      isSkipped: skipped.includes(CHECK_KEYS.publicSlug),
+      message: slugState.has
+        ? slugState.enabled
+          ? undefined
+          : 'فعّل الرابط العام للسلاج'
+        : 'عيِّن السلاج العام من "معلومات المتجر"',
+      actionPath: ACTION_PATHS.merchantInfo,
+      skippable: false,
+    },
+  ];
+}
+
+/** يبني عناصر "القنوات" */
+function buildChannels(
+  channels: Pick<CountsAndChannels, 'tgCh' | 'waQrCh' | 'waApiCh' | 'webCh'>,
+  skipped: readonly string[],
+): ChecklistItem[] {
+  const { tgCh, waQrCh, waApiCh, webCh } = channels;
+  return [
+    {
+      key: CHECK_KEYS.channelWhatsappQr,
+      title: 'واتساب (QR / Evolution)',
+      isComplete: isConnected(waQrCh),
+      isSkipped: skipped.includes(CHECK_KEYS.channelWhatsappQr),
+      message: isConnected(waQrCh)
+        ? undefined
+        : 'اربط جلسة Evolution وفعّل الويبهوك',
+      actionPath: ACTION_PATHS.channels,
+      skippable: true,
+    },
+    {
+      key: CHECK_KEYS.channelWhatsappApi,
+      title: 'واتساب الرسمي (Cloud API)',
+      isComplete: isConnected(waApiCh),
+      isSkipped: skipped.includes(CHECK_KEYS.channelWhatsappApi),
+      message: isConnected(waApiCh)
+        ? undefined
+        : 'أدخل بيانات WABA (Access Token / Phone Number ID / App Secret)',
+      actionPath: ACTION_PATHS.channels,
+      skippable: true,
+    },
+    {
+      key: CHECK_KEYS.channelTelegram,
+      title: 'تيليجرام',
+      isComplete: isConnected(tgCh),
+      isSkipped: skipped.includes(CHECK_KEYS.channelTelegram),
+      message: isConnected(tgCh)
+        ? undefined
+        : 'أدخل توكن البوت واضبط Webhook تلقائياً',
+      actionPath: ACTION_PATHS.channels,
+      skippable: true,
+    },
+    {
+      key: CHECK_KEYS.channelWebchat,
+      title: 'الويب شات',
+      isComplete: isConnected(webCh),
+      isSkipped: skipped.includes(CHECK_KEYS.channelWebchat),
+      message: isConnected(webCh)
+        ? undefined
+        : 'فعّل الويب شات واستخرج كود الويدجت',
+      actionPath: ACTION_PATHS.channels,
+      skippable: true,
+    },
+  ];
+}
+
+/** يبني عناصر "إعدادات البرومبت" */
+function buildQuickConfig(
+  m: MinimalMerchant,
+  skipped: readonly string[],
+): ChecklistItem[] {
+  const qc = m.quickConfig ?? {};
+  const dialectCustomized = isNonDefaultString(
+    qc.dialect,
+    QUICK_DEFAULTS.dialect,
+  );
+  const toneCustomized = isNonDefaultString(qc.tone, QUICK_DEFAULTS.tone);
+  const closingCustomized =
+    qc.includeClosingPhrase === false ||
+    isNonDefaultString(qc.closingText, QUICK_DEFAULTS.closingText);
+  const hasCustomInstructions =
+    Array.isArray(qc.customInstructions) &&
+    qc.customInstructions.some((s) => hasNonEmptyString(s));
+
+  return [
+    {
+      key: CHECK_KEYS.quickDialect,
+      title: 'اختيار اللهجة (غير الافتراضي)',
+      isComplete: dialectCustomized,
+      isSkipped: skipped.includes(CHECK_KEYS.quickDialect),
+      message: dialectCustomized
+        ? undefined
+        : `القيمة الافتراضية "${QUICK_DEFAULTS.dialect}" — غيّرها إن أردت`,
+      actionPath: ACTION_PATHS.prompt,
+      skippable: false,
+    },
+    {
+      key: CHECK_KEYS.quickTone,
+      title: 'اختيار الأسلوب (غير الافتراضي)',
+      isComplete: toneCustomized,
+      isSkipped: skipped.includes(CHECK_KEYS.quickTone),
+      message: toneCustomized
+        ? undefined
+        : `القيمة الافتراضية "${QUICK_DEFAULTS.tone}" — غيّرها إن أردت`,
+      actionPath: ACTION_PATHS.prompt,
+      skippable: false,
+    },
+    {
+      key: CHECK_KEYS.quickClosing,
+      title: 'الرسالة الختامية',
+      isComplete: closingCustomized,
+      isSkipped: skipped.includes(CHECK_KEYS.quickClosing),
+      message: closingCustomized
+        ? undefined
+        : 'حرّر نص الرسالة الختامية أو عطّل إضافتها.',
+      actionPath: ACTION_PATHS.prompt,
+      skippable: true,
+    },
+    {
+      key: CHECK_KEYS.quickCustomInstructions,
+      title: 'تعليمات مخصّصة للذكاء الاصطناعي',
+      isComplete: hasCustomInstructions,
+      isSkipped: skipped.includes(CHECK_KEYS.quickCustomInstructions),
+      message: hasCustomInstructions
+        ? undefined
+        : 'أضف تعليمات مخصّصة لتحسين إجابات البوت.',
+      actionPath: ACTION_PATHS.prompt,
+      skippable: true,
+    },
+  ];
+}
+
+/** يبني عناصر "متفرقات" بحسب مصدر المنتجات */
+function buildMisc(
+  m: MinimalMerchant,
+  source: ProductSource,
+  productCount: number,
+  categoryCount: number,
+  storefrontBannersCount: number,
+): ChecklistItem[] {
+  const items: ChecklistItem[] = [];
+
+  if (source === 'internal') {
+    items.push(
+      {
+        key: CHECK_KEYS.categories,
+        title: 'تصنيفات المتجر',
+        isComplete: categoryCount > 0,
+        message: 'حدد تصنيفات المنتجات',
+        actionPath: ACTION_PATHS.category,
+        skippable: true,
+      },
+      {
+        key: CHECK_KEYS.configureProducts,
+        title: 'اضافة منتجات',
+        isComplete: productCount > 0,
+        message: productCount > 0 ? undefined : 'أضف منتجًا واحدًا على الأقل',
+        actionPath: ACTION_PATHS.createProduct,
+        skippable: false,
+      },
+      {
+        key: CHECK_KEYS.banners,
+        title: 'البانرات',
+        isComplete: storefrontBannersCount > 0,
+        message: 'أضف بانرات لمتجرك',
+        actionPath: ACTION_PATHS.banners,
+        skippable: true,
+      },
+    );
+  } else {
+    items.push({
+      key: CHECK_KEYS.syncExternal,
+      title: 'مزامنة المنتجات الخارجية',
+      isComplete: productCount > 0,
+      message: productCount > 0 ? undefined : 'قم بمزامنة المنتجات من المزوّد',
+      actionPath: ACTION_PATHS.sync,
+      skippable: true,
+    });
+  }
+
+  items.push(
+    {
+      key: CHECK_KEYS.workingHours,
+      title: 'مواعيد العمل',
+      isComplete:
+        Array.isArray(m.workingHours) &&
+        m.workingHours.every(
+          (w) =>
+            hasNonEmptyString(w?.openTime) && hasNonEmptyString(w?.closeTime),
+        ),
+      message: 'اضبط مواعيد عمل المتجر',
+      actionPath: ACTION_PATHS.merchantInfo,
+      skippable: true,
+    },
+    {
+      key: CHECK_KEYS.returnPolicy,
+      title: 'سياسة الاسترجاع',
+      isComplete: hasNonEmptyString(m.returnPolicy),
+      message: 'أضف سياسة الاسترجاع',
+      actionPath: ACTION_PATHS.merchantInfo,
+      skippable: true,
+    },
+    {
+      key: CHECK_KEYS.exchangePolicy,
+      title: 'سياسة الاستبدال',
+      isComplete: hasNonEmptyString(m.exchangePolicy),
+      message: 'أضف سياسة الاستبدال',
+      actionPath: ACTION_PATHS.merchantInfo,
+      skippable: true,
+    },
+    {
+      key: CHECK_KEYS.shippingPolicy,
+      title: 'سياسة الشحن',
+      isComplete: hasNonEmptyString(m.shippingPolicy),
+      message: 'أضف سياسة الشحن',
+      actionPath: ACTION_PATHS.merchantInfoShipping,
+      skippable: true,
+    },
+  );
+
+  return items;
+}
+
+/** يجلب العدادات والقنوات بشكل متوازي */
+async function fetchCountsAndChannels(
+  repo: MerchantChecklistRepository,
+  merchantId: string,
+): Promise<CountsAndChannels> {
+  const [productCount, categoryCount, tgCh, waQrCh, waApiCh, webCh] =
+    await Promise.all([
+      repo.countProducts(merchantId),
+      repo.countCategories(merchantId),
+      repo.getDefaultOrEnabledOrAnyChannel(
+        merchantId,
+        ChannelProvider.TELEGRAM,
+      ),
+      repo.getDefaultOrEnabledOrAnyChannel(
+        merchantId,
+        ChannelProvider.WHATSAPP_QR,
+      ),
+      repo.getDefaultOrEnabledOrAnyChannel(
+        merchantId,
+        ChannelProvider.WHATSAPP_CLOUD,
+      ),
+      repo.getDefaultOrEnabledOrAnyChannel(merchantId, ChannelProvider.WEBCHAT),
+    ]);
+
+  return { productCount, categoryCount, tgCh, waQrCh, waApiCh, webCh };
+}
 
 @Injectable()
 export class MerchantChecklistService {
   constructor(
     private readonly storefrontService: StorefrontService,
-    // ✅ الاعتماد على الريبو بدل InjectModel
     @Inject('MerchantChecklistRepository')
     private readonly repo: MerchantChecklistRepository,
   ) {}
 
-  private readonly quickDefaults = {
-    dialect: 'خليجي',
-    tone: 'ودّي',
-    includeClosingPhrase: true,
-    closingText: 'هل أقدر أساعدك بشي ثاني؟ 😊',
-  };
-
-  private isNonDefaultString(v?: string, def?: string) {
-    const a = (v || '').trim();
-    const b = (def || '').trim();
-    return a.length > 0 && a !== b;
-  }
-
-  private inferSource(m: any): 'internal' | 'salla' | 'zid' {
-    const sallaActive = !!m?.productSourceConfig?.salla?.active;
-    const zidActive = !!m?.productSourceConfig?.zid?.active;
-    if (zidActive) return 'zid';
-    if (sallaActive) return 'salla';
-    return 'internal';
-  }
-
-  private isConnected(c?: Pick<ChannelDocument, 'enabled' | 'status'> | null) {
-    if (!c) return false;
-    return !!c.enabled && c.status === ChannelStatus.CONNECTED;
-  }
-
-  private getPublicSlugStatus(m: any) {
-    const slug = (m?.publicSlug || '').trim();
-    const enabled = m?.publicSlugEnabled !== false;
-    const has = slug.length >= 3;
-    return { slug, has, enabled };
-  }
-
+  /** يُرجع مجموعات قائمة التحقق للمتجر المحدّد. */
   async getChecklist(merchantId: string): Promise<ChecklistGroup[]> {
     const m = await this.repo.findMerchantLean(merchantId);
     if (!m) return [];
 
-    const source = this.inferSource(m);
-    const skipped: string[] = Array.isArray((m as any).skippedChecklistItems)
-      ? (m as any).skippedChecklistItems
+    const merchant: MinimalMerchant = m;
+    const source = inferSource(merchant);
+    const skipped: readonly string[] = Array.isArray(
+      merchant.skippedChecklistItems,
+    )
+      ? merchant.skippedChecklistItems
       : [];
 
-    const storefront = await this.storefrontService.findByMerchant(merchantId);
-
-    const [productCount, categoryCount, tgCh, waQrCh, waApiCh, webCh] =
-      await Promise.all([
-        this.repo.countProducts(merchantId),
-        this.repo.countCategories(merchantId),
-        this.repo.getDefaultOrEnabledOrAnyChannel(
-          merchantId,
-          ChannelProvider.TELEGRAM,
-        ),
-        this.repo.getDefaultOrEnabledOrAnyChannel(
-          merchantId,
-          ChannelProvider.WHATSAPP_QR,
-        ),
-        this.repo.getDefaultOrEnabledOrAnyChannel(
-          merchantId,
-          ChannelProvider.WHATSAPP_CLOUD,
-        ),
-        this.repo.getDefaultOrEnabledOrAnyChannel(
-          merchantId,
-          ChannelProvider.WEBCHAT,
-        ),
-      ]);
-
-    const slugState = this.getPublicSlugStatus(m);
-
-    // 1) معلومات المتجر
-    const storeInfo: ChecklistItem[] = [
-      {
-        key: 'logo',
-        title: 'شعار المتجر',
-        isComplete: !!(m as any).logoUrl,
-        isSkipped: skipped.includes('logo'),
-        message: (m as any).logoUrl ? undefined : 'ارفع شعار المتجر',
-        actionPath: '/dashboard/marchinfo',
-        skippable: true,
-      },
-      {
-        key: 'address',
-        title: 'عنوان المتجر',
-        isComplete:
-          !!(m as any).addresses?.length &&
-          !!(m as any).addresses[0]?.street &&
-          !!(m as any).addresses[0]?.city &&
-          !!(m as any).addresses[0]?.country,
-        isSkipped: skipped.includes('address'),
-        message: 'اكمل حقول العنوان (الشارع، المدينة، الدولة)',
-        actionPath: '/dashboard/marchinfo',
-        skippable: true,
-      },
-      {
-        key: 'publicSlug',
-        title: 'السلاج الموحّد (الرابط العام)',
-        isComplete: slugState.has && slugState.enabled,
-        isSkipped: skipped.includes('publicSlug'),
-        message: slugState.has
-          ? slugState.enabled
-            ? undefined
-            : 'فعّل الرابط العام للسلاج'
-          : 'عيِّن السلاج العام من "معلومات المتجر"',
-        actionPath: '/dashboard/marchinfo',
-        skippable: false,
-      },
-    ];
-
-    // 2) قنوات التواصل
-    const channels: ChecklistItem[] = [
-      {
-        key: 'channel_whatsapp_qr',
-        title: 'واتساب (QR / Evolution)',
-        isComplete: this.isConnected(waQrCh || undefined),
-        isSkipped: skipped.includes('channel_whatsapp_qr'),
-        message: this.isConnected(waQrCh || undefined)
-          ? undefined
-          : 'اربط جلسة Evolution وفعّل الويبهوك',
-        actionPath: '/dashboard/channels',
-        skippable: true,
-      },
-      {
-        key: 'channel_whatsapp_api',
-        title: 'واتساب الرسمي (Cloud API)',
-        isComplete: this.isConnected(waApiCh || undefined),
-        isSkipped: skipped.includes('channel_whatsapp_api'),
-        message: this.isConnected(waApiCh || undefined)
-          ? undefined
-          : 'أدخل بيانات WABA (Access Token / Phone Number ID / App Secret)',
-        actionPath: '/dashboard/channels',
-        skippable: true,
-      },
-      {
-        key: 'channel_telegram',
-        title: 'تيليجرام',
-        isComplete: this.isConnected(tgCh || undefined),
-        isSkipped: skipped.includes('channel_telegram'),
-        message: this.isConnected(tgCh || undefined)
-          ? undefined
-          : 'أدخل توكن البوت واضبط Webhook تلقائياً',
-        actionPath: '/dashboard/channels',
-        skippable: true,
-      },
-      {
-        key: 'channel_webchat',
-        title: 'الويب شات',
-        isComplete: this.isConnected(webCh || undefined),
-        isSkipped: skipped.includes('channel_webchat'),
-        message: this.isConnected(webCh || undefined)
-          ? undefined
-          : 'فعّل الويب شات واستخرج كود الويدجت',
-        actionPath: '/dashboard/channels',
-        skippable: true,
-      },
-    ];
-
-    // 3) إعدادات البرومبت
-    const qc = (m as any).quickConfig || {};
-    const dialectCustomized = this.isNonDefaultString(
-      qc.dialect,
-      this.quickDefaults.dialect,
+    const storefront = (await this.storefrontService.findByMerchant(
+      merchantId,
+    )) as unknown;
+    const countsAndChannels: CountsAndChannels = await fetchCountsAndChannels(
+      this.repo,
+      merchantId,
     );
-    const toneCustomized = this.isNonDefaultString(
-      qc.tone,
-      this.quickDefaults.tone,
-    );
-    const closingCustomized =
-      qc.includeClosingPhrase === false ||
-      this.isNonDefaultString(qc.closingText, this.quickDefaults.closingText);
-    const hasCustomInstructions =
-      Array.isArray(qc.customInstructions) &&
-      qc.customInstructions.some((s: string) => (s || '').trim().length > 0);
+    const { productCount, categoryCount, tgCh, waQrCh, waApiCh, webCh } =
+      countsAndChannels;
 
-    const quickConfig: ChecklistItem[] = [
-      {
-        key: 'quickConfig_dialect',
-        title: 'اختيار اللهجة (غير الافتراضي)',
-        isComplete: dialectCustomized,
-        isSkipped: skipped.includes('quickConfig_dialect'),
-        message: dialectCustomized
-          ? undefined
-          : `القيمة الافتراضية "${this.quickDefaults.dialect}" — غيّرها إن أردت`,
-        actionPath: '/dashboard/prompt',
-        skippable: false,
-      },
-      {
-        key: 'quickConfig_tone',
-        title: 'اختيار الأسلوب (غير الافتراضي)',
-        isComplete: toneCustomized,
-        isSkipped: skipped.includes('quickConfig_tone'),
-        message: toneCustomized
-          ? undefined
-          : `القيمة الافتراضية "${this.quickDefaults.tone}" — غيّرها إن أردت`,
-        actionPath: '/dashboard/prompt',
-        skippable: false,
-      },
-      {
-        key: 'quickConfig_closing',
-        title: 'الرسالة الختامية',
-        isComplete: closingCustomized,
-        isSkipped: skipped.includes('quickConfig_closing'),
-        message: closingCustomized
-          ? undefined
-          : 'حرّر نص الرسالة الختامية أو عطّل إضافتها.',
-        actionPath: '/dashboard/prompt',
-        skippable: true,
-      },
-      {
-        key: 'quickConfig_customInstructions',
-        title: 'تعليمات مخصّصة للذكاء الاصطناعي',
-        isComplete: hasCustomInstructions,
-        isSkipped: skipped.includes('quickConfig_customInstructions'),
-        message: hasCustomInstructions
-          ? undefined
-          : 'أضف تعليمات مخصّصة لتحسين إجابات البوت.',
-        actionPath: '/dashboard/prompt',
-        skippable: true,
-      },
-    ];
-
-    // 4) متفرقات
-    const misc: ChecklistItem[] = [];
-
-    if (source === 'internal') {
-      // للداخلية: نستخدم إحصاءات الكاتيجوري والمنتجات
-      misc.push(
-        {
-          key: 'categories',
-          title: 'تصنيفات المتجر',
-          isComplete: categoryCount > 0,
-          message: 'حدد تصنيفات المنتجات',
-          actionPath: '/dashboard/category',
-          skippable: true,
-        },
-        {
-          key: 'configureProducts',
-          title: 'اضافة منتجات',
-          isComplete: productCount > 0,
-          message: productCount > 0 ? undefined : 'أضف منتجًا واحدًا على الأقل',
-          actionPath: '/dashboard/products/new',
-          skippable: false,
-        },
-        {
-          key: 'banners',
-          title: 'البانرات',
-          isComplete: !!storefront?.banners?.length,
-          message: 'أضف بانرات لمتجرك',
-          actionPath: '/dashboard/banners',
-          skippable: true,
-        },
-      );
-    } else {
-      misc.push({
-        key: 'syncExternal',
-        title: 'مزامنة المنتجات الخارجية',
-        isComplete: productCount > 0,
-        message:
-          productCount > 0 ? undefined : 'قم بمزامنة المنتجات من المزوّد',
-        actionPath: '/onboarding/sync',
-        skippable: true,
-      });
-    }
-
-    misc.push(
-      {
-        key: 'workingHours',
-        title: 'مواعيد العمل',
-        isComplete:
-          Array.isArray((m as any).workingHours) &&
-          (m as any).workingHours.every((w: any) => w.openTime && w.closeTime),
-        message: 'اضبط مواعيد عمل المتجر',
-        actionPath: '/dashboard/marchinfo',
-        skippable: true,
-      },
-      {
-        key: 'returnPolicy',
-        title: 'سياسة الاسترجاع',
-        isComplete:
-          !!(m as any).returnPolicy &&
-          (m as any).returnPolicy.trim().length > 0,
-        message: 'أضف سياسة الاسترجاع',
-        actionPath: '/dashboard/marchinfo',
-        skippable: true,
-      },
-      {
-        key: 'exchangePolicy',
-        title: 'سياسة الاستبدال',
-        isComplete:
-          !!(m as any).exchangePolicy &&
-          (m as any).exchangePolicy.trim().length > 0,
-        message: 'أضف سياسة الاستبدال',
-        actionPath: '/dashboard/marchinfo',
-        skippable: true,
-      },
-      {
-        key: 'shippingPolicy',
-        title: 'سياسة الشحن',
-        isComplete:
-          !!(m as any).shippingPolicy &&
-          (m as any).shippingPolicy.trim().length > 0,
-        message: 'أضف سياسة الشحن',
-        actionPath: '/dashboard/marchinfos', // كما كان لديك
-        skippable: true,
-      },
+    const storeInfo = buildStoreInfo(merchant, skipped);
+    const channels = buildChannels({ tgCh, waQrCh, waApiCh, webCh }, skipped);
+    const quickConfig = buildQuickConfig(merchant, skipped);
+    const misc = buildMisc(
+      merchant,
+      source,
+      productCount,
+      categoryCount,
+      getStorefrontBannersCount(storefront),
     );
 
-    const groups: ChecklistGroup[] = [
+    return [
       { key: 'storeInfo', title: 'معلومات المتجر', items: storeInfo },
       { key: 'channels', title: 'قنوات التواصل', items: channels },
       { key: 'quickConfig', title: 'إعدادات البرومبت', items: quickConfig },
       { key: 'misc', title: 'متفرقات', items: misc },
     ];
-
-    return groups;
   }
 }

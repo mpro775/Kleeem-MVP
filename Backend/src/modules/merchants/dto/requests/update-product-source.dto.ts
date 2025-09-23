@@ -23,7 +23,8 @@ export class UpdateProductSourceDto {
 
   // اطلب كلمة المرور فقط إذا نغيّر لمصدر خارجي أو نريد مزامنة فورية
   @ValidateIf(
-    (o) => o.source !== ProductSource.INTERNAL || o.syncMode === 'immediate',
+    (o: UpdateProductSourceDto) =>
+      o.source !== ProductSource.INTERNAL || o.syncMode === 'immediate',
   )
   @IsString()
   @MinLength(6)

@@ -57,7 +57,7 @@ export class DocumentsService {
       // 3) إضافة مهمة للمعالجة
       await this.queue.add('process', { docId: String(doc._id), merchantId });
 
-      return doc.toObject() as any;
+      return doc.toObject() as unknown as DocumentSchemaClass;
     } catch (error) {
       this.logger.error('فشل رفع الملف إلى MinIO', error);
       throw error;
@@ -72,11 +72,11 @@ export class DocumentsService {
     }
   }
 
-  async list(merchantId: string) {
+  async list(merchantId: string): Promise<unknown[]> {
     return this.repo.listByMerchant(merchantId);
   }
 
-  async getPresignedUrl(merchantId: string, docId: string) {
+  async getPresignedUrl(merchantId: string, docId: string): Promise<string> {
     const doc = await this.repo.findByIdForMerchant(docId, merchantId);
     if (!doc) throw new NotFoundException('Document not found');
 
@@ -90,7 +90,7 @@ export class DocumentsService {
     );
   }
 
-  async delete(merchantId: string, docId: string) {
+  async delete(merchantId: string, docId: string): Promise<void> {
     const doc = await this.repo.findByIdForMerchant(docId, merchantId);
     if (!doc) throw new NotFoundException('Document not found');
 

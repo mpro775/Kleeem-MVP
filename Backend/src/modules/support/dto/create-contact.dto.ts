@@ -3,13 +3,13 @@ import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsIn,
-  IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
 } from 'class-validator';
 
+import { MAX_MESSAGE_LENGTH } from '../support.constants';
 import { CONTACT_TOPIC_VALUES, ContactTopic } from '../support.enums';
 
 export class CreateContactDto {
@@ -26,7 +26,7 @@ export class CreateContactDto {
 
   // حوّل الإدخال إلى lowercase أولًا ثم تحقق ضمن القائمة
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.toLowerCase() : value,
+    typeof value === 'string' ? value.toLowerCase() : (value as string),
   )
   @IsIn(CONTACT_TOPIC_VALUES, {
     message:
@@ -41,7 +41,7 @@ export class CreateContactDto {
 
   @IsString()
   @MinLength(20)
-  @MaxLength(5000)
+  @MaxLength(MAX_MESSAGE_LENGTH)
   message!: string;
 
   @IsOptional()

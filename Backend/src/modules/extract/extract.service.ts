@@ -10,6 +10,7 @@ export type ExtractResult = {
   price?: number;
   availability?: string;
 };
+const DEFAULT_TIMEOUT = 30_000;
 
 // واجهة تصف شكل الاستجابة من خدمة Python
 interface ExtractApiResponse {
@@ -19,7 +20,6 @@ interface ExtractApiResponse {
 @Injectable()
 export class ExtractService {
   private readonly logger = new Logger(ExtractService.name);
-
   constructor(private readonly http: HttpService) {}
 
   async extractFromUrl(url: string): Promise<ExtractResult> {
@@ -30,12 +30,16 @@ export class ExtractService {
       const resp: AxiosResponse<ExtractApiResponse> = await firstValueFrom(
         this.http.get<ExtractApiResponse>(`${base}/extract/`, {
           params: { url },
-          timeout: 10000,
+          timeout: DEFAULT_TIMEOUT,
         }),
       );
       return resp.data?.data || {};
-    } catch (err: any) {
-      this.logger.error(`Extract failed for ${url}: ${err.message}`);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        this.logger.error(`Extract failed for ${url}: ${err.message}`);
+      } else {
+        this.logger.error(`Extract failed for ${url}: ${String(err)}`);
+      }
       return {};
     }
   }

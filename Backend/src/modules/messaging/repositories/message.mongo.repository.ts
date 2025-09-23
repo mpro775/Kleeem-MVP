@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ClientSession, Model, Types } from 'mongoose';
+import {
+  ClientSession,
+  Model,
+  RootFilterQuery,
+  Types,
+  UpdateQuery,
+} from 'mongoose';
 
 import {
   MessageSession,
@@ -87,7 +93,9 @@ export class MessageMongoRepository implements MessageRepository {
     if (!w) return null;
     return this.model
       .findOne({
-        merchantId: new Types.ObjectId(String((w as any).merchantId)),
+        merchantId: new Types.ObjectId(
+          String((w as unknown as { merchantId: string }).merchantId),
+        ),
         sessionId,
         channel,
       })
@@ -103,12 +111,12 @@ export class MessageMongoRepository implements MessageRepository {
     feedback?: string;
     merchantId?: string;
   }): Promise<boolean> {
-    const filter: any = {
+    const filter: RootFilterQuery<MessageSessionDocument> = {
       sessionId: params.sessionId,
       'messages._id': new Types.ObjectId(params.messageId),
     };
 
-    const $set: any = {
+    const $set: Record<string, unknown> = {
       'messages.$.rating': params.rating,
       'messages.$.feedback': params.feedback ?? null,
       'messages.$.ratedBy': new Types.ObjectId(params.userId),
@@ -168,7 +176,9 @@ export class MessageMongoRepository implements MessageRepository {
   ): Promise<MessageSessionEntity | null> {
     if (!Types.ObjectId.isValid(id)) return null;
     return this.model
-      .findByIdAndUpdate(id, patch as any, { new: true })
+      .findByIdAndUpdate(id, patch as unknown as UpdateQuery<MessageSession>, {
+        new: true,
+      })
       .lean<MessageSessionEntity>()
       .exec();
   }
@@ -200,11 +210,13 @@ export class MessageMongoRepository implements MessageRepository {
       { $sort: { count: -1 } },
       { $limit: limit },
     ]);
-    return agg.map((item: any) => ({
-      text: item._id,
-      count: item.count,
-      feedbacks: (item.feedbacks || []).filter(Boolean),
-    }));
+    return agg.map(
+      (item: { _id: string; count: number; feedbacks: string[] }) => ({
+        text: item._id,
+        count: item.count,
+        feedbacks: (item.feedbacks || []).filter(Boolean),
+      }),
+    );
   }
 
   async findAll(filters: {
@@ -213,7 +225,7 @@ export class MessageMongoRepository implements MessageRepository {
     limit: number;
     page: number;
   }): Promise<{ data: MessageSessionEntity[]; total: number }> {
-    const query: any = {};
+    const query: RootFilterQuery<MessageSessionDocument> = {};
     if (filters.merchantId)
       query.merchantId = new Types.ObjectId(filters.merchantId);
     if (filters.channel) query.channel = filters.channel;

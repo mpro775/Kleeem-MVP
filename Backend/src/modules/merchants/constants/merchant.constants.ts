@@ -9,6 +9,24 @@ export const MERCHANT_STATUS = {
   ONBOARDING: 'onboarding',
 } as const;
 
+/**
+ * Policy Lengths
+ */
+export const MAX_RETURN_POLICY_LENGTH = 2000;
+export const MAX_EXCHANGE_POLICY_LENGTH = 2000;
+export const MAX_SHIPPING_POLICY_LENGTH = 2000;
+export const MAX_DESCRIPTION_LENGTH = 1000;
+export const MAX_POSTAL_CODE_LENGTH = 20;
+export const MIN_POSTAL_CODE_LENGTH = 4;
+export const BASE_36 = 36;
+export const SLUG_SUFFIX_LENGTH = 6;
+
+/**
+ * Size Constants
+ */
+export const BYTES_PER_KB = 1024;
+export const BYTES_PER_MB = BYTES_PER_KB * BYTES_PER_KB;
+
 export type MerchantStatus =
   (typeof MERCHANT_STATUS)[keyof typeof MERCHANT_STATUS];
 
@@ -76,7 +94,7 @@ export type WorkingDay = (typeof WORKING_DAYS)[keyof typeof WORKING_DAYS];
  */
 export const MERCHANT_DEFAULTS = {
   LOGO_UPLOAD_PATH: './uploads/merchants/logos',
-  MAX_LOGO_SIZE: 5 * 1024 * 1024, // 5MB
+  MAX_LOGO_SIZE: 5 * BYTES_PER_MB, // 5MB
   ALLOWED_LOGO_TYPES: ['image/jpeg', 'image/png', 'image/gif'],
   DEFAULT_CURRENCY: 'SAR',
   DEFAULT_LANGUAGE: 'ar',
@@ -84,14 +102,19 @@ export const MERCHANT_DEFAULTS = {
 } as const;
 
 /**
+ * Slug Lengths
+ */
+export const MAX_SLUG_LENGTH = 50;
+
+/**
  * Validation Limits
  */
 export const MERCHANT_LIMITS = {
   NAME_MIN_LENGTH: 2,
   NAME_MAX_LENGTH: 100,
-  DESCRIPTION_MAX_LENGTH: 500,
+  DESCRIPTION_MAX_LENGTH: MAX_DESCRIPTION_LENGTH,
   SLUG_MIN_LENGTH: 3,
-  SLUG_MAX_LENGTH: 50,
+  SLUG_MAX_LENGTH: MAX_SLUG_LENGTH,
   PHONE_MIN_LENGTH: 10,
   PHONE_MAX_LENGTH: 15,
 } as const;

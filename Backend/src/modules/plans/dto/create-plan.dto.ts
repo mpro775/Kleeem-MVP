@@ -16,7 +16,7 @@ export class CreatePlanDto {
   @IsString()
   @IsNotEmpty()
   name: string;
-  @ApiProperty({ example: 2900, description: 'السعر بالسنتات' })
+  @ApiProperty({ example: 100, description: 'السعر بالسنتات' })
   @IsNumber()
   @Min(0)
   priceCents: number;
@@ -26,7 +26,7 @@ export class CreatePlanDto {
   currency: string;
   @ApiProperty({ example: 30 }) @IsNumber() @Min(1) durationDays: number;
 
-  @ApiPropertyOptional({ example: 3000 })
+  @ApiPropertyOptional({ example: 100 })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -55,7 +55,7 @@ export class CreatePlanDto {
   @IsOptional()
   @IsIn(['monthly', 'annual'])
   billingPeriod?: 'monthly' | 'annual';
-  @ApiPropertyOptional({ example: 14 })
+  @ApiPropertyOptional({ example: 5 })
   @IsOptional()
   @IsNumber()
   @Min(0)

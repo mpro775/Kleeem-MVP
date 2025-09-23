@@ -38,13 +38,13 @@ export class SemanticRequestDto {
     example: 5,
     default: 5,
     minimum: 1,
-    maximum: 50,
+    maximum: 10,
   })
   @IsOptional()
   @Type(() => Number)
   @IsNumber({}, { message: 'يجب أن يكون عدد النتائج رقمًا' })
   @IsInt({ message: 'يجب أن يكون عدد النتائج عددًا صحيحًا' })
   @Min(1, { message: 'يجب أن يكون عدد النتائج على الأقل 1' })
-  @Max(50, { message: 'لا يمكن تجاوز 50 نتيجة في الطلب الواحد' })
+  @Max(10, { message: 'لا يمكن تجاوز 10 نتيجة في الطلب الواحد' })
   topK?: number = 5;
 }

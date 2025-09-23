@@ -20,14 +20,26 @@ export class LeadsService {
     private readonly leadsRepo: LeadRepository,
   ) {}
 
-  async create(merchantId: string, dto: CreateLeadDto): Promise<Lead> {
-    const phone =
-      dto.data?.phone ??
-      dto.data?.mobile ??
-      dto.data?.phoneNumber ??
-      dto.data?.whatsapp;
+  private extractPhone(dto: CreateLeadDto): string | undefined {
+    return (
+      (dto.data?.phone as string) ??
+      (dto.data?.mobile as string) ??
+      (dto.data?.phoneNumber as string) ??
+      (dto.data?.whatsapp as string)
+    );
+  }
 
-    const name = dto.data?.name ?? dto.data?.fullName ?? dto.data?.customerName;
+  private extractName(dto: CreateLeadDto): string | undefined {
+    return (
+      (dto.data?.name as string) ??
+      (dto.data?.fullName as string) ??
+      (dto.data?.customerName as string)
+    );
+  }
+
+  async create(merchantId: string, dto: CreateLeadDto): Promise<Lead> {
+    const phone = this.extractPhone(dto);
+    const name = this.extractName(dto);
 
     const created = await this.leadsRepo.create({
       merchantId,

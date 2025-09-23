@@ -75,7 +75,6 @@ interface OutgoingMessage {
   text: string;
   role: 'user' | 'agent' | 'system';
   merchantId?: string;
-  [k: string]: unknown;
 }
 
 // ========== Type guards & utils ==========

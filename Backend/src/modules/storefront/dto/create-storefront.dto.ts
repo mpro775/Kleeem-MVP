@@ -139,7 +139,7 @@ export class CreateStorefrontDto {
   @IsOptional()
   @IsString({ message: 'يجب أن يكون اللون الداكن نصيًا' })
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.toUpperCase() : value,
+    typeof value === 'string' ? value.toUpperCase() : (value as string),
   )
   @Matches(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, {
     message: 'لون HEX غير صالح',

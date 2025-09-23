@@ -39,11 +39,10 @@ export enum UserRole {
   versionKey: false, // يغنيك عن delete ret.__v
   toJSON: {
     virtuals: true,
-    transform(_doc, ret: any) {
-      // 👈 هنا
-      ret.id = ret._id?.toString();
+    transform(_doc, ret: Record<string, unknown>) {
+      ret.id = (ret._id as { toString(): string })?.toString();
       delete ret._id;
-      delete ret.password; // لو موجودة (select:false غالبًا غير موجودة)
+      delete ret.password;
       return ret;
     },
   },
@@ -189,7 +188,10 @@ UserSchema.pre('save', async function (next) {
 });
 
 // مقارنة كلمة المرور (للاستخدام في خدمة auth)
-UserSchema.methods.comparePassword = function (candidate: string) {
+UserSchema.methods.comparePassword = function (
+  this: UserDocument,
+  candidate: string,
+) {
   // ملاحظة: بما أن password عليه select:false، عند الاستعلام استخدم .select('+password')
   return bcrypt.compare(candidate, this.password);
 };

@@ -9,6 +9,7 @@ export const MAX_HTTP_BUFFER_SIZE = 1e6;
 export const MS_PER_SECOND = 1000;
 // Sentry configuration constants
 export const SENTRY_PRODUCTION_SAMPLE_RATE = 0.1; // 10% sampling in production
+export const MAX_LENGTH_FEEDBACK = 1000;
 
 // Default value constants
 export const RABBIT_CONFIRM_TIMEOUT_MS_DEFAULT = 10000; // 10 seconds
@@ -47,3 +48,4 @@ export const VERIFICATION_CODE_LENGTH = 6;
 export const ONE_MINUTE_MS = 60 * MS_PER_SECOND;
 export const RESEND_VERIFICATION_WINDOW_MS = ONE_MINUTE_MS;
 export const PASSWORD_RESET_WINDOW_MS = ONE_MINUTE_MS;
+export const HOUR_IN_SECONDS = 3600;

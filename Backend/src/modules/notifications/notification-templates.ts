@@ -8,7 +8,10 @@ export type TemplateKey =
   | 'embeddings.batch.completed'
   | 'missingResponses.stats';
 
-export function buildNotification(key: TemplateKey, p: any = {}) {
+export function buildNotification(key: TemplateKey): {
+  title: string;
+  body: string;
+} {
   switch (key) {
     case 'faq.updated':
       return {

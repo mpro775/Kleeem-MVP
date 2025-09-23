@@ -19,8 +19,7 @@ import {
   ApiParam,
   ApiBody,
 } from '@nestjs/swagger';
-
-
+import { AxiosError } from 'axios';
 import { Model } from 'mongoose';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
@@ -73,12 +72,7 @@ export class N8nWorkflowController {
   async createForMerchant(
     @Param('merchantId') merchantId: string,
   ): Promise<{ workflowId: string }> {
-    console.log('🔗 Using n8n.baseURL=', process.env.N8N_BASE_URL);
-    console.log('🔑 Using N8N_API_KEY=', process.env.N8N_API_KEY);
-
-    console.log('👣 ENTER createForMerchant for merchantId=', merchantId);
     const wfId = await this.service.createForMerchant(merchantId);
-    console.log('👣 EXIT createForMerchant, got wfId=', wfId);
     return { workflowId: wfId };
   }
 
@@ -273,56 +267,76 @@ export class N8nWorkflowController {
     description: 'تم التأكيد/الإنشاء',
     type: Object,
   })
-  async ensureMine(
-    @Req() req: any,
-    @Body() dto: EnsureMyWorkflowDto,
-  ): Promise<{ workflowId: string; recreated: boolean; activated: boolean }> {
+  private validateUserAccess(req: {
+    user?: { userId: string; merchantId: string };
+  }): { userId: string; merchantId: string } {
     const userId = req.user?.userId;
-    const merchantId = req.user?.merchantId; // يأتي من الـ JWT payload عندكم
+    const merchantId = req.user?.merchantId;
     if (!userId) throw new BadRequestException('Unauthorized');
     if (!merchantId)
       throw new BadRequestException('لا يوجد Merchant مرتبط بحسابك');
+    return { userId, merchantId };
+  }
 
-    // اجلب الـ workflowId الحالي (إن وجد)
+  private async getExistingWorkflowId(merchantId: string): Promise<string> {
     const m = await this.merchantModel
       .findById(merchantId)
       .select('workflowId')
       .lean<{ _id: string; workflowId?: string }>()
       .exec();
+    return m?.workflowId ? String(m.workflowId) : '';
+  }
 
-    let wfId = m?.workflowId ? String(m.workflowId) : '';
+  private async ensureWorkflowExists(
+    wfId: string,
+    merchantId: string,
+  ): Promise<{ workflowId: string; recreated: boolean }> {
+    try {
+      await this.service.get(wfId);
+      return { workflowId: wfId, recreated: false };
+    } catch (e: unknown) {
+      const axiosError = e as AxiosError;
+      if (axiosError?.status === 404 || axiosError?.response?.status === 404) {
+        const newWfId = await this.service.createForMerchant(merchantId);
+        return { workflowId: newWfId, recreated: true };
+      }
+      throw e;
+    }
+  }
+
+  private async handleWorkflowActivation(
+    wfId: string,
+    shouldActivate: boolean,
+  ): Promise<boolean> {
+    if (!shouldActivate) return false;
+    try {
+      await this.service.setActive(wfId, true);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async ensureMine(
+    @Req() req: { user?: { userId: string; merchantId: string } },
+    @Body() dto: EnsureMyWorkflowDto,
+  ): Promise<{ workflowId: string; recreated: boolean; activated: boolean }> {
+    const { merchantId } = this.validateUserAccess(req);
+
+    let wfId = await this.getExistingWorkflowId(merchantId);
     let recreated = false;
 
-    // لو طلب forceRecreate أو ما عنده workflowId → أنشئ جديد
     if (dto?.forceRecreate || !wfId) {
-      wfId = await this.service.createForMerchant(String(merchantId));
+      wfId = await this.service.createForMerchant(merchantId);
       recreated = true;
     } else {
-      // عنده wfId: نتأكد أنه موجود في n8n
-      try {
-        await this.service.get(wfId);
-      } catch (e: any) {
-        if (e?.status === 404 || e?.response?.status === 404) {
-          // مفقود في n8n → أعد الإنشاء
-          wfId = await this.service.createForMerchant(String(merchantId));
-          recreated = true;
-        } else {
-          throw e; // أخطاء أخرى رجّعها كما هي
-        }
-      }
+      const result = await this.ensureWorkflowExists(wfId, merchantId);
+      wfId = result.workflowId;
+      recreated = result.recreated;
     }
 
-    // التفعيل (افتراضيًا true)
     const shouldActivate = dto?.activate !== false;
-    let activated = false;
-    if (shouldActivate) {
-      try {
-        await this.service.setActive(wfId, true);
-        activated = true;
-      } catch {
-        activated = false; // لا تُفشل الطلب بسبب التفعيل
-      }
-    }
+    const activated = await this.handleWorkflowActivation(wfId, shouldActivate);
 
     return { workflowId: wfId, recreated, activated };
   }

@@ -11,7 +11,7 @@ export interface EmbeddableProduct {
 
   specsBlock?: string[] | string;
   keywords?: string[] | string;
-  attributes?: Record<string, any>;
+  attributes?: Record<string, unknown>;
 
   images?: string[];
   slug?: string | null;
@@ -37,14 +37,14 @@ export interface EmbeddableProduct {
 export type FAQData = {
   question?: string;
   answer?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 export type DocumentData = {
   text?: string;
   documentId?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
-export type WebData = { text?: string; url?: string; [key: string]: any };
+export type WebData = { text?: string; url?: string; [key: string]: unknown };
 export interface SearchResult {
   type: 'faq' | 'document' | 'web';
   score: number;

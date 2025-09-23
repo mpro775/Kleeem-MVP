@@ -1,45 +1,23 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import {
-  Injectable,
-  Inject,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Cache } from 'cache-manager';
-import * as Handlebars from 'handlebars';
 import { Types } from 'mongoose';
-import { I18nService } from 'nestjs-i18n';
 
-import { TranslationService } from '../../common/services/translation.service';
-import { BusinessMetrics } from '../../metrics/business.metrics';
-import { ChatWidgetService } from '../chat/chat-widget.service';
-import { N8nWorkflowService } from '../n8n-workflow/n8n-workflow.service';
-
-import { StorefrontService } from '../storefront/storefront.service';
 import { CreateMerchantDto } from './dto/requests/create-merchant.dto';
-import { MerchantsRepository } from './repositories/merchants.repository';
-import { UpdateMerchantDto } from './dto/requests/update-merchant.dto';
-import { QuickConfigDto } from './dto/requests/quick-config.dto';
 import { OnboardingBasicDto } from './dto/requests/onboarding-basic.dto';
 import { PreviewPromptDto } from './dto/requests/preview-prompt.dto';
+import { QuickConfigDto } from './dto/requests/quick-config.dto';
+import { UpdateMerchantDto } from './dto/requests/update-merchant.dto';
+import { MerchantsRepository } from './repositories/merchants.repository';
+import { MerchantDocument } from './schemas/merchant.schema';
 import { QuickConfig } from './schemas/quick-config.schema';
-import { PromptBuilderService } from './services/prompt-builder.service';
-import { PromptPreviewService } from './services/prompt-preview.service';
-import { PromptVersionService } from './services/prompt-version.service';
-import { MerchantStatusResponse } from './types/types';
-
-
-import { CleanupCoordinatorService } from './cleanup-coordinator.service';
-
-
-import { buildHbsContext, stripGuardSections } from './services/prompt-utils';
-import { MerchantProvisioningService } from './services/merchant-provisioning.service';
 import { MerchantCacheService } from './services/merchant-cache.service';
-import { MerchantPromptService } from './services/merchant-prompt.service';
-import { MerchantProfileService } from './services/merchant-profile.service';
 import { MerchantDeletionService } from './services/merchant-deletion.service';
+import { MerchantProfileService } from './services/merchant-profile.service';
+import { MerchantPromptService } from './services/merchant-prompt.service';
+import { MerchantProvisioningService } from './services/merchant-provisioning.service';
+import { PromptBuilderService } from './services/prompt-builder.service';
+import { MerchantStatusResponse } from './types/types';
 
 @Injectable()
 export class MerchantsService {
@@ -48,17 +26,8 @@ export class MerchantsService {
   constructor(
     @Inject('MerchantsRepository')
     private readonly merchantsRepository: MerchantsRepository,
-    private readonly config: ConfigService,
     private readonly promptBuilder: PromptBuilderService,
-    private readonly versionSvc: PromptVersionService,
-    private readonly storefrontService: StorefrontService,
-    private readonly previewSvc: PromptPreviewService,
-    private readonly cleanupCoordinator: CleanupCoordinatorService,
-    private readonly n8n: N8nWorkflowService,
-    private readonly businessMetrics: BusinessMetrics,
-    private readonly chatWidgetService: ChatWidgetService,
-    private readonly i18n: I18nService,
-    private readonly translationService: TranslationService,
+
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
 
     // ⬇️ جديدة
@@ -69,11 +38,11 @@ export class MerchantsService {
     private readonly deletionSvc: MerchantDeletionService,
   ) {}
 
-  async create(dto: CreateMerchantDto) {
+  async create(dto: CreateMerchantDto): Promise<MerchantDocument> {
     return this.provisioning.create(dto);
   }
 
-  async update(id: string, dto: UpdateMerchantDto) {
+  async update(id: string, dto: UpdateMerchantDto): Promise<MerchantDocument> {
     return this.profileSvc.update(id, dto);
   }
 
@@ -82,19 +51,22 @@ export class MerchantsService {
     await this.cacheSvc.invalidate(merchantId);
   }
 
-  async findAll() {
+  async findAll(): Promise<MerchantDocument[]> {
     return this.merchantsRepository.findAll();
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<MerchantDocument> {
     return this.cacheSvc.findOne(id);
   }
 
-  async saveBasicInfo(merchantId: string, dto: OnboardingBasicDto) {
+  async saveBasicInfo(
+    merchantId: string,
+    dto: OnboardingBasicDto,
+  ): Promise<MerchantDocument> {
     return this.profileSvc.saveBasicInfo(merchantId, dto);
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<{ message: string }> {
     return this.deletionSvc.remove(id);
   }
 
@@ -102,15 +74,21 @@ export class MerchantsService {
     id: string,
     actor: { userId: string; role: string },
     reason?: string,
-  ) {
+  ): Promise<{ message: string; at: Date }> {
     return this.deletionSvc.softDelete(id, actor, reason);
   }
 
-  async restore(id: string, actor: { userId: string; role: string }) {
+  async restore(
+    id: string,
+    actor: { userId: string; role: string },
+  ): Promise<{ message: string }> {
     return this.deletionSvc.restore(id, actor);
   }
 
-  async purge(id: string, actor: { userId: string; role: string }) {
+  async purge(
+    id: string,
+    actor: { userId: string; role: string },
+  ): Promise<{ message: string }> {
     return this.deletionSvc.purge(id, actor);
   }
 
@@ -122,16 +100,20 @@ export class MerchantsService {
     return this.cacheSvc.buildFinalPrompt(id);
   }
 
-  async saveAdvancedVersion(id: string, newTpl: string, note?: string) {
+  async saveAdvancedVersion(
+    id: string,
+    newTpl: string,
+    note?: string,
+  ): Promise<void> {
     await this.promptSvc.saveAdvancedVersion(id, newTpl, note);
     await this.invalidateMerchantCache(id);
   }
 
-  async listAdvancedVersions(id: string) {
+  async listAdvancedVersions(id: string): Promise<unknown> {
     return this.promptSvc.listAdvancedVersions(id);
   }
 
-  async revertAdvancedVersion(id: string, index: number) {
+  async revertAdvancedVersion(id: string, index: number): Promise<void> {
     return this.promptSvc.revertAdvancedVersion(id, index);
   }
 
@@ -166,14 +148,14 @@ export class MerchantsService {
   async getAdvancedTemplateForEditor(
     id: string,
     testVars: Record<string, string> = {},
-  ) {
+  ): Promise<{ template: string; note?: string }> {
     return this.promptSvc.getAdvancedTemplateForEditor(id, testVars);
   }
 
   async ensureForUser(
     userId: Types.ObjectId,
     opts?: { name?: string; slugBase?: string },
-  ) {
+  ): Promise<MerchantDocument> {
     return this.merchantsRepository.ensureForUser(userId, opts);
   }
 
@@ -196,12 +178,15 @@ export class MerchantsService {
   }
 
   // Get store context for AI
-  async getStoreContext(merchantId: string): Promise<any> {
+  async getStoreContext(merchantId: string): Promise<unknown> {
     return this.cacheSvc.getStoreContext(merchantId);
   }
 
   // Set product source for merchant
-  async setProductSource(merchantId: string, source: string): Promise<any> {
+  async setProductSource(
+    merchantId: string,
+    source: 'internal' | 'salla' | 'zid',
+  ): Promise<unknown> {
     return this.profileSvc.setProductSource(merchantId, source);
   }
 }

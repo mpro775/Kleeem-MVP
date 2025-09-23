@@ -22,7 +22,7 @@ export class OffersController {
     @Query('merchantId') merchantId: string,
     @Query('limit') limitRaw?: string,
     @Query('offset') offsetRaw?: string,
-  ) {
+  ): Promise<Record<string, unknown>[]> {
     if (!merchantId) throw new BadRequestException('merchantId is required');
     const limit = Math.min(Math.max(parseInt(limitRaw || '50', 10), 1), 100);
     const offset = Math.max(parseInt(offsetRaw || '0', 10), 0);

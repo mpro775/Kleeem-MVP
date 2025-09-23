@@ -1,5 +1,5 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 
 import { WorkflowDefinition } from '../types';
 
@@ -8,6 +8,8 @@ import {
   WorkflowCreatePayload,
 } from './n8n-client.repository';
 
+const N8N_API_KEY_LENGTH = 4;
+const N8N_TIMEOUT = 5000;
 @Injectable()
 export class N8nAxiosRepository implements N8nClientRepository {
   private api: AxiosInstance;
@@ -22,25 +24,29 @@ export class N8nAxiosRepository implements N8nClientRepository {
 
     this.logger.log(`[n8n.baseURL] = ${baseUrl}`);
     this.logger.log(
-      `[n8n.header]  = ${keyName}: ${apiKey ? apiKey.slice(0, 4) + '***' : 'MISSING'}`,
+      `[n8n.header]  = ${keyName}: ${apiKey ? apiKey.slice(0, N8N_API_KEY_LENGTH) + '***' : 'MISSING'}`,
     );
 
     this.api = axios.create({
       baseURL: `${baseUrl}`,
       headers: { [keyName]: apiKey },
-      timeout: 5000,
+      timeout: N8N_TIMEOUT,
     });
   }
 
-  private wrapError(err: any, action: string): never {
+  private wrapError(err: unknown, action: string): never {
+    const axiosError = err as AxiosError;
     this.logger.error(`n8n API ${action} raw error`, {
-      status: err.response?.status,
-      data: err.response?.data,
-      msg: err.message,
+      status: axiosError.response?.status,
+      data: axiosError.response?.data,
+      msg: axiosError.message,
     });
-    const status = err.response?.status || HttpStatus.INTERNAL_SERVER_ERROR;
+    const status =
+      axiosError.response?.status || HttpStatus.INTERNAL_SERVER_ERROR;
     const message =
-      err.response?.data?.message || err.message || 'Unknown error';
+      (axiosError.response?.data as { message?: string })?.message ||
+      axiosError.message ||
+      'Unknown error';
     throw new HttpException(`n8n API ${action} failed: ${message}`, status);
   }
 
@@ -62,7 +68,7 @@ export class N8nAxiosRepository implements N8nClientRepository {
     }
   }
 
-  async patchWorkflow(id: string, body: any): Promise<void> {
+  async patchWorkflow(id: string, body: unknown): Promise<void> {
     try {
       await this.api.patch(`/workflows/${id}`, body);
     } catch (err) {

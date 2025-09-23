@@ -24,7 +24,7 @@ export interface MerchantsRepository {
     id: string,
     actor: { userId: string; role: string },
     reason?: string,
-  ): Promise<{ message: string; at?: Date }>;
+  ): Promise<{ message: string; at: Date }>;
   restore(
     id: string,
     actor: { userId: string; role: string },

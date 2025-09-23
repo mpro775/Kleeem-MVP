@@ -2,6 +2,8 @@
 // يغطي DocumentProcessor.process: مسار PDF (سعيد) + أخطاء (لا وثيقة / فشل embedding / نوع غير مدعوم)
 // Arrange–Act–Assert
 
+import { readFileSync } from 'fs';
+import { promises as fs } from 'fs';
 import { Readable } from 'stream';
 
 import { faker } from '@faker-js/faker';
@@ -24,8 +26,6 @@ jest.mock('fs', () => ({
     unlink: jest.fn().mockResolvedValue(undefined),
   },
 }));
-import { readFileSync } from 'fs';
-import { promises as fs } from 'fs';
 
 // موك pdf/mammoth/XLSX
 jest.mock('pdf-parse', () => jest.fn());
@@ -84,11 +84,11 @@ describe('DocumentProcessor', () => {
     jest.useRealTimers();
   });
 
-  function buildJob(docId = faker.string.uuid()): Job<any> {
+  function buildJob(docId = faker.string.uuid()): Job<unknown> {
     return {
       id: 'j1',
       data: { docId, merchantId: faker.string.uuid() },
-    } as any;
+    } as unknown as Job<unknown>;
   }
 
   test('مسار PDF سعيد: استخراج → تقسيم → embed → upsert → تحديث الحالة إلى completed وحذف الملف المؤقت', async () => {
@@ -102,7 +102,7 @@ describe('DocumentProcessor', () => {
       fileType: 'application/pdf',
       storageKey: 's1',
     };
-    (docModel.findById as any).mockReturnValue({
+    (docModel.findById as unknown as jest.Mock).mockReturnValue({
       lean: jest.fn().mockResolvedValue(doc),
     });
 
@@ -116,27 +116,33 @@ describe('DocumentProcessor', () => {
 
     const processor = new DocumentProcessor(
       docsSvc,
-      docModel as any,
+      docModel as unknown as Model<DocumentSchemaClass>,
       vectorService as any,
     );
 
     await processor.process(job);
 
     // تحديثات الحالة
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(docModel.findByIdAndUpdate).toHaveBeenNthCalledWith(1, docId, {
       status: 'processing',
     });
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(docModel.findByIdAndUpdate).toHaveBeenNthCalledWith(2, docId, {
       status: 'completed',
     });
 
     // تم استدعاء embed لعدد القطع
-    expect((vectorService.embed as any).mock.calls.length).toBe(3);
+    expect(
+      (vectorService.embed as unknown as jest.Mock).mock.calls.length,
+    ).toBe(3);
 
     // upsert تم لعدد القطع
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(vectorService.upsertDocumentChunks).toHaveBeenCalledTimes(1);
-    const upsertArg = (vectorService.upsertDocumentChunks as any).mock
-      .calls[0][0];
+    const upsertArg = (
+      vectorService.upsertDocumentChunks as unknown as jest.Mock
+    ).mock.calls[0][0];
     expect(Array.isArray(upsertArg)).toBe(true);
     expect(upsertArg).toHaveLength(3);
 
@@ -146,22 +152,25 @@ describe('DocumentProcessor', () => {
 
   test('عند عدم العثور على الوثيقة في MongoDB → تحديث الحالة إلى failed وعدم استدعاء upsert', async () => {
     const job = buildJob('doc-missing');
-    (docModel.findById as any).mockReturnValue({
+    (docModel.findById as unknown as jest.Mock).mockReturnValue({
       lean: jest.fn().mockResolvedValue(null),
     });
     minio.getObject.mockResolvedValue(Readable.from([Buffer.from('x')]));
 
     const processor = new DocumentProcessor(
       docsSvc,
-      docModel as any,
-      vectorService as any,
+      docModel as unknown as Model<DocumentSchemaClass>,
+      vectorService as unknown as VectorService,
     );
     await processor.process(job);
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(docModel.findByIdAndUpdate).toHaveBeenCalledWith(job.data.docId, {
       status: 'failed',
       errorMessage: 'Document not found in MongoDB',
     });
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(vectorService.upsertDocumentChunks).not.toHaveBeenCalled();
     // لم يُنشأ ملف مؤقت لذا قد لا يُستدعى unlink — لا إلزام هنا.
   });
@@ -170,7 +179,7 @@ describe('DocumentProcessor', () => {
     const docId = 'doc-embed-fail';
     const job = buildJob(docId);
 
-    (docModel.findById as any).mockReturnValue({
+    (docModel.findById as unknown as jest.Mock).mockReturnValue({
       lean: jest.fn().mockResolvedValue({
         _id: docId,
         merchantId: 'm1',
@@ -182,20 +191,24 @@ describe('DocumentProcessor', () => {
     (pdfParse as jest.Mock).mockResolvedValue({ text: 'b'.repeat(900) }); // قطعتان
 
     // أول embed ينجح، الثاني يفشل
-    (vectorService.embed as any)
+
+    (vectorService.embed as unknown as jest.Mock)
       .mockResolvedValueOnce([0.1])
       .mockRejectedValueOnce(new Error('embedding service down'));
 
     const processor = new DocumentProcessor(
       docsSvc,
-      docModel as any,
-      vectorService as any,
+      docModel as unknown as Model<DocumentSchemaClass>,
+      vectorService as unknown as VectorService,
     );
     await processor.process(job);
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(vectorService.upsertDocumentChunks).not.toHaveBeenCalled();
     // الحالة failed
-    const lastCall = (docModel.findByIdAndUpdate as any).mock.calls.pop();
+    const lastCall = (
+      docModel.findByIdAndUpdate as unknown as jest.Mock
+    ).mock.calls.pop();
     expect(lastCall[0]).toBe(docId);
     expect(lastCall[1].status).toBe('failed');
     expect(typeof lastCall[1].errorMessage).toBe('string');
@@ -206,7 +219,7 @@ describe('DocumentProcessor', () => {
     const docId = 'doc-unsupported';
     const job = buildJob(docId);
 
-    (docModel.findById as any).mockReturnValue({
+    (docModel.findById as unknown as jest.Mock).mockReturnValue({
       lean: jest.fn().mockResolvedValue({
         _id: docId,
         merchantId: 'm1',
@@ -218,14 +231,16 @@ describe('DocumentProcessor', () => {
 
     const processor = new DocumentProcessor(
       docsSvc,
-      docModel as any,
-      vectorService as any,
+      docModel as unknown as Model<DocumentSchemaClass>,
+      vectorService as unknown as VectorService,
     );
     await processor.process(job);
 
     // لم يتم upsert
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(vectorService.upsertDocumentChunks).not.toHaveBeenCalled();
     // الحالة failed
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(docModel.findByIdAndUpdate).toHaveBeenCalledWith(
       docId,
       expect.objectContaining({ status: 'failed' }),
@@ -237,7 +252,7 @@ describe('DocumentProcessor', () => {
     const docId = 'doc-docx';
     const job = buildJob(docId);
 
-    (docModel.findById as any).mockReturnValue({
+    (docModel.findById as unknown as jest.Mock).mockReturnValue({
       lean: jest.fn().mockResolvedValue({
         _id: docId,
         merchantId: 'm1',
@@ -251,16 +266,20 @@ describe('DocumentProcessor', () => {
 
     const processor = new DocumentProcessor(
       docsSvc,
-      docModel as any,
-      vectorService as any,
+      docModel as unknown as Model<DocumentSchemaClass>,
+      vectorService as unknown as VectorService,
     );
     await processor.process(job);
 
-    expect((mammoth as any).extractRawText).toHaveBeenCalledWith(
+    expect(
+      (mammoth as unknown as jest.Mock).extractRawText,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({ path: expect.any(String) }),
     );
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(vectorService.embed).toHaveBeenCalled();
     expect(vectorService.upsertDocumentChunks).toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(docModel.findByIdAndUpdate).toHaveBeenCalledWith(docId, {
       status: 'completed',
     });

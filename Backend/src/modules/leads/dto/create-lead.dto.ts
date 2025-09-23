@@ -23,7 +23,7 @@ export class CreateLeadDto {
   })
   @IsObject({ message: 'يجب أن تكون البيانات كائنًا' })
   @IsNotEmpty({ message: 'بيانات النموذج مطلوبة' })
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 
   @ApiPropertyOptional({
     description: 'مصدر العميل المحتمل',

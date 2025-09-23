@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 
 import { PromptVersionRepository } from '../repositories/prompt-version.repository';
 
@@ -15,7 +10,7 @@ export class PromptVersionService {
   ) {}
 
   /** يحفظ نسخة متقدمة حالية في سجل history قبل التعديل */
-  async snapshot(merchantId: string, note?: string) {
+  async snapshot(merchantId: string, note?: string): Promise<void> {
     const m = await this.repo.getOrFail(merchantId);
 
     const currentTpl = m.currentAdvancedConfig?.template?.trim();
@@ -29,7 +24,9 @@ export class PromptVersionService {
   }
 
   /** يعيد قائمة سجل القوالب المتقدمة */
-  async list(merchantId: string) {
+  async list(
+    merchantId: string,
+  ): Promise<{ template: string; note?: string; updatedAt: Date }[]> {
     return this.repo.getAdvancedHistory(merchantId);
   }
 
@@ -37,7 +34,7 @@ export class PromptVersionService {
    * التراجع إلى نسخة سابقة بواسطة مؤشرها في المصفوفة
    * @param versionIndex رقم المؤشر (0-based)
    */
-  async revert(merchantId: string, versionIndex: number) {
+  async revert(merchantId: string, versionIndex: number): Promise<void> {
     // نتأكد من وجود التاجر
     await this.repo.getOrFail(merchantId);
 

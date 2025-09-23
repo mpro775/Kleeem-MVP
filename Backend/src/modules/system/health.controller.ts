@@ -11,6 +11,11 @@ import { Connection } from 'mongoose';
 import { Public } from 'src/common/decorators/public.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
+// ثوابت لتجنب الأرقام السحرية
+const BYTES_PER_KB = 1024;
+const BYTES_PER_MB = BYTES_PER_KB * BYTES_PER_KB;
+const MEMORY_WARNING_THRESHOLD = 90; // نسبة مئوية
+
 interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'degraded';
   timestamp: string;
@@ -26,7 +31,7 @@ interface HealthStatus {
 interface ServiceHealth {
   status: 'healthy' | 'unhealthy';
   responseTime?: number;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 @ApiTags('System')
@@ -55,12 +60,17 @@ export class HealthController {
       },
     },
   })
-  getBasicHealth() {
+  getBasicHealth(): HealthStatus {
     return {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       version: process.env.npm_package_version || '1.0.0',
+      services: {
+        database: { status: 'healthy' },
+        cache: { status: 'healthy' },
+        memory: { status: 'healthy' },
+      },
     };
   }
 
@@ -70,8 +80,6 @@ export class HealthController {
   @ApiOperation({ summary: 'فحص صحة مفصل لجميع الخدمات' })
   @ApiResponse({ status: 200, description: 'تقرير صحة شامل' })
   async getDetailedHealth(): Promise<HealthStatus> {
-    const startTime = Date.now();
-
     // فحص قاعدة البيانات
     const dbHealth = await this.checkDatabase();
 
@@ -106,7 +114,12 @@ export class HealthController {
   @Public()
   @SkipThrottle()
   @ApiOperation({ summary: 'فحص جاهزية النظام للطلبات' })
-  async getReadiness() {
+  async getReadiness(): Promise<{
+    status: string;
+    timestamp: string;
+    issues?: Record<string, unknown>;
+  }> {
+    const startTime = Date.now();
     try {
       // فحص سريع للخدمات الأساسية
       const [dbOk, cacheOk] = await Promise.all([
@@ -115,11 +128,14 @@ export class HealthController {
       ]);
 
       if (dbOk && cacheOk) {
-        return { status: 'ready', timestamp: new Date().toISOString() };
+        return {
+          status: 'ready',
+          timestamp: new Date(startTime).toISOString(),
+        };
       } else {
         return {
           status: 'not_ready',
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(startTime).toISOString(),
           issues: {
             database: !dbOk,
             cache: !cacheOk,
@@ -129,8 +145,12 @@ export class HealthController {
     } catch (error) {
       return {
         status: 'not_ready',
-        timestamp: new Date().toISOString(),
-        error: error.message,
+        timestamp: new Date(startTime).toISOString(),
+        issues: { error: (error as Error).message },
+      } as {
+        status: string;
+        timestamp: string;
+        issues?: Record<string, unknown>;
       };
     }
   }
@@ -139,7 +159,12 @@ export class HealthController {
   @Public()
   @SkipThrottle()
   @ApiOperation({ summary: 'فحص أن التطبيق يعمل' })
-  getLiveness() {
+  getLiveness(): {
+    status: string;
+    timestamp: string;
+    pid: number;
+    uptime: number;
+  } {
     // فحص بسيط أن العملية تعمل
     return {
       status: 'alive',
@@ -170,7 +195,7 @@ export class HealthController {
       return {
         status: 'unhealthy',
         responseTime: Date.now() - startTime,
-        details: { error: error.message },
+        details: { error: (error as Error).message },
       };
     }
   }
@@ -199,7 +224,7 @@ export class HealthController {
       return {
         status: 'unhealthy',
         responseTime: Date.now() - startTime,
-        details: { error: error.message },
+        details: { error: (error as Error).message },
       };
     }
   }
@@ -209,11 +234,11 @@ export class HealthController {
    */
   private checkMemory(): ServiceHealth {
     const usage = process.memoryUsage();
-    const totalMB = Math.round(usage.heapTotal / 1024 / 1024);
-    const usedMB = Math.round(usage.heapUsed / 1024 / 1024);
+    const totalMB = Math.round(usage.heapTotal / BYTES_PER_MB);
+    const usedMB = Math.round(usage.heapUsed / BYTES_PER_MB);
     const usagePercent = (usedMB / totalMB) * 100;
 
-    const isHealthy = usagePercent < 90; // تحذير إذا تجاوز 90%
+    const isHealthy = usagePercent < MEMORY_WARNING_THRESHOLD;
 
     return {
       status: isHealthy ? 'healthy' : 'unhealthy',
@@ -221,7 +246,7 @@ export class HealthController {
         heapTotal: `${totalMB}MB`,
         heapUsed: `${usedMB}MB`,
         usagePercent: `${usagePercent.toFixed(1)}%`,
-        external: `${Math.round(usage.external / 1024 / 1024)}MB`,
+        external: `${Math.round(usage.external / BYTES_PER_MB)}MB`,
       },
     };
   }

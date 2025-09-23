@@ -7,27 +7,39 @@ export class QdrantWrapper {
   private readonly logger = new Logger(QdrantWrapper.name);
   private client!: QdrantClient;
 
-  init(url: string) {
+  init(url: string): QdrantClient {
     this.client = new QdrantClient({ url });
     return this.client;
   }
 
-  async ensureCollection(name: string, size: number) {
+  async ensureCollection(name: string, size: number): Promise<void> {
     const { collections } = await this.client.getCollections();
     if (!collections.find((c) => c.name === name)) {
       try {
         await this.client.createCollection(name, {
           vectors: { size, distance: 'Cosine' },
         });
-      } catch (e: any) {
+      } catch (e: unknown) {
+        const error = e as { message?: string };
         // سباق إنشاء من مثيل آخر؟ تجاهل لو المجموعة أصبحت موجودة
-        if (!/already exists/i.test(e?.message ?? '')) throw e;
+        if (!/already exists/i.test(error?.message ?? '')) throw e;
       }
     }
   }
 
-  upsert = this.client?.upsert?.bind(this.client);
-  search = this.client?.search?.bind(this.client);
-  delete = this.client?.delete?.bind(this.client);
-  getCollections = this.client?.getCollections?.bind(this.client);
+  upsert = this.client?.upsert?.bind(this.client) as (
+    collection: string,
+    points: unknown,
+  ) => Promise<void>;
+  search = this.client?.search?.bind(this.client) as (
+    collection: string,
+    query: unknown,
+  ) => Promise<unknown>;
+  delete = this.client?.delete?.bind(this.client) as (
+    collection: string,
+    ids: string[],
+  ) => Promise<void>;
+  getCollections = this.client?.getCollections?.bind(
+    this.client,
+  ) as () => Promise<unknown>;
 }

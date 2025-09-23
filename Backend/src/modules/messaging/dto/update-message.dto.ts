@@ -42,7 +42,7 @@ export class MessageContentDto {
   })
   @IsOptional()
   @IsObject()
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export class UpdateMessageDto {
@@ -68,7 +68,7 @@ export class UpdateMessageDto {
   })
   @IsOptional()
   @IsObject()
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 
   @ApiPropertyOptional({
     description: 'استبدال كامل لمحتوى الرسائل في الجلسة',

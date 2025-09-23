@@ -16,11 +16,11 @@ export class LeadMongoRepository implements LeadRepository {
   private notDeleted(): FilterQuery<LeadDocument> {
     return {
       $or: [{ deletedAt: { $exists: false } }, { deletedAt: null }],
-    } as any;
+    } as unknown as FilterQuery<LeadDocument>;
   }
 
   async create(data: Partial<LeadEntity>): Promise<LeadEntity> {
-    const doc = await this.model.create(data as any);
+    const doc = await this.model.create(data as unknown as LeadDocument);
     return doc.toObject() as LeadEntity;
   }
 

@@ -11,6 +11,7 @@ import { N8nWorkflowService } from '../../n8n-workflow/n8n-workflow.service';
 import { StorefrontService } from '../../storefront/storefront.service';
 import { CreateMerchantDto } from '../dto/requests/create-merchant.dto';
 import { MerchantsRepository } from '../repositories/merchants.repository';
+import { MerchantDocument } from '../schemas/merchant.schema';
 
 import { PromptBuilderService } from './prompt-builder.service';
 
@@ -32,7 +33,7 @@ export class MerchantProvisioningService {
    * إنشاء التاجر + تهيئة الـ n8n + إنشاء Storefront
    * مع Rollback نظيف عند الفشل.
    */
-  async create(dto: CreateMerchantDto) {
+  async create(dto: CreateMerchantDto): Promise<MerchantDocument> {
     const merchant = await this.merchantsRepository.create(dto);
 
     // Metrics
@@ -44,7 +45,7 @@ export class MerchantProvisioningService {
 
     try {
       // 1) n8n workflow
-      wfId = await this.n8n.createForMerchant(merchant.id);
+      wfId = await this.n8n.createForMerchant(String(merchant._id));
       merchant.workflowId = wfId;
 
       // 2) Compile final prompt
@@ -54,13 +55,13 @@ export class MerchantProvisioningService {
 
       // 3) Storefront افتراضي
       await this.storefrontService.create({
-        merchant: merchant.id,
+        merchant: String(merchant._id),
         primaryColor: '#FF8500',
         secondaryColor: '#1976d2',
         buttonStyle: 'rounded',
         banners: [],
         featuredProductIds: [],
-        slug: merchant.id.toString(),
+        slug: String(merchant._id),
       });
       storefrontCreated = true;
 
@@ -71,23 +72,33 @@ export class MerchantProvisioningService {
         if (wfId) {
           try {
             await this.n8n.setActive(wfId, false);
-          } catch {}
+          } catch {
+            this.logger.warn(`Failed to deactivate workflow ${wfId}`);
+          }
           try {
             await this.n8n.delete(wfId);
-          } catch {}
+          } catch {
+            this.logger.warn(`Failed to delete workflow ${wfId}`);
+          }
         }
-      } catch {}
+      } catch {
+        this.logger.warn(`Failed to rollback workflow ${wfId}`);
+      }
 
       if (storefrontCreated) {
         try {
-          await this.storefrontService.deleteByMerchant(merchant.id);
-        } catch {}
+          await this.storefrontService.deleteByMerchant(String(merchant._id));
+        } catch {
+          this.logger.warn(`Failed to delete storefront ${merchant.id}`);
+        }
       }
 
       // احذف التاجر الذي أنشأناه للتو
       try {
-        await this.merchantsRepository.remove(merchant.id);
-      } catch {}
+        await this.merchantsRepository.remove(String(merchant._id));
+      } catch {
+        //Ignore
+      }
 
       this.logger.error('Merchant initialization failed', err as Error);
       throw new InternalServerErrorException(
@@ -104,8 +115,8 @@ export class MerchantProvisioningService {
    */
   async ensureWorkflow(merchantId: string): Promise<string> {
     const merchant = await this.merchantsRepository.findOne(merchantId);
-    const doc = merchant as any;
-    if (!doc?.workflowId) {
+    const doc = merchant;
+    if (!doc.workflowId) {
       // ضع منطق إنشاء فعلي هنا إن رغبت لاحقًا
       return 'wf_placeholder';
     }

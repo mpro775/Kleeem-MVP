@@ -13,7 +13,7 @@ export class Lead {
   sessionId: string;
 
   @Prop({ type: Object, required: true })
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 
   @Prop()
   source?: string;

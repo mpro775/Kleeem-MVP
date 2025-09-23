@@ -19,7 +19,7 @@ export class SingleMessage {
   timestamp: Date;
 
   @Prop({ type: Object, default: {} })
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 
   @Prop({ type: [String], default: [] })
   keywords?: string[];

@@ -3,6 +3,8 @@ import { Prop } from '@nestjs/mongoose';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
+import { MAX_TEMPLATE_LENGTH } from '../../constants/prompt.constants';
+
 export class AdvancedTemplateDto {
   @ApiPropertyOptional({
     description: 'القالب المتقدّم الكامل (Handlebars/Markdown)',
@@ -10,7 +12,7 @@ export class AdvancedTemplateDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(5000)
+  @MaxLength(MAX_TEMPLATE_LENGTH)
   template?: string;
 
   @Prop({ default: Date.now })

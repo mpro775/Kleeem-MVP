@@ -9,7 +9,8 @@ export const PROMPT_TEMPLATES = {
   FORMAL: 'formal',
   CUSTOM: 'custom',
 } as const;
-
+export const MAX_TEMPLATE_LENGTH = 5000;
+export const MAX_INSTRUCTION_LENGTH = 80;
 export type PromptTemplate =
   (typeof PROMPT_TEMPLATES)[keyof typeof PROMPT_TEMPLATES];
 
@@ -55,13 +56,18 @@ export type CommunicationStyle =
   (typeof COMMUNICATION_STYLES)[keyof typeof COMMUNICATION_STYLES];
 
 /**
+ * Context Window Size
+ */
+export const MAX_CONTEXT_WINDOW_SIZE = 4000;
+
+/**
  * Default Prompt Settings
  */
 export const PROMPT_DEFAULTS = {
   MAX_RESPONSE_LENGTH: 500,
   DEFAULT_LANGUAGE: 'ar',
   DEFAULT_TONE: 'friendly',
-  CONTEXT_WINDOW_SIZE: 4000,
+  CONTEXT_WINDOW_SIZE: MAX_CONTEXT_WINDOW_SIZE,
   MAX_VERSIONS_PER_MERCHANT: 10,
 } as const;
 
@@ -86,7 +92,7 @@ export const PROMPT_VARIABLES = {
  */
 export const PROMPT_VALIDATION = {
   MIN_TEMPLATE_LENGTH: 10,
-  MAX_TEMPLATE_LENGTH: 2000,
+  MAX_TEMPLATE_LENGTH: MAX_TEMPLATE_LENGTH,
   MAX_CUSTOMIZATION_FIELDS: 20,
   REQUIRED_VARIABLES: [
     PROMPT_VARIABLES.BUSINESS_NAME,

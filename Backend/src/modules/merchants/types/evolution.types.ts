@@ -13,12 +13,12 @@ export interface StatusResponse {
 
 export interface SendMessageResponse {
   success: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface SetWebhookResponse {
   success: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 export interface WhatsappInstanceInfo {
   instanceName: string;

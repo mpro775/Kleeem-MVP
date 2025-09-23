@@ -5,7 +5,6 @@ import {
   TARGET_AUDIENCES,
   COMMUNICATION_STYLES,
   PROMPT_VALIDATION,
-  PROMPT_VARIABLES,
   PromptTemplate,
   TargetAudience,
   CommunicationStyle,
@@ -132,7 +131,7 @@ export class PromptValidator {
   /**
    * Validate customization fields
    */
-  static validateCustomizations(customizations: Record<string, any>): {
+  static validateCustomizations(customizations: Record<string, unknown>): {
     valid: boolean;
     message?: string;
   } {
@@ -172,10 +171,10 @@ export class PromptValidator {
       return { valid: false, message: 'رسالة المستخدم مطلوبة للمعاينة' };
     }
 
-    if (userMessage.length > 1000) {
+    if (userMessage.length > PROMPT_VALIDATION.MAX_TEMPLATE_LENGTH) {
       return {
         valid: false,
-        message: 'رسالة المستخدم يجب ألا تتجاوز 1000 حرف',
+        message: `رسالة المستخدم يجب ألا تتجاوز ${PROMPT_VALIDATION.MAX_TEMPLATE_LENGTH} حرف`,
       };
     }
 
@@ -232,7 +231,7 @@ export class PromptValidator {
   static validateAdvancedTemplate(data: {
     template?: string;
     customTemplate?: string;
-    customizations?: Record<string, any>;
+    customizations?: Record<string, unknown>;
   }): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
@@ -273,10 +272,10 @@ export class PromptValidator {
   static extractTemplateVariables(template: string): string[] {
     const variableRegex = /\{\{([^}]+)\}\}/g;
     const variables: string[] = [];
-    let match;
-
+    let match: RegExpExecArray | null = null;
     while ((match = variableRegex.exec(template)) !== null) {
       variables.push(`{{${match[1]}}}`);
+      match = variableRegex.exec(template);
     }
 
     return variables;

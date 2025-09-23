@@ -13,6 +13,7 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 
+import { MAX_DESCRIPTION_LENGTH } from '../../constants';
 import { AddressDto } from '../shared/address.dto';
 
 /**
@@ -47,12 +48,14 @@ export class OnboardingBasicDto {
   @ApiPropertyOptional({
     description: 'وصف النشاط التجاري',
     example: 'متخصصون في بيع الأجهزة الإلكترونية والمنزلية',
-    maxLength: 1000,
+    maxLength: MAX_DESCRIPTION_LENGTH,
     required: false,
   })
   @IsOptional()
   @IsString({ message: 'يجب أن يكون وصف النشاط التجاري نصيًا' })
-  @MaxLength(1000, { message: 'يجب أن لا يزيد وصف النشاط التجاري عن 1000 حرف' })
+  @MaxLength(MAX_DESCRIPTION_LENGTH, {
+    message: 'يجب أن لا يزيد وصف النشاط التجاري عن 1000 حرف',
+  })
   businessDescription?: string;
 
   @ApiPropertyOptional({

@@ -1,12 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
+import { IsString, IsNotEmpty, Length, ValidateIf } from 'class-validator';
+
 import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  Length,
-  ValidateIf,
-} from 'class-validator';
+  MAX_POSTAL_CODE_LENGTH,
+  MIN_POSTAL_CODE_LENGTH,
+} from '../../constants';
 
 export class AddressDto {
   @IsString({ message: 'يجب أن يكون اسم الشارع نصيًا' })
@@ -50,7 +49,9 @@ export class AddressDto {
     example: 'منطقة الرياض',
   })
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() === '' ? undefined : value,
+    typeof value === 'string' && value.trim() === ''
+      ? undefined
+      : (value as string),
   )
   @ValidateIf(
     (_, v) => v !== undefined && v !== null && String(v).trim() !== '',
@@ -66,12 +67,16 @@ export class AddressDto {
     example: '12345',
   })
   @Transform(({ value }) =>
-    typeof value === 'string' && value.trim() === '' ? undefined : value,
+    typeof value === 'string' && value.trim() === ''
+      ? undefined
+      : (value as string),
   )
   @ValidateIf(
     (_, v) => v !== undefined && v !== null && String(v).trim() !== '',
   )
   @IsString({ message: 'يجب أن يكون الرمز البريدي نصيًا' })
-  @Length(4, 20, { message: 'يجب أن يكون طول الرمز البريدي بين 4 و 20 حرف' })
+  @Length(MIN_POSTAL_CODE_LENGTH, MAX_POSTAL_CODE_LENGTH, {
+    message: 'يجب أن يكون طول الرمز البريدي بين 4 و 20 حرف',
+  })
   postalCode?: string;
 }

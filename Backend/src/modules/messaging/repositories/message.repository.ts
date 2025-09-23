@@ -3,9 +3,9 @@ import type { ClientSession, Types } from 'mongoose';
 
 export type MessageItem = {
   _id: Types.ObjectId;
-  role: 'user' | 'bot' | string;
+  role: 'user' | 'bot' | 'agent';
   text: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   timestamp: Date;
   keywords?: string[];
   rating?: 0 | 1;

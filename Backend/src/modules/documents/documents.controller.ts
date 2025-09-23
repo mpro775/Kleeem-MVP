@@ -27,7 +27,6 @@ import {
   ApiNotFoundResponse,
   ApiBearerAuth,
   ApiResponse,
-  ApiProduces,
 } from '@nestjs/swagger';
 import { Response } from 'express';
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
@@ -38,10 +37,16 @@ import { DocumentsService } from './documents.service';
 import {
   MerchantParamDto,
   DocParamDto,
-  DocumentDto,
   PaginatedDocumentsDto,
 } from './dto/common.dto';
 import { UploadResponseDto } from './dto/upload.dto';
+import { DocumentSchemaClass } from './schemas/document.schema';
+
+// File size constants
+const BYTES_PER_KB = 1024;
+const BYTES_PER_MB = BYTES_PER_KB * BYTES_PER_KB;
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * BYTES_PER_MB;
 
 @ApiTags('المستندات')
 @ApiBearerAuth()
@@ -75,7 +80,7 @@ export class DocumentsController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+          new MaxFileSizeValidator({ maxSize: MAX_FILE_SIZE_BYTES }),
           new FileTypeValidator({
             fileType:
               /(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document|jpeg|png)$/,
@@ -84,7 +89,7 @@ export class DocumentsController {
       }),
     )
     file: Express.Multer.File & { key?: string },
-  ) {
+  ): Promise<{ success: true; data: DocumentSchemaClass }> {
     const doc = await this.svc.uploadFile(merchantId, file);
     return { success: true, data: doc };
   }
@@ -96,10 +101,12 @@ export class DocumentsController {
   })
   @Ok(PaginatedDocumentsDto, 'قائمة المستندات')
   @ApiNotFoundResponse({ description: 'التاجر غير موجود', type: ErrorResponse })
-  async list(@Param() { merchantId }: MerchantParamDto) {
+  async list(
+    @Param() { merchantId }: MerchantParamDto,
+  ): Promise<{ success: true; data: PaginatedDocumentsDto }> {
     const result = await this.svc.list(merchantId);
     // تأكد أن الخدمة تُرجع { items, meta } وفق PaginatedDocumentsDto
-    return { success: true, data: result };
+    return { success: true, data: result as unknown as PaginatedDocumentsDto };
   }
 
   @Get(':docId')
@@ -123,7 +130,7 @@ export class DocumentsController {
     @Param() { merchantId }: MerchantParamDto,
     @Param() { docId }: DocParamDto,
     @Res() res: Response,
-  ) {
+  ): Promise<void> {
     const url = await this.svc.getPresignedUrl(merchantId, docId);
     return res.redirect(url);
   }
@@ -144,7 +151,7 @@ export class DocumentsController {
   async remove(
     @Param() { merchantId }: MerchantParamDto,
     @Param() { docId }: DocParamDto,
-  ) {
+  ): Promise<void> {
     await this.svc.delete(merchantId, docId);
     return;
   }

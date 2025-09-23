@@ -1,9 +1,10 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
 
 import { ChatWidgetService } from '../../chat/chat-widget.service';
 import { OnboardingBasicDto } from '../dto/requests/onboarding-basic.dto';
 import { UpdateMerchantDto } from '../dto/requests/update-merchant.dto';
 import { MerchantsRepository } from '../repositories/merchants.repository';
+import { MerchantDocument } from '../schemas/merchant.schema';
 
 import { MerchantCacheService } from './merchant-cache.service';
 import { PromptBuilderService } from './prompt-builder.service';
@@ -20,24 +21,21 @@ export class MerchantProfileService {
     private readonly cacheSvc: MerchantCacheService,
   ) {}
 
-  async update(id: string, dto: UpdateMerchantDto) {
+  async update(id: string, dto: UpdateMerchantDto): Promise<MerchantDocument> {
     const updated = await this.repo.update(id, dto);
 
-    if ((dto as any).publicSlug) {
+    if (dto.publicSlug) {
       try {
-        await this.chatWidgetService.syncWidgetSlug(
-          id,
-          (dto as any).publicSlug,
-        );
+        await this.chatWidgetService.syncWidgetSlug(id, dto.publicSlug);
       } catch (e) {
         this.logger.warn(`syncWidgetSlug failed for merchant ${id}`, e);
       }
     }
 
     try {
-      const compiled = await this.promptBuilder.compileTemplate(updated as any);
-      (updated as any).set?.('finalPromptTemplate', compiled);
-      await (updated as any).save?.();
+      const compiled = await this.promptBuilder.compileTemplate(updated);
+      updated.set?.('finalPromptTemplate', compiled);
+      await updated.save?.();
     } catch (e) {
       this.logger.error('Error compiling prompt template after update', e);
     }
@@ -46,14 +44,15 @@ export class MerchantProfileService {
     return updated;
   }
 
-  async saveBasicInfo(merchantId: string, dto: OnboardingBasicDto) {
+  async saveBasicInfo(
+    merchantId: string,
+    dto: OnboardingBasicDto,
+  ): Promise<MerchantDocument> {
     const m = await this.repo.saveBasicInfo(merchantId, dto);
 
     try {
-      (m as any).finalPromptTemplate = await this.promptBuilder.compileTemplate(
-        m as any,
-      );
-      await (m as any).save?.();
+      m.finalPromptTemplate = await this.promptBuilder.compileTemplate(m);
+      await m.save?.();
     } catch {
       this.logger.warn('Prompt compile skipped after basic info');
     }
@@ -64,9 +63,11 @@ export class MerchantProfileService {
 
   // وجود السلاج العام (غير مُنفّذ في الريبو حاليًا)
   async existsByPublicSlug(slug: string): Promise<boolean> {
+    await Promise.resolve(); // Placeholder for future async implementation
     // TODO: نفّذ findByPublicSlug في الريبو ثم استخدمه هنا
     // const merchant = await this.repo.findByPublicSlug(slug);
     // return !!merchant;
+    void slug; // Prevent unused parameter warning
     return false;
   }
 
@@ -76,15 +77,21 @@ export class MerchantProfileService {
     file: Express.Multer.File,
   ): Promise<string> {
     // TODO: اربط مع media service الفعلي
+    await Promise.resolve(); // Placeholder for future async implementation
     return `https://minio.example.com/logos/${merchantId}/${file.originalname}`;
   }
 
   // تغيير مصدر المنتجات
-  async setProductSource(merchantId: string, source: string): Promise<any> {
+  async setProductSource(
+    merchantId: string,
+    source: 'internal' | 'salla' | 'zid',
+  ): Promise<MerchantDocument> {
     const merchant = await this.repo.findOne(merchantId);
-    const doc = merchant as any;
-    doc.productSource = source;
-    await this.repo.update(merchantId, { productSource: source } as any);
+    if (!merchant) throw new NotFoundException('Merchant not found');
+    merchant.productSource = source;
+    await this.repo.update(merchantId, {
+      productSource: source,
+    } as UpdateMerchantDto);
     await this.cacheSvc.invalidate(merchantId);
     return merchant;
   }

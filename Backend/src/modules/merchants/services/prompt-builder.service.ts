@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import * as Handlebars from 'handlebars';
 
 import { InstructionsService } from '../../instructions/instructions.service'; // ← جديد
+import { MAX_INSTRUCTION_LENGTH } from '../constants';
 import { MerchantDocument } from '../schemas/merchant.schema';
 
 const MANDATORY_TOOLING = [
@@ -44,7 +45,7 @@ export class PromptBuilderService {
     // قصّ/حِدّ: حتى 5 تعليمات × 80 حرف
     const limited = customInstructions
       .slice(0, 5)
-      .map((s) => String(s).slice(0, 80));
+      .map((s) => String(s).slice(0, MAX_INSTRUCTION_LENGTH));
 
     const lines: string[] = [];
     lines.push(
@@ -116,7 +117,7 @@ export class PromptBuilderService {
 
     // تعليمات إضافية من penalties
     const penalties = await this.instructionsSvc.getActiveInstructions(
-      m.id.toString(),
+      String(m._id),
     );
     const penaltyLines = penalties.map((p) => p.instruction);
 

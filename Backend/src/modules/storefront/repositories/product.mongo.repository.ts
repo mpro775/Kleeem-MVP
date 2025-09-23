@@ -42,7 +42,7 @@ export class StorefrontProductMongoRepository
     await this.model
       .updateMany(
         { merchantId: new Types.ObjectId(merchantId) },
-        { $set: set as any },
+        { $set: set as Record<string, unknown> },
       )
       .exec();
   }

@@ -24,6 +24,7 @@ import {
   ApiUnauthorizedResponse,
   ApiNotFoundResponse,
 } from '@nestjs/swagger';
+import { Types } from 'mongoose';
 import { CurrentMerchantId, CurrentUser } from 'src/common';
 
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -31,8 +32,9 @@ import { GeminiService } from '../ai/gemini.service';
 import { MessageService } from '../messaging/message.service';
 
 import { InstructionsService } from './instructions.service';
-
+import { Instruction } from './schemas/instruction.schema';
 type Role = 'ADMIN' | 'MERCHANT' | 'MEMBER';
+const MAX_BAD_REPLIES = 50;
 
 @ApiTags('التوجيهات')
 @ApiBearerAuth()
@@ -89,7 +91,7 @@ export class InstructionsController {
     },
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { role: Role },
-  ) {
+  ): Promise<Instruction & { _id: Types.ObjectId }> {
     // ADMIN فقط يمرّر merchantId؛ غير ذلك استخدم JWT
     const merchantId =
       user.role === 'ADMIN' && dto.merchantId ? dto.merchantId : jwtMerchantId;
@@ -123,7 +125,7 @@ export class InstructionsController {
     @Query('active') active?: string,
     @Query('limit') limit = '30',
     @Query('page') page = '1',
-  ) {
+  ): Promise<Array<Instruction & { _id: Types.ObjectId }>> {
     // إن مرّر merchantId بالاستعلام يجب أن يكون ADMIN أو يطابق JWT
     const merchantId = qMerchantId ?? jwtMerchantId;
     if (!merchantId) {
@@ -156,7 +158,7 @@ export class InstructionsController {
     }>,
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { role: Role },
-  ) {
+  ): Promise<(Instruction & { _id: Types.ObjectId }) | null> {
     // احضر التوجيه للتأكد من الملكية
     const instr = await this.service.findOne(id);
     if (!instr) throw new BadRequestException('التوجيه غير موجود');
@@ -187,7 +189,7 @@ export class InstructionsController {
     @Param('id') id: string,
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { role: Role },
-  ) {
+  ): Promise<(Instruction & { _id: Types.ObjectId }) | null> {
     const instr = await this.service.findOne(id);
     if (!instr) throw new BadRequestException('التوجيه غير موجود');
 
@@ -207,7 +209,7 @@ export class InstructionsController {
     @Param('id') id: string,
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { role: Role },
-  ) {
+  ): Promise<(Instruction & { _id: Types.ObjectId }) | null> {
     const instr = await this.service.findOne(id);
     if (!instr) throw new BadRequestException('التوجيه غير موجود');
 
@@ -227,7 +229,7 @@ export class InstructionsController {
     @Param('id') id: string,
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { role: Role },
-  ) {
+  ): Promise<(Instruction & { _id: Types.ObjectId }) | null> {
     const instr = await this.service.findOne(id);
     if (!instr) throw new BadRequestException('التوجيه غير موجود');
 
@@ -248,7 +250,7 @@ export class InstructionsController {
     @Query('merchantId') qMerchantId: string | undefined,
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { role: Role },
-  ) {
+  ): Promise<Array<Instruction & { _id: Types.ObjectId }>> {
     const merchantId = qMerchantId ?? jwtMerchantId;
     if (!merchantId) throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
     if (qMerchantId && user.role !== 'ADMIN' && qMerchantId !== jwtMerchantId) {
@@ -265,7 +267,9 @@ export class InstructionsController {
   async suggest(
     @Query('limit') limit = '10',
     @CurrentMerchantId() jwtMerchantId: string | null,
-  ) {
+  ): Promise<{
+    items: Array<{ badReply: string; count: number; instruction: string }>;
+  }> {
     if (!jwtMerchantId)
       throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
 
@@ -295,7 +299,7 @@ export class InstructionsController {
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { role: Role },
     @Body() dto: { badReplies: string[] },
-  ) {
+  ): Promise<{ results: Array<{ badReply: string; instruction: string }> }> {
     if (!jwtMerchantId)
       throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
     if (!Array.isArray(dto.badReplies) || dto.badReplies.length === 0) {
@@ -303,7 +307,7 @@ export class InstructionsController {
     }
 
     // (اختياري) حد أعلى لحماية السيرفر
-    const replies = dto.badReplies.slice(0, 50);
+    const replies = dto.badReplies.slice(0, MAX_BAD_REPLIES);
 
     const results = await Promise.all(
       replies.map(async (bad) => {

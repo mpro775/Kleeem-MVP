@@ -8,7 +8,7 @@ class WebhookInfo {
   hookUrl: string;
 
   @ApiProperty()
-  telegramResponse: any;
+  telegramResponse: unknown;
 }
 
 export class OnboardingResponseDto {

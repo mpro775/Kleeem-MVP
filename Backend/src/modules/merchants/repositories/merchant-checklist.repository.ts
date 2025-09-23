@@ -24,7 +24,7 @@ export interface MerchantChecklistRepository {
         | 'exchangePolicy'
         | 'shippingPolicy'
       > &
-        Record<string, any>)
+        Record<string, unknown>)
     | null
   >;
 
@@ -37,7 +37,7 @@ export interface MerchantChecklistRepository {
     provider: ChannelProvider,
   ): Promise<
     | (Pick<ChannelDocument, 'enabled' | 'status' | 'isDefault'> &
-        Record<string, any>)
+        Record<string, unknown>)
     | null
   >;
 }

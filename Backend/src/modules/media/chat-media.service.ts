@@ -1,8 +1,10 @@
 // src/media/chat-media.service.ts
 import { unlink } from 'node:fs/promises';
 
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Client as MinioClient } from 'minio';
+
+import { HOUR_IN_SECONDS } from '../../common/constants/common';
 function cdnBase() {
   return (
     process.env.ASSETS_CDN_BASE_URL ||
@@ -55,7 +57,7 @@ export class ChatMediaService {
 
     // وإلا ارجع رابطًا موقّعًا قصير الأجل (ساعة)
     // ملاحظة: مع minio-js استخدم presignedGetObject وليس presignedUrl
-    return await this.minio.presignedGetObject(bucket, key, 3600);
+    return await this.minio.presignedGetObject(bucket, key, HOUR_IN_SECONDS);
   }
 
   async uploadChatMedia(
@@ -63,11 +65,14 @@ export class ChatMediaService {
     filePath: string,
     originalName: string,
     mimeType: string,
-  ) {
+  ): Promise<
+    | { storageKey: string; url: string }
+    | { storageKey: string; presignedUrl: string }
+  > {
     const bucket = process.env.MINIO_BUCKET!;
     await this.ensureBucket(bucket);
 
-    const safeName = originalName.replace(/[^\w.\-]+/g, '_');
+    const safeName = originalName.replace(/[^\w.-]+/g, '_');
     const storageKey = `chat-media/${merchantId}/${Date.now()}-${safeName}`;
 
     await this.minio.fPutObject(bucket, storageKey, filePath, {

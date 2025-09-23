@@ -1,8 +1,7 @@
 // src/modules/merchants/merchants.controller.ts
 
-import { CreateMerchantDto } from './dto/requests/create-merchant.dto';
-import { UpdateMerchantDto } from './dto/requests/update-merchant.dto';
 import { unlink } from 'fs/promises';
+
 import {
   Controller,
   Get,
@@ -13,20 +12,18 @@ import {
   Param,
   Body,
   UseGuards,
-  Request,
   HttpException,
   HttpStatus,
   BadRequestException,
   HttpCode,
-  Req,
   NotFoundException,
   UseInterceptors,
   UploadedFile,
   Query,
   Logger,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { InjectModel, ParseObjectIdPipe } from '@nestjs/mongoose';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -38,41 +35,44 @@ import {
   ApiForbiddenResponse,
   ApiNotFoundResponse,
 } from '@nestjs/swagger';
-
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
+
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
 } from '../../common';
-import { NotificationsService } from '../notifications/notifications.service';
 import { CurrentUser, CurrentUserId, CurrentMerchantId } from '../../common';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OutboxService } from '../../common/outbox/outbox.service';
-
-
 import { TranslationService } from '../../common/services/translation.service';
 import { CatalogService } from '../catalog/catalog.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
+
+import { CreateMerchantDto } from './dto/requests/create-merchant.dto';
 import { OnboardingBasicDto } from './dto/requests/onboarding-basic.dto';
+import { UpdateMerchantDto } from './dto/requests/update-merchant.dto';
 import {
   ProductSource,
   UpdateProductSourceDto,
 } from './dto/requests/update-product-source.dto';
 import { MerchantChecklistService } from './merchant-checklist.service';
 import { MerchantsService } from './merchants.service';
+import { MerchantDocument } from './schemas/merchant.schema';
 import { ChecklistGroup } from './types/merchant-checklist.service.types';
 
 import type { Role } from '../../common/interfaces/jwt-payload.interface';
 const SLUG_RE = /^[a-z](?:[a-z0-9-]{1,48}[a-z0-9])$/;
+const BYTES_PER_KB = 1024;
 class SoftDeleteDto {
   reason?: string;
 }
 function assertOwnerOrAdmin(
   merchantIdParam: string,
   jwtMerchantId: string | null,
-  role: Role | string,
+  role: Role,
   translationService?: TranslationService,
 ) {
   if (role !== 'ADMIN' && merchantIdParam !== String(jwtMerchantId)) {
@@ -110,13 +110,15 @@ export class MerchantsController {
     CreateMerchantDto,
     'i18n:merchants.messages.created',
   )
-  create(@Body() dto: CreateMerchantDto) {
+  create(@Body() dto: CreateMerchantDto): Promise<MerchantDocument> {
     return this.svc.create(dto);
   }
 
   @Public()
   @Get('check-public-slug') // ← ضع هذا قبل أي ':id'
-  async checkPublicSlug(@Query('slug') slug: string) {
+  async checkPublicSlug(
+    @Query('slug') slug: string,
+  ): Promise<{ available: boolean }> {
     if (!slug || !SLUG_RE.test(slug)) {
       throw new BadRequestException('i18n:merchants.errors.invalidSlug');
     }
@@ -144,7 +146,7 @@ export class MerchantsController {
     @Body() body: SoftDeleteDto,
     @CurrentUser()
     user: { userId: string; role: Role; merchantId?: string | null },
-  ) {
+  ): Promise<{ message: string; at: Date }> {
     return this.svc.softDelete(id, user, body?.reason);
   }
 
@@ -167,7 +169,7 @@ export class MerchantsController {
     @Param('id') id: string,
     @CurrentUser()
     user: { userId: string; role: Role; merchantId?: string | null },
-  ) {
+  ): Promise<{ message: string }> {
     return this.svc.restore(id, user);
   }
   @Post(':id/purge')
@@ -192,13 +194,15 @@ export class MerchantsController {
   async purge(
     @Param('id') id: string,
     @CurrentUser() user: { userId: string; role: Role },
-  ) {
+  ): Promise<{ message: string }> {
     // (اختياري) التحقق من confirm === "DELETE" في الـ body
     return this.svc.purge(id, user);
   }
   @Public()
   @Get(':id') // ← سيصل إليها فقط قيم ObjectId بعد ترتيب الراوتات
-  findOne(@Param('id', ParseObjectIdPipe) id: string) {
+  findOne(
+    @Param('id', ParseObjectIdPipe) id: string,
+  ): Promise<MerchantDocument> {
     return this.svc.findOne(id);
   }
   @Get()
@@ -207,7 +211,7 @@ export class MerchantsController {
     description: 'i18n:merchants.operations.list.description',
   })
   @ApiSuccessResponse(Array, 'i18n:merchants.operations.list.description')
-  findAll() {
+  findAll(): Promise<MerchantDocument[]> {
     return this.svc.findAll();
   }
 
@@ -241,7 +245,9 @@ export class MerchantsController {
   }
 
   @Get('prompt/advanced-template')
-  async getAdvancedTemplate(@Param('id') id: string) {
+  async getAdvancedTemplate(
+    @Param('id') id: string,
+  ): Promise<{ template: string; note?: string }> {
     return this.svc.getAdvancedTemplateForEditor(id, {
       productName: 'منتج تجريبي',
     });
@@ -259,24 +265,28 @@ export class MerchantsController {
     @UploadedFile() file: Express.Multer.File,
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { role: Role },
-  ) {
+  ): Promise<{ url: string }> {
     assertOwnerOrAdmin(id, jwtMerchantId, user.role, this.translationService);
 
     if (!file)
       throw new BadRequestException('i18n:merchants.errors.noFileAttached');
     const allowed = ['image/png', 'image/jpeg', 'image/webp'];
-    const maxBytes = 2 * 1024 * 1024;
+    const maxBytes = 2 * BYTES_PER_KB * BYTES_PER_KB;
 
     if (!allowed.includes(file.mimetype)) {
       try {
         await unlink(file.path);
-      } catch {}
+      } catch {
+        // do nothing
+      }
       throw new BadRequestException('i18n:merchants.errors.fileNotSupported');
     }
     if (file.size > maxBytes) {
       try {
         await unlink(file.path);
-      } catch {}
+      } catch {
+        // do nothing
+      }
       throw new BadRequestException('i18n:merchants.errors.fileTooLarge');
     }
 
@@ -304,7 +314,7 @@ export class MerchantsController {
     @Body() dto: UpdateMerchantDto,
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { role: Role },
-  ) {
+  ): Promise<MerchantDocument> {
     const merchant = await this.svc.findOne(id);
     if (!merchant)
       throw new NotFoundException('i18n:merchants.errors.notFound');
@@ -312,7 +322,7 @@ export class MerchantsController {
     assertOwnerOrAdmin(id, jwtMerchantId, user.role, this.translationService);
 
     // (اختياري) لوج محلي بدون req:
-    this.logger.debug('DTO keys = %o', Object.keys(dto as any));
+    this.logger.debug('DTO keys = %o', Object.keys(dto));
     return this.svc.update(id, dto);
   }
 
@@ -338,7 +348,7 @@ export class MerchantsController {
     @Param('id') id: string,
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { userId: string; role: Role },
-  ) {
+  ): Promise<{ message: string }> {
     assertOwnerOrAdmin(id, jwtMerchantId, user.role, this.translationService);
     // نفّذ الحذف الناعم بدل الصلب لأمان وتوافق
     return this.svc.softDelete(id, user, 'via DELETE /merchants/:id');
@@ -361,7 +371,7 @@ export class MerchantsController {
     @Param('id') id: string,
     @CurrentMerchantId() jwtMerchantId: string | null,
     @CurrentUser() user: { role: Role },
-  ) {
+  ): Promise<{ merchantId: string; subscriptionActive: boolean }> {
     assertOwnerOrAdmin(id, jwtMerchantId, user.role, this.translationService);
     return this.svc.isSubscriptionActive(id).then((active) => ({
       merchantId: id,
@@ -386,7 +396,7 @@ export class MerchantsController {
     @Param('id') merchantId: string,
     @Param('itemKey') itemKey: string,
     @CurrentMerchantId() jwtMerchantId: string | null,
-  ) {
+  ): Promise<{ message: string; skippedChecklistItems: string[] }> {
     // تحقق أن المستخدم مالك المتجر
     if (jwtMerchantId !== merchantId) {
       throw new HttpException(
@@ -400,7 +410,7 @@ export class MerchantsController {
     if (!merchant)
       throw new NotFoundException('i18n:merchants.errors.notFound');
 
-    const merchantDoc = merchant as any;
+    const merchantDoc = merchant;
     if (!merchantDoc.skippedChecklistItems.includes(itemKey)) {
       merchantDoc.skippedChecklistItems.push(itemKey);
       await merchantDoc.save();
@@ -420,7 +430,10 @@ export class MerchantsController {
   @ApiNotFoundResponse({
     description: 'i18n:merchants.errors.notFound',
   })
-  saveBasic(@Param('id') id: string, @Body() dto: OnboardingBasicDto) {
+  saveBasic(
+    @Param('id') id: string,
+    @Body() dto: OnboardingBasicDto,
+  ): Promise<MerchantDocument> {
     return this.svc.saveBasicInfo(id, dto);
   }
 
@@ -431,7 +444,9 @@ export class MerchantsController {
   @ApiNotFoundResponse({
     description: 'i18n:merchants.errors.notFound',
   })
-  async ensureWorkflow(@Param('id') id: string) {
+  async ensureWorkflow(
+    @Param('id') id: string,
+  ): Promise<{ workflowId: string }> {
     const wfId = await this.svc.ensureWorkflow(id);
     return { workflowId: wfId };
   }
@@ -444,7 +459,7 @@ export class MerchantsController {
   @ApiNotFoundResponse({
     description: 'i18n:merchants.errors.notFound',
   })
-  async aiStoreContext(@Param('id') id: string) {
+  async aiStoreContext(@Param('id') id: string): Promise<unknown> {
     return this.svc.getStoreContext(id);
   }
 
@@ -454,32 +469,10 @@ export class MerchantsController {
   @ApiParam({ name: 'id', description: 'معرف التاجر' })
   @ApiBody({ type: UpdateProductSourceDto })
   @ApiOkResponse({ description: 'تم التبديل وربما بدأت المزامنة' })
-  @Patch(':id/product-source')
-  async setSource(
-    @Param('id') merchantId: string,
-    @Body() dto: UpdateProductSourceDto,
-    @CurrentMerchantId() jwtMerchantId: string | null,
-    @CurrentUserId() userId: string, // ✅ كان مفقود
-    @CurrentUser() user: { role: Role }, // لدور ADMIN
-  ) {
-    assertOwnerOrAdmin(
-      merchantId,
-      jwtMerchantId,
-      user.role,
-      this.translationService,
-    );
-
-    // اجلب المستخدم للتحقق من كلمة المرور
-    const account = await this.userModel
-      .findById(userId)
-      .select('+password role email name')
-      .exec();
-    if (!account)
-      throw new BadRequestException(
-        this.translationService.translate('auth.errors.userNotFound'),
-      );
-
-    // نطلب كلمة المرور إذا كان المصدر ليس INTERNAL أو عند sync فوري
+  private async verifyPasswordForSourceChange(
+    account: UserDocument,
+    dto: UpdateProductSourceDto,
+  ): Promise<void> {
     if (dto.source !== ProductSource.INTERNAL || dto.syncMode === 'immediate') {
       if (!dto.confirmPassword)
         throw new BadRequestException('كلمة المرور مطلوبة للتأكيد');
@@ -489,11 +482,107 @@ export class MerchantsController {
           this.translationService.translate('auth.errors.invalidCredentials'),
         );
     }
+  }
 
-    // 1) بدّل المصدر
+  private async handleImmediateSync(
+    merchantId: string,
+    userId: string,
+  ): Promise<{ mode: string; imported: number; updated: number }> {
+    await this.notifications.notifyUser(userId, {
+      type: 'catalog.sync.started',
+      title: 'بدء مزامنة الكتالوج',
+      body: 'بدأت عملية المزامنة الآن.',
+      merchantId,
+      severity: 'info',
+    });
+
+    try {
+      const result = await this.catalog.syncForMerchant(merchantId);
+      await this.notifications.notifyUser(userId, {
+        type: 'catalog.sync.completed',
+        title: 'اكتمال مزامنة الكتالوج',
+        body: `تم الاستيراد: ${result.imported} | التحديث: ${result.updated}`,
+        merchantId,
+        severity: 'success',
+        data: result,
+      });
+      return { mode: 'immediate', ...result };
+    } catch (e: unknown) {
+      const errorMessage =
+        e instanceof Error ? e.message : 'حدث خطأ أثناء المزامنة';
+      await this.notifications.notifyUser(userId, {
+        type: 'catalog.sync.failed',
+        title: 'فشل مزامنة الكتالوج',
+        body: errorMessage,
+        merchantId,
+        severity: 'error',
+      });
+      throw e;
+    }
+  }
+
+  private async handleBackgroundSync(
+    merchantId: string,
+    userId: string,
+    source: ProductSource,
+  ): Promise<{ mode: string; queued: boolean }> {
+    await this.outbox
+      .enqueueEvent({
+        aggregateType: 'catalog',
+        aggregateId: merchantId,
+        eventType: 'catalog.sync.requested',
+        payload: { merchantId, requestedBy: userId, source },
+        exchange: 'catalog.sync',
+        routingKey: 'requested',
+      })
+      .catch(() => {});
+
+    await this.notifications.notifyUser(userId, {
+      type: 'catalog.sync.queued',
+      title: 'تم جدولة مزامنة الكتالوج',
+      body: 'ستبدأ المزامنة في الخلفية.',
+      merchantId,
+      severity: 'info',
+    });
+
+    return { mode: 'background', queued: true };
+  }
+
+  @Patch(':id/product-source')
+  async setSource(
+    @Param('id') merchantId: string,
+    @Body() dto: UpdateProductSourceDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+    @CurrentUserId() userId: string, // ✅ كان مفقود
+    @CurrentUser() user: { role: Role }, // لدور ADMIN
+  ): Promise<{
+    merchant: MerchantDocument;
+    sync: { mode: string; queued?: boolean };
+  }> {
+    assertOwnerOrAdmin(
+      merchantId,
+      jwtMerchantId,
+      user.role,
+      this.translationService,
+    );
+
+    // Get user account for password verification
+    const account = await this.userModel
+      .findById(userId)
+      .select('+password role email name')
+      .exec();
+    if (!account)
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.userNotFound'),
+      );
+
+    // Verify password if required
+    await this.verifyPasswordForSourceChange(account, dto);
+
+    // Set product source
     const merchant = await this.svc.setProductSource(merchantId, dto.source);
 
-    // 2) أشعار
+    // Send notification about source change
     await this.notifications.notifyUser(userId, {
       type: 'productSource.changed',
       title: 'تم تغيير مصدر المنتجات',
@@ -503,60 +592,22 @@ export class MerchantsController {
       data: { source: dto.source },
     });
 
-    // 3) المزامنة حسب الوضع
+    // Handle synchronization based on mode
     const mode = dto.syncMode ?? 'background';
     if (mode === 'immediate') {
-      try {
-        await this.notifications.notifyUser(userId, {
-          type: 'catalog.sync.started',
-          title: 'بدء مزامنة الكتالوج',
-          body: 'بدأت عملية المزامنة الآن.',
-          merchantId,
-          severity: 'info',
-        });
-        const result = await this.catalog.syncForMerchant(merchantId);
-        await this.notifications.notifyUser(userId, {
-          type: 'catalog.sync.completed',
-          title: 'اكتمال مزامنة الكتالوج',
-          body: `تم الاستيراد: ${result.imported} | التحديث: ${result.updated}`,
-          merchantId,
-          severity: 'success',
-          data: result,
-        });
-        return { merchant, sync: { mode, ...result } };
-      } catch (e: any) {
-        await this.notifications.notifyUser(userId, {
-          type: 'catalog.sync.failed',
-          title: 'فشل مزامنة الكتالوج',
-          body: e?.message || 'حدث خطأ أثناء المزامنة',
-          merchantId,
-          severity: 'error',
-        });
-        throw e;
-      }
+      const syncResult = await this.handleImmediateSync(merchantId, userId);
+      return { merchant: merchant as MerchantDocument, sync: syncResult };
     }
 
     if (mode === 'background') {
-      await this.outbox
-        .enqueueEvent({
-          aggregateType: 'catalog',
-          aggregateId: merchantId,
-          eventType: 'catalog.sync.requested',
-          payload: { merchantId, requestedBy: userId, source: dto.source },
-          exchange: 'catalog.sync',
-          routingKey: 'requested',
-        })
-        .catch(() => {});
-      await this.notifications.notifyUser(userId, {
-        type: 'catalog.sync.queued',
-        title: 'تم جدولة مزامنة الكتالوج',
-        body: 'ستبدأ المزامنة في الخلفية.',
+      const syncResult = await this.handleBackgroundSync(
         merchantId,
-        severity: 'info',
-      });
-      return { merchant, sync: { mode: 'background', queued: true } };
+        userId,
+        dto.source,
+      );
+      return { merchant: merchant as MerchantDocument, sync: syncResult };
     }
 
-    return { merchant, sync: { mode: 'none' } };
+    return { merchant: merchant as MerchantDocument, sync: { mode: 'none' } };
   }
 }

@@ -19,7 +19,7 @@ export interface WorkflowCreatePayload {
 export interface N8nClientRepository {
   createWorkflow(payload: WorkflowCreatePayload): Promise<string>;
   getWorkflow(id: string): Promise<WorkflowDefinition>;
-  patchWorkflow(id: string, body: any): Promise<void>;
+  patchWorkflow(id: string, body: unknown): Promise<void>;
   deleteWorkflow(id: string): Promise<void>;
   setActive(id: string, active: boolean): Promise<void>;
 }

@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Req,
+  Request,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -30,10 +31,21 @@ import { CreateMessageDto } from './dto/create-message.dto';
 import { RateMessageDto } from './dto/rate-message.dto'; // ✅
 import { UpdateMessageDto } from './dto/update-message.dto';
 import { MessageService } from './message.service';
+import {
+  MessageItem,
+  MessageSessionEntity,
+} from './repositories/message.repository';
 
 interface InstructionResult {
   badReply: string;
   instruction: string;
+}
+
+interface AuthenticatedRequest extends Request {
+  user: {
+    merchantId: string;
+    userId: string;
+  };
 }
 @UseGuards(JwtAuthGuard)
 @Controller('messages')
@@ -69,7 +81,7 @@ export class MessageController {
   })
   @ApiBadRequestResponse({ description: 'البيانات غير صحيحة أو ناقصة' })
   @Public()
-  createOrAppend(@Body() dto: CreateMessageDto) {
+  createOrAppend(@Body() dto: CreateMessageDto): Promise<MessageSessionEntity> {
     return this.messageService.createOrAppend(dto);
   }
 
@@ -127,8 +139,8 @@ export class MessageController {
   async setHandover(
     @Param('sessionId') s: string,
     @Body('handoverToAgent') h: boolean,
-    @Req() req,
-  ) {
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{ success: boolean }> {
     await this.messageService.setHandover(s, h, req.user.merchantId);
     return { success: true };
   }
@@ -137,7 +149,7 @@ export class MessageController {
   findByWidgetAndSession(
     @Param('widgetSlug') widgetSlug: string,
     @Param('sessionId') sessionId: string,
-  ) {
+  ): Promise<MessageSessionEntity | null> {
     return this.messageService.findByWidgetSlugAndSession(
       widgetSlug,
       sessionId,
@@ -153,7 +165,10 @@ export class MessageController {
   @ApiOkResponse({
     description: 'محادثة واحدة بجميع الرسائل',
   })
-  findBySession(@Param('sessionId') sessionId: string, @Req() req) {
+  findBySession(
+    @Param('sessionId') sessionId: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<MessageSessionEntity | null> {
     return this.messageService.findBySession(sessionId, req.user.merchantId);
   }
 
@@ -163,7 +178,7 @@ export class MessageController {
   @ApiParam({ name: 'id', description: 'معرف الوثيقة في Mongo' })
   @ApiOkResponse()
   @ApiNotFoundResponse({ description: 'الجلسة غير موجودة' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string): Promise<MessageSessionEntity | null> {
     return this.messageService.findById(id);
   }
 
@@ -173,7 +188,10 @@ export class MessageController {
   @ApiBody({ type: UpdateMessageDto })
   @ApiOkResponse({ description: 'تم التحديث' })
   @ApiNotFoundResponse({ description: 'الجلسة غير موجودة' })
-  async update(@Param('id') id: string, @Body() dto: UpdateMessageDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateMessageDto,
+  ): Promise<MessageSessionEntity> {
     return this.messageService.update(id, dto);
   }
 
@@ -182,7 +200,7 @@ export class MessageController {
   @ApiParam({ name: 'id', description: 'معرف الوثيقة في Mongo' })
   @ApiOkResponse({ description: 'تم الحذف بنجاح' })
   @ApiNotFoundResponse({ description: 'الجلسة غير موجودة' })
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string): Promise<{ deleted: boolean }> {
     return this.messageService.remove(id);
   }
 
@@ -204,7 +222,7 @@ export class MessageController {
     @Query('channel') channel?: string,
     @Query('limit') limit = '20',
     @Query('page') page = '1',
-  ) {
+  ): Promise<{ data: MessageSessionEntity[]; total: number }> {
     return this.messageService.findAll({
       merchantId,
       channel,
@@ -259,9 +277,9 @@ export class MessageController {
     @Param('sessionId') sessionId: string,
     @Param('messageId') messageId: string,
     @Body() body: RateMessageDto,
-    @Req() req,
-  ) {
-    const userId = req.user?.userId ?? req.user?._id ?? null;
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{ status: string }> {
+    const userId = req.user?.userId ?? null;
 
     await this.messageService.rateMessage(
       sessionId,
@@ -326,7 +344,7 @@ export class MessageController {
   })
   async generateInstructions(
     @Body() dto: { badReplies: string[]; merchantId?: string },
-  ) {
+  ): Promise<InstructionResult[]> {
     const results: InstructionResult[] = [];
     for (const badReply of dto.badReplies) {
       const res =
@@ -365,7 +383,7 @@ export class MessageController {
   async getBadBotInstructions(
     @Query('limit') limit = 10,
     @Query('merchantId') merchantId?: string,
-  ) {
+  ): Promise<{ instructions: string[] }> {
     const badReplies = await this.messageService.getFrequentBadBotReplies(
       merchantId ?? '',
       Number(limit),
@@ -398,7 +416,7 @@ export class MessageController {
         {
           _id: '60d0fe4f5311236168a109ca',
           text: 'مرحباً، كيف يمكنني مساعدتك اليوم؟',
-          rating: 4,
+          rating: 2,
           feedback: 'الرد كان سريعاً لكنه عام جداً',
           ratedBy: '60d0fe4f5311236168a109cb',
           ratedAt: '2023-05-20T10:30:00Z',
@@ -416,12 +434,20 @@ export class MessageController {
       },
     },
   })
-  async getRatedMessages(@Param('sessionId') sessionId: string, @Req() req) {
+  async getRatedMessages(
+    @Param('sessionId') sessionId: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<MessageItem[]> {
     const session = await this.messageService.findBySession(
       sessionId,
       req.user.merchantId,
     );
     if (!session) return [];
-    return session.messages.filter((m) => m.rating !== null);
+    return session.messages
+      .filter((m) => m.rating !== null)
+      .map((m) => ({
+        ...m,
+        role: m.role === 'customer' ? 'user' : m.role,
+      })) as MessageItem[];
   }
 }

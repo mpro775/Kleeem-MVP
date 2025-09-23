@@ -7,7 +7,6 @@ import {
   UploadedFile,
   Res,
   Param,
-  Delete,
   Get,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -68,12 +67,12 @@ export class MediaController {
     @UploadedFile() file: Express.Multer.File,
     @Body() mediaHandlerDto: MediaHandlerDto,
     @Res() res: Response,
-  ) {
+  ): Promise<void> {
     if (!file) {
       throw new Error('No file uploaded');
     }
     const result = await this.mediaService.handleMedia(mediaHandlerDto);
-    return res.status(201).json(result);
+    res.status(201).json(result);
   }
 
   @Get('file/:id')
@@ -84,7 +83,7 @@ export class MediaController {
   @ApiParam({ name: 'id', description: 'معرف الملف' })
   @ApiResponse({ status: 200, description: 'تم جلب الملف بنجاح' })
   @ApiResponse({ status: 404, description: 'الملف غير موجود' })
-  async getFile(@Param('id') id: string, @Res() res: Response) {
+  getFile(@Param('id') id: string, @Res() res: Response): void {
     // Implementation here
     return res.sendFile(id, { root: './uploads' });
   }

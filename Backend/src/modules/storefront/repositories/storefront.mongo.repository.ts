@@ -17,7 +17,7 @@ export class StorefrontMongoRepository implements StorefrontRepository {
   ) {}
 
   async create(dto: Partial<Storefront>): Promise<StorefrontEntity> {
-    const doc = await this.model.create(dto as any);
+    const doc = await this.model.create(dto as Record<string, unknown>);
     return doc.toObject() as StorefrontEntity;
   }
 
@@ -29,14 +29,14 @@ export class StorefrontMongoRepository implements StorefrontRepository {
   }
 
   async findByMerchant(merchantId: string): Promise<StorefrontEntity | null> {
-    const or: any[] = [{ merchant: merchantId }];
+    const or: Record<string, unknown>[] = [{ merchant: merchantId }];
     if (Types.ObjectId.isValid(merchantId))
       or.push({ merchant: new Types.ObjectId(merchantId) });
     return this.model.findOne({ $or: or }).lean<StorefrontEntity>().exec();
   }
 
   async existsSlug(slug: string, excludeId?: string): Promise<boolean> {
-    const q: any = { slug };
+    const q: Record<string, unknown> = { slug };
     if (excludeId && Types.ObjectId.isValid(excludeId))
       q._id = { $ne: new Types.ObjectId(excludeId) };
     const exists = await this.model.exists(q).lean();
@@ -49,7 +49,7 @@ export class StorefrontMongoRepository implements StorefrontRepository {
   ): Promise<StorefrontEntity | null> {
     if (!Types.ObjectId.isValid(id)) return null;
     return this.model
-      .findByIdAndUpdate(id, patch as any, { new: true })
+      .findByIdAndUpdate(id, patch as Record<string, unknown>, { new: true })
       .lean<StorefrontEntity>()
       .exec();
   }

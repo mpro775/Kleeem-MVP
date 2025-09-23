@@ -36,7 +36,7 @@ export class MessageItemDto {
   })
   @IsOptional()
   @IsObject()
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 
   @ApiPropertyOptional({
     description:

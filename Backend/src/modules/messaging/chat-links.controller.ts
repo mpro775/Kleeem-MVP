@@ -9,7 +9,9 @@ export class ChatLinksController {
   constructor(private readonly messageService: MessageService) {}
 
   @Post(':merchantId')
-  async createChatLink(@Param('merchantId') merchantId: string) {
+  async createChatLink(
+    @Param('merchantId') merchantId: string,
+  ): Promise<{ sessionId: string; url: string }> {
     // توليد sessionId جديد
     const sessionId = uuidv4();
     // تهيئة جلسة فارغة (اختياري)

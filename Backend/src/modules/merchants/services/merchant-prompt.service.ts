@@ -2,6 +2,8 @@ import { Injectable, Inject } from '@nestjs/common';
 import * as Handlebars from 'handlebars';
 
 import { MerchantsRepository } from '../repositories/merchants.repository';
+import { MerchantDocument } from '../schemas/merchant.schema';
+import { QuickConfig } from '../schemas/quick-config.schema';
 
 import { PromptBuilderService } from './prompt-builder.service';
 import { buildHbsContext, stripGuardSections } from './prompt-utils';
@@ -16,37 +18,49 @@ export class MerchantPromptService {
     private readonly repo: MerchantsRepository,
   ) {}
 
-  async saveAdvancedVersion(id: string, newTpl: string, note?: string) {
+  async saveAdvancedVersion(
+    id: string,
+    newTpl: string,
+    note?: string,
+  ): Promise<void> {
     await this.versions.snapshot(id, note);
     const m = await this.repo.findOne(id);
-    (m as any).currentAdvancedConfig.template = newTpl;
-    await (m as any).save?.();
+    m.currentAdvancedConfig.template = newTpl;
+    await m.save?.();
   }
 
-  async listAdvancedVersions(id: string) {
+  async listAdvancedVersions(
+    id: string,
+  ): Promise<{ template: string; note?: string; updatedAt: Date }[]> {
     return this.versions.list(id);
   }
 
-  async revertAdvancedVersion(id: string, index: number) {
+  async revertAdvancedVersion(id: string, index: number): Promise<void> {
     return this.versions.revert(id, index);
   }
 
   async previewPromptV2(
     id: string,
     dto: {
-      quickConfig?: Record<string, any>;
-      testVars?: Record<string, any>;
+      quickConfig?: Record<string, unknown>;
+      testVars?: Record<string, unknown>;
       audience?: 'merchant' | 'agent';
     },
   ): Promise<string> {
     const m = await this.repo.findOne(id);
-    const merged = (m as any).toObject ? (m as any).toObject() : m;
+    const merged = (m.toObject ? m.toObject() : m) as MerchantDocument;
 
     if (dto.quickConfig && Object.keys(dto.quickConfig).length) {
-      merged.quickConfig = { ...merged.quickConfig, ...dto.quickConfig };
+      merged.quickConfig = {
+        ...merged.quickConfig,
+        ...(dto.quickConfig as Partial<QuickConfig>),
+      } as QuickConfig;
     }
 
-    const ctx = buildHbsContext(merged, dto.testVars ?? {});
+    const ctx = buildHbsContext(merged, dto.testVars ?? {}) as Record<
+      string,
+      unknown
+    >;
     const audience = dto.audience ?? 'merchant';
 
     const withGuard = await this.promptBuilder.compileTemplate(merged);
@@ -62,23 +76,21 @@ export class MerchantPromptService {
   async getAdvancedTemplateForEditor(
     id: string,
     testVars: Record<string, string> = {},
-  ) {
+  ): Promise<{ template: string; note?: string }> {
     const m = await this.repo.findOne(id);
 
-    const current = (m as any).currentAdvancedConfig?.template?.trim() ?? '';
+    const current = m.currentAdvancedConfig?.template?.trim() ?? '';
     if (current) {
       return {
         template: current,
-        note: (m as any).currentAdvancedConfig?.note ?? '',
+        note: m.currentAdvancedConfig?.note ?? '',
       };
     }
 
-    const finalWithGuard = await this.promptBuilder.compileTemplate(m as any);
+    const finalWithGuard = await this.promptBuilder.compileTemplate(m);
     const noGuard = stripGuardSections(finalWithGuard);
 
-    const filled = Handlebars.compile(noGuard)(
-      buildHbsContext(m as any, testVars),
-    );
+    const filled = Handlebars.compile(noGuard)(buildHbsContext(m, testVars));
 
     return { template: filled, note: 'Generated from final (no guard)' };
   }

@@ -11,13 +11,20 @@ import {
 } from 'src/modules/merchants/schemas/merchant.schema';
 import { PlansService } from 'src/modules/plans/plans.service';
 
+import { Plan } from '../plans/schemas/plan.schema';
+
+// ثوابت لتجنب الأرقام السحرية
+const MINUTES_IN_HOUR = 60;
+const SECONDS_IN_MINUTE = 60;
+const MS_IN_SECOND = 1000;
+const TIMEZONE_OFFSET_HOURS = 3; // Asia/Aden +03
+const TIMEZONE_OFFSET_MS =
+  TIMEZONE_OFFSET_HOURS * MINUTES_IN_HOUR * SECONDS_IN_MINUTE * MS_IN_SECOND;
+
 import {
   UsageCounter,
   UsageCounterDocument,
 } from './schemas/usage-counter.schema';
-
-// لو عندك MerchantService؛ وإلا اجلب MerchantModel مباشرة
-
 import { UsageLimitResolver } from './usage-limit.resolver';
 
 @Injectable()
@@ -32,8 +39,7 @@ export class UsageService {
     @InjectConnection() private readonly connection: Connection,
   ) {}
   monthKeyFrom(date = new Date()): string {
-    const tzOffsetMs = 3 * 60 * 60 * 1000; // Asia/Aden +03
-    const d = new Date(date.getTime() + tzOffsetMs);
+    const d = new Date(date.getTime() + TIMEZONE_OFFSET_MS);
     const year = d.getUTCFullYear();
     const month = String(d.getUTCMonth() + 1).padStart(2, '0');
     return `${year}-${month}`;
@@ -45,7 +51,10 @@ export class UsageService {
     return m;
   }
 
-  async consumeMessages(merchantId: string, n = 1) {
+  async consumeMessages(
+    merchantId: string,
+    n = 1,
+  ): Promise<{ monthKey: string; messagesUsed: number; limit: number }> {
     const monthKey = this.monthKeyFrom();
     const mId = new Types.ObjectId(merchantId);
 
@@ -78,11 +87,18 @@ export class UsageService {
       await session.abortTransaction();
       throw e;
     } finally {
-      session.endSession();
+      await session.endSession();
     }
   }
 
-  async getUsage(merchantId: string, monthKey?: string) {
+  async getUsage(
+    merchantId: string,
+    monthKey?: string,
+  ): Promise<{
+    merchantId: Types.ObjectId | string;
+    monthKey: string;
+    messagesUsed: number;
+  }> {
     const key = monthKey ?? this.monthKeyFrom();
     const doc = await this.usageModel
       .findOne({ merchantId, monthKey: key })
@@ -90,7 +106,11 @@ export class UsageService {
     return doc ?? { merchantId, monthKey: key, messagesUsed: 0 };
   }
 
-  async getPlanAndLimit(merchantId: string) {
+  async getPlanAndLimit(merchantId: string): Promise<{
+    plan: Plan | null;
+    messageLimit: number;
+    isUnlimited: boolean;
+  }> {
     const merchant = await this.merchantModel.findById(merchantId).lean();
     if (!merchant) throw new NotFoundException('Merchant not found');
 
@@ -111,7 +131,14 @@ export class UsageService {
   }
 
   // لإعادة التعيين اليدوي (نادراً ما تحتاجها مع monthKey)
-  async resetUsage(merchantId: string, monthKey?: string) {
+  async resetUsage(
+    merchantId: string,
+    monthKey?: string,
+  ): Promise<{
+    merchantId: Types.ObjectId | string;
+    monthKey: string;
+    messagesUsed: number;
+  }> {
     const key = monthKey ?? this.monthKeyFrom();
     await this.usageModel.updateOne(
       { merchantId, monthKey: key },

@@ -19,7 +19,7 @@ export class PlanMongoRepository implements PlanRepository {
   ) {}
 
   async create(dto: Partial<PlanEntity>): Promise<PlanEntity> {
-    const doc = await this.model.create(dto as any);
+    const doc = await this.model.create(dto as unknown);
     return doc.toObject() as PlanEntity;
   }
 
@@ -28,7 +28,7 @@ export class PlanMongoRepository implements PlanRepository {
   }
 
   private buildFilter(filter: PlanFilter): FilterQuery<PlanDocument> {
-    const q: any = {};
+    const q: Record<string, unknown> = {};
     if (filter.archivedNotTrue !== false) q.archived = { $ne: true };
     if (typeof filter.isActive === 'boolean') q.isActive = filter.isActive;
     if (typeof filter.isTrial === 'boolean') q.isTrial = filter.isTrial;
@@ -73,7 +73,7 @@ export class PlanMongoRepository implements PlanRepository {
   ): Promise<PlanEntity | null> {
     if (!Types.ObjectId.isValid(id)) return null;
     return this.model
-      .findByIdAndUpdate(id, patch as any, { new: true })
+      .findByIdAndUpdate(id, patch, { new: true })
       .lean<PlanEntity>()
       .exec();
   }

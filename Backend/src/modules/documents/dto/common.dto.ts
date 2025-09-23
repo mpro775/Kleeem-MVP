@@ -1,12 +1,6 @@
 // src/modules/documents/dto/common.dto.ts
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsString,
-  Matches,
-  IsNumber,
-  IsOptional,
-  IsArray,
-} from 'class-validator';
+import { IsString, Matches, IsNumber } from 'class-validator';
 
 export class MerchantParamDto {
   @ApiProperty({ example: 'm_12345' })

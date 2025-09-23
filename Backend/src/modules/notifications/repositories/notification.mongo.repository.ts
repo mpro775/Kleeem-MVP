@@ -31,7 +31,7 @@ export class NotificationMongoRepository implements NotificationRepository {
       body: input.body,
       data: input.data,
       severity: input.severity ?? 'info',
-    } as any);
+    } as unknown);
     return doc.toObject() as NotificationEntity;
   }
 

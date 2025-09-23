@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
+import { AdvancedConfig } from '../schemas/advanced-config.schema';
 import { Merchant, MerchantDocument } from '../schemas/merchant.schema';
 
 import { PromptVersionRepository } from './prompt-version.repository';
@@ -26,8 +27,12 @@ export class MongoPromptVersionRepository implements PromptVersionRepository {
       .findById(merchantId, 'advancedConfigHistory')
       .lean();
     if (!m) throw new NotFoundException('Merchant not found');
-    return Array.isArray((m as any).advancedConfigHistory)
-      ? ((m as any).advancedConfigHistory as any[])
+    return Array.isArray(
+      (m as unknown as { advancedConfigHistory: AdvancedConfig[] })
+        .advancedConfigHistory,
+    )
+      ? (m as unknown as { advancedConfigHistory: AdvancedConfig[] })
+          .advancedConfigHistory
       : [];
   }
 

@@ -1,10 +1,10 @@
+// src/modules/users/users.controller.ts
 import { CacheInterceptor } from '@nestjs/cache-manager';
 import {
   Controller,
   Get,
   Post,
   Put,
-  Delete,
   Param,
   Body,
   UseGuards,
@@ -24,24 +24,32 @@ import {
   ApiNotFoundResponse,
 } from '@nestjs/swagger';
 import * as bcrypt from 'bcrypt';
+import { Types } from 'mongoose';
 
-
-import { Model } from 'mongoose';
-import { ConfirmPasswordDto } from 'src/common/dto/confirm-password.dto';
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
-  CurrentUser,
 } from '../../common';
-
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TranslationService } from '../../common/services/translation.service';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { NotificationsPrefsDto } from './dto/notifications-prefs.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User, UserDocument } from './schemas/user.schema';
+import { User, UserRole } from './schemas/user.schema';
 import { UsersService } from './users.service';
+
+import type { UserDocument } from './schemas/user.schema';
+import type { UserLean } from './types';
+import type { Model } from 'mongoose';
+import type { RequestWithUser } from 'src/common/interfaces/request-with-user.interface';
+
+/** ثوابت لتجنب النصوص السحرية في الرسائل */
+const I18N_UNAUTHORIZED = 'i18n:auth.errors.unauthorized' as const;
+const I18N_USER_NOT_FOUND = 'i18n:users.errors.userNotFound' as const;
+const I18N_INVALID_CREDENTIALS = 'i18n:auth.errors.invalidCredentials' as const;
+const I18N_INSUFFICIENT_PERMS =
+  'i18n:users.errors.insufficientPermissions' as const;
 
 @ApiTags('المستخدمون')
 @ApiBearerAuth()
@@ -50,7 +58,7 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(User.name) private readonly userModel: Model<User>,
     private readonly translationService: TranslationService,
   ) {}
 
@@ -60,12 +68,9 @@ export class UsersController {
     description: 'i18n:users.operations.list.description',
   })
   @ApiSuccessResponse(Array, 'i18n:users.messages.listSuccess')
-  @ApiUnauthorizedResponse({
-    description: 'i18n:auth.errors.unauthorized',
-  })
+  @ApiUnauthorizedResponse({ description: I18N_UNAUTHORIZED })
   @UseInterceptors(CacheInterceptor)
-  @UseGuards(JwtAuthGuard)
-  findAll() {
+  findAll(): Promise<UserLean[]> {
     return this.usersService.findAll();
   }
 
@@ -76,12 +81,9 @@ export class UsersController {
     description: 'i18n:users.operations.get.description',
   })
   @ApiSuccessResponse(CreateUserDto, 'i18n:users.messages.getSuccess')
-  @ApiNotFoundResponse({ description: 'i18n:users.errors.userNotFound' })
-  @ApiUnauthorizedResponse({
-    description: 'i18n:auth.errors.unauthorized',
-  })
-  @UseGuards(JwtAuthGuard)
-  findOne(@Param('id') id: string) {
+  @ApiNotFoundResponse({ description: I18N_USER_NOT_FOUND })
+  @ApiUnauthorizedResponse({ description: I18N_UNAUTHORIZED })
+  findOne(@Param('id') id: string): Promise<UserLean> {
     return this.usersService.findOne(id);
   }
 
@@ -91,14 +93,9 @@ export class UsersController {
     description: 'i18n:users.operations.create.bodyDescription',
   })
   @CommonApiCreatedResponse(CreateUserDto, 'i18n:users.messages.userCreated')
-  @ApiBadRequestResponse({
-    description: 'i18n:users.errors.invalidData',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'i18n:auth.errors.unauthorized',
-  })
-  @UseGuards(JwtAuthGuard)
-  create(@Body() createDto: CreateUserDto) {
+  @ApiBadRequestResponse({ description: 'i18n:users.errors.invalidData' })
+  @ApiUnauthorizedResponse({ description: I18N_UNAUTHORIZED })
+  create(@Body() createDto: CreateUserDto): Promise<UserDocument> {
     return this.usersService.create(createDto);
   }
 
@@ -108,9 +105,12 @@ export class UsersController {
     summary: 'i18n:users.operations.update.summary',
     description: 'i18n:users.operations.update.description',
   })
-  updateProfile(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+  updateProfile(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+  ): Promise<UserDocument> {
     // أي حقل email يأتي ضمنياً سيتم تجاهله
-    return this.usersService.update(id, dto as any);
+    return this.usersService.update(id, dto);
   }
 
   // إشعاراتي - جلب
@@ -119,7 +119,9 @@ export class UsersController {
     summary: 'i18n:users.operations.getNotifications.summary',
     description: 'i18n:users.operations.getNotifications.description',
   })
-  async getNotifications(@Param('id') id: string) {
+  async getNotifications(
+    @Param('id') id: string,
+  ): Promise<NotificationsPrefsDto> {
     return this.usersService.getNotificationsPrefs(id);
   }
 
@@ -132,7 +134,7 @@ export class UsersController {
   updateNotifications(
     @Param('id') id: string,
     @Body() dto: NotificationsPrefsDto,
-  ) {
+  ): Promise<NotificationsPrefsDto> {
     return this.usersService.updateNotificationsPrefs(id, dto);
   }
 
@@ -144,52 +146,53 @@ export class UsersController {
   })
   async deleteWithPassword(
     @Param('id') id: string,
-    @Body() body: ConfirmPasswordDto, // { confirmPassword: string }
-    @Req() req: any,
-  ) {
+    @Body() body: { confirmPassword: string },
+    @Req() req: RequestWithUser,
+  ): Promise<void> {
     const actorId = req.user?.userId;
     const actorRole = req.user?.role;
 
     // الصلاحيات
     const isSelf = actorId === id;
-    const isAdmin = actorRole === 'ADMIN';
+    const isAdmin = actorRole === UserRole.ADMIN;
     if (!isSelf && !isAdmin) {
-      throw new BadRequestException(
-        'i18n:users.errors.insufficientPermissions',
-      );
+      throw new BadRequestException(I18N_INSUFFICIENT_PERMS);
     }
 
     // من الذي نطابق كلمة مروره؟
-    const target = await this.userModel.findById(id).select('+password');
-    if (!target)
-      throw new BadRequestException('i18n:users.errors.userNotFound');
+    const target = await this.userModel
+      .findById(toObjectId(id))
+      .select('+password')
+      .exec();
+    if (!target) throw new BadRequestException(I18N_USER_NOT_FOUND);
 
     // لو أدمن → نتحقق من كلمة مرور الأدمن نفسه (actor)
     // لو حذف ذاتي → نتحقق من كلمة مرور نفس المستخدم الهدف
     const passwordOwnerId = isAdmin && !isSelf ? actorId : id;
-    const passwordOwner = await this.userModel
-      .findById(passwordOwnerId)
-      .select('+password');
+    const passwordOwner = passwordOwnerId
+      ? await this.userModel
+          .findById(toObjectId(passwordOwnerId))
+          .select('+password')
+          .exec()
+      : null;
+
     if (!passwordOwner?.password) {
       // حساب SSO بدون كلمة مرور؟ اطلب OTP بدل ذلك
-      throw new BadRequestException('i18n:users.errors.invalidCredentials');
+      throw new BadRequestException(I18N_INVALID_CREDENTIALS);
     }
 
     const ok = await bcrypt.compare(
       body.confirmPassword,
       passwordOwner.password,
     );
-    if (!ok)
-      throw new BadRequestException('i18n:auth.errors.invalidCredentials');
+    if (!ok) throw new BadRequestException(I18N_INVALID_CREDENTIALS);
 
-    // 🔒 بدّلها بحذف ناعم (مقترح بالأسفل)
+    // حذف ناعم/فعلي بحسب تنفيذ الخدمة
     return this.usersService.remove(id);
   }
 }
 
-/**
- * النواقص:
- * - إضافة أمثلة JSON في ApiOkResponse وApiCreatedResponse باستخدام schema.example.
- * - يمكن إضافة ApiForbiddenResponse لحالات صلاحيات خاصة.
- * - توصيف دقيق لحقول DTOs (مثل طول النص وتنسيق البريد الإلكتروني).
- */
+/** util محلي */
+function toObjectId(id: string): Types.ObjectId {
+  return new Types.ObjectId(id);
+}

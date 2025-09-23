@@ -4,6 +4,7 @@ import { MerchantRepository } from './repositories/merchant.repository';
 import {
   ProductRepository,
   ProductLean,
+  OfferInfo,
 } from './repositories/product.repository';
 import { PRODUCT_REPOSITORY, MERCHANT_REPOSITORY } from './tokens';
 
@@ -16,7 +17,7 @@ export class OffersService {
     private readonly merchants: MerchantRepository,
   ) {}
 
-  private computeIsActive(offer: any): boolean {
+  private computeIsActive(offer: OfferInfo): boolean {
     if (!offer?.enabled || offer?.newPrice == null) return false;
     const now = Date.now();
     const s = offer.startAt ? new Date(offer.startAt).getTime() : -Infinity;
@@ -35,11 +36,9 @@ export class OffersService {
     p: ProductLean,
     publicSlug?: string,
   ): string | undefined {
-    const slug = (p as any).slug || String(p._id);
-    if ((p as any).storefrontDomain)
-      return `https://${(p as any).storefrontDomain}/p/${slug}`;
-    if ((p as any).storefrontSlug)
-      return `/${(p as any).storefrontSlug}/store/p/${slug}`;
+    const slug = p.slug || String(p._id);
+    if (p.storefrontDomain) return `https://${p.storefrontDomain}/p/${slug}`;
+    if (p.storefrontSlug) return `/${p.storefrontSlug}/store/p/${slug}`;
     if (publicSlug) return `/${publicSlug}/store/p/${slug}`;
     return undefined;
   }
@@ -47,44 +46,62 @@ export class OffersService {
   async listAllOffers(
     merchantId: string,
     opts: { limit: number; offset: number },
-  ) {
+  ): Promise<Record<string, unknown>[]> {
     const [publicSlug, products] = await Promise.all([
       this.merchants.getPublicSlug(merchantId),
       this.products.findOffersByMerchant(merchantId, opts),
     ]);
 
-    return products.map((p) => {
-      const isActive = this.computeIsActive((p as any).offer);
-      const priceOld = (p as any).offer?.oldPrice ?? (p as any).price ?? null;
-      const priceNew = (p as any).offer?.newPrice ?? null;
-      const priceEffective =
-        isActive && priceNew != null
-          ? Number(priceNew)
-          : Number((p as any).price ?? priceNew ?? 0);
+    return products.map((p) => this._transformProductToOffer(p, publicSlug));
+  }
 
-      return {
-        id: String(p._id),
-        name: (p as any).name,
-        slug: (p as any).slug,
-        priceOld: priceOld ?? null,
-        priceNew,
-        priceEffective,
-        currency: (p as any).currency,
-        discountPct: this.discountPct(
-          priceOld ?? undefined,
-          priceNew ?? undefined,
-        ),
-        url: this.buildPublicUrl(p, publicSlug),
-        isActive,
-        period: {
-          startAt: (p as any).offer?.startAt ?? null,
-          endAt: (p as any).offer?.endAt ?? null,
-        },
-        image:
-          Array.isArray((p as any).images) && (p as any).images.length
-            ? (p as any).images[0]
-            : undefined,
-      };
-    });
+  private _transformProductToOffer(
+    p: ProductLean,
+    publicSlug?: string,
+  ): Record<string, unknown> {
+    const isActive = this.computeIsActive(p.offer ?? {});
+    const prices = this._calculatePrices(p, isActive);
+
+    return {
+      id: String(p._id),
+      name: p.name,
+      slug: p.slug,
+      ...prices,
+      currency: p.currency,
+      discountPct: this.discountPct(
+        prices.priceOld ?? undefined,
+        prices.priceNew ?? undefined,
+      ),
+      url: this.buildPublicUrl(p, publicSlug),
+      isActive,
+      period: {
+        startAt: p.offer?.startAt ?? null,
+        endAt: p.offer?.endAt ?? null,
+      },
+      image:
+        Array.isArray(p.images) && p.images.length ? p.images[0] : undefined,
+    };
+  }
+
+  private _calculatePrices(
+    p: ProductLean,
+    isActive: boolean,
+  ): {
+    priceOld: number | null;
+    priceNew: number | null;
+    priceEffective: number;
+  } {
+    const priceOld = p.offer?.oldPrice ?? p.price ?? null;
+    const priceNew = p.offer?.newPrice ?? null;
+    const priceEffective =
+      isActive && priceNew != null
+        ? Number(priceNew)
+        : Number(p.price ?? priceNew ?? 0);
+
+    return {
+      priceOld: priceOld ?? null,
+      priceNew,
+      priceEffective,
+    };
   }
 }

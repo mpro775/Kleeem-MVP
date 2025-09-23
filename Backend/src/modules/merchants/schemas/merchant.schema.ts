@@ -3,6 +3,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
+import { BASE_36, MAX_SLUG_LENGTH, SLUG_SUFFIX_LENGTH } from '../constants';
+
 import { Address, AddressSchema } from './address.schema';
 import { AdvancedConfig, AdvancedConfigSchema } from './advanced-config.schema';
 import { QuickConfig, QuickConfigSchema } from './quick-config.schema';
@@ -19,7 +21,7 @@ function normalizeSlug(input = '') {
     .replace(/[^a-z0-9-]/g, '')
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 50)
+    .slice(0, MAX_SLUG_LENGTH)
     .replace(/-+$/g, '');
 }
 export interface MerchantDocument extends Merchant, Document {
@@ -235,14 +237,14 @@ MerchantSchema.index(
   { background: true },
 );
 MerchantSchema.pre('validate', function (next) {
-  const doc = this as any;
+  const doc = this as unknown as MerchantDocument;
 
   if (doc.isNew) {
-    const base = doc.publicSlug || doc.name || doc.domain || 'store';
+    const base = doc.publicSlug || doc.name || 'store';
     let normalized = normalizeSlug(base);
     // fallback إن طلع فاضي بسبب اسم عربي
     if (!normalized) {
-      normalized = `s${doc._id?.toString().slice(-6) || Math.random().toString(36).slice(2, 8)}`;
+      normalized = `s${doc._id?.toString().slice(-SLUG_SUFFIX_LENGTH) || Math.random().toString(BASE_36).slice(2, MAX_SLUG_LENGTH)}`;
     }
     doc.publicSlug = normalized;
   } else if (doc.isModified('publicSlug')) {
