@@ -1,15 +1,14 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { I18nService } from 'nestjs-i18n';
 
 import { TranslationService } from './translation.service';
 
 describe('TranslationService', () => {
   let service: TranslationService;
-  let i18nService: I18nService;
 
   beforeEach(async () => {
     const mockI18nService = {
-      translate: jest.fn((key: string, args?: any) => {
+      translate: jest.fn((key: string) => {
         // Mock translation - return key if no translation found
         return `translated_${key}`;
       }),
@@ -26,7 +25,6 @@ describe('TranslationService', () => {
     }).compile();
 
     service = module.get<TranslationService>(TranslationService);
-    i18nService = module.get<I18nService>(I18nService);
   });
 
   it('should be defined', () => {
@@ -39,14 +37,14 @@ describe('TranslationService', () => {
       expect(result).toBe('translated_test.key');
     });
 
-    it('should handle translation errors gracefully', () => {
+    it('should handle translation errors gracefully', async () => {
       const mockI18nService = {
         translate: jest.fn(() => {
           throw new Error('Translation error');
         }),
       };
 
-      const module = Test.createTestingModule({
+      const testModule = await Test.createTestingModule({
         providers: [
           TranslationService,
           {
@@ -54,9 +52,9 @@ describe('TranslationService', () => {
             useValue: mockI18nService,
           },
         ],
-      });
+      }).compile();
 
-      const testService = module.get(TranslationService);
+      const testService = testModule.get(TranslationService);
       const result = testService.translate('error.key');
       expect(result).toBe('error.key'); // Should return original key
     });
@@ -148,14 +146,14 @@ describe('TranslationService', () => {
       expect(result).toBe(true);
     });
 
-    it('should handle missing translations', () => {
+    it('should handle missing translations', async () => {
       const mockI18nService = {
         translate: jest.fn(() => {
           throw new Error('Translation not found');
         }),
       };
 
-      const module = Test.createTestingModule({
+      const testModule = await Test.createTestingModule({
         providers: [
           TranslationService,
           {
@@ -163,9 +161,9 @@ describe('TranslationService', () => {
             useValue: mockI18nService,
           },
         ],
-      });
+      }).compile();
 
-      const testService = module.get(TranslationService);
+      const testService = testModule.get(TranslationService);
       const result = testService.hasTranslation('missing.key');
       expect(result).toBe(false);
     });
@@ -189,14 +187,14 @@ describe('TranslationService', () => {
       expect(result).toBe('translated_test.key');
     });
 
-    it('should return fallback if translation fails', () => {
+    it('should return fallback if translation fails', async () => {
       const mockI18nService = {
         translate: jest.fn(() => {
           throw new Error('Translation error');
         }),
       };
 
-      const module = Test.createTestingModule({
+      const testModule = await Test.createTestingModule({
         providers: [
           TranslationService,
           {
@@ -204,9 +202,9 @@ describe('TranslationService', () => {
             useValue: mockI18nService,
           },
         ],
-      });
+      }).compile();
 
-      const testService = module.get(TranslationService);
+      const testService = testModule.get(TranslationService);
       const result = testService.translateWithFallback(
         'missing.key',
         'fallback text',

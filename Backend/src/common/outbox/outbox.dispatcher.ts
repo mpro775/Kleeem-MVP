@@ -16,7 +16,7 @@ export class OutboxDispatcher {
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
-  async reap() {
+  async reap(): Promise<void> {
     await this.outbox.recoverStuckPublishing();
   }
 

@@ -4,6 +4,8 @@ import { ConfigService } from '@nestjs/config';
 import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 
+const SENTRY_CLOSE_TIMEOUT_MS = 2000; // 2 seconds timeout for Sentry close
+
 export interface SentryContext {
   userId?: string;
   merchantId?: string;
@@ -13,7 +15,7 @@ export interface SentryContext {
   ip?: string;
   userAgent?: string;
   tags?: Record<string, string>;
-  extra?: Record<string, any>;
+  extra?: Record<string, unknown>;
 }
 
 @Injectable()
@@ -202,7 +204,7 @@ export class SentryService {
     name: string,
     operation: string,
     context: SentryContext = {},
-  ): any {
+  ): unknown {
     if (!this.isInitialized) {
       this.logger.warn('Sentry not initialized, transaction not started');
       return null;
@@ -233,7 +235,7 @@ export class SentryService {
         setStatus: (status: string) => {
           Sentry.setTag('transaction_status', status);
         },
-        setData: (key: string, value: any) => {
+        setData: (key: string, value: unknown) => {
           Sentry.setExtra(`transaction_${key}`, value);
         },
         setTag: (key: string, value: string) => {
@@ -252,7 +254,7 @@ export class SentryService {
   /**
    * إضافة سياق للخطأ الحالي
    */
-  setContext(name: string, context: Record<string, any>): void {
+  setContext(name: string, context: Record<string, unknown>): void {
     if (!this.isInitialized) {
       return;
     }
@@ -302,7 +304,7 @@ export class SentryService {
   /**
    * إضافة بيانات إضافية للخطأ الحالي
    */
-  setExtra(key: string, value: any): void {
+  setExtra(key: string, value: unknown): void {
     if (!this.isInitialized) {
       return;
     }
@@ -323,7 +325,7 @@ export class SentryService {
     }
 
     try {
-      await Sentry.close(2000); // انتظار 2 ثانية لإرسال الأحداث المتبقية
+      await Sentry.close(SENTRY_CLOSE_TIMEOUT_MS); // انتظار 2 ثانية لإرسال الأحداث المتبقية
       this.isInitialized = false;
       this.logger.log('Sentry closed successfully');
     } catch (error) {

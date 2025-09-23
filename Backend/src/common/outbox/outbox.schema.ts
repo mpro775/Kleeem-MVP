@@ -12,7 +12,7 @@ export class OutboxEvent {
 
   // Mixed لتفادي مشاكل validation مع payloads مختلفة
   @Prop({ type: MongooseSchema.Types.Mixed, required: true })
-  payload!: Record<string, any>;
+  payload!: Record<string, unknown>;
 
   @Prop({ required: true }) exchange!: string;
   @Prop({ required: true }) routingKey!: string;

@@ -7,7 +7,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { INestApplication } from '@nestjs/common';
 import type { OpenAPIObject, SwaggerCustomOptions } from '@nestjs/swagger';
 
-type AnyObj = Record<string, any>;
+type AnyObj = Record<string, unknown>;
 const RESPONSE_TIME_P95_MS = 500;
 const AI_RESPONSE_TIME_P95_MS = 5000;
 const AVAILABILITY = 99.9;
@@ -194,21 +194,24 @@ export function mountSwagger(
   SwaggerModule.setup(basePath.replace(/^\//, ''), app, document, custom);
 
   const outDir = path.join(process.cwd(), 'public', 'docs');
-  fs.mkdirSync(outDir, { recursive: true });
+  fs.mkdirSync(outDir, { recursive: true } as fs.MakeDirectoryOptions);
   fs.writeFileSync(
     path.join(outDir, 'openapi.json'),
     JSON.stringify(document, null, JSON_INDENT_SPACES),
   );
 
   try {
-    const yaml = jsonToYaml(document as AnyObj);
+    const yaml = jsonToYaml(document as unknown as AnyObj);
     fs.writeFileSync(path.join(outDir, 'openapi.yaml'), yaml);
   } catch {
     // ignore YAML failure
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  app.getHttpAdapter().get('/docs-json', (_req, res) => res.json(document));
+  app
+    .getHttpAdapter()
+    .get('/docs-json', (_req, res) =>
+      (res as { json: (data: unknown) => void }).json(document),
+    );
 }
 
 /* ------------------------------ YAML helper ----------------------------- */
@@ -219,7 +222,10 @@ function jsonToYaml(obj: AnyObj, indent = 0): string {
   if (typeof obj !== 'object') return JSON.stringify(obj);
   if (Array.isArray(obj))
     return obj
-      .map((v) => `${pad(indent)}- ${jsonToYaml(v, indent + 1).trimStart()}`)
+      .map(
+        (v) =>
+          `${pad(indent)}- ${jsonToYaml(v as unknown as AnyObj, indent + 1).trimStart()}`,
+      )
       .join('\n');
   return Object.entries(obj)
     .map(([k, v]) => {

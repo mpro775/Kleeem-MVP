@@ -29,31 +29,32 @@ export const I18nMessage = (
  */
 export function I18nMessageWithContext(
   translationKey: string,
-  context: Record<string, any>,
+  context: Record<string, unknown>,
   validationOptions?: ValidationOptions,
-) {
-  return function (object: object, propertyName: string) {
+): (object: object, propertyName: string) => void {
+  return function (object: object, propertyName: string): void {
     registerDecorator({
       name: 'I18nMessageWithContext',
       target: object.constructor,
       propertyName: propertyName,
       options: validationOptions,
       validator: {
-        validate(value: any) {
+        validate() {
           return true;
         },
 
-        defaultMessage(args: any) {
+        defaultMessage() {
           try {
-            const translationService = (global as any)
-              .translationService as TranslationService;
+            const translationService = (
+              global as unknown as { translationService: TranslationService }
+            ).translationService;
 
             if (translationService) {
               return translationService.translateValidation(translationKey);
             } else {
               return `validation.${translationKey}`;
             }
-          } catch (error) {
+          } catch {
             return `validation.${translationKey}`;
           }
         },
@@ -92,15 +93,16 @@ export function getTranslatedMessage(
   defaultMessage?: string,
 ): string {
   try {
-    const translationService = (global as any)
-      .translationService as TranslationService;
+    const translationService = (
+      global as unknown as { translationService: TranslationService }
+    ).translationService;
 
     if (translationService) {
       return translationService.translateValidation(key);
     }
 
     return defaultMessage || key;
-  } catch (error) {
+  } catch {
     return defaultMessage || key;
   }
 }

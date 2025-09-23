@@ -2,6 +2,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+const MIN_JWT_SECRET_LENGTH = 32;
+const MAX_PORT_NUMBER = 65535;
+const MIN_API_KEY_LENGTH = 16;
+
 interface RequiredEnvVar {
   key: string;
   description: string;
@@ -25,7 +29,7 @@ export class EnvironmentValidatorService {
       {
         key: 'JWT_SECRET',
         description: 'JWT signing secret (must be strong)',
-        validation: (value) => value.length >= 32,
+        validation: (value) => value.length >= MIN_JWT_SECRET_LENGTH,
         sensitive: true,
       },
       {
@@ -60,13 +64,13 @@ export class EnvironmentValidatorService {
       {
         key: 'TELEGRAM_WEBHOOK_SECRET',
         description: 'Telegram webhook secret token',
-        validation: (value) => value.length >= 16,
+        validation: (value) => value.length >= MIN_API_KEY_LENGTH,
         sensitive: true,
       },
       {
         key: 'EVOLUTION_APIKEY',
         description: 'Evolution API key for WhatsApp QR',
-        validation: (value) => value.length >= 16,
+        validation: (value) => value.length >= MIN_API_KEY_LENGTH,
         sensitive: true,
       },
 
@@ -94,7 +98,7 @@ export class EnvironmentValidatorService {
         description: 'Server port',
         validation: (value) => {
           const port = parseInt(value);
-          return !isNaN(port) && port > 0 && port <= 65535;
+          return !isNaN(port) && port > 0 && port <= MAX_PORT_NUMBER;
         },
         defaultValue: '3000',
       },
@@ -142,7 +146,9 @@ export class EnvironmentValidatorService {
         const displayValue = envVar.sensitive ? '[HIDDEN]' : value;
         this.logger.debug(`✅ ${envVar.key}: ${displayValue}`);
       } catch (error) {
-        errors.push(`❌ Error validating ${envVar.key}: ${error.message}`);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        errors.push(`❌ Error validating ${envVar.key}: ${errorMessage}`);
       }
     }
 

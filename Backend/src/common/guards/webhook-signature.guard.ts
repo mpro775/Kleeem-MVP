@@ -16,6 +16,12 @@ import {
 import { ChannelProvider } from '../../modules/channels/schemas/channel.schema';
 import { decryptSecret } from '../../modules/channels/utils/secrets.util';
 
+interface RequestWithWebhook extends Request {
+  merchantId?: string;
+  channel?: ChannelSecretsLean;
+  rawBody?: Buffer;
+}
+
 type Detected =
   | { provider: ChannelProvider.WHATSAPP_CLOUD; channelId: string }
   | { provider: ChannelProvider.TELEGRAM; channelId: string }
@@ -37,7 +43,7 @@ export class WebhookSignatureGuard implements CanActivate {
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
-    const req = ctx.switchToHttp().getRequest<Request>();
+    const req = ctx.switchToHttp().getRequest<RequestWithWebhook>();
     const det = this.detect(req);
 
     if (det.provider === 'unknown' || !det.channelId) {
@@ -60,10 +66,10 @@ export class WebhookSignatureGuard implements CanActivate {
         ok = this.verifyWhatsAppCloud(req, ch);
         break;
       case ChannelProvider.TELEGRAM:
-        ok = this.verifyTelegram(req, ch);
+        ok = this.verifyTelegram(req);
         break;
       case ChannelProvider.WHATSAPP_QR:
-        ok = this.verifyEvolution(req, ch);
+        ok = this.verifyEvolution(req);
         break;
     }
 
@@ -72,15 +78,15 @@ export class WebhookSignatureGuard implements CanActivate {
     }
 
     // مرّر معلومات القناة/التاجر للمعالجة اللاحقة
-    (req as any).merchantId = ch.merchantId;
-    (req as any).channel = ch;
+    req.merchantId = String(ch.merchantId);
+    req.channel = ch;
     return true;
   }
 
-  private detect(req: Request): Detected {
+  private detect(req: RequestWithWebhook): Detected {
     // نستخدم baseUrl+path لأن بعض الإطارات تضيف baseUrl
     const full = (req.baseUrl || '') + (req.path || '');
-    const params = (req as any).params || {};
+    const params = req.params || {};
 
     if (/\/webhooks\/whatsapp_cloud\//.test(full)) {
       return {
@@ -111,12 +117,15 @@ export class WebhookSignatureGuard implements CanActivate {
   }
 
   // ======== WhatsApp Cloud (Meta) ========
-  private verifyWhatsAppCloud(req: Request, ch: ChannelSecretsLean): boolean {
+  private verifyWhatsAppCloud(
+    req: RequestWithWebhook,
+    ch: ChannelSecretsLean,
+  ): boolean {
     const sig = req.headers['x-hub-signature-256'] as string;
     if (!sig || !sig.startsWith('sha256=')) return false;
     if (!ch.appSecretEnc) return false;
 
-    const raw = (req as any).rawBody as Buffer | undefined;
+    const raw = req.rawBody;
     if (!raw || raw.length === 0) return false;
 
     const appSecret = decryptSecret(ch.appSecretEnc);
@@ -129,7 +138,7 @@ export class WebhookSignatureGuard implements CanActivate {
   }
 
   // ======== Telegram ========
-  private verifyTelegram(req: Request, _ch: ChannelSecretsLean): boolean {
+  private verifyTelegram(req: RequestWithWebhook): boolean {
     // الافضل حفظ secret_token لكل قناة لاحقًا. الآن نستخدم ENV عام:
     const got = req.headers['x-telegram-bot-api-secret-token'] as
       | string
@@ -139,7 +148,7 @@ export class WebhookSignatureGuard implements CanActivate {
   }
 
   // ======== WhatsApp QR (Evolution) ========
-  private verifyEvolution(req: Request, _ch: ChannelSecretsLean): boolean {
+  private verifyEvolution(req: RequestWithWebhook): boolean {
     const got = (req.headers['x-evolution-apikey'] || req.headers['apikey']) as
       | string
       | undefined;

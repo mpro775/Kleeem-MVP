@@ -1,16 +1,25 @@
 // src/common/services/error-management.service.ts
+
+// external
 import { Injectable, Logger } from '@nestjs/common';
 
+// internal
 import { ERROR_CODES } from '../constants/error-codes';
 
-import { SentryService, SentryContext } from './sentry.service';
+import { SentryService, type SentryContext } from './sentry.service';
 
+// -----------------------------------------------------------------------------
+const BASE36_RADIX = 36;
+const RANDOM_ID_LENGTH = 11;
+
+// -----------------------------------------------------------------------------
+// Types
 export interface ErrorLogEntry {
   id: string;
   timestamp: Date;
   code: string;
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
   userId?: string;
   merchantId?: string;
   requestId?: string;
@@ -32,8 +41,10 @@ export interface ErrorContext {
   method?: string;
   ip?: string;
   userAgent?: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
+
+// -----------------------------------------------------------------------------
 
 @Injectable()
 export class ErrorManagementService {
@@ -44,13 +55,9 @@ export class ErrorManagementService {
   /**
    * تسجيل خطأ مع تفاصيل كاملة
    */
-  async logError(
-    error: Error | string,
-    context: ErrorContext = {},
-  ): Promise<string> {
+  logError(error: Error | string, context: ErrorContext = {}): string {
     const errorId = this.generateErrorId();
     const timestamp = new Date();
-
     const errorMessage = typeof error === 'string' ? error : error.message;
     const errorCode = this.extractErrorCode(error);
     const severity = this.determineSeverity(errorCode);
@@ -70,41 +77,22 @@ export class ErrorManagementService {
       ...context,
     };
 
-    // تسجيل في السجلات المحلية
-    this.logger.error(`Error logged: ${errorCode}`, {
-      errorId,
-      ...errorEntry,
-    });
+    this.logger.error(`Error logged: ${errorCode}`, { errorId, ...errorEntry });
 
-    // تسجيل في Sentry للأخطاء المتوسطة والعالية والحرجة
     if (severity !== 'low') {
-      const sentryContext: SentryContext = {
-        userId: context.userId,
-        merchantId: context.merchantId,
-        requestId: context.requestId,
-        url: context.url,
-        method: context.method,
-        ip: context.ip,
-        userAgent: context.userAgent,
-        tags: {
-          errorCode,
-          severity,
-          category,
-          service: 'kaleem-bot',
-        },
-        extra: {
-          ...context.details,
-          errorId,
-          timestamp: timestamp.toISOString(),
-        },
-      };
-
+      const sentryContext = this.buildSentryContext(
+        errorCode,
+        severity,
+        category,
+        context,
+        errorId,
+        timestamp,
+      );
       const sentryEventId = this.sentryService.captureException(
         error,
         sentryContext,
       );
       errorEntry.sentryEventId = sentryEventId;
-
       if (sentryEventId) {
         this.logger.debug(
           `Error also captured in Sentry with ID: ${sentryEventId}`,
@@ -112,19 +100,14 @@ export class ErrorManagementService {
       }
     }
 
-    // يمكن إضافة حفظ في قاعدة البيانات هنا
-    await this.persistError(errorEntry);
-
+    this.persistError(errorEntry);
     return errorId;
   }
 
   /**
    * تسجيل خطأ أمان
    */
-  async logSecurityError(
-    activity: string,
-    context: ErrorContext = {},
-  ): Promise<string> {
+  logSecurityError(activity: string, context: ErrorContext = {}): string {
     const errorId = this.generateErrorId();
     const timestamp = new Date();
 
@@ -138,21 +121,13 @@ export class ErrorManagementService {
       ...context,
     };
 
-    // تسجيل في السجلات المحلية
     this.logger.error(`Security error logged: ${activity}`, {
       errorId,
       ...errorEntry,
     });
 
-    // تسجيل في Sentry
     const sentryContext: SentryContext = {
-      userId: context.userId,
-      merchantId: context.merchantId,
-      requestId: context.requestId,
-      url: context.url,
-      method: context.method,
-      ip: context.ip,
-      userAgent: context.userAgent,
+      ...this.baseSentryContext(context),
       tags: {
         errorCode: ERROR_CODES.SUSPICIOUS_ACTIVITY,
         severity: 'high',
@@ -168,25 +143,24 @@ export class ErrorManagementService {
       },
     };
 
-    const sentryEventId = this.sentryService.captureMessage(
+    errorEntry.sentryEventId = this.sentryService.captureMessage(
       `Security violation: ${activity}`,
       'error',
       sentryContext,
     );
-    errorEntry.sentryEventId = sentryEventId;
 
-    await this.persistError(errorEntry);
+    this.persistError(errorEntry);
     return errorId;
   }
 
   /**
    * تسجيل خطأ تكامل
    */
-  async logIntegrationError(
+  logIntegrationError(
     serviceName: string,
     error: Error | string,
     context: ErrorContext = {},
-  ): Promise<string> {
+  ): string {
     const errorId = this.generateErrorId();
     const timestamp = new Date();
     const errorMessage = typeof error === 'string' ? error : error.message;
@@ -201,21 +175,13 @@ export class ErrorManagementService {
       ...context,
     };
 
-    // تسجيل في السجلات المحلية
     this.logger.error(`Integration error logged: ${serviceName}`, {
       errorId,
       ...errorEntry,
     });
 
-    // تسجيل في Sentry
     const sentryContext: SentryContext = {
-      userId: context.userId,
-      merchantId: context.merchantId,
-      requestId: context.requestId,
-      url: context.url,
-      method: context.method,
-      ip: context.ip,
-      userAgent: context.userAgent,
+      ...this.baseSentryContext(context),
       tags: {
         errorCode: ERROR_CODES.EXTERNAL_SERVICE_ERROR,
         severity: 'medium',
@@ -232,24 +198,23 @@ export class ErrorManagementService {
       },
     };
 
-    const sentryEventId = this.sentryService.captureException(
+    errorEntry.sentryEventId = this.sentryService.captureException(
       error,
       sentryContext,
     );
-    errorEntry.sentryEventId = sentryEventId;
 
-    await this.persistError(errorEntry);
+    this.persistError(errorEntry);
     return errorId;
   }
 
   /**
    * تسجيل خطأ أعمال
    */
-  async logBusinessError(
+  logBusinessError(
     code: string,
     message: string,
     context: ErrorContext = {},
-  ): Promise<string> {
+  ): string {
     const errorId = this.generateErrorId();
     const timestamp = new Date();
 
@@ -263,22 +228,14 @@ export class ErrorManagementService {
       ...context,
     };
 
-    // تسجيل في السجلات المحلية
     this.logger.warn(`Business error logged: ${code}`, {
       errorId,
       ...errorEntry,
     });
 
-    // تسجيل في Sentry فقط للأخطاء المهمة
     if (this.shouldSendToSentry(code)) {
       const sentryContext: SentryContext = {
-        userId: context.userId,
-        merchantId: context.merchantId,
-        requestId: context.requestId,
-        url: context.url,
-        method: context.method,
-        ip: context.ip,
-        userAgent: context.userAgent,
+        ...this.baseSentryContext(context),
         tags: {
           errorCode: code,
           severity: 'low',
@@ -291,16 +248,14 @@ export class ErrorManagementService {
           timestamp: timestamp.toISOString(),
         },
       };
-
-      const sentryEventId = this.sentryService.captureMessage(
+      errorEntry.sentryEventId = this.sentryService.captureMessage(
         message,
         'warning',
         sentryContext,
       );
-      errorEntry.sentryEventId = sentryEventId;
     }
 
-    await this.persistError(errorEntry);
+    this.persistError(errorEntry);
     return errorId;
   }
 
@@ -311,28 +266,15 @@ export class ErrorManagementService {
     name: string,
     operation: string,
     context: ErrorContext = {},
-  ): any {
+  ): ReturnType<SentryService['startTransaction']> {
     const sentryContext: SentryContext = {
-      userId: context.userId,
-      merchantId: context.merchantId,
-      requestId: context.requestId,
-      url: context.url,
-      method: context.method,
-      ip: context.ip,
-      userAgent: context.userAgent,
-      tags: {
-        service: 'kaleem-bot',
-        operation,
-      },
+      ...this.baseSentryContext(context),
+      tags: { service: 'kaleem-bot', operation },
     };
-
     return this.sentryService.startTransaction(name, operation, sentryContext);
   }
 
-  /**
-   * الحصول على إحصائيات الأخطاء
-   */
-  async getErrorStats(
+  getErrorStats(
     filters: {
       merchantId?: string;
       severity?: string;
@@ -340,15 +282,18 @@ export class ErrorManagementService {
       from?: Date;
       to?: Date;
     } = {},
-  ): Promise<{
+  ): {
     total: number;
     bySeverity: Record<string, number>;
     byCategory: Record<string, number>;
     byCode: Record<string, number>;
     recentErrors: ErrorLogEntry[];
     sentryEnabled: boolean;
-  }> {
-    // يمكن تنفيذ هذا لاحقاً مع قاعدة البيانات
+  } {
+    // TODO: Implement filtering logic when error persistence is added
+    // For now, filters are accepted but not used since we return static data
+    void filters; // Explicitly mark as intentionally unused
+
     return {
       total: 0,
       bySeverity: {},
@@ -359,80 +304,92 @@ export class ErrorManagementService {
     };
   }
 
-  /**
-   * تنظيف الأخطاء القديمة
-   */
-  async cleanupOldErrors(olderThanDays: number = 30): Promise<number> {
-    // يمكن تنفيذ هذا لاحقاً مع قاعدة البيانات
+  cleanupOldErrors(olderThanDays = 30): number {
     this.logger.log(`Cleaning up errors older than ${olderThanDays} days`);
     return 0;
   }
 
-  /**
-   * إغلاق خدمات المراقبة
-   */
-  async shutdown(): Promise<void> {
+  shutdown(): void {
     try {
-      await this.sentryService.close();
+      void this.sentryService.close();
       this.logger.log('Error management service shutdown completed');
     } catch (error) {
-      this.logger.error('Error during shutdown', error);
+      const err = error instanceof Error ? error.message : String(error);
+      this.logger.error('Error during shutdown', err);
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Private helpers
+
   private generateErrorId(): string {
-    return `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `err_${Date.now()}_${Math.random().toString(BASE36_RADIX).slice(2, RANDOM_ID_LENGTH)}`;
   }
 
   private extractErrorCode(error: Error | string): string {
-    if (typeof error === 'string') {
-      return ERROR_CODES.INTERNAL_ERROR;
+    if (typeof error === 'string') return ERROR_CODES.INTERNAL_ERROR;
+    for (const value of Object.values(ERROR_CODES)) {
+      if (error.message.includes(value)) return value;
     }
-
-    // محاولة استخراج الكود من رسالة الخطأ
-    const message = error.message;
-    for (const [code, value] of Object.entries(ERROR_CODES)) {
-      if (message.includes(value)) {
-        return value;
-      }
-    }
-
     return ERROR_CODES.INTERNAL_ERROR;
   }
 
   private determineSeverity(
     code: string,
   ): 'low' | 'medium' | 'high' | 'critical' {
-    const criticalCodes = [
+    const critical = [
       ERROR_CODES.DATABASE_ERROR,
       ERROR_CODES.EXTERNAL_SERVICE_ERROR,
       ERROR_CODES.AI_SERVICE_UNAVAILABLE,
     ];
-
-    const highCodes = [
+    const high = [
       ERROR_CODES.SUSPICIOUS_ACTIVITY,
       ERROR_CODES.IP_BLOCKED,
       ERROR_CODES.LICENSE_EXPIRED,
       ERROR_CODES.WEBHOOK_SIGNATURE_INVALID,
     ];
-
-    const mediumCodes = [
+    const medium = [
       ERROR_CODES.VALIDATION_ERROR,
       ERROR_CODES.CONFLICT,
       ERROR_CODES.RATE_LIMIT_EXCEEDED,
       ERROR_CODES.QUOTA_EXCEEDED,
     ];
-
-    if (criticalCodes.includes(code as any)) return 'critical';
-    if (highCodes.includes(code as any)) return 'high';
-    if (mediumCodes.includes(code as any)) return 'medium';
+    if (
+      critical.includes(
+        code as
+          | 'DATABASE_ERROR'
+          | 'EXTERNAL_SERVICE_ERROR'
+          | 'AI_SERVICE_UNAVAILABLE',
+      )
+    )
+      return 'critical';
+    if (
+      high.includes(
+        code as
+          | 'SUSPICIOUS_ACTIVITY'
+          | 'IP_BLOCKED'
+          | 'LICENSE_EXPIRED'
+          | 'WEBHOOK_SIGNATURE_INVALID',
+      )
+    )
+      return 'high';
+    if (
+      medium.includes(
+        code as
+          | 'VALIDATION_ERROR'
+          | 'CONFLICT'
+          | 'RATE_LIMIT_EXCEEDED'
+          | 'QUOTA_EXCEEDED',
+      )
+    )
+      return 'medium';
     return 'low';
   }
 
   private determineCategory(
     code: string,
   ): 'business' | 'technical' | 'security' | 'integration' {
-    const securityCodes = [
+    const security = [
       ERROR_CODES.UNAUTHORIZED,
       ERROR_CODES.FORBIDDEN,
       ERROR_CODES.SUSPICIOUS_ACTIVITY,
@@ -440,8 +397,7 @@ export class ErrorManagementService {
       ERROR_CODES.INVALID_TOKEN,
       ERROR_CODES.TOKEN_EXPIRED,
     ];
-
-    const integrationCodes = [
+    const integration = [
       ERROR_CODES.EXTERNAL_SERVICE_ERROR,
       ERROR_CODES.WEBHOOK_FAILED,
       ERROR_CODES.INTEGRATION_ERROR,
@@ -450,8 +406,7 @@ export class ErrorManagementService {
       ERROR_CODES.EMAIL_SEND_FAILED,
       ERROR_CODES.SMS_SEND_FAILED,
     ];
-
-    const technicalCodes = [
+    const technical = [
       ERROR_CODES.DATABASE_ERROR,
       ERROR_CODES.INTERNAL_ERROR,
       ERROR_CODES.FILE_UPLOAD_FAILED,
@@ -459,27 +414,90 @@ export class ErrorManagementService {
       ERROR_CODES.VECTOR_INDEX_ERROR,
       ERROR_CODES.EMBEDDING_GENERATION_FAILED,
     ];
-
-    if (securityCodes.includes(code as any)) return 'security';
-    if (integrationCodes.includes(code as any)) return 'integration';
-    if (technicalCodes.includes(code as any)) return 'technical';
+    if (
+      security.includes(
+        code as
+          | 'UNAUTHORIZED'
+          | 'FORBIDDEN'
+          | 'SUSPICIOUS_ACTIVITY'
+          | 'IP_BLOCKED'
+          | 'INVALID_TOKEN'
+          | 'TOKEN_EXPIRED',
+      )
+    )
+      return 'security';
+    if (
+      integration.includes(
+        code as
+          | 'EXTERNAL_SERVICE_ERROR'
+          | 'WEBHOOK_FAILED'
+          | 'INTEGRATION_ERROR'
+          | 'TELEGRAM_API_ERROR'
+          | 'WHATSAPP_API_ERROR'
+          | 'EMAIL_SEND_FAILED'
+          | 'SMS_SEND_FAILED',
+      )
+    )
+      return 'integration';
+    if (
+      technical.includes(
+        code as
+          | 'INTERNAL_ERROR'
+          | 'FILE_UPLOAD_FAILED'
+          | 'DATABASE_ERROR'
+          | 'VECTOR_INDEX_ERROR'
+          | 'EMBEDDING_GENERATION_FAILED'
+          | 'MEDIA_UPLOAD_FAILED',
+      )
+    )
+      return 'technical';
     return 'business';
   }
 
   private shouldSendToSentry(code: string): boolean {
-    // إرسال أخطاء الأعمال المهمة فقط إلى Sentry
-    const importantBusinessCodes = [
+    return [
       ERROR_CODES.QUOTA_EXCEEDED,
       ERROR_CODES.LICENSE_EXPIRED,
       ERROR_CODES.FEATURE_NOT_AVAILABLE,
-    ];
-
-    return importantBusinessCodes.includes(code as any);
+    ].includes(
+      code as 'LICENSE_EXPIRED' | 'QUOTA_EXCEEDED' | 'FEATURE_NOT_AVAILABLE',
+    );
   }
 
-  private async persistError(errorEntry: ErrorLogEntry): Promise<void> {
-    // يمكن تنفيذ هذا لاحقاً مع قاعدة البيانات
-    // حالياً نطبع فقط في السجلات
+  private persistError(errorEntry: ErrorLogEntry): void {
     this.logger.debug('Error persisted', errorEntry);
+  }
+
+  private baseSentryContext(
+    context: ErrorContext,
+  ): Omit<SentryContext, 'tags' | 'extra'> {
+    return {
+      userId: context.userId,
+      merchantId: context.merchantId,
+      requestId: context.requestId,
+      url: context.url,
+      method: context.method,
+      ip: context.ip,
+      userAgent: context.userAgent,
+    };
+  }
+
+  private buildSentryContext(
+    errorCode: string,
+    severity: string,
+    category: string,
+    context: ErrorContext,
+    errorId: string,
+    timestamp: Date,
+  ): SentryContext {
+    return {
+      ...this.baseSentryContext(context),
+      tags: { errorCode, severity, category, service: 'kaleem-bot' },
+      extra: {
+        ...context.details,
+        errorId,
+        timestamp: timestamp.toISOString(),
+      },
+    };
   }
 }

@@ -7,7 +7,7 @@ export class DomainError extends HttpException {
     code: string,
     message: string,
     status: number = HttpStatus.BAD_REQUEST,
-    details?: any,
+    details?: Record<string, unknown>,
   ) {
     super({ code, message, details }, status);
   }

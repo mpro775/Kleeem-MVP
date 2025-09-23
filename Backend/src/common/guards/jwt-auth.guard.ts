@@ -11,7 +11,10 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from '@nestjs/passport';
 import { Cache } from 'cache-manager';
 
+import type { JwtPayload } from '../interfaces/jwt-payload.interface';
 import type { Request } from 'express';
+
+const MILLISECONDS_PER_SECOND = 1000;
 
 const PUBLIC_PATHS = [
   '/metrics',
@@ -89,7 +92,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
    */
   private async validateTokenSession(token: string): Promise<boolean> {
     try {
-      const v = this.jwtService.verify(token, {
+      const v = this.jwtService.verify<JwtPayload>(token, {
         secret: process.env.JWT_SECRET,
         issuer: process.env.JWT_ISSUER,
         audience: process.env.JWT_AUDIENCE,
@@ -101,10 +104,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       const pwdAt = await this.cacheManager.get<number>(
         `pwdChangedAt:${v?.sub}`,
       );
-      if (pwdAt && v.iat * 1000 < pwdAt) return false;
+      if (pwdAt && v.iat && v.iat * MILLISECONDS_PER_SECOND < pwdAt) {
+        return false;
+      }
 
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

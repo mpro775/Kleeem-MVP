@@ -12,7 +12,7 @@ import { shouldBypass } from './bypass.util';
 
 import type { Request } from 'express';
 
-export interface ApiResponseData<T = any> {
+export interface ApiResponseData<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
@@ -24,19 +24,22 @@ export interface ApiResponseData<T = any> {
 export class ResponseInterceptor<T>
   implements NestInterceptor<T, ApiResponseData<T>>
 {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Observable<ApiResponseData<T>> {
     const req = context
       .switchToHttp()
       .getRequest<Request & { requestId?: string }>();
 
     // ✅ أهم نقطة: لا تلمس /metrics (دعه يرجّع text/plain)
     if (shouldBypass(req)) {
-      return next.handle(); // لا تغليف
+      return next.handle() as Observable<ApiResponseData<T>>; // لا تغليف
     }
 
     const requestId = req.requestId;
     return next.handle().pipe(
-      map((data) => ({
+      map((data: T) => ({
         success: true,
         data,
         requestId,

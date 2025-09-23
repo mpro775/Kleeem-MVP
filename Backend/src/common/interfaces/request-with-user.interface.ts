@@ -10,14 +10,14 @@ export interface JwtPayload {
 export interface RequestWithUser extends Request {
   user?: JwtPayload;
   authUser?: {
-    _id: any;
+    _id: unknown;
     role: 'ADMIN' | 'MERCHANT' | 'MEMBER';
     emailVerified: boolean;
     active: boolean;
-    merchantId?: any;
+    merchantId?: unknown;
   } | null;
   authMerchant?: {
-    _id: any;
+    _id: unknown;
     active: boolean;
     deletedAt?: Date | null;
   } | null;

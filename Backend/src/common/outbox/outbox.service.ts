@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ClientSession, Types } from 'mongoose';
 
+import { MILLISECONDS_PER_MINUTE } from '../cache/constant';
+
 import { OutboxEvent, OutboxEventDocument } from './outbox.schema';
+
+const MONGODB_DUPLICATE_KEY_ERROR = 11000;
+const BASE_BACKOFF_MS = 5000; // 5 seconds
 
 export interface EnqueueEventInput {
   aggregateType: string;
@@ -23,7 +28,10 @@ export class OutboxService {
     private readonly outboxModel: Model<OutboxEventDocument>,
   ) {}
 
-  async addEventInTx(data: EnqueueEventInput, session: ClientSession) {
+  async addEventInTx(
+    data: EnqueueEventInput,
+    session: ClientSession,
+  ): Promise<OutboxEventDocument> {
     const doc = new this.outboxModel({
       ...data,
       status: 'pending',
@@ -35,7 +43,10 @@ export class OutboxService {
     return doc;
   }
 
-  async enqueueEvent(data: EnqueueEventInput, session?: ClientSession) {
+  async enqueueEvent(
+    data: EnqueueEventInput,
+    session?: ClientSession,
+  ): Promise<OutboxEventDocument | null> {
     const doc = new this.outboxModel({
       ...data,
       status: 'pending',
@@ -51,17 +62,24 @@ export class OutboxService {
         await doc.save();
       }
       return doc;
-    } catch (e: any) {
-      if (e?.code === 11000 && e?.message?.includes('dedupeKey')) {
+    } catch (e: unknown) {
+      const error = e as { code?: number; message?: string } | undefined;
+      if (
+        error?.code === MONGODB_DUPLICATE_KEY_ERROR &&
+        error?.message?.includes('dedupeKey')
+      ) {
         // حدث مكرر: تجاهله واعتبره مُسجّل مسبقًا
-        return null;
+        return null as unknown as OutboxEventDocument; // Allow null for duplicate events
       }
       throw e;
     }
   }
 
   // المطالبة الذرّية بدُفعة أحداث
-  async claimBatch(limit = 200, workerId = 'dispatcher-1') {
+  async claimBatch(
+    limit = 200,
+    workerId = 'dispatcher-1',
+  ): Promise<OutboxEventLean[]> {
     const claimed: OutboxEventLean[] = [];
     for (let i = 0; i < limit; i++) {
       const now = new Date();
@@ -88,7 +106,7 @@ export class OutboxService {
     return claimed;
   }
 
-  async markPublished(id: string) {
+  async markPublished(id: string): Promise<void> {
     await this.outboxModel.updateOne(
       { _id: id },
       {
@@ -99,13 +117,15 @@ export class OutboxService {
   }
 
   // backoff أُسّي مع سقف 5 دقائق
-  private nextAttemptDate(attempts: number) {
-    const base = 5000; // 5 ثوانٍ
-    const delay = Math.min(5 * 60_000, Math.pow(2, attempts) * base);
+  private nextAttemptDate(attempts: number): Date {
+    const delay = Math.min(
+      5 * MILLISECONDS_PER_MINUTE,
+      Math.pow(2, attempts) * BASE_BACKOFF_MS,
+    );
     return new Date(Date.now() + delay);
   }
 
-  async reschedule(id: string, err: string, attempts: number) {
+  async reschedule(id: string, err: string, attempts: number): Promise<void> {
     await this.outboxModel.updateOne(
       { _id: id },
       {
@@ -121,7 +141,9 @@ export class OutboxService {
   }
 
   // استرجاع الرسائل العالقة في publishing
-  async recoverStuckPublishing(olderThanMs = 5 * 60_000) {
+  async recoverStuckPublishing(
+    olderThanMs = 5 * MILLISECONDS_PER_MINUTE,
+  ): Promise<void> {
     const threshold = new Date(Date.now() - olderThanMs);
     await this.outboxModel.updateMany(
       { status: 'publishing', lockedAt: { $lt: threshold } },

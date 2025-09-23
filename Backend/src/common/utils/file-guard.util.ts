@@ -1,5 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 
+const BYTES_PER_KILOBYTE = 1024;
+
 export const DEFAULT_ALLOWED_MIME = new Set<string>([
   // صور
   'image/jpeg',
@@ -22,7 +24,7 @@ export type FileGuardOptions = {
 export function ensureMimeAllowed(
   mime?: string,
   allowed = DEFAULT_ALLOWED_MIME,
-) {
+): void {
   if (!mime || !allowed.has(mime)) {
     throw new BadRequestException({
       code: 'UNSUPPORTED_MEDIA_TYPE',
@@ -33,8 +35,8 @@ export function ensureMimeAllowed(
 
 export function ensureSizeAllowed(
   sizeBytes: number,
-  maxBytes = 15 * 1024 * 1024,
-) {
+  maxBytes = 15 * BYTES_PER_KILOBYTE * BYTES_PER_KILOBYTE,
+): void {
   if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) {
     // بعض المصادر لا تُرجع Content-Length: نسمح لكن نتحقق لاحقًا أثناء التحميل المتدرّج
     return;
@@ -47,12 +49,12 @@ export function ensureSizeAllowed(
   }
 }
 
-export function formatBytes(n: number) {
+export function formatBytes(n: number): string {
   const u = ['B', 'KB', 'MB', 'GB', 'TB'];
   let i = 0;
   let v = n;
-  while (v >= 1024 && i < u.length - 1) {
-    v /= 1024;
+  while (v >= BYTES_PER_KILOBYTE && i < u.length - 1) {
+    v /= BYTES_PER_KILOBYTE;
     i++;
   }
   return `${v.toFixed(1)} ${u[i]}`;

@@ -19,7 +19,7 @@ import type { Request, Response } from 'express';
 export class LoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger(LoggingInterceptor.name);
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context
       .switchToHttp()
       .getRequest<Request & { requestId?: string }>();
@@ -27,7 +27,10 @@ export class LoggingInterceptor implements NestInterceptor {
     if (shouldBypass(request)) {
       return next.handle(); // لا لوج طويل لمسار المقاييس
     }
-    const { method, url, body, requestId } = request;
+    const method = request.method;
+    const url = request.url;
+    const body = request.body as Record<string, unknown> | undefined;
+    const requestId = request.requestId;
     const userAgent = request.get('User-Agent') || '';
     const startTime = Date.now();
 
@@ -37,8 +40,8 @@ export class LoggingInterceptor implements NestInterceptor {
     );
 
     // ✅ G1: تسجيل Body مع إخفاء البيانات الحساسة
-    if (Object.keys(body || {}).length > 0) {
-      const sanitizedBody = sanitizeBody(body);
+    if (body && Object.keys(body).length > 0) {
+      const sanitizedBody = sanitizeBody(body) as Record<string, unknown>;
       this.logger.debug(
         `[${requestId}] Request Body: ${JSON.stringify(sanitizedBody)}`,
       );
@@ -54,9 +57,11 @@ export class LoggingInterceptor implements NestInterceptor {
         },
         error: (error) => {
           const duration = Date.now() - startTime;
+          const errorMessage =
+            error instanceof Error ? error.stack : String(error);
           this.logger.error(
             `[${requestId}] ${method} ${url} - ERROR - ${duration}ms`,
-            error.stack,
+            errorMessage,
           );
         },
       }),

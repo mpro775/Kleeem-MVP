@@ -1,12 +1,69 @@
+// src/common/services/pagination.service.ts
+
+// external
 import { Injectable } from '@nestjs/common';
-import { Model, Document, FilterQuery } from 'mongoose';
 
 import {
   CursorDto,
-  PaginationResult,
+  type PaginationResult,
   encodeCursor,
   createCursorFilter,
 } from '../dto/pagination.dto';
+
+import type {
+  Document,
+  FilterQuery,
+  IndexOptions,
+  Model,
+  Schema,
+} from 'mongoose';
+
+// internal
+
+// -----------------------------------------------------------------------------
+// Constants (no-magic-numbers)
+const DEFAULT_SORT_FIELD = 'createdAt';
+const DEFAULT_SORT_ORDER: 1 | -1 = -1;
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 100;
+
+// -----------------------------------------------------------------------------
+// Helpers
+function firstOrUndefined<T>(arr: T[]): T | undefined {
+  return arr.length > 0 ? arr[arr.length - 1] : undefined;
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null;
+}
+
+function toTimestamp(value: unknown): number | undefined {
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === 'string' || typeof value === 'number') {
+    const ts = new Date(value).getTime();
+    return Number.isNaN(ts) ? undefined : ts;
+  }
+  return undefined;
+}
+
+function extractNextCursor(
+  items: unknown[],
+  sortField: string,
+): string | undefined {
+  const last = firstOrUndefined(items);
+  if (!isRecord(last)) return undefined;
+
+  const ts = toTimestamp(last[sortField]);
+  const id =
+    isRecord(last) && typeof last._id === 'string'
+      ? last._id
+      : (last._id?.toString() ?? '');
+  if (ts === undefined || !id) return undefined;
+
+  return encodeCursor(ts, id);
+}
+
+// -----------------------------------------------------------------------------
 
 /**
  * خدمة أساسية للـ Cursor Pagination
@@ -29,8 +86,8 @@ export class PaginationService {
     } = {},
   ): Promise<PaginationResult<T>> {
     const {
-      sortField = 'createdAt',
-      sortOrder = -1,
+      sortField = DEFAULT_SORT_FIELD,
+      sortOrder = DEFAULT_SORT_ORDER,
       populate,
       select,
       lean = true,
@@ -44,28 +101,22 @@ export class PaginationService {
       sortOrder,
     );
 
-    // إنشاء الـ sort object
-    const sort = {
+    // إنشاء الـ sort object (ترتيب مستقر بإضافة _id)
+    const sort: Record<string, 1 | -1> = {
       [sortField]: sortOrder,
-      _id: sortOrder, // ضمان الترتيب المستقر
+      _id: sortOrder,
     };
 
     // حد أقصى للـ limit
-    const limit = Math.min(dto.limit ?? 20, 100);
+    const limit = Math.min(dto.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
 
     // بناء الاستعلام مع limit + 1 للتحقق من وجود المزيد
     const q = model
       .find(filter)
       .sort(sort)
       .limit(limit + 1);
-
-    if (populate) {
-      q.populate(populate);
-    }
-
-    if (select) {
-      q.select(select);
-    }
+    if (populate) q.populate(populate);
+    if (select) q.select(select);
 
     // تنفيذ الاستعلام
     const docs = lean ? await q.lean().exec() : await q.exec();
@@ -74,40 +125,34 @@ export class PaginationService {
     const hasMore = docs.length > limit;
     const items = hasMore ? docs.slice(0, limit) : docs;
 
-    // إنشاء الـ cursor للصفحة التالية (فقط إذا كان هناك المزيد)
-    const last = items[items.length - 1] as any;
-    let nextCursor: string | undefined;
-
-    if (last) {
-      const tsVal = last[sortField];
-      const ts =
-        tsVal instanceof Date ? tsVal.getTime() : new Date(tsVal).getTime();
-      nextCursor = encodeCursor(ts, String(last._id));
-    }
+    // إنشاء الـ cursor للصفحة التالية (إن وُجدت)
+    const nextCursor = hasMore
+      ? extractNextCursor(items, sortField)
+      : undefined;
 
     return {
-      items: items as T[],
+      items: items as unknown as T[],
       meta: {
-        nextCursor: hasMore ? nextCursor : undefined,
+        nextCursor,
         hasMore,
         count: items.length,
       },
-    } as PaginationResult<T>;
+    };
   }
 
   /**
    * إنشاء فهرس مركب للـ pagination
    */
   static createPaginationIndex(
-    schema: any,
+    schema: Schema,
     fields: Record<string, 1 | -1>,
-    options: { background?: boolean; sparse?: boolean } = {},
-  ) {
+    options: Partial<Pick<IndexOptions, 'background' | 'sparse'>> = {},
+  ): void {
     // إضافة createdAt و _id للفهرس إذا لم يكونا موجودين
-    const indexFields = {
+    const indexFields: Record<string, 1 | -1> = {
       ...fields,
-      createdAt: fields.createdAt || -1,
-      _id: fields._id || -1,
+      createdAt: fields.createdAt ?? -1,
+      _id: fields._id ?? -1,
     };
 
     schema.index(indexFields, {
@@ -120,11 +165,11 @@ export class PaginationService {
    * إنشاء فهرس نصي للبحث
    */
   static createTextIndex(
-    schema: any,
+    schema: Schema,
     fields: Record<string, 'text'>,
     weights: Record<string, number> = {},
-    options: { background?: boolean } = {},
-  ) {
+    options: Partial<Pick<IndexOptions, 'background'>> = {},
+  ): void {
     schema.index(fields, {
       weights,
       background: options.background !== false,

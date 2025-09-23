@@ -34,13 +34,13 @@ export class ErrorManagementModule implements OnModuleInit, OnModuleDestroy {
     private readonly errorManagementService: ErrorManagementService,
   ) {}
 
-  onModuleInit() {
+  onModuleInit(): void {
     // تهيئة Sentry عند بدء التطبيق
     this.sentryService.initialize();
   }
 
-  async onModuleDestroy() {
+  onModuleDestroy(): void {
     // إغلاق Sentry عند إيقاف التطبيق
-    await this.errorManagementService.shutdown();
+    this.errorManagementService.shutdown();
   }
 }

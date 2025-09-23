@@ -6,4 +6,6 @@ export interface JwtPayload {
   role: Role;
   merchantId?: string | null;
   iat?: number; // اختياري: مفيد لمقارنة passwordChangedAt لاحقاً
+  jti?: string; // JWT ID for token revocation
+  sub?: string; // Subject (user ID)
 }

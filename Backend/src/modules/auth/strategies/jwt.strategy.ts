@@ -6,13 +6,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import type { Request } from 'express';
 
-type Role = 'ADMIN' | 'MERCHANT' | 'MEMBER';
-export interface JwtPayload {
-  userId: string;
-  role: Role;
-  merchantId?: string | null;
-  iat?: number;
-}
+import type { JwtPayload } from '../../../common/interfaces/jwt-payload.interface';
 
 function cookieExtractor(req: Request): string | null {
   const c = req.cookies || {};

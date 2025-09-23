@@ -32,3 +32,12 @@ export const RATE_LIMIT_WINDOW_MS_DEFAULT = 15 * 60 * MS_PER_SECOND; // 15 minut
 export const SECONDS_PER_HOUR = 60 * 60;
 export const CORS_DEFAULT_MAX_AGE_SECONDS = 24 * SECONDS_PER_HOUR; // 86400 seconds = 24 hours
 export const CORS_DEFAULT_OPTIONS_SUCCESS_STATUS = 204;
+// Password validation constants
+export const MIN_PASSWORD_LENGTH = 6;
+
+export const MIN_LIMIT = 1;
+export const MAX_LIMIT = 100;
+export const DEFAULT_LIMIT = 20;
+
+export const DEFAULT_SORT_FIELD = 'createdAt';
+export const DEFAULT_SORT_ORDER = -1;

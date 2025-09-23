@@ -9,12 +9,13 @@ import {
 
 import { MerchantDocument } from '../../modules/merchants/schemas/merchant.schema';
 import { PlanTier } from '../../modules/merchants/schemas/subscription-plan.schema';
+import { RequestWithUser } from '../interfaces/request-with-user.interface';
 
 @Injectable()
 export class TrialGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
-    const request = ctx.switchToHttp().getRequest();
-    const merchant = request.user.merchant as MerchantDocument;
+    const request = ctx.switchToHttp().getRequest<RequestWithUser>();
+    const merchant = request.user?.merchantId as unknown as MerchantDocument;
 
     // الباقة المجانية لا تنتهي أبداً
     if (merchant.subscription.tier === PlanTier.Free) {

@@ -1,5 +1,7 @@
 import type { Cache } from 'cache-manager';
 
+const DEFAULT_IDEMPOTENCY_TTL_SECONDS = 86400; // 24 hours
+
 /**
  * يحاول وضع مفتاح إديمبوتنسي في الكاش لمدة ttlSec ثوانٍ.
  * يعيد true إذا كان هذا الطلب "مكرر" (المفتاح موجود مسبقًا)، و false إن كان جديدًا وتم وضعه الآن.
@@ -7,7 +9,7 @@ import type { Cache } from 'cache-manager';
 export async function preventDuplicates(
   cache: Cache,
   key: string,
-  ttlSec = 86400, // 24h
+  ttlSec = DEFAULT_IDEMPOTENCY_TTL_SECONDS, // 24h
 ): Promise<boolean> {
   // هل موجود؟
   const exists = await cache.get(key);
@@ -20,7 +22,7 @@ export async function preventDuplicates(
 
 /** مولّد مفاتيح مريحة */
 export function idemKey(opts: {
-  provider: 'telegram' | 'whatsapp_qr' | 'wa_cloud' | 'internal' | string;
+  provider: 'telegram' | 'whatsapp_qr' | 'wa_cloud' | 'internal';
   channelId?: string;
   merchantId?: string;
   messageId: string | number;

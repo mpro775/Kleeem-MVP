@@ -1,20 +1,104 @@
+// builtins
+import { randomUUID } from 'crypto';
+
+// external
 import {
-  CallHandler,
-  ExecutionContext,
+  Inject,
   Injectable,
-  NestInterceptor,
   Logger,
+  type CallHandler,
+  type ExecutionContext,
+  type NestInterceptor,
 } from '@nestjs/common';
-import { Inject } from '@nestjs/common';
-import { Counter, Histogram } from 'prom-client';
-import { Observable, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { type Observable, throwError } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
+// internal
 import {
   HTTP_ERRORS_TOTAL,
   HTTP_REQUEST_DURATION_SECONDS,
 } from 'src/metrics/metrics.module';
 
 import { shouldBypass } from './bypass.util';
+
+// type
+import type { Request, Response } from 'express';
+import type { Counter, Histogram } from 'prom-client';
+
+// -----------------------------------------------------------------------------
+// Constants (no-magic-numbers)
+const SLOW_REQUEST_SECONDS = 1;
+const STATUS_FALLBACK = 500;
+
+// -----------------------------------------------------------------------------
+// Types
+type RequestWithMeta = Request & {
+  requestId?: string;
+  originalUrl?: string;
+  headers: Request['headers'] & {
+    'x-request-id'?: string | string[];
+    'user-agent'?: string;
+  };
+};
+
+type ResponseWithMeta = Response;
+
+// -----------------------------------------------------------------------------
+// Helpers (تبسيط وتقليل التعقيد)
+function isHttpContext(ctx: ExecutionContext): boolean {
+  return ctx.getType<'http'>() === 'http';
+}
+
+function getHttp(ctx: ExecutionContext): {
+  req: RequestWithMeta;
+  res: ResponseWithMeta;
+} {
+  const http = ctx.switchToHttp();
+  return {
+    req: http.getRequest<RequestWithMeta>(),
+    res: http.getResponse<ResponseWithMeta>(),
+  };
+}
+
+function firstHeader(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function extractRoute(req: RequestWithMeta): string {
+  if ((req as unknown as { route?: { path?: string } }).route?.path) {
+    return (req as unknown as { route: { path: string } }).route.path;
+  }
+  const url = req.originalUrl ?? req.url ?? '/';
+  const path = url.split('?')[0];
+  return path
+    .replace(/\/[0-9a-fA-F]{24}/g, '/:id') // MongoDB ObjectIds
+    .replace(/\/\d+/g, '/:id') // Numeric IDs
+    .replace(/\/[a-zA-Z0-9-_]{8,}/g, '/:slug'); // Slugs
+}
+
+function categorizeError(statusCode: number): string {
+  if (statusCode >= 500) return 'server_error';
+  if (statusCode === 404) return 'not_found';
+  if (statusCode === 401) return 'unauthorized';
+  if (statusCode === 403) return 'forbidden';
+  if (statusCode >= 400) return 'client_error';
+  return 'unknown';
+}
+
+function formatErrorForLog(error: unknown): {
+  message: string;
+  stack?: string;
+} {
+  if (error instanceof Error) {
+    return { message: error.message, stack: error.stack };
+  }
+  return { message: String(error) };
+}
+
+function generateRequestId(): string {
+  return randomUUID();
+}
+
+// -----------------------------------------------------------------------------
 
 /**
  * Interceptor لقياس أداء HTTP requests
@@ -34,22 +118,23 @@ export class HttpMetricsInterceptor implements NestInterceptor {
     private readonly httpErrors: Counter<string>,
   ) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const req = context.switchToHttp().getRequest();
-    const res = context.switchToHttp().getResponse();
-    const startTime = process.hrtime.bigint();
-    if (context.getType<'http'>() !== 'http') return next.handle();
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    if (!isHttpContext(context)) return next.handle();
 
+    const { req, res } = getHttp(context);
     if (shouldBypass(req)) return next.handle();
+
+    const startTime = process.hrtime.bigint();
 
     // استخراج معلومات الطلب
     const method = req.method;
-    const route = this.extractRoute(req);
-    const userAgent = req.headers['user-agent'] || 'unknown';
-    const ip = req.ip || req.connection.remoteAddress;
+    const route = extractRoute(req);
+    const userAgent = req.headers['user-agent'] ?? 'unknown';
+    const ip = req.ip ?? req.socket?.remoteAddress ?? 'unknown';
 
     // إضافة request ID للتتبع
-    const requestId = req.headers['x-request-id'] || this.generateRequestId();
+    const requestId =
+      firstHeader(req.headers['x-request-id']) ?? generateRequestId();
     req.requestId = requestId;
     res.setHeader('X-Request-ID', requestId);
 
@@ -57,23 +142,25 @@ export class HttpMetricsInterceptor implements NestInterceptor {
       tap(() => {
         this.recordMetrics(method, route, res.statusCode, startTime);
       }),
-      catchError((error) => {
-        this.recordMetrics(method, route, res.statusCode || 500, startTime);
-        this.recordError(method, route, res.statusCode || 500, error);
 
-        // تسجيل تفاصيل الخطأ
-        this.logger.error(`HTTP Error - ${method} ${route}`, {
-          requestId,
-          method,
-          route,
-          statusCode: res.statusCode || 500,
-          userAgent,
-          ip,
-          error: error.message,
-          stack: error.stack,
-        });
+      // الأخطاء
+      catchError((error: unknown) => {
+        const status = res.statusCode ?? STATUS_FALLBACK;
+        this.recordMetrics(method, route, status, startTime);
+        this.recordError(method, route, status);
 
-        return throwError(() => error);
+        const errInfo = formatErrorForLog(error);
+        // تلافي تمرير كائنات غير مضبوطة للـ logger
+        this.logger.error(
+          `HTTP Error - ${method} ${route} | requestId=${requestId} status=${status} ua=${userAgent} ip=${ip} msg=${errInfo.message}`,
+        );
+        if (errInfo.stack) {
+          this.logger.error(errInfo.stack);
+        }
+
+        return throwError(() =>
+          error instanceof Error ? error : new Error(String(error)),
+        );
       }),
     );
   }
@@ -87,13 +174,15 @@ export class HttpMetricsInterceptor implements NestInterceptor {
     statusCode: number,
     startTime: bigint,
   ): void {
-    const duration = Number(process.hrtime.bigint() - startTime) / 1e9;
+    const NANOSECONDS_PER_SECOND = 1000000000;
+    const duration =
+      Number(process.hrtime.bigint() - startTime) / NANOSECONDS_PER_SECOND;
     const status_code = statusCode.toString();
 
     this.httpDuration.labels(method, route, status_code).observe(duration);
     this.httpTotal.labels(method, route, status_code).inc();
 
-    if (duration > 1) {
+    if (duration > SLOW_REQUEST_SECONDS) {
       this.logger.warn(
         `Slow request detected: ${method} ${route} took ${duration.toFixed(3)}s`,
       );
@@ -103,61 +192,10 @@ export class HttpMetricsInterceptor implements NestInterceptor {
   /**
    * تسجيل الأخطاء
    */
-  private recordError(
-    method: string,
-    route: string,
-    statusCode: number,
-    error: any,
-  ): void {
-    const errorType = this.categorizeError(statusCode, error);
+  private recordError(method: string, route: string, statusCode: number): void {
+    const errorType = categorizeError(statusCode);
     this.httpErrors
       .labels(method, route, statusCode.toString(), errorType)
       .inc();
-  }
-
-  /**
-   * استخراج المسار من الطلب
-   */
-  private extractRoute(req: any): string {
-    // استخدام route pattern إذا متوفر
-    if (req.route?.path) {
-      return req.route.path;
-    }
-
-    // تنظيف URL من query parameters
-    const url = req.originalUrl || req.url || '/';
-    const path = url.split('?')[0];
-
-    // استبدال IDs بـ placeholders للتجميع
-    return path
-      .replace(/\/[0-9a-fA-F]{24}/g, '/:id') // MongoDB ObjectIds
-      .replace(/\/\d+/g, '/:id') // Numeric IDs
-      .replace(/\/[a-zA-Z0-9-_]{8,}/g, '/:slug'); // Slugs
-  }
-
-  /**
-   * تصنيف نوع الخطأ
-   */
-  private categorizeError(statusCode: number, error: any): string {
-    if (statusCode >= 500) {
-      return 'server_error';
-    } else if (statusCode === 404) {
-      return 'not_found';
-    } else if (statusCode === 401) {
-      return 'unauthorized';
-    } else if (statusCode === 403) {
-      return 'forbidden';
-    } else if (statusCode >= 400) {
-      return 'client_error';
-    }
-
-    return 'unknown';
-  }
-
-  /**
-   * إنشاء request ID فريد
-   */
-  private generateRequestId(): string {
-    return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }

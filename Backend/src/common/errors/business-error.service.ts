@@ -12,7 +12,10 @@ export class BusinessErrorService {
   /**
    * ترجمة رسالة خطأ المنتجات
    */
-  translateProductError(errorKey: string, args?: any): string {
+  translateProductError(
+    errorKey: string,
+    args?: Record<string, unknown>,
+  ): string {
     return this.translationService.translate(
       `products.errors.${errorKey}`,
       args,
@@ -22,7 +25,10 @@ export class BusinessErrorService {
   /**
    * ترجمة رسالة خطأ التجار
    */
-  translateMerchantError(errorKey: string, args?: any): string {
+  translateMerchantError(
+    errorKey: string,
+    args?: Record<string, unknown>,
+  ): string {
     return this.translationService.translate(
       `merchants.errors.${errorKey}`,
       args,
@@ -32,28 +38,34 @@ export class BusinessErrorService {
   /**
    * ترجمة رسالة خطأ المستخدمين
    */
-  translateUserError(errorKey: string, args?: any): string {
+  translateUserError(errorKey: string, args?: Record<string, unknown>): string {
     return this.translationService.translate(`users.errors.${errorKey}`, args);
   }
 
   /**
    * ترجمة رسالة خطأ المصادقة
    */
-  translateAuthError(errorKey: string, args?: any): string {
+  translateAuthError(errorKey: string, args?: Record<string, unknown>): string {
     return this.translationService.translate(`auth.errors.${errorKey}`, args);
   }
 
   /**
    * ترجمة رسالة خطأ عامة
    */
-  translateGeneralError(errorKey: string, args?: any): string {
+  translateGeneralError(
+    errorKey: string,
+    args?: Record<string, unknown>,
+  ): string {
     return this.translationService.translateError(errorKey, args);
   }
 
   /**
    * ترجمة رسالة خطأ الأعمال
    */
-  translateBusinessError(errorKey: string, args?: any): string {
+  translateBusinessError(
+    errorKey: string,
+    args?: Record<string, unknown>,
+  ): string {
     return this.translationService.translate(
       `errors.business.${errorKey}`,
       args,
@@ -63,14 +75,20 @@ export class BusinessErrorService {
   /**
    * ترجمة رسالة خطأ النظام
    */
-  translateSystemError(errorKey: string, args?: any): string {
+  translateSystemError(
+    errorKey: string,
+    args?: Record<string, unknown>,
+  ): string {
     return this.translationService.translate(`errors.system.${errorKey}`, args);
   }
 
   /**
    * ترجمة رسالة خطأ خارجي
    */
-  translateExternalError(errorKey: string, args?: any): string {
+  translateExternalError(
+    errorKey: string,
+    args?: Record<string, unknown>,
+  ): string {
     return this.translationService.translate(
       `errors.external.${errorKey}`,
       args,
@@ -80,14 +98,17 @@ export class BusinessErrorService {
   /**
    * ترجمة رسالة خطأ الملفات
    */
-  translateFileError(errorKey: string, args?: any): string {
+  translateFileError(errorKey: string, args?: Record<string, unknown>): string {
     return this.translationService.translate(`errors.file.${errorKey}`, args);
   }
 
   /**
    * ترجمة رسالة خطأ الشبكة
    */
-  translateNetworkError(errorKey: string, args?: any): string {
+  translateNetworkError(
+    errorKey: string,
+    args?: Record<string, unknown>,
+  ): string {
     return this.translationService.translate(
       `errors.network.${errorKey}`,
       args,
@@ -97,7 +118,10 @@ export class BusinessErrorService {
   /**
    * ترجمة رسالة خطأ الأداء
    */
-  translatePerformanceError(errorKey: string, args?: any): string {
+  translatePerformanceError(
+    errorKey: string,
+    args?: Record<string, unknown>,
+  ): string {
     return this.translationService.translate(
       `errors.performance.${errorKey}`,
       args,
@@ -107,7 +131,10 @@ export class BusinessErrorService {
   /**
    * ترجمة رسالة خطأ ودية للمستخدم
    */
-  translateUserFriendlyError(errorKey: string, args?: any): string {
+  translateUserFriendlyError(
+    errorKey: string,
+    args?: Record<string, unknown>,
+  ): string {
     return this.translationService.translate(
       `errors.userFriendly.${errorKey}`,
       args,

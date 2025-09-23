@@ -1,31 +1,39 @@
 // src/common/decorators/match.decorator.ts
 
-import {
-  registerDecorator,
-  ValidationOptions,
-  ValidatorConstraint,
-  ValidatorConstraintInterface,
+import { registerDecorator, ValidatorConstraint } from 'class-validator';
+
+import type {
   ValidationArguments,
+  ValidationOptions,
+  ValidatorConstraintInterface,
 } from 'class-validator';
 
 @ValidatorConstraint({ name: 'match', async: false })
 export class MatchConstraint implements ValidatorConstraintInterface {
-  validate(value: any, args: ValidationArguments) {
-    const [relatedPropertyName] = args.constraints;
-    const relatedValue = (args.object as any)[relatedPropertyName];
+  validate(value: unknown, args: ValidationArguments): boolean {
+    const [relatedPropertyName] = args.constraints as unknown as readonly [
+      string,
+    ];
+    const relatedObject = args.object as Record<string, unknown>;
+    const relatedValue = relatedObject[relatedPropertyName];
     return value === relatedValue;
   }
 
-  defaultMessage(args: ValidationArguments) {
-    const [relatedPropertyName] = args.constraints;
+  defaultMessage(args: ValidationArguments): string {
+    const [relatedPropertyName] = args.constraints as unknown as readonly [
+      string,
+    ];
     return `حقل ${args.property} يجب أن يطابق ${relatedPropertyName}`;
   }
 }
 
-export function Match(property: string, validationOptions?: ValidationOptions) {
-  return (object: object, propertyName: string) => {
+export function Match(
+  property: string,
+  validationOptions?: ValidationOptions,
+): PropertyDecorator {
+  return (target: object, propertyName: string): void => {
     registerDecorator({
-      target: object.constructor,
+      target: target.constructor,
       propertyName,
       options: validationOptions,
       constraints: [property],

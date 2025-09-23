@@ -36,7 +36,7 @@ export class ErrorMonitoringController {
     @Query('category') category?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
-  ) {
+  ): Promise<ReturnType<ErrorManagementService['getErrorStats']>> {
     const filters = {
       merchantId,
       severity,
@@ -55,12 +55,16 @@ export class ErrorMonitoringController {
     status: 200,
     description: 'Sentry status retrieved successfully',
   })
-  async getSentryStatus() {
-    return {
+  getSentryStatus(): Promise<{
+    enabled: boolean;
+    currentUserId: string | undefined;
+    timestamp: string;
+  }> {
+    return Promise.resolve({
       enabled: this.sentryService.isEnabled(),
       currentUserId: this.sentryService.getCurrentUserId(),
       timestamp: new Date().toISOString(),
-    };
+    });
   }
 
   @Get('health')
@@ -70,7 +74,20 @@ export class ErrorMonitoringController {
     status: 200,
     description: 'Health status retrieved successfully',
   })
-  async getHealthStatus() {
+  async getHealthStatus(): Promise<{
+    status: string;
+    timestamp: string;
+    services: {
+      errorManagement: { status: string; totalErrors: number };
+      sentry: { status: string; enabled: boolean };
+    };
+    summary: {
+      totalErrors: number;
+      bySeverity: Record<string, number>;
+      byCategory: Record<string, number>;
+      recentErrors: number;
+    };
+  }> {
     const stats = await this.errorManagementService.getErrorStats();
 
     return {

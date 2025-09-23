@@ -10,10 +10,10 @@ import { ApiResponseDto } from 'src/modules/documents/dto/common.dto';
 
 import type { Type } from '@nestjs/common';
 
-export const Ok = <TModel extends Type<any>>(
+export const Ok = <TModel extends Type<unknown>>(
   model: TModel,
   description = 'OK',
-) =>
+): ReturnType<typeof applyDecorators> =>
   applyDecorators(
     ApiExtraModels(ApiResponseDto, model),
     ApiOkResponse({
@@ -31,10 +31,10 @@ export const Ok = <TModel extends Type<any>>(
     }),
   );
 
-export const Created = <TModel extends Type<any>>(
+export const Created = <TModel extends Type<unknown>>(
   model: TModel,
   description = 'Created',
-) =>
+): ReturnType<typeof applyDecorators> =>
   applyDecorators(
     ApiExtraModels(ApiResponseDto, model),
     ApiCreatedResponse({

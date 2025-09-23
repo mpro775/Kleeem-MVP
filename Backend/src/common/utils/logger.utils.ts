@@ -4,8 +4,8 @@
  * ✅ G1: تنظيف headers من البيانات الحساسة
  */
 export function sanitizeHeaders(
-  headers: Record<string, any>,
-): Record<string, any> {
+  headers: Record<string, unknown> | null | undefined,
+): Record<string, unknown> {
   const sensitiveHeaders = [
     'authorization',
     'cookie',
@@ -18,16 +18,12 @@ export function sanitizeHeaders(
     'set-cookie',
   ];
 
-  const sanitized: Record<string, any> = {};
+  const input = headers ?? {};
+  const sanitized: Record<string, unknown> = {};
 
-  for (const [key, value] of Object.entries(headers || {})) {
+  for (const [key, value] of Object.entries(input)) {
     const lowerKey = key.toLowerCase();
-
-    if (sensitiveHeaders.includes(lowerKey)) {
-      sanitized[key] = '[REDACTED]';
-    } else {
-      sanitized[key] = value;
-    }
+    sanitized[key] = sensitiveHeaders.includes(lowerKey) ? '[REDACTED]' : value;
   }
 
   return sanitized;
@@ -36,38 +32,47 @@ export function sanitizeHeaders(
 /**
  * ✅ G1: تنظيف body من البيانات الحساسة
  */
-export function sanitizeBody(body: any): any {
-  if (!body || typeof body !== 'object') {
-    return body;
-  }
+export function sanitizeBody(body: unknown): unknown {
+  if (!isObject(body)) return body;
 
   const sensitiveFields = [
     'password',
-    'confirmPassword',
-    'refreshToken',
-    'accessToken',
+    'confirmpassword',
+    'refreshtoken',
+    'accesstoken',
     'token',
     'secret',
     'apikey',
-    'appSecret',
-    'verifyToken',
+    'appsecret',
+    'verifytoken',
     'signature',
   ];
 
-  const sanitized: any = Array.isArray(body) ? [] : {};
+  if (Array.isArray(body)) {
+    return body.map((item) => sanitizeBody(item));
+  }
 
-  for (const [key, value] of Object.entries(body)) {
+  const obj = body;
+  const result: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(obj)) {
     const lowerKey = key.toLowerCase();
 
     if (sensitiveFields.some((field) => lowerKey.includes(field))) {
-      sanitized[key] = '[REDACTED]';
-    } else if (typeof value === 'object' && value !== null) {
-      // تنظيف متداخل للكائنات
-      sanitized[key] = sanitizeBody(value);
+      result[key] = '[REDACTED]';
+    } else if (isObject(value)) {
+      // تنظيف متداخل للكائنات/المصفوفات
+      result[key] = sanitizeBody(value);
     } else {
-      sanitized[key] = value;
+      result[key] = value;
     }
   }
 
-  return sanitized;
+  return result;
+}
+
+// -----------------------------------------------------------------------------
+
+function isObject(v: unknown): v is Record<string, unknown> | unknown[] {
+  return typeof v === 'object' && v !== null;
 }

@@ -1,5 +1,11 @@
 // src/common/interceptors/bypass.util.ts
-import type { Request } from 'express';
+
+interface BypassRequest {
+  method?: string;
+  headers?: Record<string, string | string[] | undefined>;
+  originalUrl?: string;
+  url?: string;
+}
 
 /**
  * Request paths/methods/agents to bypass for metrics/logging/tracing.
@@ -47,28 +53,45 @@ function getEnvRegexes(): RegExp[] {
 
 const ENV_REGEXES = getEnvRegexes();
 
-export function shouldBypass(req: Request | any): boolean {
+function shouldBypassByMethod(req: BypassRequest): boolean {
   const method = (req?.method || '').toUpperCase();
-  if (BYPASS_METHODS.includes(method)) return true;
+  return BYPASS_METHODS.includes(method);
+}
 
-  const ua: string = req?.headers?.['user-agent'] || '';
-  if (UA_BYPASS_REGEX.test(ua)) return true;
+function shouldBypassByUserAgent(req: BypassRequest): boolean {
+  const ua = req?.headers?.['user-agent'];
+  const uaStr = Array.isArray(ua) ? ua[0] : ua || '';
+  return UA_BYPASS_REGEX.test(uaStr);
+}
 
-  const url = (req?.originalUrl || req?.url || '').split('?')[0] || '/';
-
+function shouldBypassByUrl(url: string): boolean {
   // مطابقات دقيقة
   if (EXACT_PATHS.includes(url)) return true;
 
   // مطابقات مسبوق-بـ
-  if (PREFIX_PATHS.some((p) => url === p || url.startsWith(p + '/')))
+  if (PREFIX_PATHS.some((p) => url === p || url.startsWith(p + '/'))) {
     return true;
+  }
 
   // مخصّصة من ENV (Regex)
-  if (ENV_REGEXES.some((re) => re.test(url))) return true;
+  return ENV_REGEXES.some((re) => re.test(url));
+}
 
-  // خيار يدوي للتجاوز عبر هيدر داخلي
+function shouldBypassByHeader(req: BypassRequest): boolean {
   const headerBypass = req?.headers?.['x-metrics-bypass'];
-  if (headerBypass === '1' || headerBypass === 'true') return true;
+  const headerValue = Array.isArray(headerBypass)
+    ? headerBypass[0]
+    : headerBypass;
+  return headerValue === '1' || headerValue === 'true';
+}
+
+export function shouldBypass(req: BypassRequest): boolean {
+  if (shouldBypassByMethod(req)) return true;
+  if (shouldBypassByUserAgent(req)) return true;
+
+  const url = (req?.originalUrl || req?.url || '').split('?')[0] || '/';
+  if (shouldBypassByUrl(url)) return true;
+  if (shouldBypassByHeader(req)) return true;
 
   return false;
 }

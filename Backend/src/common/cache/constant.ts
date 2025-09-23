@@ -37,3 +37,4 @@ export const CACHE_MAX_ITEMS = 1000;
 export const REDIS_DEFAULT_DB = 0;
 export const REDIS_RETRY_DELAY_ON_FAILOVER = 100;
 export const REDIS_DEFAULT_PORT = 6379;
+export const MILLISECONDS_PER_MINUTE = 60_000;

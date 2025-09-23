@@ -3,22 +3,30 @@ import { Transform } from 'class-transformer';
 import { IsOptional, IsInt, Min, Max } from 'class-validator';
 import { Types } from 'mongoose';
 
+import {
+  MIN_LIMIT,
+  MAX_LIMIT,
+  DEFAULT_LIMIT,
+  DEFAULT_SORT_FIELD,
+  DEFAULT_SORT_ORDER,
+} from '../constants/common';
+
 /**
  * DTO موحد للـ Cursor Pagination
  */
 export class CursorDto {
   @ApiPropertyOptional({
     description: 'عدد العناصر المطلوبة (1-100)',
-    minimum: 1,
-    maximum: 100,
-    default: 20,
+    minimum: MIN_LIMIT,
+    maximum: MAX_LIMIT,
+    default: DEFAULT_LIMIT,
   })
   @IsOptional()
-  @Transform(({ value }) => parseInt(value))
+  @Transform(({ value }) => parseInt(value as string))
   @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 20;
+  @Min(MIN_LIMIT)
+  @Max(MAX_LIMIT)
+  limit?: number = DEFAULT_LIMIT;
 
   @ApiPropertyOptional({
     description: 'Cursor للصفحة التالية (base64 encoded)',
@@ -56,7 +64,10 @@ export function decodeCursor(
 ): { t: number; id: string } | null {
   if (!cursor) return null;
   try {
-    const decoded = JSON.parse(Buffer.from(cursor, 'base64').toString());
+    const decoded = JSON.parse(Buffer.from(cursor, 'base64').toString()) as {
+      t: number;
+      id: string;
+    };
     if (typeof decoded.t === 'number' && typeof decoded.id === 'string') {
       return decoded;
     }
@@ -70,16 +81,16 @@ export function decodeCursor(
  * إنشاء filter للـ cursor pagination
  */
 export function createCursorFilter(
-  baseFilter: any,
+  baseFilter: Record<string, unknown>,
   cursor?: string,
-  sortField: string = 'createdAt',
-  sortOrder: 1 | -1 = -1, // NEW: مرّر اتجاه الفرز
-): any {
+  sortField: string = DEFAULT_SORT_FIELD,
+  sortOrder: 1 | -1 = DEFAULT_SORT_ORDER, // NEW: مرّر اتجاه الفرز
+): Record<string, unknown> {
   const filter = { ...baseFilter };
   const decoded = decodeCursor(cursor);
   if (!decoded) return filter;
 
-  const op = sortOrder === -1 ? '$lt' : '$gt';
+  const op = sortOrder === DEFAULT_SORT_ORDER ? '$lt' : '$gt';
   const cursorDate = new Date(decoded.t);
   const cursorId = Types.ObjectId.isValid(decoded.id)
     ? new Types.ObjectId(decoded.id)

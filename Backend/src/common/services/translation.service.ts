@@ -1,69 +1,77 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { I18nService } from 'nestjs-i18n';
+
+import type { TranslateOptions } from 'nestjs-i18n';
 
 @Injectable()
 export class TranslationService {
+  private readonly logger = new Logger(TranslationService.name);
+
   constructor(private readonly i18n: I18nService) {}
 
   /**
    * ترجمة مفتاح عام
    */
-  translate(key: string, args?: any): string {
+  translate(key: string, options?: TranslateOptions): string {
     try {
-      return this.i18n.translate(key, args);
-    } catch (error) {
-      console.warn(`Translation key not found: ${key}`);
-      return key; // إرجاع المفتاح الأصلي في حالة عدم وجود الترجمة
+      return this.i18n.translate(key, options);
+    } catch {
+      this.logger.warn(`Translation key not found: ${key}`);
+      // إرجاع المفتاح الأصلي في حالة عدم وجود الترجمة
+      return key;
     }
   }
 
   /**
    * ترجمة رسالة خطأ
    */
-  translateError(errorKey: string, args?: any): string {
-    return this.translate(`errors.${errorKey}`, args);
+  translateError(errorKey: string, options?: TranslateOptions): string {
+    return this.translate(`errors.${errorKey}`, options);
   }
 
   /**
    * ترجمة رسالة نجاح
    */
-  translateSuccess(successKey: string, args?: any): string {
-    return this.translate(`messages.success.${successKey}`, args);
+  translateSuccess(successKey: string, options?: TranslateOptions): string {
+    return this.translate(`messages.success.${successKey}`, options);
   }
 
   /**
    * ترجمة رسالة تحقق
    */
-  translateValidation(validationKey: string, args?: any): string {
-    return this.translate(`validation.${validationKey}`, args);
+  translateValidation(
+    validationKey: string,
+    options?: TranslateOptions,
+  ): string {
+    return this.translate(`validation.${validationKey}`, options);
   }
 
   /**
    * ترجمة رسالة منتج
    */
-  translateProduct(productKey: string, args?: any): string {
-    return this.translate(`products.${productKey}`, args);
+  translateProduct(productKey: string, options?: TranslateOptions): string {
+    return this.translate(`products.${productKey}`, options);
   }
 
   /**
    * ترجمة رسالة تاجر
    */
-  translateMerchant(merchantKey: string, args?: any): string {
-    return this.translate(`merchants.${merchantKey}`, args);
+  translateMerchant(merchantKey: string, options?: TranslateOptions): string {
+    return this.translate(`merchants.${merchantKey}`, options);
   }
 
   /**
    * ترجمة رسالة مستخدم
    */
-  translateUser(userKey: string, args?: any): string {
-    return this.translate(`users.${userKey}`, args);
+  translateUser(userKey: string, options?: TranslateOptions): string {
+    return this.translate(`users.${userKey}`, options);
   }
 
   /**
    * ترجمة رسالة مصادقة
    */
-  translateAuth(authKey: string, args?: any): string {
-    return this.translate(`auth.${authKey}`, args);
+  translateAuth(authKey: string, options?: TranslateOptions): string {
+    return this.translate(`auth.${authKey}`, options);
   }
 
   /**
@@ -72,9 +80,9 @@ export class TranslationService {
   translateAuthMessage(
     type: 'errors' | 'messages' | 'validation',
     key: string,
-    args?: any,
+    options?: TranslateOptions,
   ): string {
-    return this.translate(`auth.${type}.${key}`, args);
+    return this.translate(`auth.${type}.${key}`, options);
   }
 
   /**
@@ -83,9 +91,9 @@ export class TranslationService {
   translateProductMessage(
     type: 'errors' | 'messages' | 'operations',
     key: string,
-    args?: any,
+    options?: TranslateOptions,
   ): string {
-    return this.translate(`products.${type}.${key}`, args);
+    return this.translate(`products.${type}.${key}`, options);
   }
 
   /**
@@ -94,30 +102,36 @@ export class TranslationService {
   translateMerchantMessage(
     type: 'errors' | 'messages' | 'checklist',
     key: string,
-    args?: any,
+    options?: TranslateOptions,
   ): string {
-    return this.translate(`merchants.${type}.${key}`, args);
+    return this.translate(`merchants.${type}.${key}`, options);
   }
 
   /**
    * ترجمة رسائل الأخطاء الخارجية
    */
-  translateExternalError(externalKey: string, args?: any): string {
-    return this.translate(`errors.external.${externalKey}`, args);
+  translateExternalError(
+    externalKey: string,
+    options?: TranslateOptions,
+  ): string {
+    return this.translate(`errors.external.${externalKey}`, options);
   }
 
   /**
    * ترجمة رسائل أخطاء الملفات
    */
-  translateFileError(fileKey: string, args?: any): string {
-    return this.translate(`errors.file.${fileKey}`, args);
+  translateFileError(fileKey: string, options?: TranslateOptions): string {
+    return this.translate(`errors.file.${fileKey}`, options);
   }
 
   /**
    * ترجمة رسائل الأخطاء التجارية
    */
-  translateBusinessError(businessKey: string, args?: any): string {
-    return this.translate(`errors.business.${businessKey}`, args);
+  translateBusinessError(
+    businessKey: string,
+    options?: TranslateOptions,
+  ): string {
+    return this.translate(`errors.business.${businessKey}`, options);
   }
 
   /**
@@ -133,8 +147,9 @@ export class TranslationService {
    */
   hasTranslation(key: string): boolean {
     try {
-      const translation = this.i18n.translate(key);
-      return translation !== key; // إذا كان مختلف عن المفتاح الأصلي فهذا يعني وجود ترجمة
+      const translation = this.i18n.translate<string>(key);
+      // إذا كان مختلفًا عن المفتاح الأصلي فهذا يعني وجود ترجمة
+      return translation !== key;
     } catch {
       return false;
     }
@@ -143,28 +158,33 @@ export class TranslationService {
   /**
    * ترجمة متعددة المفاتيح
    */
-  translateMultiple(keys: string[], args?: any): Record<string, string> {
+  translateMultiple(
+    keys: string[],
+    options?: TranslateOptions,
+  ): Record<string, string> {
     const translations: Record<string, string> = {};
-
-    keys.forEach((key) => {
-      translations[key] = this.translate(key, args);
-    });
-
+    for (const key of keys) {
+      translations[key] = this.translate(key, options);
+    }
     return translations;
   }
 
   /**
    * ترجمة مع fallback
    */
-  translateWithFallback(key: string, fallback: string, args?: any): string {
-    const translation = this.translate(key, args);
+  translateWithFallback(
+    key: string,
+    fallback: string,
+    options?: TranslateOptions,
+  ): string {
+    const translation = this.translate(key, options);
     return translation === key ? fallback : translation;
   }
 
   /**
    * ترجمة مصفوفة من النصوص
    */
-  translateArray(keys: string[], args?: any): string[] {
-    return keys.map((key) => this.translate(key, args));
+  translateArray(keys: string[], options?: TranslateOptions): string[] {
+    return keys.map((key) => this.translate(key, options));
   }
 }
