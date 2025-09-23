@@ -6,7 +6,9 @@ export interface CategoriesRepository {
   createCategory(
     data: Partial<HydratedDocument<Category>>,
   ): Promise<HydratedDocument<Category>>;
-  findAllByMerchant(merchantId: Types.ObjectId): Promise<any[]>; // lean
+  findAllByMerchant(
+    merchantId: Types.ObjectId,
+  ): Promise<HydratedDocument<Category>[]>; // lean
   findByIdForMerchant(
     id: string | Types.ObjectId,
     merchantId: Types.ObjectId,
@@ -14,11 +16,11 @@ export interface CategoriesRepository {
   findLeanByIdForMerchant(
     id: string | Types.ObjectId,
     merchantId: Types.ObjectId,
-  ): Promise<any | null>;
+  ): Promise<HydratedDocument<Category> | null>;
   updateCategoryFields(
     id: Types.ObjectId,
     merchantId: Types.ObjectId,
-    update: Record<string, any>,
+    update: Record<string, unknown>,
   ): Promise<void>;
   deleteManyByIds(
     merchantId: Types.ObjectId,
@@ -38,7 +40,7 @@ export interface CategoriesRepository {
   listSiblings(
     merchantId: Types.ObjectId,
     parentId: Types.ObjectId | null,
-  ): Promise<Array<any>>; // lean
+  ): Promise<Array<HydratedDocument<Category>>>; // lean
   updateOrder(
     categoryId: Types.ObjectId,
     order: number,
@@ -54,7 +56,7 @@ export interface CategoriesRepository {
   findManyByIds(
     ids: Types.ObjectId[],
     fields?: Record<string, 1 | 0>,
-  ): Promise<any[]>; // lean
+  ): Promise<HydratedDocument<Category>[]>; // lean
   findSubtreeIds(
     merchantId: Types.ObjectId,
     rootId: Types.ObjectId,

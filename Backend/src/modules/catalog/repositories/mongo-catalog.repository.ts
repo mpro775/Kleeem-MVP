@@ -16,7 +16,10 @@ export class MongoCatalogRepository implements CatalogRepository {
     private readonly merchantModel: Model<MerchantDocument>,
   ) {}
 
-  async findMerchantLean(merchantId: string | Types.ObjectId) {
+  async findMerchantLean(merchantId: string | Types.ObjectId): Promise<{
+    _id: Types.ObjectId;
+    productSource?: 'internal' | 'salla' | 'zid';
+  } | null> {
     const _id =
       typeof merchantId === 'string'
         ? new Types.ObjectId(merchantId)

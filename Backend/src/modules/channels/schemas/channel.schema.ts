@@ -73,7 +73,7 @@ export class Channel {
   @Prop() igBusinessId?: string;
 
   // Webchat
-  @Prop({ type: Object, default: {} }) widgetSettings?: Record<string, any>;
+  @Prop({ type: Object, default: {} }) widgetSettings?: Record<string, unknown>;
 
   @Prop({ default: false }) isDefault?: boolean;
   @Prop({ default: null }) deletedAt?: Date;

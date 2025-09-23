@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, CallbackError } from 'mongoose';
 
 export type ChatWidgetSettingsDocument = ChatWidgetSettings & Document;
 
@@ -51,7 +51,7 @@ export class ChatWidgetSettings {
   @Prop({ default: false }) handoffEnabled: boolean;
   @Prop({ enum: ['slack', 'email', 'webhook'], default: 'slack' })
   handoffChannel: 'slack' | 'email' | 'webhook';
-  @Prop({ type: Object, default: {} }) handoffConfig: Record<string, any>;
+  @Prop({ type: Object, default: {} }) handoffConfig: Record<string, unknown>;
 
   // ↳ Tags
   @Prop([String]) topicsTags: string[]; // ['Pricing','Demo',…]
@@ -71,11 +71,12 @@ ChatWidgetSettingsSchema.pre('save', async function (next) {
   try {
     const MerchantModel = this.model('Merchant');
     const m = (await MerchantModel.findOne({
-      _id: (this as any).merchantId,
-    }).select('publicSlug')) as any;
-    if (m?.publicSlug) (this as any).widgetSlug = m.publicSlug; // مرآة
+      _id: (this as unknown as { merchantId: string }).merchantId,
+    }).select('publicSlug')) as unknown as { publicSlug?: string };
+    if (m?.publicSlug)
+      (this as unknown as { widgetSlug: string }).widgetSlug = m.publicSlug; // مرآة
     next();
   } catch (e) {
-    next(e);
+    next(e as CallbackError);
   }
 });

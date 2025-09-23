@@ -1,3 +1,4 @@
+import type { ChannelLean } from '../../webhooks/repositories/channel.repository';
 import type { Channel, ChannelProvider } from '../schemas/channel.schema';
 import type { ClientSession, HydratedDocument, Types } from 'mongoose';
 
@@ -28,7 +29,7 @@ export interface ChannelsRepository {
   findById(
     id: string | Types.ObjectId,
   ): Promise<HydratedDocument<Channel> | null>;
-  findLeanById(id: string | Types.ObjectId): Promise<any | null>;
+  findLeanById(id: string | Types.ObjectId): Promise<ChannelLean | null>;
   deleteOneById(id: string | Types.ObjectId): Promise<void>;
 
   findByIdWithSecrets(
@@ -38,7 +39,7 @@ export interface ChannelsRepository {
   listByMerchant(
     merchantId: Types.ObjectId,
     provider?: ChannelProvider,
-  ): Promise<any[]>; // lean
+  ): Promise<ChannelLean[]>; // lean
 
   // عمليات افتراضي/إعدادات
   unsetDefaults(
@@ -49,7 +50,7 @@ export interface ChannelsRepository {
   findDefault(
     merchantId: Types.ObjectId,
     provider: ChannelProvider,
-  ): Promise<any | null>; // lean
+  ): Promise<ChannelLean | null>; // lean
 
   // مساعدة
   startSession(): Promise<ClientSession>;

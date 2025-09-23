@@ -7,12 +7,15 @@ export type ConnectResult =
   | { mode: 'oauth'; redirectUrl: string; state?: string }
   | { mode: 'none' }; // لا يوجد إجراء لواجهة المستخدم
 
-export type Status = { status: string; details?: any };
+export type Status = { status: string; details?: Record<string, unknown> };
 
 export type WebhookResult = { ok: boolean };
 
 export interface ChannelAdapter {
-  connect(c: ChannelDocument, payload?: any): Promise<ConnectResult>;
+  connect(
+    c: ChannelDocument,
+    payload?: Record<string, unknown>,
+  ): Promise<ConnectResult>;
   disconnect(
     c: ChannelDocument,
     mode: 'disable' | 'disconnect' | 'wipe',
@@ -22,7 +25,7 @@ export interface ChannelAdapter {
   sendMessage(c: ChannelDocument, to: string, text: string): Promise<void>;
   handleWebhook(
     c: ChannelDocument,
-    raw: any,
-    headers: any,
+    raw: Record<string, unknown>,
+    headers: Record<string, unknown>,
   ): Promise<WebhookResult>;
 }

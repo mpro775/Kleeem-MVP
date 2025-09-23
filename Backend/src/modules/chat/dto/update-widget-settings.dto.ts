@@ -90,7 +90,7 @@ export class UpdateWidgetSettingsDto {
     example: { url: 'https://hooks.slack.com/...' },
   })
   @IsOptional()
-  handoffConfig?: Record<string, any>;
+  handoffConfig?: Record<string, unknown>;
 
   // Tags
   @ApiPropertyOptional({

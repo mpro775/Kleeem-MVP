@@ -16,7 +16,10 @@ export class CatalogService {
     private readonly products: ProductsService,
   ) {}
 
-  async syncForMerchant(merchantId: string) {
+  async syncForMerchant(merchantId: string): Promise<{
+    imported: number;
+    updated: number;
+  }> {
     const m = await this.repo.findMerchantLean(merchantId);
     if (!m) throw new NotFoundException('Merchant not found');
 

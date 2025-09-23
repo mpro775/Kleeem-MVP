@@ -1,14 +1,6 @@
 // src/chat/dto/public-widget.dto.ts
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsBoolean,
-  IsEmail,
-  IsEnum,
-  IsObject,
-  IsOptional,
-  IsString,
-  IsUrl,
-} from 'class-validator';
+import { IsEnum, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class PublicWidgetThemeDto {
   @ApiProperty() @IsString() headerBgColor!: string;
@@ -38,7 +30,7 @@ export class PublicWidgetSettingsResponseDto {
   handoffChannel!: 'slack' | 'email' | 'webhook';
 
   @ApiPropertyOptional({ type: Object, additionalProperties: true })
-  handoffConfig?: Record<string, any>;
+  handoffConfig?: Record<string, unknown>;
 }
 
 export class PublicWidgetStatusResponseDto {
@@ -68,7 +60,7 @@ export class CreateSessionDto {
   @ApiPropertyOptional({ type: Object })
   @IsObject()
   @IsOptional()
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export class CreateSessionResponseDto {

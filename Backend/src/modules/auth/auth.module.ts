@@ -16,9 +16,8 @@ import { UsersModule } from '../users/users.module';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { CookieService } from './services/cookie.service';
-
-
+import { MongoAuthRepository } from './repositories/mongo-auth.repository';
+import { RedisSessionStore } from './repositories/redis-session-store.repository';
 import {
   EmailVerificationToken,
   EmailVerificationTokenSchema,
@@ -27,8 +26,7 @@ import {
   PasswordResetToken,
   PasswordResetTokenSchema,
 } from './schemas/password-reset-token.schema';
-import { MongoAuthRepository } from './repositories/mongo-auth.repository';
-import { RedisSessionStore } from './repositories/redis-session-store.repository';
+import { CookieService } from './services/cookie.service';
 import { TokenService } from './services/token.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 

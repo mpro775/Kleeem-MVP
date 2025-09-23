@@ -1,7 +1,8 @@
-// src/features/chat/chat.gateway.ts (أو حيث تضعه)
+// src/features/chat/chat.gateway.ts
+// ========== External imports ==========
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { OnModuleInit, Inject, Logger } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { OnModuleInit, Inject, Logger, Injectable } from '@nestjs/common';
+import { JwtService, JwtVerifyOptions } from '@nestjs/jwt';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -13,36 +14,131 @@ import {
 } from '@nestjs/websockets';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
-import { Cache } from 'cache-manager';
-import { Gauge } from 'prom-client';
 import { createClient } from 'redis';
-import { Server, Socket } from 'socket.io';
 
+import type { Cache } from 'cache-manager';
+import type { Gauge } from 'prom-client';
+import type { Server, Socket } from 'socket.io';
+
+// ========== Constants (no magic numbers) ==========
+const WS_PATH = '/api/chat' as const;
+const ORIGINS: readonly string[] = [
+  'http://localhost:5173',
+  'https://app.kaleem-ai.com',
+  'https://kaleem-ai.com',
+] as const;
+
+const TRANSPORTS: readonly ('websocket' | 'polling')[] = [
+  'websocket',
+  'polling',
+] as const;
+
+const SECONDS = 1_000;
+const MINUTES = 60 * SECONDS;
+const WINDOW_10_MIN_MS = 10 * MINUTES;
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_DISCONNECT_MULTIPLIER = 2;
+
+const REDIS_FALLBACK_URL = 'redis://redis:6379';
+const BLACKLIST_PREFIX = 'bl:';
+
+// ========== Types ==========
+interface RateState {
+  count: number;
+  resetTime: number;
+}
+
+interface JwtWsPayload {
+  jti: string;
+  userId: string;
+  role: string;
+  merchantId?: string | null;
+  exp?: number;
+  iss?: string;
+  aud?: string;
+  sub?: string;
+}
+
+interface JoinLeavePayload {
+  sessionId?: string;
+  merchantId?: string;
+  rooms?: string[];
+}
+
+interface TypingPayload {
+  sessionId?: string;
+  role?: string;
+}
+
+interface OutgoingMessage {
+  id: string;
+  text: string;
+  role: 'user' | 'agent' | 'system';
+  merchantId?: string;
+  [k: string]: unknown;
+}
+
+// ========== Type guards & utils ==========
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null;
+}
+
+function hasString(v: unknown, key: string): v is Record<string, string> {
+  return isRecord(v) && typeof v[key] === 'string';
+}
+
+function asBoolean(v: unknown): boolean {
+  return v === true || v === '1' || v === 1 || v === 'true';
+}
+
+function extractTokenFromHandshake(client: Socket): string | null {
+  // auth.token
+  const authTok = (client.handshake as unknown as Record<string, unknown>).auth;
+  if (hasString(authTok, 'token')) return authTok.token;
+
+  // query.token
+  const q = client.handshake.query;
+  if (hasString(q, 'token')) return q.token;
+
+  // headers.authorization
+  const h = client.handshake.headers?.authorization;
+  if (typeof h === 'string' && h.startsWith('Bearer ')) return h.slice(7);
+
+  return null;
+}
+
+function isJwtWsPayload(v: unknown): v is JwtWsPayload {
+  return (
+    isRecord(v) && typeof v.jti === 'string' && typeof v.userId === 'string'
+  );
+}
+
+function getHeaderString(client: Socket, name: string): string | undefined {
+  const h = client.handshake.headers?.[name];
+  return typeof h === 'string' ? h : undefined;
+}
+
+@Injectable()
 @WebSocketGateway({
-  path: '/api/chat',
-  cors: {
-    origin: [
-      'http://localhost:5173',
-      'https://app.kaleem-ai.com',
-      'https://kaleem-ai.com',
-    ],
-    credentials: true,
-  },
-  transports: ['websocket', 'polling'],
+  path: WS_PATH,
+  cors: { origin: ORIGINS, credentials: true },
+  transports: TRANSPORTS as ('websocket' | 'polling')[],
 })
 export class ChatGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit
 {
-  @WebSocketServer() server: Server;
+  @WebSocketServer() server!: Server;
   private readonly logger = new Logger(ChatGateway.name);
 
-  // ✅ D2: تتبع معدل الرسائل لكل socket
-  private readonly messageRates = new Map<
-    string,
-    { count: number; resetTime: number }
-  >();
-  private readonly RATE_LIMIT_WINDOW = 10 * 1000; // 10 ثوان
-  private readonly RATE_LIMIT_MAX = 10; // 10 رسائل كحد أقصى
+  // تتبّع معدل الرسائل لكل socket
+  private readonly messageRates = new Map<string, RateState>();
+
+  // خيارات تحقق JWT (إن أردت تفعيلها؛ وإلا سيستخدم verify الافتراضي)
+  private readonly jwtVerifyOptions: JwtVerifyOptions = {
+    // secret: process.env.JWT_SECRET, // يفضّل حقنه عبر ConfigService وتمريره هنا
+    // issuer: process.env.JWT_ISSUER,
+    // audience: process.env.JWT_AUDIENCE,
+  };
 
   constructor(
     private readonly jwtService: JwtService,
@@ -51,19 +147,19 @@ export class ChatGateway
     private readonly wsGauge: Gauge<string>,
   ) {}
 
-  async onModuleInit() {
-    const url = process.env.REDIS_URL || 'redis://redis:6379'; // اسم خدمة redis في docker-compose
+  // ---------- Module init ----------
+  async onModuleInit(): Promise<void> {
+    const url = process.env.REDIS_URL || REDIS_FALLBACK_URL;
     const pub = createClient({ url });
     const sub = pub.duplicate();
     await Promise.all([pub.connect(), sub.connect()]);
     this.server.adapter(createAdapter(pub, sub));
-    // console.log('[WS] Redis adapter ready');
   }
-  async handleConnection(client: Socket) {
+
+  // ---------- Connection lifecycle ----------
+  async handleConnection(client: Socket): Promise<void> {
     try {
-      // ✅ C3: التحقق من JWT في WebSocket
-      const isAuthenticated = await this.authenticateWsClient(client);
-      if (!isAuthenticated) {
+      if (!(await this.authenticateWsClient(client))) {
         this.logger.warn(
           `Unauthorized WebSocket connection attempt: ${client.id}`,
         );
@@ -72,245 +168,178 @@ export class ChatGateway
         return;
       }
 
-      const q = client.handshake.query as Record<string, string | undefined>;
-      const sessionId = q.sessionId;
-      const role = (q.role || '').toLowerCase();
-      const merchantId = q.merchantId;
+      const query = client.handshake.query as Record<
+        string,
+        string | undefined
+      >;
+      const sessionId = query.sessionId;
+      const role = (query.role ?? '').toLowerCase();
+      const merchantId = query.merchantId;
 
-      // أي مستخدم مع sessionId ينضم للغرفة
-      if (sessionId) client.join(sessionId);
-
-      // إن توفر merchantId نضمه لغرفة التاجر
-      if (merchantId) client.join(`merchant:${merchantId}`);
-
-      // للمشرفين/الوكلاء قناة بث عامة (للخلفية القديمة)
+      if (sessionId) void client.join(sessionId);
+      if (merchantId) void client.join(`merchant:${merchantId}`);
       if (role === 'admin' || role === 'agent') {
-        client.join('admin');
-        // يمكن أيضًا إنشاء قناة أحدث:
-        client.join('agents');
-        // console.log('Agent/Admin connected:', client.id);
+        void client.join('admin');
+        void client.join('agents');
       }
 
       this.logger.debug(
-        `WebSocket client connected: ${client.id} (session: ${sessionId})`,
+        `WebSocket client connected: ${client.id} (session: ${sessionId ?? '-'})`,
       );
-
-      // تتبع الاتصالات النشطة
       this.wsGauge.inc({ namespace: 'chat' });
     } catch (error) {
-      this.logger.error(`WebSocket connection error: ${error.message}`);
+      this.logger.error(
+        `WebSocket connection error: ${(error as Error)?.message ?? String(error)}`,
+      );
       client.emit('error', { message: 'Connection failed' });
       client.disconnect(true);
     }
   }
 
-  /**
-   * ✅ C3: التحقق من JWT للـ WebSocket
-   */
+  handleDisconnect(client: Socket): void {
+    this.messageRates.delete(client.id);
+    this.wsGauge.dec({ namespace: 'chat' });
+  }
+
+  // ---------- Auth ----------
   private async authenticateWsClient(client: Socket): Promise<boolean> {
     try {
-      // استخراج التوكن من handshake
-      const token = this.extractWsToken(client);
-      if (!token) {
-        return false;
-      }
+      const token = extractTokenFromHandshake(client);
+      if (!token) return false;
 
-      // التحقق من صحة التوكن
-      const decoded = this.jwtService.verify(token);
-      if (!decoded?.jti) {
-        return false;
-      }
+      const decodedUnknown = this.jwtService.verify(
+        token,
+        this.jwtVerifyOptions,
+      ) as unknown;
+      if (!isJwtWsPayload(decodedUnknown)) return false;
 
-      // التحقق من القائمة السوداء
-      const blacklistKey = `bl:${decoded.jti}`;
+      // blacklist check
+      const blacklistKey = `${BLACKLIST_PREFIX}${decodedUnknown.jti}`;
       const isBlacklisted = await this.cacheManager.get(blacklistKey);
+      if (asBoolean(isBlacklisted)) return false;
 
-      if (isBlacklisted) {
-        return false;
-      }
-
-      // حفظ معلومات المستخدم في client
-      client.data.user = {
-        userId: decoded.userId,
-        role: decoded.role,
-        merchantId: decoded.merchantId,
+      (client.data as Record<string, unknown>).user = {
+        userId: decodedUnknown.userId,
+        role: decodedUnknown.role,
+        merchantId: decodedUnknown.merchantId ?? null,
+        jti: decodedUnknown.jti,
       };
 
+      // مثال: قراءة IP/UA إن احتجت
+      const _ip = client.handshake.address;
+      const _ua = getHeaderString(client, 'user-agent');
+      void _ip;
+      void _ua;
+
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
 
-  /**
-   * استخراج التوكن من WebSocket handshake
-   */
-  private extractWsToken(client: Socket): string | null {
-    // الطريقة 1: من auth header في handshake
-    const authHeader = client.handshake.auth?.token;
-    if (authHeader) {
-      return authHeader;
-    }
-
-    // الطريقة 2: من query parameter
-    const queryToken = client.handshake.query?.token as string;
-    if (queryToken) {
-      return queryToken;
-    }
-
-    // الطريقة 3: من headers
-    const headerToken = client.handshake.headers?.authorization;
-    if (
-      headerToken &&
-      typeof headerToken === 'string' &&
-      headerToken.startsWith('Bearer ')
-    ) {
-      return headerToken.substring(7);
-    }
-
-    return null;
-  }
-
-  handleDisconnect(client: Socket) {
-    // ✅ D2: تنظيف rate limiting عند قطع الاتصال
-    this.messageRates.delete(client.id);
-
-    // تتبع الاتصالات النشطة
-    this.wsGauge.dec({ namespace: 'chat' });
-
-    // console.log('Client disconnected', client.id);
-  }
-
-  /**
-   * ✅ D2: التحقق من معدل إرسال الرسائل (Anti-spam)
-   */
+  // ---------- Rate limiting ----------
   private checkRateLimit(clientId: string): boolean {
     const now = Date.now();
-    const rateData = this.messageRates.get(clientId);
+    const rate = this.messageRates.get(clientId);
 
-    if (!rateData) {
-      // أول رسالة للعميل
+    if (!rate || now > rate.resetTime) {
       this.messageRates.set(clientId, {
         count: 1,
-        resetTime: now + this.RATE_LIMIT_WINDOW,
+        resetTime: now + WINDOW_10_MIN_MS,
       });
       return true;
     }
 
-    // تحقق من انتهاء النافزة الزمنية
-    if (now > rateData.resetTime) {
-      // إعادة تعيين العداد
-      this.messageRates.set(clientId, {
-        count: 1,
-        resetTime: now + this.RATE_LIMIT_WINDOW,
-      });
-      return true;
-    }
+    if (rate.count >= RATE_LIMIT_MAX) return false;
 
-    // تحقق من تجاوز الحد
-    if (rateData.count >= this.RATE_LIMIT_MAX) {
-      return false; // تجاوز الحد
-    }
-
-    // زيادة العداد
-    rateData.count++;
+    rate.count += 1;
     return true;
   }
 
-  /**
-   * ✅ D2: معالجة تجاوز معدل الإرسال
-   */
   private handleRateLimitExceeded(client: Socket): void {
     this.logger.warn(`Rate limit exceeded for client: ${client.id}`);
-
-    // إرسال تحذير للعميل
     client.emit('rate_limit_exceeded', {
       message: 'تم تجاوز حد الرسائل المسموح، الرجاء الإبطاء',
-      retryAfter: this.RATE_LIMIT_WINDOW / 1000, // بالثواني
+      retryAfter: WINDOW_10_MIN_MS / SECONDS, // بالثواني
     });
 
-    // قطع الاتصال في حالة التجاوز المفرط
-    const rateData = this.messageRates.get(client.id);
-    if (rateData && rateData.count > this.RATE_LIMIT_MAX * 2) {
+    const rate = this.messageRates.get(client.id);
+    if (
+      rate &&
+      rate.count > RATE_LIMIT_MAX * RATE_LIMIT_DISCONNECT_MULTIPLIER
+    ) {
       this.logger.warn(
-        `Disconnecting client due to excessive rate limit violations: ${client.id}`,
+        `Disconnecting client due to excessive violations: ${client.id}`,
       );
       client.disconnect(true);
     }
   }
 
-  // انضمام/مغادرة ديناميكي (اختياري)
+  // ---------- Room management ----------
   @SubscribeMessage('join')
   onJoin(
-    @MessageBody()
-    body: { sessionId?: string; merchantId?: string; rooms?: string[] },
+    @MessageBody() body: JoinLeavePayload,
     @ConnectedSocket() client: Socket,
-  ) {
-    // ✅ D2: تطبيق rate limiting
+  ): { ok?: true; error?: string } {
     if (!this.checkRateLimit(client.id)) {
       this.handleRateLimitExceeded(client);
       return { error: 'Rate limit exceeded' };
     }
 
-    if (body?.sessionId) client.join(body.sessionId);
-    if (body?.merchantId) client.join(`merchant:${body.merchantId}`);
-    body?.rooms?.forEach((r) => client.join(r));
+    if (body?.sessionId) void client.join(body.sessionId);
+    if (body?.merchantId) void client.join(`merchant:${body.merchantId}`);
+    body?.rooms?.forEach((r) => void client.join(r));
     return { ok: true };
   }
 
   @SubscribeMessage('leave')
   onLeave(
-    @MessageBody()
-    body: { sessionId?: string; merchantId?: string; rooms?: string[] },
+    @MessageBody() body: JoinLeavePayload,
     @ConnectedSocket() client: Socket,
-  ) {
-    // ✅ D2: تطبيق rate limiting
+  ): { ok?: true; error?: string } {
     if (!this.checkRateLimit(client.id)) {
       this.handleRateLimitExceeded(client);
       return { error: 'Rate limit exceeded' };
     }
 
-    if (body?.sessionId) client.leave(body.sessionId);
-    if (body?.merchantId) client.leave(`merchant:${body.merchantId}`);
-    body?.rooms?.forEach((r) => client.leave(r));
+    if (body?.sessionId) void client.leave(body.sessionId);
+    if (body?.merchantId) void client.leave(`merchant:${body.merchantId}`);
+    body?.rooms?.forEach((r) => void client.leave(r));
     return { ok: true };
   }
 
-  // typing على مستوى الجلسة
+  // ---------- Typing ----------
   @SubscribeMessage('typing')
   onTyping(
-    @MessageBody() payload: { sessionId?: string; role?: string },
+    @MessageBody() payload: TypingPayload,
     @ConnectedSocket() client: Socket,
-  ) {
-    // ✅ D2: تطبيق rate limiting (أقل صرامة للـ typing)
-    if (!this.checkRateLimit(client.id)) {
-      // للـ typing، لا نقطع الاتصال، فقط نتجاهل
-      return;
-    }
+  ): void {
+    // للـ typing، لا نقطع الاتصال على تجاوز المعدل، فقط نتجاهل
+    if (!this.checkRateLimit(client.id)) return;
 
     if (!payload?.sessionId) return;
+    const role = (payload.role ?? 'user') === 'agent' ? 'agent' : 'user';
     this.server.to(payload.sessionId).emit('typing', {
       sessionId: payload.sessionId,
-      role: (payload.role || 'user') as 'user' | 'agent',
+      role,
     });
   }
 
-  // استدعِ هذه من الخدمة عند حفظ رسالة جديدة
-  sendMessageToSession(
-    sessionId: string,
-    message: any & { merchantId?: string },
-  ) {
+  // ---------- Outgoing message broadcaster ----------
+  /** يُستدعى من الخدمة عند حفظ رسالة جديدة */
+  sendMessageToSession(sessionId: string, message: OutgoingMessage): void {
     // للعميلين في نفس الجلسة
     this.server.to(sessionId).emit('message', message);
 
     // بث للمشرفين (توافقية قديمة)
     this.server.to('admin').emit('admin_new_message', { sessionId, message });
 
-    // (اختياري) بث لكل مستخدمي لوحة نفس التاجر
-    if (message?.merchantId) {
-      this.server
-        .to(`merchant:${message.merchantId}`)
-        .emit('message', { sessionId, ...message });
+    // بث لكل مستخدمي لوحة نفس التاجر (إن توفّر)
+    if (message.merchantId) {
+      this.server.to(`merchant:${message.merchantId}`).emit('message', {
+        sessionId,
+        ...message,
+      });
     }
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { Types } from 'mongoose';
 
 import { ChannelsRepository } from './repositories/channels.repository';
@@ -17,10 +17,7 @@ export class WhatsappCloudService {
     @Inject('ChannelsRepository') private readonly repo: ChannelsRepository,
   ) {}
 
-  async detectTransport(
-    merchantId: string,
-    sessionId: string,
-  ): Promise<'api' | 'qr'> {
+  async detectTransport(merchantId: string): Promise<'api' | 'qr'> {
     const cloud = await this.getDefaultCloudChannel(merchantId);
     const cloudReady = !!(
       cloud?.enabled &&
@@ -49,7 +46,7 @@ export class WhatsappCloudService {
     return { token, phoneNumberId };
   }
 
-  async sendText(merchantId: string, to: string, text: string) {
+  async sendText(merchantId: string, to: string, text: string): Promise<void> {
     const { token, phoneNumberId } = await this.creds(merchantId);
     try {
       await axios.post(
@@ -62,10 +59,13 @@ export class WhatsappCloudService {
         },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError;
       this.logger.error(
-        `WA Cloud sendText failed: ${err?.response?.status} ${
-          err?.response?.data ? JSON.stringify(err.response.data) : err?.message
+        `WA Cloud sendText failed: ${axiosErr?.response?.status} ${
+          axiosErr?.response?.data
+            ? JSON.stringify(axiosErr.response.data)
+            : axiosErr?.message
         }`,
       );
       throw err;
@@ -77,7 +77,7 @@ export class WhatsappCloudService {
     to: string,
     name: string,
     lang = 'ar',
-  ) {
+  ): Promise<void> {
     const { token, phoneNumberId } = await this.creds(merchantId);
     await axios.post(
       `${this.base}/${phoneNumberId}/messages`,
@@ -91,11 +91,14 @@ export class WhatsappCloudService {
     );
   }
 
-  async getMediaUrl(merchantId: string, mediaId: string) {
+  async getMediaUrl(
+    merchantId: string,
+    mediaId: string,
+  ): Promise<string | undefined> {
     const { token } = await this.creds(merchantId);
-    const r = await axios.get(`${this.base}/${mediaId}`, {
+    const r = await axios.get<{ url?: string }>(`${this.base}/${mediaId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return r.data?.url as string | undefined;
+    return r.data?.url;
   }
 }

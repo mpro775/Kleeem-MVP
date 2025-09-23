@@ -1,7 +1,11 @@
 import { Test } from '@nestjs/testing';
 
 import { AuthService } from '../auth.service';
-import { AuthRepository } from '../repositories/auth.repository';
+
+import type { UserDocument } from '../../users/schemas/user.schema';
+import type { LoginDto } from '../dto/login.dto';
+import type { RegisterDto } from '../dto/register.dto';
+import type { AuthRepository } from '../repositories/auth.repository';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -28,7 +32,7 @@ describe('AuthService', () => {
       markPasswordResetTokenUsed: jest.fn(),
       deleteOtherPasswordResetTokens: jest.fn(),
       deletePasswordResetTokensByUser: jest.fn(),
-    } as any;
+    } as jest.Mocked<AuthRepository>;
 
     const module = await Test.createTestingModule({
       providers: [
@@ -85,7 +89,7 @@ describe('AuthService', () => {
       active: true,
       firstLogin: true,
       emailVerified: false,
-    } as any);
+    } as unknown as UserDocument);
     repo.createEmailVerificationToken.mockResolvedValue({} as any);
 
     const res = await service.register({
@@ -93,8 +97,17 @@ describe('AuthService', () => {
       email: 'a@a.com',
       password: 'x',
       confirmPassword: 'x',
-    } as any);
-    expect(repo.createUser).toHaveBeenCalled();
+    } as RegisterDto);
+    expect(repo.createUser).toHaveBeenCalledWith({
+      name: 'Ali',
+      email: 'a@a.com',
+      password: 'x',
+      confirmPassword: 'x',
+      role: 'MERCHANT',
+      active: true,
+      firstLogin: true,
+      emailVerified: false,
+    } as RegisterDto);
     expect(res.user.email).toBe('a@a.com');
   });
 
@@ -109,9 +122,12 @@ describe('AuthService', () => {
       firstLogin: false,
       password: await (await import('bcrypt')).hash('x', 4),
       merchantId: null,
-    } as any);
+    } as unknown as UserDocument);
 
-    const out = await service.login({ email: 'a@a.com', password: 'x' } as any);
+    const out = await service.login({
+      email: 'a@a.com',
+      password: 'x',
+    } as LoginDto);
     expect(out.accessToken).toBeDefined();
     expect(out.refreshToken).toBeDefined();
   });

@@ -10,8 +10,6 @@ import {
   Query,
   UseGuards,
   BadRequestException,
-  NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -29,12 +27,22 @@ import {
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
 
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { ChannelLean } from '../webhooks/repositories/channel.repository';
 
+import { ConnectResult, Status } from './adapters/channel-adapter';
 import { ChannelsService } from './channels.service';
 import { ConnectActionDto } from './dto/connect-action.dto';
 import { CreateChannelDto } from './dto/create-channel.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { UpdateChannelDto } from './dto/update-channel.dto';
+import { ChannelDocument, ChannelProvider } from './schemas/channel.schema';
+
+// Example constants for API documentation
+const EXAMPLE_RESPONSE_TIME_MS = 150;
+const EXAMPLE_MESSAGES_SENT = 1250;
+const EXAMPLE_MESSAGES_RECEIVED = 980;
+const EXAMPLE_SUCCESS_RATE = 98.5;
+const EXAMPLE_AVG_RESPONSE_TIME_SEC = 2.3;
 
 @ApiTags('القنوات')
 @ApiBearerAuth()
@@ -96,7 +104,7 @@ export class ChannelsController {
   create(
     @Param('merchantId') merchantId: string,
     @Body() dto: Omit<CreateChannelDto, 'merchantId'>,
-  ) {
+  ): Promise<ChannelDocument> {
     if (!merchantId || !merchantId.startsWith('m_')) {
       throw new BadRequestException({
         code: 'INVALID_MERCHANT_ID',
@@ -164,8 +172,8 @@ export class ChannelsController {
   })
   list(
     @Param('merchantId') merchantId: string,
-    @Query('provider') provider?: any,
-  ) {
+    @Query('provider') provider?: ChannelProvider,
+  ): Promise<ChannelLean[]> {
     if (!merchantId || !merchantId.startsWith('m_')) {
       throw new BadRequestException({
         code: 'INVALID_MERCHANT_ID',
@@ -232,7 +240,7 @@ export class ChannelsController {
     description: 'ليس لديك صلاحية للوصول إلى هذه القناة',
     type: ErrorResponse,
   })
-  get(@Param('id') id: string) {
+  get(@Param('id') id: string): Promise<ChannelDocument> {
     if (!id || !id.startsWith('ch_')) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
@@ -292,7 +300,10 @@ export class ChannelsController {
     description: 'ليس لديك صلاحية لتحديث هذه القناة',
     type: ErrorResponse,
   })
-  update(@Param('id') id: string, @Body() dto: UpdateChannelDto) {
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateChannelDto,
+  ): Promise<ChannelDocument> {
     if (!id || !id.startsWith('ch_')) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
@@ -376,7 +387,10 @@ export class ChannelsController {
     description: 'ليس لديك صلاحية لربط هذه القناة',
     type: ErrorResponse,
   })
-  connect(@Param('id') id: string, @Body() body: ConnectActionDto) {
+  connect(
+    @Param('id') id: string,
+    @Body() body: ConnectActionDto,
+  ): Promise<ConnectResult> {
     if (!id || !id.startsWith('ch_')) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
@@ -385,7 +399,7 @@ export class ChannelsController {
       });
     }
 
-    return this.svc.connect(id, body);
+    return this.svc.connect(id, body as Record<string, unknown>);
   }
 
   @Post('channels/:id/actions/refresh')
@@ -434,7 +448,7 @@ export class ChannelsController {
     description: 'ليس لديك صلاحية لتجديد هذه القناة',
     type: ErrorResponse,
   })
-  refresh(@Param('id') id: string) {
+  refresh(@Param('id') id: string): Promise<{ ok: boolean }> {
     if (!id || !id.startsWith('ch_')) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
@@ -496,7 +510,7 @@ export class ChannelsController {
     description: 'ليس لديك صلاحية لتعديل هذه القناة',
     type: ErrorResponse,
   })
-  setDefault(@Param('id') id: string) {
+  setDefault(@Param('id') id: string): Promise<ChannelDocument> {
     if (!id || !id.startsWith('ch_')) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
@@ -570,12 +584,12 @@ export class ChannelsController {
     @Param('id') id: string,
     @Query(
       'mode',
-      new ParseEnumPipe(['disable', 'disconnect', 'wipe'] as any, {
+      new ParseEnumPipe(['disable', 'disconnect', 'wipe'] as const, {
         optional: true,
       }),
     )
     mode?: 'disable' | 'disconnect' | 'wipe',
-  ) {
+  ): Promise<{ deleted: boolean } | { ok: boolean }> {
     if (!id || !id.startsWith('ch_')) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
@@ -620,7 +634,7 @@ export class ChannelsController {
           properties: {
             lastPing: { type: 'string', example: '2023-09-18T16:20:00Z' },
             isHealthy: { type: 'boolean', example: true },
-            responseTime: { type: 'number', example: 150 }, // بالميلي ثانية
+            responseTime: { type: 'number', example: EXAMPLE_RESPONSE_TIME_MS }, // بالميلي ثانية
             lastError: {
               type: 'string',
               nullable: true,
@@ -631,10 +645,16 @@ export class ChannelsController {
         stats: {
           type: 'object',
           properties: {
-            messagesSent: { type: 'number', example: 1250 },
-            messagesReceived: { type: 'number', example: 980 },
-            successRate: { type: 'number', example: 98.5 }, // نسبة مئوية
-            avgResponseTime: { type: 'number', example: 2.3 }, // بالثواني
+            messagesSent: { type: 'number', example: EXAMPLE_MESSAGES_SENT },
+            messagesReceived: {
+              type: 'number',
+              example: EXAMPLE_MESSAGES_RECEIVED,
+            },
+            successRate: { type: 'number', example: EXAMPLE_SUCCESS_RATE }, // نسبة مئوية
+            avgResponseTime: {
+              type: 'number',
+              example: EXAMPLE_AVG_RESPONSE_TIME_SEC,
+            }, // بالثواني
           },
         },
         lastActivity: { type: 'string', example: '2023-09-18T16:15:00Z' },
@@ -649,7 +669,7 @@ export class ChannelsController {
     description: 'ليس لديك صلاحية للوصول إلى حالة هذه القناة',
     type: ErrorResponse,
   })
-  status(@Param('id') id: string) {
+  status(@Param('id') id: string): Promise<Status> {
     if (!id || !id.startsWith('ch_')) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
@@ -705,7 +725,10 @@ export class ChannelsController {
     description: 'ليس لديك صلاحية لإرسال رسائل عبر هذه القناة',
     type: ErrorResponse,
   })
-  send(@Param('id') id: string, @Body() body: SendMessageDto) {
+  send(
+    @Param('id') id: string,
+    @Body() body: SendMessageDto,
+  ): Promise<{ ok: boolean }> {
     if (!id || !id.startsWith('ch_')) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',

@@ -1,7 +1,9 @@
 import { Test } from '@nestjs/testing';
+import { Types } from 'mongoose';
 
 import { CategoriesService } from '../categories.service';
-import { CategoriesRepository } from '../repositories/categories.repository';
+
+import type { CategoriesRepository } from '../repositories/categories.repository';
 
 describe('CategoriesService', () => {
   let service: CategoriesService;
@@ -24,7 +26,7 @@ describe('CategoriesService', () => {
       findSubtreeIds: jest.fn(),
       anyProductsInCategories: jest.fn(),
       startSession: jest.fn().mockResolvedValue({
-        withTransaction: async (fn: any) => fn(),
+        withTransaction: (fn: () => Promise<void>) => fn(),
         endSession() {},
       } as any),
     };
@@ -53,20 +55,20 @@ describe('CategoriesService', () => {
     repo.createCategory.mockResolvedValue({
       toObject: () => ({ name: 'Cat' }),
     } as any);
-    const out = await service.create({ name: 'Cat', merchantId: 'm1' } as any);
+    const out = await service.create({ name: 'Cat', merchantId: 'm1' });
     expect(out.name).toBe('Cat');
   });
 
   it('move calculates order', async () => {
     repo.findByIdForMerchant.mockResolvedValue({
-      _id: 'c1',
+      _id: new Types.ObjectId('c1'),
       parent: null,
     } as any);
     repo.listSiblings.mockResolvedValue([
       { _id: 'a', order: 0 },
       { _id: 'b', order: 1 },
-    ] as any);
-    const res = await service.move('c1', 'm1', { position: 1 } as any);
-    expect(repo.updateOrder).toHaveBeenCalled();
+    ]);
+    await service.move('c1', 'm1', { position: 1 });
+    expect(repo.updateOrder).toHaveBeenCalled(); // eslint-disable-line @typescript-eslint/unbound-method
   });
 });

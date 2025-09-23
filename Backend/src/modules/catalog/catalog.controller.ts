@@ -1,4 +1,6 @@
-// src/catalog/catalog.controller.ts
+// ================== External imports ==================
+import { randomUUID } from 'crypto';
+
 import {
   Controller,
   Param,
@@ -13,26 +15,158 @@ import {
   ApiTags,
   ApiOperation,
   ApiParam,
-  ApiResponse,
   ApiBearerAuth,
   ApiBadRequestResponse,
   ApiNotFoundResponse,
   ApiForbiddenResponse,
-  ApiQuery,
+  ApiOkResponse,
+  ApiCreatedResponse,
+  ApiExtraModels,
 } from '@nestjs/swagger';
+import { IsEnum, IsOptional, IsString, Matches } from 'class-validator';
+// ================== Internal imports ==================
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
 
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 import { CatalogService } from './catalog.service';
 
+// ================== Type-only imports ==================
+import type { ReadonlyDeep } from 'type-fest';
+
+// ================== Constants ==================
+const MS_PER_SECOND = 1_000;
+const SECONDS_PER_MINUTE = 60;
+const MINUTES_15 = 15;
+const MS_15_MIN = MINUTES_15 * SECONDS_PER_MINUTE * MS_PER_SECOND;
+
+const EX_IMPORTED = 150;
+const EX_UPDATED = 25;
+const EX_FAILED = 3;
+const EX_TOTAL_PRODUCTS = 175;
+const EX_ACTIVE_PRODUCTS = 165;
+const EX_INACTIVE_PRODUCTS = 10;
+const EX_TOTAL_CATEGORIES = 12;
+const EX_AVG_SYNC_TIME = 8.5;
+const EX_SUCCESS_RATE = 96.7;
+const EX_LAST_ERROR_COUNT = 2;
+
+// ================== DTOs & Enums ==================
+export enum SyncStatusEnum {
+  pending = 'pending',
+  running = 'running',
+  completed = 'completed',
+  failed = 'failed',
+}
+
+export enum SyncSourceEnum {
+  zid = 'zid',
+  salla = 'salla',
+  manual = 'manual',
+}
+
+export class MerchantIdParamDto {
+  @IsString()
+  @Matches(/^m_.+/, { message: 'merchantId must start with m_' })
+  merchantId!: string;
+}
+
+export class GetStatsQueryDto {
+  @IsOptional()
+  @IsEnum(['week', 'month', 'quarter', 'year'], {
+    message: 'period must be one of: week, month, quarter, year',
+  })
+  period?: 'week' | 'month' | 'quarter' | 'year';
+}
+
+export class SyncResponseDto {
+  success!: boolean;
+  message!: string;
+  syncId!: string;
+  merchantId!: string;
+  startedAt!: string;
+}
+
+export class SyncRunDto {
+  syncId!: string;
+  startedAt!: string;
+  completedAt!: string;
+  status!: SyncStatusEnum;
+  imported!: number;
+  updated!: number;
+  failed!: number;
+}
+
+export class SyncStatsDto {
+  totalProducts!: number;
+  lastUpdated!: string;
+  source!: SyncSourceEnum;
+}
+
+export class SyncStatusResponseDto {
+  merchantId!: string;
+  lastSync!: SyncRunDto | null;
+  stats!: SyncStatsDto;
+}
+
+export class CatalogOverviewDto {
+  totalProducts!: number;
+  activeProducts!: number;
+  inactiveProducts!: number;
+  totalCategories!: number;
+  lastSyncDate!: string;
+}
+
+export class SyncHistoryItemDto {
+  date!: string;
+  imported!: number;
+  updated!: number;
+  failed!: number;
+}
+
+export class PerformanceDto {
+  /** بالدقائق */
+  avgSyncTime!: number;
+  /** نسبة مئوية */
+  successRate!: number;
+  lastErrorCount!: number;
+}
+
+export class CatalogStatsResponseDto {
+  merchantId!: string;
+  period!: 'week' | 'month' | 'quarter' | 'year';
+  overview!: CatalogOverviewDto;
+  syncHistory!: SyncHistoryItemDto[];
+  performance!: PerformanceDto;
+}
+
+// ================== Helpers ==================
+function newSyncId(): string {
+  return `sync_${Date.now()}_${randomUUID()}`;
+}
+
+function assert(
+  condition: unknown,
+  errorFactory: () => Error,
+): asserts condition {
+  if (!condition) throw errorFactory();
+}
+
+// ================== Controller ==================
 @ApiTags('الكتالوج')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiExtraModels(
+  SyncResponseDto,
+  SyncStatusResponseDto,
+  CatalogStatsResponseDto,
+  ErrorResponse,
+)
 @Controller('catalog')
 export class CatalogController {
   constructor(private readonly svc: CatalogService) {}
 
+  // ---------- Sync ----------
   /**
    * مزامنة كتالوج التاجر
    * يبدأ عملية مزامنة لكتالوج تاجر معين
@@ -50,66 +184,46 @@ export class CatalogController {
     example: 'm_12345',
     type: 'string',
   })
-  @ApiResponse({
-    status: 201,
+  @ApiCreatedResponse({
     description: 'تم بدء عملية المزامنة بنجاح',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'تم بدء مزامنة الكتالوج بنجاح' },
-        syncId: { type: 'string', example: 'sync_66f1a2b3c4d5e6f7g8h9i0j' },
-        merchantId: { type: 'string', example: 'm_12345' },
-        startedAt: { type: 'string', example: '2023-09-18T10:30:00Z' },
-      },
-    },
+    type: SyncResponseDto,
   })
   @ApiBadRequestResponse({
     description: 'معرف التاجر غير صحيح أو بيانات المزامنة غير مكتملة',
     type: ErrorResponse,
   })
-  @ApiNotFoundResponse({
-    description: 'التاجر غير موجود',
-    type: ErrorResponse,
-  })
+  @ApiNotFoundResponse({ description: 'التاجر غير موجود', type: ErrorResponse })
   @ApiForbiddenResponse({
     description: 'ليس لديك صلاحية لمزامنة هذا الكتالوج',
     type: ErrorResponse,
   })
-  @ApiResponse({
-    status: 500,
-    description: 'خطأ داخلي في الخادم أثناء عملية المزامنة',
-    type: ErrorResponse,
-  })
-  async sync(@Param('merchantId') merchantId: string) {
-    // التحقق من صحة merchantId
-    if (!merchantId || !merchantId.startsWith('m_')) {
-      throw new BadRequestException({
-        code: 'INVALID_MERCHANT_ID',
-        message: 'معرف التاجر يجب أن يبدأ بـ m_',
-        details: ['merchantId must start with m_'],
-      });
-    }
-
+  async sync(
+    @Param() { merchantId }: MerchantIdParamDto,
+  ): Promise<SyncResponseDto> {
     try {
-      const result = await this.svc.syncForMerchant(merchantId);
+      const startedAt = new Date().toISOString();
+      const serviceResult = await this.svc.syncForMerchant(merchantId);
 
-      // إذا لم يتم العثور على التاجر
-      if (!result) {
-        throw new NotFoundException({
-          code: 'MERCHANT_NOT_FOUND',
-          message: 'التاجر غير موجود',
-        });
-      }
+      assert(
+        serviceResult,
+        () =>
+          new NotFoundException({
+            code: 'MERCHANT_NOT_FOUND',
+            message: 'التاجر غير موجود',
+          }),
+      );
 
-      return {
+      // بإمكان svc أن يعيد معلومات إضافية؛ ندمجها إن وجدت
+      const response: SyncResponseDto = {
         success: true,
         message: 'تم بدء مزامنة الكتالوج بنجاح',
-        syncId: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        syncId: newSyncId(),
         merchantId,
-        startedAt: new Date().toISOString(),
-        ...result,
-      };
+        startedAt,
+        ...(serviceResult as Record<string, unknown>),
+      } as unknown as SyncResponseDto;
+
+      return response;
     } catch (error) {
       if (
         error instanceof BadRequestException ||
@@ -117,15 +231,15 @@ export class CatalogController {
       ) {
         throw error;
       }
-
       throw new BadRequestException({
         code: 'SYNC_FAILED',
         message: 'فشلت عملية المزامنة',
-        details: [error.message],
+        details: [error instanceof Error ? error.message : 'Unknown error'],
       });
     }
   }
 
+  // ---------- Get Sync Status ----------
   /**
    * الحصول على حالة مزامنة الكتالوج
    */
@@ -141,96 +255,55 @@ export class CatalogController {
     example: 'm_12345',
     type: 'string',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'حالة المزامنة',
-    schema: {
-      type: 'object',
-      properties: {
-        merchantId: { type: 'string', example: 'm_12345' },
-        lastSync: {
-          type: 'object',
-          nullable: true,
-          properties: {
-            syncId: { type: 'string', example: 'sync_66f1a2b3c4d5e6f7g8h9i0j' },
-            startedAt: { type: 'string', example: '2023-09-18T10:30:00Z' },
-            completedAt: { type: 'string', example: '2023-09-18T10:45:00Z' },
-            status: {
-              type: 'string',
-              enum: ['pending', 'running', 'completed', 'failed'],
-              example: 'completed',
-            },
-            imported: { type: 'number', example: 150 },
-            updated: { type: 'number', example: 25 },
-            failed: { type: 'number', example: 3 },
-          },
-        },
-        stats: {
-          type: 'object',
-          properties: {
-            totalProducts: { type: 'number', example: 175 },
-            lastUpdated: { type: 'string', example: '2023-09-18T10:45:00Z' },
-            source: {
-              type: 'string',
-              enum: ['zid', 'salla', 'manual'],
-              example: 'zid',
-            },
-          },
-        },
-      },
-    },
-  })
+  @ApiOkResponse({ description: 'حالة المزامنة', type: SyncStatusResponseDto })
   @ApiBadRequestResponse({
     description: 'معرف التاجر غير صحيح',
     type: ErrorResponse,
   })
-  @ApiNotFoundResponse({
-    description: 'التاجر غير موجود',
-    type: ErrorResponse,
-  })
+  @ApiNotFoundResponse({ description: 'التاجر غير موجود', type: ErrorResponse })
   @ApiForbiddenResponse({
     description: 'ليس لديك صلاحية للوصول إلى هذا الكتالوج',
     type: ErrorResponse,
   })
-  async getSyncStatus(@Param('merchantId') merchantId: string) {
-    // التحقق من صحة merchantId
-    if (!merchantId || !merchantId.startsWith('m_')) {
-      throw new BadRequestException({
-        code: 'INVALID_MERCHANT_ID',
-        message: 'معرف التاجر يجب أن يبدأ بـ m_',
-        details: ['merchantId must start with m_'],
-      });
-    }
-
+  getSyncStatus(
+    @Param() { merchantId }: MerchantIdParamDto,
+  ): SyncStatusResponseDto {
     try {
-      // هنا يمكن إضافة منطق للحصول على حالة المزامنة من قاعدة البيانات
-      // في الوقت الحالي نعيد استجابة ثابتة
-      return {
-        merchantId,
-        lastSync: {
-          syncId: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          startedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(), // 15 دقيقة مضت
-          completedAt: new Date().toISOString(),
-          status: 'completed',
-          imported: 150,
-          updated: 25,
-          failed: 3,
-        },
-        stats: {
-          totalProducts: 175,
-          lastUpdated: new Date().toISOString(),
-          source: 'zid',
-        },
-      };
+      return this.buildSyncStatusResponse(merchantId);
     } catch (error) {
       throw new BadRequestException({
         code: 'STATUS_RETRIEVAL_FAILED',
         message: 'فشل في الحصول على حالة المزامنة',
-        details: [error.message],
+        details: [error instanceof Error ? error.message : 'Unknown error'],
       });
     }
   }
 
+  private buildSyncStatusResponse(merchantId: string): SyncStatusResponseDto {
+    const now = Date.now();
+    const lastStarted = new Date(now - MS_15_MIN).toISOString();
+    const completed = new Date(now).toISOString();
+
+    return {
+      merchantId,
+      lastSync: {
+        syncId: newSyncId(),
+        startedAt: lastStarted,
+        completedAt: completed,
+        status: SyncStatusEnum.completed,
+        imported: EX_IMPORTED,
+        updated: EX_UPDATED,
+        failed: EX_FAILED,
+      },
+      stats: {
+        totalProducts: EX_TOTAL_PRODUCTS,
+        lastUpdated: completed,
+        source: SyncSourceEnum.zid,
+      },
+    };
+  }
+
+  // ---------- Stats ----------
   /**
    * إحصائيات الكتالوج
    */
@@ -246,133 +319,79 @@ export class CatalogController {
     example: 'm_12345',
     type: 'string',
   })
-  @ApiQuery({
-    name: 'period',
-    required: false,
-    enum: ['week', 'month', 'quarter', 'year'],
-    example: 'month',
-    description: 'الفترة الزمنية للإحصائيات',
-  })
-  @ApiResponse({
-    status: 200,
+  @ApiOkResponse({
     description: 'إحصائيات الكتالوج',
-    schema: {
-      type: 'object',
-      properties: {
-        merchantId: { type: 'string', example: 'm_12345' },
-        period: { type: 'string', example: 'month' },
-        overview: {
-          type: 'object',
-          properties: {
-            totalProducts: { type: 'number', example: 175 },
-            activeProducts: { type: 'number', example: 165 },
-            inactiveProducts: { type: 'number', example: 10 },
-            totalCategories: { type: 'number', example: 12 },
-            lastSyncDate: { type: 'string', example: '2023-09-18T10:45:00Z' },
-          },
-        },
-        syncHistory: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              date: { type: 'string', example: '2023-09-18' },
-              imported: { type: 'number', example: 45 },
-              updated: { type: 'number', example: 12 },
-              failed: { type: 'number', example: 2 },
-            },
-          },
-        },
-        performance: {
-          type: 'object',
-          properties: {
-            avgSyncTime: { type: 'number', example: 8.5 }, // بالدقائق
-            successRate: { type: 'number', example: 96.7 }, // نسبة مئوية
-            lastErrorCount: { type: 'number', example: 2 },
-          },
-        },
-      },
-    },
+    type: CatalogStatsResponseDto,
   })
   @ApiBadRequestResponse({
     description: 'معرف التاجر غير صحيح أو فترة غير صحيحة',
     type: ErrorResponse,
   })
-  @ApiNotFoundResponse({
-    description: 'التاجر غير موجود',
-    type: ErrorResponse,
-  })
+  @ApiNotFoundResponse({ description: 'التاجر غير موجود', type: ErrorResponse })
   @ApiForbiddenResponse({
     description: 'ليس لديك صلاحية للوصول إلى إحصائيات هذا الكتالوج',
     type: ErrorResponse,
   })
-  async getStats(
-    @Param('merchantId') merchantId: string,
-    @Query('period') period: 'week' | 'month' | 'quarter' | 'year' = 'month',
-  ) {
-    // التحقق من صحة merchantId
-    if (!merchantId || !merchantId.startsWith('m_')) {
-      throw new BadRequestException({
-        code: 'INVALID_MERCHANT_ID',
-        message: 'معرف التاجر يجب أن يبدأ بـ m_',
-        details: ['merchantId must start with m_'],
-      });
-    }
-
-    // التحقق من صحة الفترة
-    const validPeriods = ['week', 'month', 'quarter', 'year'];
-    if (!validPeriods.includes(period)) {
+  getStats(
+    @Param() { merchantId }: MerchantIdParamDto,
+    @Query() query: GetStatsQueryDto,
+  ): CatalogStatsResponseDto {
+    // التحقق من صحة الفترة عبر DTO يكفي، لكن نضيف دفاعًا وقائيًا
+    const period = query.period ?? 'month';
+    const VALID_PERIODS = ['week', 'month', 'quarter', 'year'];
+    if (!(VALID_PERIODS as ReadonlyDeep<string[]>).includes(period)) {
       throw new BadRequestException({
         code: 'INVALID_PERIOD',
         message: 'الفترة يجب أن تكون واحدة من: week, month, quarter, year',
-        details: [`Valid periods: ${validPeriods.join(', ')}`],
+        details: [`Valid periods: ${VALID_PERIODS.join(', ')}`],
       });
     }
 
     try {
-      // هنا يمكن إضافة منطق للحصول على الإحصائيات من قاعدة البيانات
-      // في الوقت الحالي نعيد استجابة ثابتة
-      return {
+      // منطق قاعدة البيانات يمكن إضافته هنا؛ نرجع مثالًا منظّمًا
+      const nowIso = new Date().toISOString();
+      const response: CatalogStatsResponseDto = {
         merchantId,
         period,
         overview: {
-          totalProducts: 175,
-          activeProducts: 165,
-          inactiveProducts: 10,
-          totalCategories: 12,
-          lastSyncDate: new Date().toISOString(),
+          totalProducts: EX_TOTAL_PRODUCTS,
+          activeProducts: EX_ACTIVE_PRODUCTS,
+          inactiveProducts: EX_INACTIVE_PRODUCTS,
+          totalCategories: EX_TOTAL_CATEGORIES,
+          lastSyncDate: nowIso,
         },
         syncHistory: [
           {
             date: '2023-09-18',
-            imported: 45,
-            updated: 12,
-            failed: 2,
+            imported: EX_IMPORTED,
+            updated: EX_UPDATED,
+            failed: EX_FAILED,
           },
           {
             date: '2023-09-17',
-            imported: 38,
-            updated: 15,
-            failed: 1,
+            imported: EX_IMPORTED,
+            updated: EX_UPDATED,
+            failed: EX_FAILED,
           },
           {
             date: '2023-09-16',
-            imported: 52,
-            updated: 8,
-            failed: 0,
+            imported: EX_IMPORTED,
+            updated: EX_UPDATED,
+            failed: EX_FAILED,
           },
         ],
         performance: {
-          avgSyncTime: 8.5,
-          successRate: 96.7,
-          lastErrorCount: 2,
+          avgSyncTime: EX_AVG_SYNC_TIME,
+          successRate: EX_SUCCESS_RATE,
+          lastErrorCount: EX_LAST_ERROR_COUNT,
         },
       };
+      return response;
     } catch (error) {
       throw new BadRequestException({
         code: 'STATS_RETRIEVAL_FAILED',
         message: 'فشل في الحصول على الإحصائيات',
-        details: [error.message],
+        details: [error instanceof Error ? error.message : 'Unknown error'],
       });
     }
   }

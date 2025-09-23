@@ -25,5 +25,5 @@ export class UpdateChannelDto {
   })
   @IsOptional()
   @IsObject()
-  widgetSettings?: Record<string, any>;
+  widgetSettings?: Record<string, unknown>;
 }

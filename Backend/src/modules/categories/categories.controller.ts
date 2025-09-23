@@ -1,4 +1,4 @@
-// categories.controller.ts
+// ============ External imports ============
 import os from 'os';
 
 import {
@@ -12,11 +12,10 @@ import {
   Query,
   Patch,
   BadRequestException,
-  NotFoundException,
-  ForbiddenException,
   UploadedFile,
   UseInterceptors,
   UseGuards,
+  applyDecorators,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -25,7 +24,6 @@ import {
   ApiQuery,
   ApiParam,
   ApiBody,
-  ApiResponse,
   ApiConsumes,
   ApiBearerAuth,
   ApiBadRequestResponse,
@@ -35,13 +33,9 @@ import {
   ApiOkResponse,
 } from '@nestjs/swagger';
 import multer from 'multer';
+// ============ Internal imports ============
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
 
-import {
-  ApiSuccessResponse,
-  ApiCreatedResponse as CommonApiCreatedResponse,
-  CurrentUser,
-} from '../../common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TranslationService } from '../../common/services/translation.service';
 
@@ -49,7 +43,110 @@ import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { MoveCategoryDto } from './dto/move-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { Category, CategoryDocument } from './schemas/category.schema';
 
+// ============ Type-only ============
+import type { Request } from 'express';
+
+// ============ Constants ============
+const BYTES_PER_MB = 1048_576;
+const TWO_MB = 2 * BYTES_PER_MB;
+// ثوابت واضحة (لا أرقام سحرية)
+
+const ALLOWED_MIME = /^(image\/png|image\/jpe?g|image\/webp)$/i;
+
+// إعدادات Multer ككائنات ثابتة
+const storage = multer.diskStorage({
+  destination: os.tmpdir(),
+  filename: (_req, file, cb) => {
+    const ext = (file.originalname.split('.').pop() || 'img').toLowerCase();
+    cb(null, `cat-${Date.now()}.${ext}`);
+  },
+});
+
+const fileFilter = (
+  _req: Request,
+  file: Express.Multer.File,
+  cb: (error: BadRequestException | null, acceptFile: boolean) => void,
+): void => {
+  const ok = ALLOWED_MIME.test(file.mimetype);
+  cb(
+    ok
+      ? null
+      : new BadRequestException({
+          code: 'UNSUPPORTED_FILE_FORMAT',
+          message: 'نوع الملف غير مدعوم. يرجى استخدام PNG, JPG, JPEG, أو WebP',
+          details: ['Supported formats: PNG, JPG, JPEG, WebP'],
+        }),
+    ok,
+  );
+};
+
+export const MULTER_IMAGE_OPTIONS: multer.Options = {
+  storage,
+  limits: { fileSize: TWO_MB },
+  fileFilter,
+};
+
+function ApiUploadCategoryImageDocs() {
+  return applyDecorators(
+    ApiOperation({
+      operationId: 'categories_uploadImage',
+      summary: 'categories.operations.uploadImage.summary',
+      description: 'categories.operations.uploadImage.description',
+    }),
+    ApiParam({
+      name: 'id',
+      description: 'معرف الفئة',
+      example: '66f1a2b3c4d5e6f7g8h9i0j',
+    }),
+    ApiQuery({
+      name: 'merchantId',
+      required: true,
+      example: 'm_12345',
+      description: 'معرف التاجر',
+    }),
+    ApiConsumes('multipart/form-data'),
+    ApiBody({
+      schema: {
+        type: 'object',
+        properties: {
+          file: {
+            type: 'string',
+            format: 'binary',
+            description: 'PNG, JPG, JPEG, WebP — حد أقصى 2MB',
+          },
+        },
+        required: ['file'],
+      },
+    }),
+    ApiOkResponse({
+      description: 'تم رفع الصورة بنجاح',
+      schema: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          message: { type: 'string' },
+          url: { type: 'string' },
+          categoryId: { type: 'string' },
+        },
+      },
+    }),
+    ApiBadRequestResponse({
+      description: 'ملف مفقود/صيغة غير مدعومة/حجم كبير',
+      type: ErrorResponse,
+    }),
+    ApiNotFoundResponse({
+      description: 'الفئة غير موجودة',
+      type: ErrorResponse,
+    }),
+    ApiForbiddenResponse({
+      description: 'ليس لديك صلاحية',
+      type: ErrorResponse,
+    }),
+  );
+}
+// ============ Controller ============
 @ApiTags('categories')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -60,6 +157,7 @@ export class CategoriesController {
     private readonly translationService: TranslationService,
   ) {}
 
+  // ------ Create ------
   @Post()
   @ApiOperation({
     operationId: 'categories_create',
@@ -69,23 +167,7 @@ export class CategoriesController {
   @ApiBody({ type: CreateCategoryDto })
   @ApiCreatedResponse({
     description: 'categories.responses.success.created',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'تم إنشاء الفئة بنجاح' },
-        category: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', example: '66f1a2b3c4d5e6f7g8h9i0j' },
-            name: { type: 'string', example: 'إلكترونيات' },
-            merchantId: { type: 'string', example: 'm_12345' },
-            parentId: { type: 'string', nullable: true, example: null },
-            createdAt: { type: 'string', example: '2023-09-18T10:30:00Z' },
-          },
-        },
-      },
-    },
+    type: Category,
   })
   @ApiBadRequestResponse({
     description: 'بيانات غير صحيحة أو فئة موجودة مسبقاً',
@@ -95,10 +177,11 @@ export class CategoriesController {
     description: 'ليس لديك صلاحية لإنشاء فئات لهذا التاجر',
     type: ErrorResponse,
   })
-  create(@Body() dto: CreateCategoryDto) {
+  create(@Body() dto: CreateCategoryDto): Promise<CategoryDocument> {
     return this.categories.create(dto);
   }
 
+  // ------ Find All ------
   @Get()
   @ApiOperation({
     operationId: 'categories_findAll',
@@ -116,29 +199,11 @@ export class CategoriesController {
     required: false,
     type: 'boolean',
     example: false,
-    description: 'إرجاع الفئات بهيكل شجري أو مسطح',
+    description: 'إرجاع الشجرة',
   })
   @ApiOkResponse({
     description: 'categories.responses.success.found',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', example: '66f1a2b3c4d5e6f7g8h9i0j' },
-          name: { type: 'string', example: 'إلكترونيات' },
-          merchantId: { type: 'string', example: 'm_12345' },
-          parentId: { type: 'string', nullable: true, example: null },
-          children: {
-            type: 'array',
-            items: { type: 'object' },
-            description: 'الفئات الفرعية (في حالة tree=true)',
-          },
-          createdAt: { type: 'string', example: '2023-09-18T10:30:00Z' },
-          updatedAt: { type: 'string', example: '2023-09-18T10:30:00Z' },
-        },
-      },
-    },
+    type: [Category],
   })
   @ApiBadRequestResponse({
     description: 'معرف التاجر مطلوب',
@@ -151,7 +216,7 @@ export class CategoriesController {
   findAll(
     @Query('merchantId') merchantId: string,
     @Query('tree') tree?: string,
-  ) {
+  ): Promise<CategoryDocument[] | Category[]> {
     if (!merchantId) {
       throw new BadRequestException({
         code: 'MISSING_MERCHANT_ID',
@@ -161,10 +226,13 @@ export class CategoriesController {
     }
 
     return tree === 'true'
-      ? this.categories.findAllTree(merchantId)
+      ? (this.categories.findAllTree(merchantId) as unknown as Promise<
+          Category[]
+        >)
       : this.categories.findAllFlat(merchantId);
   }
 
+  // ------ Find One ------
   @Get(':id')
   @ApiOperation({
     operationId: 'categories_findOne',
@@ -184,22 +252,7 @@ export class CategoriesController {
   })
   @ApiOkResponse({
     description: 'categories.responses.success.found',
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', example: '66f1a2b3c4d5e6f7g8h9i0j' },
-        name: { type: 'string', example: 'إلكترونيات' },
-        merchantId: { type: 'string', example: 'm_12345' },
-        parentId: { type: 'string', nullable: true, example: null },
-        imageUrl: {
-          type: 'string',
-          nullable: true,
-          example: 'https://cdn.example.com/categories/electronics.jpg',
-        },
-        createdAt: { type: 'string', example: '2023-09-18T10:30:00Z' },
-        updatedAt: { type: 'string', example: '2023-09-18T10:30:00Z' },
-      },
-    },
+    type: Category,
   })
   @ApiNotFoundResponse({
     description: 'categories.responses.error.notFound',
@@ -213,7 +266,10 @@ export class CategoriesController {
     description: 'ليس لديك صلاحية للوصول إلى هذه الفئة',
     type: ErrorResponse,
   })
-  findOne(@Param('id') id: string, @Query('merchantId') merchantId: string) {
+  findOne(
+    @Param('id') id: string,
+    @Query('merchantId') merchantId: string,
+  ): Promise<CategoryDocument> {
     if (!merchantId) {
       throw new BadRequestException({
         code: 'MISSING_MERCHANT_ID',
@@ -221,10 +277,10 @@ export class CategoriesController {
         details: ['merchantId query parameter is required'],
       });
     }
-
     return this.categories.findOne(id, merchantId);
   }
 
+  // ------ Breadcrumbs ------
   @Get(':id/breadcrumbs')
   @ApiOperation({
     operationId: 'categories_breadcrumbs',
@@ -244,22 +300,9 @@ export class CategoriesController {
   })
   @ApiOkResponse({
     description: 'categories.responses.success.found',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', example: '66f1a2b3c4d5e6f7g8h9i0j' },
-          name: { type: 'string', example: 'إلكترونيات' },
-          level: { type: 'number', example: 1 },
-        },
-      },
-    },
+    type: [Category],
   })
-  @ApiNotFoundResponse({
-    description: 'الفئة غير موجودة',
-    type: ErrorResponse,
-  })
+  @ApiNotFoundResponse({ description: 'الفئة غير موجودة', type: ErrorResponse })
   @ApiBadRequestResponse({
     description: 'معرف التاجر مطلوب',
     type: ErrorResponse,
@@ -271,7 +314,7 @@ export class CategoriesController {
   breadcrumbs(
     @Param('id') id: string,
     @Query('merchantId') merchantId: string,
-  ): Promise<any> {
+  ): Promise<Category[]> {
     if (!merchantId) {
       throw new BadRequestException({
         code: 'MISSING_MERCHANT_ID',
@@ -279,10 +322,12 @@ export class CategoriesController {
         details: ['merchantId query parameter is required'],
       });
     }
-
-    return this.categories.breadcrumbs(id, merchantId);
+    return this.categories.breadcrumbs(id, merchantId) as unknown as Promise<
+      Category[]
+    >;
   }
 
+  // ------ Subtree ------
   @Get(':id/subtree')
   @ApiOperation({
     operationId: 'categories_subtree',
@@ -302,33 +347,9 @@ export class CategoriesController {
   })
   @ApiOkResponse({
     description: 'categories.responses.success.found',
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', example: '66f1a2b3c4d5e6f7g8h9i0j' },
-        name: { type: 'string', example: 'إلكترونيات' },
-        children: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', example: '66f2b3c4d5e6f7g8h9i0j1' },
-              name: { type: 'string', example: 'هواتف ذكية' },
-              children: {
-                type: 'array',
-                items: { type: 'object' },
-                description: 'الفئات الفرعية المتداخلة',
-              },
-            },
-          },
-        },
-      },
-    },
+    type: Category,
   })
-  @ApiNotFoundResponse({
-    description: 'الفئة غير موجودة',
-    type: ErrorResponse,
-  })
+  @ApiNotFoundResponse({ description: 'الفئة غير موجودة', type: ErrorResponse })
   @ApiBadRequestResponse({
     description: 'معرف التاجر مطلوب',
     type: ErrorResponse,
@@ -337,7 +358,10 @@ export class CategoriesController {
     description: 'ليس لديك صلاحية للوصول إلى هذه الفئة',
     type: ErrorResponse,
   })
-  subtree(@Param('id') id: string, @Query('merchantId') merchantId: string) {
+  subtree(
+    @Param('id') id: string,
+    @Query('merchantId') merchantId: string,
+  ): Promise<CategoryDocument> {
     if (!merchantId) {
       throw new BadRequestException({
         code: 'MISSING_MERCHANT_ID',
@@ -345,10 +369,13 @@ export class CategoriesController {
         details: ['merchantId query parameter is required'],
       });
     }
-
-    return this.categories.subtree(id, merchantId);
+    return this.categories.subtree(
+      id,
+      merchantId,
+    ) as unknown as Promise<CategoryDocument>;
   }
 
+  // ------ Move ------
   @Patch(':id/move')
   @ApiOperation({
     operationId: 'categories_move',
@@ -369,26 +396,7 @@ export class CategoriesController {
   @ApiBody({ type: MoveCategoryDto })
   @ApiOkResponse({
     description: 'categories.responses.success.updated',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'تم نقل الفئة بنجاح' },
-        category: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', example: '66f1a2b3c4d5e6f7g8h9i0j' },
-            name: { type: 'string', example: 'إلكترونيات' },
-            parentId: {
-              type: 'string',
-              nullable: true,
-              example: '66f2b3c4d5e6f7g8h9i0j1',
-            },
-            updatedAt: { type: 'string', example: '2023-09-18T10:30:00Z' },
-          },
-        },
-      },
-    },
+    type: Category,
   })
   @ApiNotFoundResponse({
     description: 'الفئة أو الفئة الأصل الجديدة غير موجودة',
@@ -406,7 +414,7 @@ export class CategoriesController {
     @Param('id') id: string,
     @Query('merchantId') merchantId: string,
     @Body() dto: MoveCategoryDto,
-  ) {
+  ): Promise<CategoryDocument> {
     if (!merchantId) {
       throw new BadRequestException({
         code: 'MISSING_MERCHANT_ID',
@@ -414,10 +422,10 @@ export class CategoriesController {
         details: ['merchantId query parameter is required'],
       });
     }
-
     return this.categories.move(id, merchantId, dto);
   }
 
+  // ------ Remove ------
   @Delete(':id')
   @ApiOperation({
     operationId: 'categories_remove',
@@ -440,18 +448,14 @@ export class CategoriesController {
     required: false,
     type: 'boolean',
     example: false,
-    description:
-      'حذف جميع الفئات الفرعية (true) أو منع الحذف إذا كانت هناك فئات فرعية (false)',
+    description: 'حذف الشجرة كاملة إذا true',
   })
   @ApiOkResponse({
     description: 'categories.responses.success.deleted',
     schema: {
       type: 'object',
       properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'تم حذف الفئة بنجاح' },
-        deletedCount: { type: 'number', example: 1 },
-        cascade: { type: 'boolean', example: false },
+        message: { type: 'string' },
       },
     },
   })
@@ -460,7 +464,7 @@ export class CategoriesController {
     type: ErrorResponse,
   })
   @ApiBadRequestResponse({
-    description: 'معرف التاجر مطلوب أو يوجد فئات فرعية ولم يتم تحديد cascade',
+    description: 'معرف التاجر مطلوب أو يمنع الحذف دون cascade',
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
@@ -471,7 +475,7 @@ export class CategoriesController {
     @Param('id') id: string,
     @Query('merchantId') merchantId: string,
     @Query('cascade') cascade?: string,
-  ) {
+  ): Promise<{ message: string }> {
     if (!merchantId) {
       throw new BadRequestException({
         code: 'MISSING_MERCHANT_ID',
@@ -479,104 +483,68 @@ export class CategoriesController {
         details: ['merchantId query parameter is required'],
       });
     }
-
     return this.categories.remove(id, merchantId, cascade === 'true');
   }
 
+  // ------ Upload Image ------
   @Post(':id/image')
-  @ApiOperation({
-    operationId: 'categories_uploadImage',
-    summary: 'categories.operations.uploadImage.summary',
-    description: 'categories.operations.uploadImage.description',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'معرف الفئة',
-    example: '66f1a2b3c4d5e6f7g8h9i0j',
-  })
-  @ApiQuery({
-    name: 'merchantId',
-    required: true,
-    example: 'm_12345',
-    description: 'معرف التاجر',
-  })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-          description: 'ملف الصورة (PNG, JPG, JPEG, WebP) - حد أقصى 2MB',
-        },
-      },
-      required: ['file'],
-    },
-  })
-  @ApiOkResponse({
-    description: 'تم رفع الصورة بنجاح',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'تم رفع صورة الفئة بنجاح' },
-        url: {
-          type: 'string',
-          example: 'https://cdn.example.com/categories/cat-1695033000000.jpg',
-        },
-        categoryId: { type: 'string', example: '66f1a2b3c4d5e6f7g8h9i0j' },
-      },
-    },
-  })
-  @ApiBadRequestResponse({
-    description:
-      'لم يتم إرفاق ملف أو نوع الملف غير مدعوم أو حجم الملف كبير جداً',
-    type: ErrorResponse,
-  })
-  @ApiNotFoundResponse({
-    description: 'الفئة غير موجودة',
-    type: ErrorResponse,
-  })
-  @ApiForbiddenResponse({
-    description: 'ليس لديك صلاحية لرفع صورة لهذه الفئة',
-    type: ErrorResponse,
-  })
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: multer.diskStorage({
-        destination: os.tmpdir(), // تخزين مؤقت على القرص
-        filename: (_req, file, cb) => {
-          const ext = (
-            file.originalname.split('.').pop() || 'img'
-          ).toLowerCase();
-          cb(null, `cat-${Date.now()}.${ext}`);
-        },
-      }),
-      limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
-      fileFilter: (_req, file, cb) => {
-        const ok = /^(image\/png|image\/jpe?g|image\/webp)$/i.test(
-          file.mimetype,
-        );
-        cb(
-          ok
-            ? null
-            : new BadRequestException({
-                code: 'UNSUPPORTED_FILE_FORMAT',
-                message:
-                  'نوع الملف غير مدعوم. يرجى استخدام PNG, JPG, JPEG, أو WebP',
-                details: ['Supported formats: PNG, JPG, JPEG, WebP'],
-              }),
-          ok,
-        );
-      },
-    }),
-  )
+  @ApiUploadCategoryImageDocs()
+  @UseInterceptors(FileInterceptor('file', MULTER_IMAGE_OPTIONS))
   async uploadImage(
     @Param('id') id: string,
     @Query('merchantId') merchantId: string,
     @UploadedFile() file: Express.Multer.File,
-  ) {
+  ): Promise<{
+    success: true;
+    message: string;
+    url: string;
+    categoryId: string;
+  }> {
+    // جسم الدالة الآن سطر واحد فقط (يستدعي منطقًا مفصولًا مسبقًا)
+    return this.processImageUpload(id, merchantId, file);
+  }
+
+  private async processImageUpload(
+    id: string,
+    merchantId: string,
+    file: Express.Multer.File,
+  ): Promise<{
+    success: true;
+    message: string;
+    url: string;
+    categoryId: string;
+  }> {
+    this.validateUploadImageRequest(merchantId, file);
+
+    const url = await this.categories.uploadCategoryImageToMinio(
+      id,
+      merchantId,
+      file,
+    );
+    return this.createUploadImageResponse(url, id);
+  }
+
+  private createUploadImageResponse(
+    url: string,
+    categoryId: string,
+  ): {
+    success: true;
+    message: string;
+    url: string;
+    categoryId: string;
+  } {
+    return {
+      success: true,
+      message: 'تم رفع صورة الفئة بنجاح',
+      url,
+      categoryId,
+    };
+  }
+
+  private validateUploadImageRequest(
+    merchantId: string,
+    file: Express.Multer.File,
+  ): void {
     if (!merchantId) {
       throw new BadRequestException({
         code: 'MISSING_MERCHANT_ID',
@@ -584,7 +552,6 @@ export class CategoriesController {
         details: ['merchantId query parameter is required'],
       });
     }
-
     if (!file) {
       throw new BadRequestException({
         code: 'NO_FILE_UPLOADED',
@@ -592,21 +559,9 @@ export class CategoriesController {
         details: ['File is required in the request'],
       });
     }
-
-    const url = await this.categories.uploadCategoryImageToMinio(
-      id,
-      merchantId,
-      file,
-    );
-
-    return {
-      success: true,
-      message: 'تم رفع صورة الفئة بنجاح',
-      url,
-      categoryId: id,
-    };
   }
 
+  // ------ Update ------
   @Put(':id')
   @ApiOperation({
     operationId: 'categories_update',
@@ -627,28 +582,7 @@ export class CategoriesController {
   @ApiBody({ type: UpdateCategoryDto })
   @ApiOkResponse({
     description: 'categories.responses.success.updated',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'تم تحديث الفئة بنجاح' },
-        category: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', example: '66f1a2b3c4d5e6f7g8h9i0j' },
-            name: { type: 'string', example: 'إلكترونيات محدثة' },
-            merchantId: { type: 'string', example: 'm_12345' },
-            parentId: { type: 'string', nullable: true, example: null },
-            imageUrl: {
-              type: 'string',
-              nullable: true,
-              example: 'https://cdn.example.com/categories/electronics.jpg',
-            },
-            updatedAt: { type: 'string', example: '2023-09-18T10:30:00Z' },
-          },
-        },
-      },
-    },
+    type: Category,
   })
   @ApiNotFoundResponse({
     description: 'categories.responses.error.notFound',
@@ -666,7 +600,7 @@ export class CategoriesController {
     @Param('id') id: string,
     @Query('merchantId') merchantId: string,
     @Body() dto: UpdateCategoryDto,
-  ) {
+  ): Promise<CategoryDocument> {
     if (!merchantId) {
       throw new BadRequestException({
         code: 'MISSING_MERCHANT_ID',
@@ -674,7 +608,6 @@ export class CategoriesController {
         details: ['merchantId query parameter is required'],
       });
     }
-
     return this.categories.update(id, merchantId, dto);
   }
 }

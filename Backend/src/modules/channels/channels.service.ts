@@ -2,7 +2,13 @@ import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { HydratedDocument } from 'mongoose';
 
-import { ChannelAdapter } from './adapters/channel-adapter';
+import { ChannelLean } from '../webhooks/repositories/channel.repository';
+
+import {
+  ChannelAdapter,
+  ConnectResult,
+  Status,
+} from './adapters/channel-adapter';
 import { TelegramAdapter } from './adapters/telegram.adapter';
 import { WebchatAdapter } from './adapters/webchat.adapter';
 import { WhatsAppCloudAdapter } from './adapters/whatsapp-cloud.adapter';
@@ -14,7 +20,6 @@ import {
   ChannelProvider,
   ChannelStatus,
   Channel,
-  ChannelDocument,
 } from './schemas/channel.schema';
 
 @Injectable()
@@ -44,7 +49,9 @@ export class ChannelsService {
 
   async create(dto: CreateChannelDto): Promise<HydratedDocument<Channel>> {
     const doc = await this.repo.create({
-      merchantId: new Types.ObjectId(dto.merchantId) as any,
+      merchantId: new Types.ObjectId(
+        dto.merchantId,
+      ) as unknown as Types.ObjectId,
       provider: dto.provider as unknown as ChannelProvider,
       accountLabel: dto.accountLabel,
       isDefault: !!dto.isDefault,
@@ -54,15 +61,18 @@ export class ChannelsService {
 
     if (doc.isDefault) {
       await this.repo.unsetDefaults(
-        doc.merchantId as any,
+        doc.merchantId as unknown as Types.ObjectId,
         doc.provider,
-        doc._id as any,
+        doc._id as unknown as Types.ObjectId,
       );
     }
     return doc;
   }
 
-  async list(merchantId: string, provider?: ChannelProvider) {
+  async list(
+    merchantId: string,
+    provider?: ChannelProvider,
+  ): Promise<ChannelLean[]> {
     return this.repo.listByMerchant(new Types.ObjectId(merchantId), provider);
   }
 
@@ -76,19 +86,28 @@ export class ChannelsService {
     return this.getOrThrow(id);
   }
 
-  async update(id: string, dto: UpdateChannelDto) {
+  async update(
+    id: string,
+    dto: UpdateChannelDto,
+  ): Promise<HydratedDocument<Channel>> {
     const c = await this.getOrThrow(id);
     if (dto.accountLabel !== undefined) c.accountLabel = dto.accountLabel;
     if (dto.enabled !== undefined) c.enabled = dto.enabled;
     if (dto.widgetSettings !== undefined)
-      c.widgetSettings = dto.widgetSettings as any;
+      c.widgetSettings = dto.widgetSettings as unknown as Record<
+        string,
+        unknown
+      >;
     await c.save();
     return c;
   }
 
-  async setDefault(id: string) {
+  async setDefault(id: string): Promise<HydratedDocument<Channel>> {
     const c = await this.getOrThrow(id);
-    await this.repo.unsetDefaults(c.merchantId as any, c.provider);
+    await this.repo.unsetDefaults(
+      c.merchantId as unknown as Types.ObjectId,
+      c.provider as unknown as ChannelProvider,
+    );
     c.isDefault = true;
     await c.save();
     return c;
@@ -97,9 +116,12 @@ export class ChannelsService {
   async remove(
     id: string,
     mode: 'disable' | 'disconnect' | 'wipe' = 'disconnect',
-  ) {
+  ): Promise<{ deleted: boolean } | { ok: boolean }> {
     const c = await this.getOrThrow(id);
-    await this.pickAdapter(c.provider as any).disconnect(c, mode);
+    await this.pickAdapter(c.provider as unknown as ChannelProvider).disconnect(
+      c,
+      mode,
+    );
     if (mode === 'wipe') {
       await this.repo.deleteOneById(c._id);
       return { deleted: true };
@@ -107,25 +129,35 @@ export class ChannelsService {
     return { ok: true };
   }
 
-  async connect(id: string, payload: any) {
+  async connect(
+    id: string,
+    payload: Record<string, unknown>,
+  ): Promise<ConnectResult> {
     const c = await this.getOrThrow(id);
-    return this.pickAdapter(c.provider as any).connect(c, payload);
+    return this.pickAdapter(c.provider as unknown as ChannelProvider).connect(
+      c,
+      payload,
+    );
   }
 
-  async refresh(id: string) {
+  async refresh(id: string): Promise<{ ok: boolean }> {
     const c = await this.getOrThrow(id);
-    await this.pickAdapter(c.provider as any).refresh(c);
+    await this.pickAdapter(c.provider as unknown as ChannelProvider).refresh(c);
     return { ok: true };
   }
 
-  async status(id: string) {
+  async status(id: string): Promise<Status> {
     const c = await this.getOrThrow(id);
-    return this.pickAdapter(c.provider as any).getStatus(c);
+    return this.pickAdapter(c.provider as unknown as ChannelProvider).getStatus(
+      c,
+    );
   }
 
-  async send(id: string, to: string, text: string) {
+  async send(id: string, to: string, text: string): Promise<{ ok: boolean }> {
     const c = await this.getOrThrow(id);
-    await this.pickAdapter(c.provider as any).sendMessage(c, to, text);
+    await this.pickAdapter(
+      c.provider as unknown as ChannelProvider,
+    ).sendMessage(c, to, text);
     return { ok: true };
   }
 }

@@ -12,7 +12,7 @@ export class Lead {
   sessionId: string;
 
   @Prop({ type: Object, required: true })
-  data: Record<string, any>; // البيانات المرسلة من المستخدم
+  data: Record<string, unknown>; // البيانات المرسلة من المستخدم
 
   @Prop()
   source?: string; // optional: من أين أتت الـ lead (widget, iframe)

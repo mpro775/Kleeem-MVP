@@ -1,6 +1,7 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
+import { MS_PER_SECOND } from 'src/common/constants/common';
 
 import { SessionData, SessionStore } from './session-store.repository';
 
@@ -26,7 +27,7 @@ export class RedisSessionStore implements SessionStore {
     await this.cache.set(
       this.keySess(jti),
       JSON.stringify(data),
-      ttlSeconds * 1000,
+      ttlSeconds * MS_PER_SECOND,
     ); // ✅ ms
   }
 
@@ -53,7 +54,7 @@ export class RedisSessionStore implements SessionStore {
     const raw = await this.cache.get<string>(key);
     const arr: string[] = raw ? (JSON.parse(raw) as string[]) : [];
     if (!arr.includes(jti)) arr.push(jti);
-    await this.cache.set(key, JSON.stringify(arr), ttlSeconds * 1000); // ✅ key الصحيح + ms
+    await this.cache.set(key, JSON.stringify(arr), ttlSeconds * MS_PER_SECOND); // ✅ key الصحيح + ms
   }
 
   async getUserSessions(userId: string): Promise<string[]> {
@@ -70,7 +71,11 @@ export class RedisSessionStore implements SessionStore {
     await this.cache.del(this.keyUserSessions(userId));
   }
   async addToBlacklist(jti: string, ttlSeconds: number): Promise<void> {
-    await this.cache.set(this.keyBlacklist(jti), 'revoked', ttlSeconds * 1000); // ✅ ms
+    await this.cache.set(
+      this.keyBlacklist(jti),
+      'revoked',
+      ttlSeconds * MS_PER_SECOND,
+    ); // ✅ ms
   }
 
   async isBlacklisted(jti: string): Promise<boolean> {

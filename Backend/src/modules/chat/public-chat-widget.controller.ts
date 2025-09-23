@@ -28,6 +28,21 @@ import {
   PublicWidgetStatusResponseDto,
 } from './dto/public-widget.dto';
 
+// Default values for widget status
+const DEFAULT_ESTIMATED_WAIT_TIME = 45;
+const DEFAULT_AVAILABLE_AGENTS = 3;
+const DEFAULT_TOTAL_ACTIVE_CHATS = 12;
+const DEFAULT_SESSION_WAIT_TIME = 30;
+
+// Constants for session ID generation
+const SESSION_ID_RANDOM_BASE = 36;
+const SESSION_ID_LENGTH = 11;
+const SESSION_ID_PREFIX_LENGTH = 2;
+
+// Time constants
+const MILLISECONDS_PER_SECOND = 1000;
+const MILLISECONDS_PER_HOUR = 60 * 60 * MILLISECONDS_PER_SECOND;
+
 @ApiTags('ودجة الدردشة (عام)')
 @Controller('public/chat-widget')
 export class PublicChatWidgetController {
@@ -129,9 +144,9 @@ export class PublicChatWidgetController {
       widgetSlug,
       isOnline: true,
       isWithinBusinessHours: true,
-      estimatedWaitTime: 45,
-      availableAgents: 3,
-      totalActiveChats: 12,
+      estimatedWaitTime: DEFAULT_ESTIMATED_WAIT_TIME,
+      availableAgents: DEFAULT_AVAILABLE_AGENTS,
+      totalActiveChats: DEFAULT_TOTAL_ACTIVE_CHATS,
       lastUpdated: new Date().toISOString(),
     };
   }
@@ -172,7 +187,7 @@ export class PublicChatWidgetController {
         message: 'لم يتم العثور على ودجة بهذا الـ slug',
       });
 
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    const sessionId = `session_${Date.now()}_${Math.random().toString(SESSION_ID_RANDOM_BASE).slice(SESSION_ID_PREFIX_LENGTH, SESSION_ID_LENGTH)}`;
 
     return {
       success: true,
@@ -181,10 +196,10 @@ export class PublicChatWidgetController {
       visitorId: body.visitorId ?? `visitor_${Date.now()}`,
       status: 'waiting',
       assignedAgent: null,
-      estimatedWaitTime: 30,
+      estimatedWaitTime: DEFAULT_SESSION_WAIT_TIME,
       welcomeMessage: exists.welcomeMessage ?? 'مرحباً! شكراً لتواصلك.',
       createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      expiresAt: new Date(Date.now() + MILLISECONDS_PER_HOUR).toISOString(),
     };
   }
 }

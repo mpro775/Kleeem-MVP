@@ -1,6 +1,11 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 
+// AES-256-GCM key length in bytes (256 bits)
+const AES_KEY_LENGTH = 32;
+
+const AES_GCM_IV_LENGTH = 12;
+const AES_GCM_ENCRYPTED_DATA_OFFSET = 28;
 let KEY: Buffer | null = null;
 
 function resolveKey(): Buffer | null {
@@ -9,9 +14,13 @@ function resolveKey(): Buffer | null {
   if (file) {
     try {
       const buf = fs.readFileSync(file);
-      if (buf.length === 32) return buf;
+      if (buf.length === AES_KEY_LENGTH) return buf;
       // لو الملف نصّي، اشتق منه مفتاح 32 بايت
-      return crypto.scryptSync(buf.toString('utf8'), 'kaleem-secrets', 32);
+      return crypto.scryptSync(
+        buf.toString('utf8'),
+        'kaleem-secrets',
+        AES_KEY_LENGTH,
+      );
     } catch {
       /* تجاهل */
     }
@@ -24,7 +33,7 @@ function resolveKey(): Buffer | null {
   // جرّب Base64
   try {
     const b64 = Buffer.from(v, 'base64');
-    if (b64.length === 32) return b64;
+    if (b64.length === AES_KEY_LENGTH) return b64;
   } catch {
     /* ignore */
   }
@@ -35,7 +44,7 @@ function resolveKey(): Buffer | null {
   }
 
   // 3) آخر حل: اشتق من النص (scrypt) لمفتاح 32 بايت
-  return crypto.scryptSync(v, 'kaleem-secrets', 32);
+  return crypto.scryptSync(v, 'kaleem-secrets', AES_KEY_LENGTH);
 }
 
 function ensureKey() {
@@ -44,7 +53,11 @@ function ensureKey() {
   if (!KEY) {
     if (process.env.NODE_ENV !== 'production') {
       // مفتاح تطوير فقط — سيتلف التشفير عند إعادة التشغيل (مقبول لبيئة dev)
-      KEY = crypto.scryptSync('local-dev-key', 'kaleem-secrets', 32);
+      KEY = crypto.scryptSync(
+        'local-dev-key',
+        'kaleem-secrets',
+        AES_KEY_LENGTH,
+      );
     } else {
       throw new Error(
         'SECRETS_KEY not set (or invalid). Set SECRETS_KEY or SECRETS_KEY_FILE.',
@@ -65,9 +78,9 @@ export function encryptSecret(plain: string): string {
 export function decryptSecret(encBase64: string): string {
   ensureKey();
   const raw = Buffer.from(encBase64, 'base64');
-  const iv = raw.subarray(0, 12);
-  const tag = raw.subarray(12, 28);
-  const data = raw.subarray(28);
+  const iv = raw.subarray(0, AES_GCM_IV_LENGTH);
+  const tag = raw.subarray(AES_GCM_IV_LENGTH, AES_GCM_ENCRYPTED_DATA_OFFSET);
+  const data = raw.subarray(AES_GCM_ENCRYPTED_DATA_OFFSET);
   const decipher = crypto.createDecipheriv('aes-256-gcm', KEY!, iv);
   decipher.setAuthTag(tag);
   const dec = Buffer.concat([decipher.update(data), decipher.final()]);

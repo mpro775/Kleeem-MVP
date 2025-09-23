@@ -38,6 +38,12 @@ export const MIN_PASSWORD_LENGTH = 6;
 export const MIN_LIMIT = 1;
 export const MAX_LIMIT = 100;
 export const DEFAULT_LIMIT = 20;
-
+export const SECONDS_PER_DAY = 86400;
 export const DEFAULT_SORT_FIELD = 'createdAt';
 export const DEFAULT_SORT_ORDER = -1;
+export const SECONDS_PER_MINUTE = 60;
+export const PASSWORD_RESET_TOKEN_LENGTH = 32;
+export const VERIFICATION_CODE_LENGTH = 6;
+export const ONE_MINUTE_MS = 60 * MS_PER_SECOND;
+export const RESEND_VERIFICATION_WINDOW_MS = ONE_MINUTE_MS;
+export const PASSWORD_RESET_WINDOW_MS = ONE_MINUTE_MS;

@@ -2,7 +2,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { ChannelDocument } from '../schemas/channel.schema';
+import { ChannelDocument, ChannelStatus } from '../schemas/channel.schema';
 import { encryptSecret, hashSecret } from '../utils/secrets.util';
 
 import {
@@ -38,12 +38,12 @@ export class WhatsAppCloudAdapter implements ChannelAdapter {
     c.verifyTokenHash = payload.verifyToken
       ? hashSecret(payload.verifyToken)
       : undefined;
-    const rawBase = this.config.get('PUBLIC_WEBHOOK_BASE') || '';
+    const rawBase = (this.config.get('PUBLIC_WEBHOOK_BASE') as string) || '';
     const base = rawBase.replace(/\/+$/, ''); // شيل السلاشات الأخيرة
     const hooksBase = /\/webhooks$/i.test(base) ? base : `${base}/webhooks`;
     const hookUrl = `${hooksBase}/whatsapp_cloud/${c.id}`;
     c.enabled = true;
-    c.status = 'connected' as any;
+    c.status = 'connected' as ChannelStatus;
     await c.save();
     return { mode: 'webhook', webhookUrl: hookUrl };
   }
@@ -53,12 +53,12 @@ export class WhatsAppCloudAdapter implements ChannelAdapter {
     mode: 'disable' | 'disconnect' | 'wipe',
   ): Promise<void> {
     c.enabled = false;
-    c.status = 'disconnected' as any;
+    c.status = 'disconnected' as ChannelStatus;
     if (mode === 'wipe') {
-      c.accessTokenEnc = undefined as any;
-      c.refreshTokenEnc = undefined as any;
-      c.appSecretEnc = undefined as any;
-      c.verifyTokenHash = undefined as any;
+      c.accessTokenEnc = undefined;
+      c.refreshTokenEnc = undefined;
+      c.appSecretEnc = undefined;
+      c.verifyTokenHash = undefined;
     }
     await c.save();
   }
@@ -66,13 +66,16 @@ export class WhatsAppCloudAdapter implements ChannelAdapter {
   async refresh(): Promise<void> {
     /* implement token refresh if you use OAuth */
   }
-  async getStatus(c: ChannelDocument): Promise<Status> {
-    return { status: c.status, details: { phoneNumberId: c.phoneNumberId } };
+  getStatus(c: ChannelDocument): Promise<Status> {
+    return Promise.resolve({
+      status: c.status,
+      details: { phoneNumberId: c.phoneNumberId },
+    });
   }
   async sendMessage(): Promise<void> {
     /* optional: call Graph API */
   }
-  async handleWebhook(): Promise<WebhookResult> {
-    return { ok: true };
+  handleWebhook(): Promise<WebhookResult> {
+    return Promise.resolve({ ok: true });
   }
 }

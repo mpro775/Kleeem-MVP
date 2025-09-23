@@ -4,7 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 
-import { ChannelDocument } from '../schemas/channel.schema';
+import { ChannelDocument, ChannelStatus } from '../schemas/channel.schema';
 import { decryptSecret, encryptSecret } from '../utils/secrets.util';
 
 import {
@@ -27,7 +27,7 @@ export class TelegramAdapter implements ChannelAdapter {
     payload?: { botToken?: string },
   ): Promise<ConnectResult> {
     // 1) جهّز الـ hook URL (التصحيح أعلاه)
-    const rawBase = this.config.get('PUBLIC_WEBHOOK_BASE') || '';
+    const rawBase = (this.config.get('PUBLIC_WEBHOOK_BASE') as string) || '';
     const base = rawBase.replace(/\/+$/, '');
     const hooksBase = /\/webhooks$/i.test(base) ? base : `${base}/webhooks`;
     const hookUrl = `${hooksBase}/telegram/${c.id}`;
@@ -45,7 +45,7 @@ export class TelegramAdapter implements ChannelAdapter {
       this.http.get(`https://api.telegram.org/bot${token}/setWebhook`, {
         params: {
           url: hookUrl,
-          secret_token: this.config.get('TELEGRAM_WEBHOOK_SECRET'),
+          secret_token: this.config.get('TELEGRAM_WEBHOOK_SECRET') as string,
           drop_pending_updates: true,
           allowed_updates: JSON.stringify(['message', 'edited_message']),
         },
@@ -56,7 +56,7 @@ export class TelegramAdapter implements ChannelAdapter {
     if (!c.botTokenEnc) c.botTokenEnc = encryptSecret(token);
     c.webhookUrl = hookUrl;
     c.enabled = true;
-    c.status = 'connected' as any;
+    c.status = 'connected' as ChannelStatus;
     await c.save();
 
     return { mode: 'webhook', webhookUrl: hookUrl };
@@ -74,10 +74,11 @@ export class TelegramAdapter implements ChannelAdapter {
           }),
         );
       }
-    } catch (e) {
-      this.logger.warn(`Telegram deleteWebhook failed: ${e?.message}`);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.warn(`Telegram deleteWebhook failed: ${message}`);
     }
-    c.status = 'disconnected' as any;
+    c.status = 'disconnected' as ChannelStatus;
     c.enabled = false;
     if (mode === 'wipe') {
       c.botTokenEnc = undefined;
@@ -89,10 +90,17 @@ export class TelegramAdapter implements ChannelAdapter {
   async refresh(): Promise<void> {
     /* no-op for Telegram */
   }
-  async getStatus(c: ChannelDocument): Promise<Status> {
-    return { status: c.status, details: { webhookUrl: c.webhookUrl } };
+  getStatus(c: ChannelDocument): Promise<Status> {
+    return Promise.resolve({
+      status: c.status,
+      details: { webhookUrl: c.webhookUrl },
+    });
   }
-  async sendMessage(c: ChannelDocument, to: string, text: string) {
+  async sendMessage(
+    c: ChannelDocument,
+    to: string,
+    text: string,
+  ): Promise<void> {
     const token = c.botTokenEnc ? decryptSecret(c.botTokenEnc) : undefined;
     if (!token) throw new Error('Telegram not configured');
     await firstValueFrom(
@@ -103,7 +111,7 @@ export class TelegramAdapter implements ChannelAdapter {
       }),
     );
   }
-  async handleWebhook(): Promise<WebhookResult> {
-    return { ok: true };
+  handleWebhook(): Promise<WebhookResult> {
+    return Promise.resolve({ ok: true });
   }
 }

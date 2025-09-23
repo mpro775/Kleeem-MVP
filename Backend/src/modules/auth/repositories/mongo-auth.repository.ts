@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, RootFilterQuery, Types } from 'mongoose';
 
 import {
   Merchant,
@@ -44,26 +44,30 @@ export class MongoAuthRepository implements AuthRepository {
     return user.save();
   }
 
-  async findUserByEmailWithPassword(email: string) {
+  async findUserByEmailWithPassword(
+    email: string,
+  ): Promise<UserDocument | null> {
     return this.userModel
       .findOne({ email })
       .select('+password active merchantId emailVerified role firstLogin')
       .exec();
   }
 
-  async findUserByEmailSelectId(email: string) {
+  async findUserByEmailSelectId(
+    email: string,
+  ): Promise<Pick<UserDocument, '_id'> | null> {
     return this.userModel.findOne({ email }).select('_id').lean();
   }
 
-  async findUserById(id: string) {
+  async findUserById(id: string): Promise<UserDocument | null> {
     return this.userModel.findById(id).exec();
   }
 
-  async findUserByIdWithPassword(id: string) {
+  async findUserByIdWithPassword(id: string): Promise<UserDocument | null> {
     return this.userModel.findById(id).select('+password').exec();
   }
 
-  async saveUser(user: UserDocument) {
+  async saveUser(user: UserDocument): Promise<UserDocument> {
     return user.save();
   }
 
@@ -89,15 +93,19 @@ export class MongoAuthRepository implements AuthRepository {
     userId: Types.ObjectId;
     codeHash: string;
     expiresAt: Date;
-  }) {
+  }): Promise<EmailVerificationTokenDocument> {
     return this.tokenModel.create(data);
   }
 
-  async latestEmailVerificationTokenByUser(userId: Types.ObjectId) {
+  async latestEmailVerificationTokenByUser(
+    userId: Types.ObjectId,
+  ): Promise<EmailVerificationTokenDocument | null> {
     return this.tokenModel.findOne({ userId }).sort({ createdAt: -1 }).exec();
   }
 
-  async deleteEmailVerificationTokensByUser(userId: Types.ObjectId) {
+  async deleteEmailVerificationTokensByUser(
+    userId: Types.ObjectId,
+  ): Promise<void> {
     await this.tokenModel.deleteMany({ userId });
   }
 
@@ -106,15 +114,15 @@ export class MongoAuthRepository implements AuthRepository {
     userId: Types.ObjectId;
     tokenHash: string;
     expiresAt: Date;
-  }) {
+  }): Promise<PasswordResetTokenDocument> {
     return this.prtModel.create(data);
   }
 
   async latestPasswordResetTokenByUser(
     userId: Types.ObjectId,
     onlyUnused = true,
-  ) {
-    const q: any = { userId };
+  ): Promise<PasswordResetTokenDocument | null> {
+    const q: RootFilterQuery<PasswordResetTokenDocument> = { userId };
     if (onlyUnused) q.used = false;
     return this.prtModel.findOne(q).sort({ createdAt: -1 }).exec();
   }
@@ -122,22 +130,22 @@ export class MongoAuthRepository implements AuthRepository {
   async findLatestPasswordResetForUser(
     userId: Types.ObjectId,
     onlyUnused = true,
-  ) {
+  ): Promise<PasswordResetTokenDocument | null> {
     return this.latestPasswordResetTokenByUser(userId, onlyUnused);
   }
 
-  async markPasswordResetTokenUsed(docId: Types.ObjectId) {
+  async markPasswordResetTokenUsed(docId: Types.ObjectId): Promise<void> {
     await this.prtModel.updateOne({ _id: docId }, { $set: { used: true } });
   }
 
   async deleteOtherPasswordResetTokens(
     userId: Types.ObjectId,
     excludeId: Types.ObjectId,
-  ) {
+  ): Promise<void> {
     await this.prtModel.deleteMany({ userId, _id: { $ne: excludeId } });
   }
 
-  async deletePasswordResetTokensByUser(userId: Types.ObjectId) {
+  async deletePasswordResetTokensByUser(userId: Types.ObjectId): Promise<void> {
     await this.prtModel.deleteMany({ userId });
   }
 }

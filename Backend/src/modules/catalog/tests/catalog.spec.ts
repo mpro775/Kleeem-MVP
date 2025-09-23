@@ -6,7 +6,7 @@
 
 import 'reflect-metadata';
 import { NotFoundException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
 
 import { CatalogController } from '../catalog.controller';
@@ -190,7 +190,7 @@ describe('CatalogController (unit)', () => {
     serviceMock.syncForMerchant.mockResolvedValue(expected);
 
     // Act
-    const out = await controller.sync(merchantId);
+    const out = await controller.sync({ merchantId });
 
     // Assert
     expect(serviceMock.syncForMerchant).toHaveBeenCalledWith(merchantId);

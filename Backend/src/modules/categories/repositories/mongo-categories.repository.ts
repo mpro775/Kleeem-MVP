@@ -22,12 +22,14 @@ export class MongoCategoriesRepository implements CategoriesRepository {
   async createCategory(
     data: Partial<HydratedDocument<Category>>,
   ): Promise<HydratedDocument<Category>> {
-    const doc = new this.categoryModel(data as any);
+    const doc = new this.categoryModel(data);
     await doc.save();
     return doc as HydratedDocument<Category>;
   }
 
-  async findAllByMerchant(merchantId: Types.ObjectId) {
+  async findAllByMerchant(
+    merchantId: Types.ObjectId,
+  ): Promise<CategoryDocument[]> {
     return this.categoryModel
       .find({ merchantId })
       .sort({ depth: 1, order: 1, name: 1 })
@@ -37,36 +39,39 @@ export class MongoCategoriesRepository implements CategoriesRepository {
   async findByIdForMerchant(
     id: string | Types.ObjectId,
     merchantId: Types.ObjectId,
-  ) {
+  ): Promise<CategoryDocument | null> {
     return this.categoryModel.findOne({ _id: id, merchantId });
   }
 
   async findLeanByIdForMerchant(
     id: string | Types.ObjectId,
     merchantId: Types.ObjectId,
-  ) {
+  ): Promise<CategoryDocument | null> {
     return this.categoryModel.findOne({ _id: id, merchantId }).lean();
   }
 
   async updateCategoryFields(
     id: Types.ObjectId,
     merchantId: Types.ObjectId,
-    update: Record<string, any>,
-  ) {
+    update: Record<string, unknown>,
+  ): Promise<void> {
     await this.categoryModel.updateOne(
       { _id: id, merchantId },
       { $set: update },
     );
   }
 
-  async deleteManyByIds(merchantId: Types.ObjectId, ids: Types.ObjectId[]) {
+  async deleteManyByIds(
+    merchantId: Types.ObjectId,
+    ids: Types.ObjectId[],
+  ): Promise<void> {
     await this.categoryModel.deleteMany({ merchantId, _id: { $in: ids } });
   }
 
   async parentExistsForMerchant(
     parentId: Types.ObjectId,
     merchantId: Types.ObjectId,
-  ) {
+  ): Promise<boolean> {
     return !!(await this.categoryModel.exists({ _id: parentId, merchantId }));
   }
 
@@ -74,7 +79,7 @@ export class MongoCategoriesRepository implements CategoriesRepository {
     targetId: Types.ObjectId,
     ancestorId: Types.ObjectId,
     merchantId: Types.ObjectId,
-  ) {
+  ): Promise<boolean> {
     return !!(await this.categoryModel.exists({
       _id: targetId,
       merchantId,
@@ -85,7 +90,7 @@ export class MongoCategoriesRepository implements CategoriesRepository {
   async listSiblings(
     merchantId: Types.ObjectId,
     parentId: Types.ObjectId | null,
-  ) {
+  ): Promise<CategoryDocument[]> {
     return this.categoryModel
       .find({ merchantId, parent: parentId })
       .sort({ order: 1, name: 1 })
@@ -96,7 +101,7 @@ export class MongoCategoriesRepository implements CategoriesRepository {
     categoryId: Types.ObjectId,
     order: number,
     session?: ClientSession,
-  ) {
+  ): Promise<void> {
     await this.categoryModel.updateOne(
       { _id: categoryId },
       { $set: { order } },
@@ -108,7 +113,7 @@ export class MongoCategoriesRepository implements CategoriesRepository {
     merchantId: Types.ObjectId,
     parentId: Types.ObjectId | null,
     session?: ClientSession,
-  ) {
+  ): Promise<void> {
     const siblings = await this.categoryModel
       .find({ merchantId, parent: parentId }, null, { session })
       .sort({ order: 1, name: 1 });
@@ -123,11 +128,17 @@ export class MongoCategoriesRepository implements CategoriesRepository {
     }
   }
 
-  async findManyByIds(ids: Types.ObjectId[], fields?: Record<string, 1 | 0>) {
-    return this.categoryModel.find({ _id: { $in: ids } }, fields as any).lean();
+  async findManyByIds(
+    ids: Types.ObjectId[],
+    fields?: Record<string, 1 | 0>,
+  ): Promise<CategoryDocument[]> {
+    return this.categoryModel.find({ _id: { $in: ids } }, fields).lean();
   }
 
-  async findSubtreeIds(merchantId: Types.ObjectId, rootId: Types.ObjectId) {
+  async findSubtreeIds(
+    merchantId: Types.ObjectId,
+    rootId: Types.ObjectId,
+  ): Promise<Types.ObjectId[]> {
     const rows = await this.categoryModel
       .find({ merchantId, $or: [{ _id: rootId }, { ancestors: rootId }] })
       .select('_id')
@@ -138,7 +149,7 @@ export class MongoCategoriesRepository implements CategoriesRepository {
   async anyProductsInCategories(
     merchantId: Types.ObjectId,
     categoryIds: Types.ObjectId[],
-  ) {
+  ): Promise<boolean> {
     return !!(await this.productModel.exists({
       merchantId,
       category: { $in: categoryIds },

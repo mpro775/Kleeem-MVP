@@ -6,7 +6,7 @@ import { EvolutionService } from '../integrations/evolution.service';
 
 import { TelegramAdapter } from './adapters/telegram.adapter';
 import { ChannelsRepository } from './repositories/channels.repository';
-import { ChannelProvider } from './schemas/channel.schema';
+import { ChannelDocument, ChannelProvider } from './schemas/channel.schema';
 import { WhatsappCloudService } from './whatsapp-cloud.service';
 
 type SendChannel = 'telegram' | 'whatsapp' | 'webchat';
@@ -32,7 +32,7 @@ export class ChannelsDispatcherService {
     sessionId: string,
     text: string,
     transport?: WaTransport,
-  ) {
+  ): Promise<void> {
     if (channel === 'webchat') {
       this.chatGateway.sendMessageToSession(sessionId, {
         role: 'bot',
@@ -45,7 +45,7 @@ export class ChannelsDispatcherService {
     if (channel === 'telegram') {
       const tg = await this.getDefault(merchantId, ChannelProvider.TELEGRAM);
       if (!tg) throw new Error('Telegram not configured');
-      await this.tgAdapter.sendMessage(tg, sessionId, text);
+      await this.tgAdapter.sendMessage(tg as ChannelDocument, sessionId, text);
       return;
     }
 

@@ -11,11 +11,22 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Cache } from 'cache-manager';
+import { Types } from 'mongoose';
 
+import { CACHE_TTL_5_MINUTES } from '../../common/cache/constant';
+import {
+  PASSWORD_RESET_TOKEN_LENGTH,
+  RESEND_VERIFICATION_WINDOW_MS,
+  PASSWORD_RESET_WINDOW_MS,
+  SECONDS_PER_HOUR,
+} from '../../common/constants/common';
+import { DUPLICATE_KEY_CODE } from '../../common/filters/constants';
 import { TranslationService } from '../../common/services/translation.service';
 import { BusinessMetrics } from '../../metrics/business.metrics';
 import { MailService } from '../mail/mail.service';
 import { MerchantsService } from '../merchants/merchants.service';
+import { MerchantDocument } from '../merchants/schemas/merchant.schema';
+import { UserDocument } from '../users/schemas/user.schema';
 
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
@@ -24,7 +35,7 @@ import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-
+import { AuthRepository } from './repositories/auth.repository';
 import { TokenService } from './services/token.service';
 import { toStr } from './utils/id';
 import { generateSecureToken } from './utils/password-reset';
@@ -33,8 +44,35 @@ import {
   minutesFromNow,
   sha256,
 } from './utils/verification-code';
-import { AuthRepository } from './repositories/auth.repository';
 
+import type { TokenPair } from './services/token.service';
+
+// ========== Local Types ==========
+interface MongoDuplicateKeyError {
+  code: number;
+  keyPattern: Record<string, number>;
+}
+// ===== حارس/محوّل آمن للتواريخ من مستند Mongoose =====
+function toEpochMs(value: unknown): number | null {
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const t = Date.parse(value);
+    return Number.isNaN(t) ? null : t;
+  }
+  return null;
+}
+
+// إن لم تكن لديك بالفعل:
+function isRecord(val: unknown): val is Record<string, unknown> {
+  return typeof val === 'object' && val !== null;
+}
+function extractJti(decoded: unknown): string | null {
+  return isRecord(decoded) && typeof decoded.jti === 'string'
+    ? decoded.jti
+    : null;
+}
+const VERIFICATION_CODE_LENGTH = 6;
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -51,7 +89,18 @@ export class AuthService {
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
-  async register(registerDto: RegisterDto) {
+  async register(registerDto: RegisterDto): Promise<{
+    accessToken: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      merchantId: string | null;
+      firstLogin: boolean;
+      emailVerified: boolean;
+    };
+  }> {
     const { password, confirmPassword, email, name } = registerDto;
     if (password !== confirmPassword) {
       throw new BadRequestException(
@@ -70,7 +119,7 @@ export class AuthService {
         emailVerified: false,
       });
 
-      const code = generateNumericCode(6);
+      const code = generateNumericCode(VERIFICATION_CODE_LENGTH);
       await this.repo.createEmailVerificationToken({
         userId: userDoc._id,
         codeHash: sha256(code),
@@ -84,7 +133,7 @@ export class AuthService {
         this.businessMetrics.incEmailFailed();
       }
 
-      const { accessToken } = await this.tokenService.createAccessOnly({
+      const { accessToken } = this.tokenService.createAccessOnly({
         userId: String(userDoc._id),
         role: userDoc.role,
         merchantId: null,
@@ -92,7 +141,7 @@ export class AuthService {
       return {
         accessToken,
         user: {
-          id: userDoc._id,
+          id: String(userDoc._id),
           name: userDoc.name,
           email: userDoc.email,
           role: userDoc.role,
@@ -101,8 +150,15 @@ export class AuthService {
           emailVerified: userDoc.emailVerified,
         },
       };
-    } catch (err: any) {
-      if (err?.code === 11000 && err?.keyPattern?.email) {
+    } catch (err: unknown) {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        'keyPattern' in err &&
+        (err as MongoDuplicateKeyError).code === DUPLICATE_KEY_CODE &&
+        (err as MongoDuplicateKeyError).keyPattern?.email
+      ) {
         throw new ConflictException(
           this.translationService.translate('auth.errors.emailAlreadyExists'),
         );
@@ -117,7 +173,19 @@ export class AuthService {
   async login(
     loginDto: LoginDto,
     sessionInfo?: { userAgent?: string; ip?: string },
-  ) {
+  ): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      merchantId: string | null;
+      firstLogin: boolean;
+      emailVerified: boolean;
+    };
+  }> {
     const { email, password } = loginDto;
 
     const userDoc = await this.repo.findUserByEmailWithPassword(email);
@@ -146,11 +214,11 @@ export class AuthService {
       );
     }
 
-    if (userDoc.merchantId && userDoc.role !== 'ADMIN') {
+    if (userDoc.merchantId && String(userDoc.role) !== 'ADMIN') {
       const m = await this.repo.findMerchantBasicById(
-        userDoc.merchantId as any,
+        userDoc.merchantId as unknown as string,
       );
-      if (m && (m.active === false || (m as any).deletedAt)) {
+      if (m && (m.active === false || (m as MerchantDocument).deletedAt)) {
         throw new BadRequestException(
           this.translationService.translate(
             'auth.errors.merchantAccountSuspended',
@@ -174,11 +242,11 @@ export class AuthService {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       user: {
-        id: userDoc._id,
+        id: String(userDoc._id),
         name: userDoc.name,
         email: userDoc.email,
         role: userDoc.role,
-        merchantId: userDoc.merchantId ?? null,
+        merchantId: userDoc.merchantId ? String(userDoc.merchantId) : null,
         firstLogin: userDoc.firstLogin,
         emailVerified: userDoc.emailVerified,
       },
@@ -188,15 +256,16 @@ export class AuthService {
   async refreshTokens(
     refreshToken: string,
     sessionInfo?: { userAgent?: string; ip?: string },
-  ) {
+  ): Promise<TokenPair> {
     return this.tokenService.refreshTokens(refreshToken, sessionInfo);
   }
 
   async logout(refreshToken: string): Promise<{ message: string }> {
     try {
-      const decoded = this.jwtService.decode(refreshToken);
-      if (decoded?.jti) {
-        await this.tokenService.revokeRefreshToken(decoded.jti);
+      const decodedUnknown: unknown = this.jwtService.decode(refreshToken);
+      const jti = extractJti(decodedUnknown);
+      if (jti) {
+        await this.tokenService.revokeRefreshToken(jti);
       }
       return { message: 'تم تسجيل الخروج بنجاح' };
     } catch {
@@ -217,7 +286,7 @@ export class AuthService {
     };
   }
 
-  getTokenService() {
+  getTokenService(): TokenService {
     return this.tokenService;
   }
 
@@ -225,7 +294,18 @@ export class AuthService {
     return this.tokenService.getSessionCsrfToken(jti);
   }
 
-  async verifyEmail(dto: VerifyEmailDto) {
+  async verifyEmail(dto: VerifyEmailDto): Promise<{
+    accessToken: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      merchantId: string | null;
+      firstLogin: boolean;
+      emailVerified: boolean;
+    };
+  }> {
     const { email, code } = dto;
     const user = await this.repo.findUserByEmailWithPassword(email);
     if (!user) {
@@ -266,12 +346,12 @@ export class AuthService {
     });
 
     if (!user.merchantId) {
-      user.merchantId = merchant._id as any;
+      user.merchantId = merchant._id as Types.ObjectId;
       await this.repo.saveUser(user);
     }
     await this.repo.deleteEmailVerificationTokensByUser(user._id);
 
-    const { accessToken } = await this.tokenService.createAccessOnly({
+    const { accessToken } = this.tokenService.createAccessOnly({
       userId: String(user._id),
       role: user.role,
       merchantId: user.merchantId ? String(user.merchantId) : null,
@@ -301,7 +381,7 @@ export class AuthService {
     const user = await this.repo.findUserByEmailWithPassword(email);
     if (user) {
       // Cache for 5 minutes
-      await this.cacheManager.set(cacheKey, user, 300 * 1000); // ✅ 5 دقائق بالملّي ثانية
+      await this.cacheManager.set(cacheKey, user, CACHE_TTL_5_MINUTES); // ✅ 5 دقائق بالملّي ثانية
     }
     return user;
   }
@@ -323,31 +403,42 @@ export class AuthService {
         this.translationService.translate('auth.errors.emailNotRegistered'),
       );
     }
-    if ((user as any).emailVerified)
+    if ((user as UserDocument).emailVerified) {
       throw new BadRequestException(
         this.translationService.translate('auth.errors.emailAlreadyVerified'),
       );
-
-    const recent = await this.repo.latestEmailVerificationTokenByUser(
-      (user as any)._id,
-    );
-    if (
-      recent &&
-      Date.now() - new Date((recent as any).createdAt).getTime() < 60_000
-    ) {
-      return;
     }
 
-    const code = generateNumericCode(6);
+    const recent = await this.repo.latestEmailVerificationTokenByUser(
+      (user as UserDocument)._id,
+    );
+
+    if (recent) {
+      // createdAt قد لا يكون معرفًا في النوع؛ نقرأه عبر get أو الحقل المباشر ثم نحوّله بأمان
+      const createdRaw =
+        typeof (recent as { get?: (k: string) => unknown }).get === 'function'
+          ? (recent as { get: (k: string) => unknown }).get('createdAt')
+          : (recent as unknown as Record<string, unknown>).createdAt;
+
+      const createdAtMs = toEpochMs(createdRaw);
+      if (
+        createdAtMs !== null &&
+        Date.now() - createdAtMs < RESEND_VERIFICATION_WINDOW_MS
+      ) {
+        return;
+      }
+    }
+
+    const code = generateNumericCode(VERIFICATION_CODE_LENGTH);
     await this.repo.createEmailVerificationToken({
-      userId: (user as any)._id,
+      userId: (user as UserDocument)._id,
       codeHash: sha256(code),
       expiresAt: minutesFromNow(15),
     });
 
     try {
       await this.mailService.sendVerificationEmail(email, code);
-    } catch (e: any) {
+    } catch (e: unknown) {
       this.logger.error('Failed to send verification email', e);
     }
   }
@@ -358,14 +449,22 @@ export class AuthService {
     if (!user) return;
 
     const last = await this.repo.latestPasswordResetTokenByUser(user._id, true);
-    if (
-      last &&
-      Date.now() - new Date((last as any).createdAt).getTime() < 60_000
-    ) {
-      return;
+    if (last) {
+      const createdRaw =
+        typeof (last as { get?: (k: string) => unknown }).get === 'function'
+          ? (last as { get: (k: string) => unknown }).get('createdAt')
+          : (last as unknown as Record<string, unknown>).createdAt;
+
+      const createdAtMs = toEpochMs(createdRaw);
+      if (
+        createdAtMs !== null &&
+        Date.now() - createdAtMs < PASSWORD_RESET_WINDOW_MS
+      ) {
+        return;
+      }
     }
 
-    const token = generateSecureToken(32);
+    const token = generateSecureToken(PASSWORD_RESET_TOKEN_LENGTH);
     const tokenHash = sha256(token);
 
     await this.repo.createPasswordResetToken({
@@ -457,9 +556,9 @@ export class AuthService {
     // Invalidate cache after password change
     await this.invalidateUserCache(user.email, String(user._id));
     await this.cacheManager.set(
-      `pwdChangedAt:${user._id}`,
+      `pwdChangedAt:${user._id.toString()}`,
       user.passwordChangedAt.getTime(),
-      30 * 24 * 3600 * 1000, // ✅ 30 يوم بالملّي ثانية
+      30 * 24 * SECONDS_PER_HOUR, // ✅ 30 يوم بالملّي ثانية
     );
 
     await this.repo.deletePasswordResetTokensByUser(user._id);
@@ -467,7 +566,19 @@ export class AuthService {
     this.businessMetrics.incPasswordChangeCompleted?.();
   }
 
-  async ensureMerchant(userId: string) {
+  async ensureMerchant(userId: string): Promise<{
+    accessToken: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      merchantId: string | null;
+      firstLogin: boolean;
+      emailVerified: boolean;
+      active: boolean;
+    };
+  }> {
     const user = await this.repo.findUserById(userId);
     if (!user) {
       throw new BadRequestException(
@@ -476,9 +587,14 @@ export class AuthService {
     }
 
     if (user.merchantId) {
-      const m = await this.repo.findMerchantBasicById(user.merchantId as any);
+      const m = await this.repo.findMerchantBasicById(
+        user.merchantId as unknown as string,
+      );
       if (!m) throw new BadRequestException('Merchant not found');
-      if ((m as any).deletedAt || (m as any).active === false) {
+      if (
+        (m as MerchantDocument).deletedAt ||
+        (m as MerchantDocument).active === false
+      ) {
         throw new BadRequestException('تم إيقاف حساب التاجر مؤقتًا');
       }
     } else {
@@ -490,11 +606,11 @@ export class AuthService {
         name: user.name,
       });
       if (!user.merchantId) {
-        user.merchantId = m._id as any;
+        user.merchantId = m._id as Types.ObjectId;
         await this.repo.saveUser(user);
       }
     }
-    const { accessToken } = await this.tokenService.createAccessOnly({
+    const { accessToken } = this.tokenService.createAccessOnly({
       userId: String(user._id),
       role: user.role,
       merchantId: user.merchantId ? String(user.merchantId) : null,
@@ -503,11 +619,11 @@ export class AuthService {
       accessToken,
 
       user: {
-        id: user._id,
+        id: String(user._id),
         name: user.name,
         email: user.email,
         role: user.role,
-        merchantId: user.merchantId,
+        merchantId: user.merchantId ? String(user.merchantId) : null,
         firstLogin: user.firstLogin,
         emailVerified: user.emailVerified,
         active: user.active,

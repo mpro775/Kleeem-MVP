@@ -1,5 +1,5 @@
 // src/modules/channels/dto/connect-action.dto.ts
-import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsBoolean } from 'class-validator';
 
 // ملاحظة: التحقق النهائي حسب المزود داخل الـ Adapter.

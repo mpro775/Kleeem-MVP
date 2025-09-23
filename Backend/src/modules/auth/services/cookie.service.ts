@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
+import { MS_PER_SECOND } from 'src/common/constants/common';
 
 export interface CookieOptions {
   httpOnly?: boolean;
@@ -59,7 +60,7 @@ export class CookieService {
   ): void {
     const options = {
       ...this.getSecureCookieOptions(),
-      maxAge: expiresInSeconds * 1000,
+      maxAge: expiresInSeconds * MS_PER_SECOND,
     };
     res.cookie('accessToken', accessToken, options);
   }
@@ -71,7 +72,7 @@ export class CookieService {
   ): void {
     const options = {
       ...this.getSecureCookieOptions(),
-      maxAge: expiresInSeconds * 1000,
+      maxAge: expiresInSeconds * MS_PER_SECOND,
       // Additional security for refresh token
       httpOnly: true, // Prevent JavaScript access
       secure: true, // HTTPS only in production
@@ -94,7 +95,7 @@ export class CookieService {
   ): void {
     const options = {
       ...this.getSecureCookieOptions(),
-      maxAge: expiresInSeconds ? expiresInSeconds * 1000 : undefined,
+      maxAge: expiresInSeconds ? expiresInSeconds * MS_PER_SECOND : undefined,
     };
     res.cookie(name, value, options);
   }

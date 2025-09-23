@@ -18,14 +18,18 @@ export class MongoChatWidgetRepository {
     return typeof id === 'string' ? new Types.ObjectId(id) : id;
   }
 
-  async findOneByMerchant(merchantId: string | Types.ObjectId) {
+  async findOneByMerchant(
+    merchantId: string | Types.ObjectId,
+  ): Promise<ChatWidgetSettings | null> {
     return this.widgetModel
       .findOne({ merchantId: this.toId(merchantId) })
       .lean<ChatWidgetSettings>()
       .exec();
   }
 
-  async createDefault(merchantId: string | Types.ObjectId) {
+  async createDefault(
+    merchantId: string | Types.ObjectId,
+  ): Promise<ChatWidgetSettings> {
     const created = await this.widgetModel.create({
       merchantId: this.toId(merchantId),
     });
@@ -35,7 +39,7 @@ export class MongoChatWidgetRepository {
   async upsertAndReturn(
     merchantId: string | Types.ObjectId,
     setDoc: Partial<ChatWidgetSettings>,
-  ) {
+  ): Promise<ChatWidgetSettings> {
     const doc = await this.widgetModel
       .findOneAndUpdate(
         { merchantId: this.toId(merchantId) },
@@ -47,7 +51,10 @@ export class MongoChatWidgetRepository {
     return doc;
   }
 
-  async setWidgetSlug(merchantId: string | Types.ObjectId, slug: string) {
+  async setWidgetSlug(
+    merchantId: string | Types.ObjectId,
+    slug: string,
+  ): Promise<void> {
     await this.widgetModel
       .findOneAndUpdate(
         { merchantId: this.toId(merchantId) },
@@ -57,12 +64,14 @@ export class MongoChatWidgetRepository {
       .exec();
   }
 
-  async existsByWidgetSlug(slug: string) {
+  async existsByWidgetSlug(slug: string): Promise<boolean> {
     const x = await this.widgetModel.exists({ widgetSlug: slug });
     return !!x;
   }
 
-  async findBySlugOrPublicSlug(slug: string) {
+  async findBySlugOrPublicSlug(
+    slug: string,
+  ): Promise<ChatWidgetSettings | null> {
     return this.widgetModel
       .findOne({ $or: [{ widgetSlug: slug }, { publicSlug: slug }] })
       .lean<ChatWidgetSettings>()
@@ -70,7 +79,9 @@ export class MongoChatWidgetRepository {
   }
 
   // ===== جداول أخرى عبر نفس اتصال Mongoose =====
-  async getStorefrontBrand(merchantId: string | Types.ObjectId) {
+  async getStorefrontBrand(
+    merchantId: string | Types.ObjectId,
+  ): Promise<{ brandDark?: string } | null> {
     const mId = this.toId(merchantId);
     const Storefront = this.widgetModel.db.model('Storefront');
     // نتوقع حقول brandDark/… حسب سكيمتك
@@ -81,7 +92,9 @@ export class MongoChatWidgetRepository {
     return sf ?? null;
   }
 
-  async getMerchantPublicSlug(merchantId: string | Types.ObjectId) {
+  async getMerchantPublicSlug(
+    merchantId: string | Types.ObjectId,
+  ): Promise<string | null> {
     const mId = this.toId(merchantId);
     const Merchant = this.widgetModel.db.model('Merchant');
     const doc = await Merchant.findById(mId)

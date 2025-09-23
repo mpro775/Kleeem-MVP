@@ -1,5 +1,3 @@
-import { ChatWidgetSettingsDocument } from '../schema/chat-widget.schema';
-
 import type { ChatWidgetSettings } from '../schema/chat-widget.schema';
 import type { Types } from 'mongoose';
 

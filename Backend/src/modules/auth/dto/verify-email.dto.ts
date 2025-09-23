@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString, Length } from 'class-validator';
 
+const CODE_LENGTH = 6;
 export class VerifyEmailDto {
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
@@ -8,7 +9,7 @@ export class VerifyEmailDto {
 
   @ApiProperty({ example: '123456' })
   @IsString()
-  @Length(6, 6)
+  @Length(CODE_LENGTH, CODE_LENGTH)
   @IsNotEmpty()
   code: string;
 }

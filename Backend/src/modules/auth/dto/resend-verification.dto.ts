@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, Length } from 'class-validator';
+import { IsEmail } from 'class-validator';
 
 export class ResendVerificationDto {
   @IsEmail()

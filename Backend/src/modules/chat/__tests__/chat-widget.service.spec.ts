@@ -2,7 +2,8 @@ import { HttpModule } from '@nestjs/axios';
 import { Test } from '@nestjs/testing';
 
 import { ChatWidgetService } from '../chat-widget.service';
-import { ChatWidgetRepository } from '../repositories/chat-widget.repository';
+
+import type { ChatWidgetRepository } from '../repositories/chat-widget.repository';
 
 describe('ChatWidgetService', () => {
   let service: ChatWidgetService;
