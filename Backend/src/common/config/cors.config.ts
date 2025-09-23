@@ -1,3 +1,8 @@
+import {
+  CORS_DEFAULT_MAX_AGE_SECONDS,
+  CORS_DEFAULT_OPTIONS_SUCCESS_STATUS,
+} from '../constants/common';
+
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 
 const parseList = (v?: string, fallback: string[] = []) => {
@@ -91,6 +96,9 @@ export const corsOptions: CorsOptions = {
     'X-RateLimit-Reset',
   ]),
 
-  maxAge: parseNum(process.env.CORS_MAX_AGE, 86400),
-  optionsSuccessStatus: parseNum(process.env.CORS_OPTIONS_SUCCESS_STATUS, 204),
+  maxAge: parseNum(process.env.CORS_MAX_AGE, CORS_DEFAULT_MAX_AGE_SECONDS),
+  optionsSuccessStatus: parseNum(
+    process.env.CORS_OPTIONS_SUCCESS_STATUS,
+    CORS_DEFAULT_OPTIONS_SUCCESS_STATUS,
+  ),
 };

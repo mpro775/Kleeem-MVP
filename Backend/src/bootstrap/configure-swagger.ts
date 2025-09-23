@@ -6,12 +6,17 @@ import { I18nService } from 'nestjs-i18n';
 import { i18nizeSwagger } from './i18nize-swagger';
 
 import type { INestApplication } from '@nestjs/common';
+import type { OpenAPIObject } from '@nestjs/swagger';
+import type { NextFunction, Request, Response } from 'express';
 
 // HTTP status constants
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 
-function buildSwaggerDoc(app: INestApplication, isProd: boolean): any {
+function buildSwaggerDoc(
+  app: INestApplication,
+  isProd: boolean,
+): OpenAPIObject {
   const cfg = new DocumentBuilder()
     .setTitle('Kaleem API')
     .setDescription(
@@ -47,10 +52,9 @@ function buildSwaggerDoc(app: INestApplication, isProd: boolean): any {
 }
 
 function protectSwaggerWithJwt(app: INestApplication): void {
-  app.use('/api/docs*', (req: any, res: any, next: any) => {
+  app.use('/api/docs*', (req: Request, res: Response, next: NextFunction) => {
     const h = req.headers.authorization;
     if (!h?.startsWith('Bearer ')) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return res
         .status(HTTP_UNAUTHORIZED)
         .json({ success: false, code: 'UNAUTHORIZED_DOCS_ACCESS' });
@@ -60,7 +64,6 @@ function protectSwaggerWithJwt(app: INestApplication): void {
       jwt.verify(h.split(' ')[1], { secret: process.env.JWT_SECRET });
       next();
     } catch {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return res
         .status(HTTP_FORBIDDEN)
         .json({ success: false, code: 'INVALID_JWT_DOCS_ACCESS' });
@@ -70,7 +73,7 @@ function protectSwaggerWithJwt(app: INestApplication): void {
 
 function setupSwaggerUI(
   app: INestApplication,
-  doc: any,
+  doc: OpenAPIObject,
   isProd: boolean,
 ): void {
   const opts = {

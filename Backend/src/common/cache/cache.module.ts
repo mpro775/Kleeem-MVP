@@ -1,15 +1,29 @@
+// External imports
 import { CacheModule as NestCacheModule } from '@nestjs/cache-manager';
 import { Module, Global } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import * as redisStore from 'cache-manager-ioredis';
 
+// Internal imports
 import { MetricsModule } from '../../metrics/metrics.module';
 
-import { CacheWarmerService } from './cache-warmer.service';
+// Local imports
+import { CacheWarmerOrchestrator } from './cache-warmer.orchestrator';
 import { CacheController } from './cache.controller';
 import { CacheMetrics } from './cache.metrics';
 import { CacheService } from './cache.service';
+import {
+  CACHE_TTL_5_MINUTES,
+  CACHE_MAX_ITEMS,
+  REDIS_DEFAULT_DB,
+  REDIS_RETRY_DELAY_ON_FAILOVER,
+  REDIS_DEFAULT_PORT,
+} from './constant';
+import { CategoriesWarmer } from './warmers/categories.warmer';
+import { MerchantsWarmer } from './warmers/merchants.warmer';
+import { PlansWarmer } from './warmers/plans.warmer';
+import { ProductsWarmer } from './warmers/products.warmer';
 
 @Global()
 @Module({
@@ -19,7 +33,7 @@ import { CacheService } from './cache.service';
     MetricsModule,
     NestCacheModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
+      useFactory: (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
         if (!redisUrl) {
           throw new Error('REDIS_URL is not defined');
@@ -30,13 +44,13 @@ import { CacheService } from './cache.service';
         return {
           store: redisStore,
           host: url.hostname,
-          port: parseInt(url.port) || 6379,
+          port: parseInt(url.port) || REDIS_DEFAULT_PORT,
           password: url.password || undefined,
-          db: 0,
-          ttl: 300, // 5 دقائق افتراضي
-          max: 1000, // حد أقصى للعناصر في الكاش
+          db: REDIS_DEFAULT_DB,
+          ttl: CACHE_TTL_5_MINUTES, // 5 دقائق افتراضي
+          max: CACHE_MAX_ITEMS, // حد أقصى للعناصر في الكاش
           // إعدادات إضافية لـ Redis
-          retryDelayOnFailover: 100,
+          retryDelayOnFailover: REDIS_RETRY_DELAY_ON_FAILOVER,
           enableReadyCheck: false,
           maxRetriesPerRequest: 3,
           lazyConnect: true,
@@ -52,8 +66,16 @@ import { CacheService } from './cache.service';
       isGlobal: true,
     }),
   ],
-  providers: [CacheService, CacheWarmerService, CacheMetrics],
+  providers: [
+    CacheService,
+    CacheWarmerOrchestrator,
+    CacheMetrics,
+    CategoriesWarmer,
+    MerchantsWarmer,
+    PlansWarmer,
+    ProductsWarmer,
+  ],
   controllers: [CacheController],
-  exports: [CacheService, CacheWarmerService],
+  exports: [CacheService, CacheWarmerOrchestrator],
 })
 export class CacheModule {}

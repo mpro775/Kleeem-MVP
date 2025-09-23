@@ -1,4 +1,10 @@
 import type { OpenAPIObject } from '@nestjs/swagger';
+import type {
+  OperationObject,
+  ParameterObject,
+  PathItemObject,
+  ResponseObject,
+} from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 import type { I18nService } from 'nestjs-i18n';
 
 export function i18nizeSwagger(
@@ -9,7 +15,7 @@ export function i18nizeSwagger(
   const I18N_PREFIX = 'i18n:';
   const I18N_PREFIX_LENGTH = I18N_PREFIX.length;
 
-  const translate = (val: string): string => {
+  const translate = (val?: string): string | undefined => {
     if (typeof val === 'string' && val.startsWith(I18N_PREFIX)) {
       const key = val.slice(I18N_PREFIX_LENGTH);
       try {
@@ -28,20 +34,19 @@ export function i18nizeSwagger(
 
 function translatePaths(
   doc: OpenAPIObject,
-  translate: (val: string) => string,
+  translate: (val?: string) => string | undefined,
 ): void {
-  const paths = (doc.paths ?? {}) as Record<string, any>;
+  const paths: Record<string, PathItemObject> = doc.paths ?? {};
   for (const pathItem of Object.values(paths)) {
-    if (!pathItem || typeof pathItem !== 'object') continue;
-    translateOperations(pathItem, translate);
+    if (pathItem) translateOperations(pathItem, translate);
   }
 }
 
 function translateOperations(
-  pathItem: any,
-  translate: (val: string) => string,
+  pathItem: PathItemObject,
+  translate: (val?: string) => string | undefined,
 ): void {
-  const methods = [
+  const methods: (keyof PathItemObject)[] = [
     'get',
     'put',
     'post',
@@ -51,46 +56,54 @@ function translateOperations(
     'patch',
     'trace',
   ];
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  const ops = methods.map((m) => pathItem[m]).filter(Boolean);
 
-  for (const op of ops) {
+  for (const m of methods) {
+    const op: OperationObject | undefined = pathItem[m] as
+      | OperationObject
+      | undefined;
+    if (!op) continue;
+
     op.summary = translate(op.summary);
     op.description = translate(op.description);
+
     translateParameters(op, translate);
     translateResponses(op, translate);
   }
 }
 
 function translateParameters(
-  op: any,
-  translate: (val: string) => string,
+  op: OperationObject,
+  translate: (val?: string) => string | undefined,
 ): void {
   if (Array.isArray(op.parameters)) {
-    for (const p of op.parameters as any[]) {
-      if (p && typeof p === 'object') p.description = translate(p.description);
+    for (const p of op.parameters as ParameterObject[]) {
+      p.description = translate(p.description);
     }
   }
 }
 
-function translateResponses(op: any, translate: (val: string) => string): void {
-  const responses = op.responses as Record<string, any> | undefined;
-  if (responses && typeof responses === 'object') {
-    for (const r of Object.values(responses)) {
-      if (r && typeof r.description === 'string')
-        r.description = translate(r.description);
+function translateResponses(
+  op: OperationObject,
+  translate: (val?: string) => string | undefined,
+): void {
+  const responses = op.responses;
+  if (responses) {
+    for (const r of Object.values(responses) as ResponseObject[]) {
+      if (typeof r.description === 'string') {
+        r.description = translate(r.description) as string;
+      }
     }
   }
 }
 
 function translateTags(
   doc: OpenAPIObject,
-  translate: (val: string) => string,
+  translate: (val?: string) => string | undefined,
 ): void {
-  const tags = (doc.tags as any[]) || [];
+  const tags = doc.tags;
   if (Array.isArray(tags)) {
     for (const t of tags) {
-      if (t && typeof t === 'object') t.description = translate(t.description);
+      t.description = translate(t.description);
     }
   }
 }

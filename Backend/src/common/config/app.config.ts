@@ -6,17 +6,36 @@ import { RequestIdMiddleware } from '../middlewares/request-id.middleware';
 
 import { corsOptions } from './cors.config';
 
-import type { MiddlewareConsumer, NestModule } from '@nestjs/common';
+import type {
+  INestApplication,
+  MiddlewareConsumer,
+  NestModule,
+} from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
+import type { Request, Response, NextFunction } from 'express';
 
-export function setupApp(app: any, config: ConfigService) {
+export function setupApp(
+  app: INestApplication & {
+    use: (
+      middleware: (req: Request, res: Response, next: NextFunction) => void,
+    ) => void;
+    enableCors: (options?: unknown) => void;
+  },
+  config: ConfigService,
+): INestApplication {
   // CORS كما هو (إن رغبت تركه هنا)
   app.enableCors(corsOptions);
 
-  app.use((_req, res, next) => {
-    res.vary('Origin');
-    next();
-  });
+  app.use(
+    (
+      _req: Request,
+      res: Response & { vary: (field: string) => Response },
+      next: NextFunction,
+    ) => {
+      res.vary('Origin');
+      next();
+    },
+  );
 
   app.use(
     helmet({
@@ -69,7 +88,7 @@ export function setupApp(app: any, config: ConfigService) {
  * This class should be extended by AppModule to automatically apply RequestIdMiddleware
  */
 export class AppConfig implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
+  configure(consumer: MiddlewareConsumer): void {
     // تطبيق RequestIdMiddleware على جميع المسارات
     consumer.apply(RequestIdMiddleware).forRoutes('*');
   }

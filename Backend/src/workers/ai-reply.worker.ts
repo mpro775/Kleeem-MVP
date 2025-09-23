@@ -8,9 +8,12 @@ const METRICS_PORT = 9101;
 
 async function bootstrap() {
   const port = Number(process.env.METRICS_PORT || METRICS_PORT);
-  startMetricsServer(port);
+  void startMetricsServer(port);
   await NestFactory.createApplicationContext(AiReplyWorkerModule, {
     logger: ['log', 'error', 'warn'],
+  }).catch((err) => {
+    console.error('Failed to start worker:', err);
+    process.exit(1);
   });
 }
 

@@ -184,10 +184,7 @@ const getHeader = (req: IncomingMessage, name: string): string | undefined => {
         },
 
         // يجب أن تُرجع دائماً ReqId (بدون undefined)
-        genReqId: (
-          req: IncomingMessage,
-          _res: ServerResponse<IncomingMessage>,
-        ): PinoReqId => {
+        genReqId: (req: IncomingMessage): PinoReqId => {
           const fromHeader = getHeader(req, 'x-request-id');
           if (typeof fromHeader === 'string' && fromHeader.length > 0) {
             return fromHeader;

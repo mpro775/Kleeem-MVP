@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Counter, Histogram, register } from 'prom-client';
 
+import { HISTOGRAM_BUCKETS } from './constant';
+
 /**
  * مقاييس الكاش لـ Prometheus
  */
+
 @Injectable()
 export class CacheMetrics {
   private readonly cacheHitCounter: Counter<string>;
@@ -50,7 +53,7 @@ export class CacheMetrics {
       name: 'cache_operation_duration_seconds',
       help: 'Duration of cache operations',
       labelNames: ['operation', 'cache_level'],
-      buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 5],
+      buckets: HISTOGRAM_BUCKETS,
       registers: [register],
     });
   }
@@ -103,7 +106,7 @@ export class CacheMetrics {
   /**
    * إنشاء timer للعملية
    */
-  startTimer(operation: string, cacheLevel: string) {
+  startTimer(operation: string, cacheLevel: string): () => void {
     return this.cacheOperationDuration.startTimer({
       operation,
       cache_level: cacheLevel,

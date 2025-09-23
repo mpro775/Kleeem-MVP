@@ -54,7 +54,9 @@ export class AiIncomingConsumer implements OnModuleInit {
 
     try {
       const content = m.content.toString();
-      const payload: AiIncomingPayload = JSON.parse(content);
+      const payload: AiIncomingPayload = JSON.parse(
+        content,
+      ) as AiIncomingPayload;
 
       const base = (
         process.env.N8N_BASE_URL ||
