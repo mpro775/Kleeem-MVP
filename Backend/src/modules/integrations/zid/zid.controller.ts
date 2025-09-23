@@ -55,14 +55,81 @@ export class ZidController {
     @InjectModel(Merchant.name) private merchantModel: Model<MerchantDocument>,
   ) {}
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private handleWebhookEvent(event: string, data: unknown): void {
+    switch (event) {
+      case 'product.create':
+      case 'product.update':
+        // await this.productsService.createOrUpdateFromZid(storeId, data);
+        break;
+      case 'product.delete':
+        // await this.productsService.removeByExternalId(storeId, productId);
+        break;
+      case 'order.create':
+      case 'order.update':
+      case 'order.status.update':
+        // await this.ordersService.upsertFromZid(storeId, data);
+        break;
+      default:
+        this.logger.warn(`Unhandled Zid event: ${event}`);
+    }
+  }
+
+  private async performSync(
+    merchantId: string,
+    requestedBy: string | null,
+    syncMode: string,
+  ): Promise<void> {
+    if (syncMode === 'background') {
+      try {
+        await this.rabbit.publish('catalog.sync', 'requested', {
+          merchantId,
+          requestedBy,
+          source: 'zid',
+        });
+      } catch {
+        await this.catalog.syncForMerchant(merchantId);
+      }
+    } else {
+      await this.catalog.syncForMerchant(merchantId);
+    }
+  }
+
+  private generateCallbackHtml(
+    tokens: { store_id?: string },
+    publicAppOrigin: string,
+  ): string {
+    const storeId = tokens.store_id || '';
+    return `<!doctype html>
+<meta charset="utf-8"/>
+<title>Connected</title>
+<script>
+  try {
+    if (window.opener) {
+      window.opener.postMessage({ provider: 'zid', connected: true }, "${publicAppOrigin}");
+      window.close();
+    } else {
+      window.location.replace("/dashboard/integrations?provider=zid&connected=1&store_id=${storeId}");
+    }
+  } catch (e) {
+    window.location.replace("/dashboard/integrations?provider=zid&connected=1&store_id=${storeId}");
+  }
+</script>`;
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('connect')
-  async connect(@Req() req: Request, @Res() res: Response) {
-    const user: any = (req as any).user;
+  async connect(@Req() req: Request, @Res() res: Response): Promise<void> {
+    const user: Record<string, unknown> = (
+      req as Request & { user: Record<string, unknown> }
+    ).user;
     const merchant = await this.merchantModel
       .findOne({ userId: user.userId })
       .lean();
-    if (!merchant) return res.status(400).send('No merchant for user');
+    if (!merchant) {
+      res.status(400).send('No merchant for user');
+      return;
+    }
 
     // 👈 نحمل معلومات تكفينا بعد العودة
     const payload = {
@@ -84,9 +151,13 @@ export class ZidController {
     @Query('code') code: string,
     @Query('state') state: string,
     @Res() res: Response,
-  ) {
+  ): Promise<void> {
     try {
-      if (!code || !state) return res.status(400).send('Missing code/state');
+      if (!code || !state) {
+        res.status(400).send('Missing code/state');
+        return;
+      }
+
       const secret = this.config.get<string>('JWT_SECRET')!;
       const decoded = jwt.verify(state, secret) as {
         merchantId: string;
@@ -95,55 +166,30 @@ export class ZidController {
       };
       const merchantId = decoded.merchantId;
 
-      // 1) تبادل التوكنات وحفظها
+      // تبادل التوكنات وحفظها
       const tokens = await this.zid.exchangeCodeForToken(code);
       await this.zid.upsertIntegration(new Types.ObjectId(merchantId), tokens);
 
-      // 2) تسجيل ويبهوكات المتجر
+      // تسجيل ويبهوكات المتجر
       await this.zid.registerDefaultWebhooks(new Types.ObjectId(merchantId));
 
-      // 3) تشغيل مزامنة تلقائية
+      // تشغيل مزامنة تلقائية
       const requestedBy = decoded.userId || null;
       const syncMode = decoded.sync || 'background';
+      await this.performSync(merchantId, requestedBy, syncMode);
 
-      if (syncMode === 'background') {
-        // ننشر حدث إلى Rabbit ليستلمه CatalogConsumer عندك
-        try {
-          await this.rabbit.publish('catalog.sync', 'requested', {
-            merchantId,
-            requestedBy,
-            source: 'zid',
-          });
-        } catch {
-          // احتياط: نفّذ المزامنة مباشرة إن فشل Rabbit
-          await this.catalog.syncForMerchant(merchantId);
-        }
-      } else {
-        // immediate: نفّذ الآن
-        await this.catalog.syncForMerchant(merchantId);
-      }
-
-      // 4) ارجع HTML بسيط يُغلق نافذة الأوث ويبلغ الصفحة الأصلية
-      return res.type('html').send(`<!doctype html>
-<meta charset="utf-8"/>
-<title>Connected</title>
-<script>
-  try {
-    if (window.opener) {
-      window.opener.postMessage({ provider: 'zid', connected: true }, "${this.config.get<string>('PUBLIC_APP_ORIGIN') ?? '*'}");
-      window.close();
-    } else {
-      // fallback: افتح لوحة التحكم
-      window.location.replace("/dashboard/integrations?provider=zid&connected=1&store_id=${tokens.store_id || ''}");
-    }
-  } catch (e) {
-    window.location.replace("/dashboard/integrations?provider=zid&connected=1&store_id=${tokens.store_id || ''}");
-  }
-</script>`);
-    } catch (err: any) {
-      this.logger.error('ZID CALLBACK ERROR', err?.stack || err);
-      return res.redirect(
-        `/dashboard/integrations?provider=zid&connected=0&error=${encodeURIComponent(err?.message || 'failed')}`,
+      // ارجع HTML بسيط يُغلق نافذة الأوث ويبلغ الصفحة الأصلية
+      const publicAppOrigin =
+        this.config.get<string>('PUBLIC_APP_ORIGIN') ?? '*';
+      const html = this.generateCallbackHtml(tokens, publicAppOrigin);
+      res.type('html').send(html);
+    } catch (err: unknown) {
+      this.logger.error(
+        'ZID CALLBACK ERROR',
+        err instanceof Error ? err.stack : err,
+      );
+      res.redirect(
+        `/dashboard/integrations?provider=zid&connected=0&error=${encodeURIComponent(err instanceof Error ? err.message : String(err))}`,
       );
     }
   }
@@ -171,35 +217,23 @@ export class ZidController {
     @Body() body: ZidWebhookPayload,
     @Headers() headers: Record<string, string>,
     @Res() res: Response,
-  ) {
+  ): void {
     try {
-      this.logger.log(`Zid webhook: ${body?.event || 'unknown'}`);
-
-      // TODO: إن كان لدى زد توقيع مخصص، تحقّق هنا (header + secret)
-      // راجع صفحات ويبهوكات زد لمعرفة الأحداث المدعومة. :contentReference[oaicite:0]{index=0}
-
       const event = body?.event ?? '';
-      switch (event) {
-        case 'product.create':
-        case 'product.update':
-          // await this.productsService.createOrUpdateFromZid(storeId, body.data);
-          break;
-        case 'product.delete':
-          // await this.productsService.removeByExternalId(storeId, productId);
-          break;
-        case 'order.create':
-        case 'order.update':
-        case 'order.status.update':
-          // await this.ordersService.upsertFromZid(storeId, body.data);
-          break;
-        default:
-          this.logger.warn(`Unhandled Zid event: ${event}`);
-      }
+      this.logger.log(`Zid webhook: ${event || 'unknown'}`);
 
-      return res.json({ ok: true });
-    } catch (err: any) {
-      this.logger.error(`Zid webhook error: ${err?.message}`, err?.stack);
-      return res.status(500).json({ ok: false, error: err?.message });
+      this.handleWebhookEvent(event, body?.data);
+
+      res.json({ ok: true });
+    } catch (err: unknown) {
+      this.logger.error(
+        `Zid webhook error: ${err instanceof Error ? err.message : String(err)}`,
+        err instanceof Error ? err.stack : err,
+      );
+      res.status(500).json({
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 }

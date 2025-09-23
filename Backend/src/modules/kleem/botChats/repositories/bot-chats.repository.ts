@@ -35,7 +35,7 @@ export interface BotChatRepository {
     limit: number,
   ): Promise<{ data: BotChatSessionLean[]; total: number }>;
 
-  aggregate(pipeline: PipelineStage[]): Promise<any[]>;
+  aggregate(pipeline: PipelineStage[]): Promise<unknown[]>;
 
   getFrequentBadBotReplies(
     limit: number,

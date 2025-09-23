@@ -10,7 +10,11 @@ export const MS_PER_SECOND = 1000;
 // Sentry configuration constants
 export const SENTRY_PRODUCTION_SAMPLE_RATE = 0.1; // 10% sampling in production
 export const MAX_LENGTH_FEEDBACK = 1000;
-
+export const SCORE_THRESHOLD = 0.9;
+export const COUNT_DEFAULT = 42;
+export const DEFAULT_TIMEOUT = 10000;
+export const DAYS_PER_WEEK = 7;
+export const DAYS_PER_TWO_WEEK = 14;
 // Default value constants
 export const RABBIT_CONFIRM_TIMEOUT_MS_DEFAULT = 10000; // 10 seconds
 export const CHAT_TYPING_STOP_DELAY_MS_DEFAULT = 2000; // 2 seconds

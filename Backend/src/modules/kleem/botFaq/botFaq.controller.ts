@@ -25,6 +25,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { seconds, Throttle } from '@nestjs/throttler';
+import { COUNT_DEFAULT, SCORE_THRESHOLD } from 'src/common/constants/common';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
@@ -36,6 +37,7 @@ import { BotFaqService } from './botFaq.service';
 import { BulkImportDto } from './dto/bulk-import.dto';
 import { CreateBotFaqDto } from './dto/create-botFaq.dto';
 import { UpdateBotFaqDto } from './dto/update-botFaq.dto';
+import { BotFaqLean } from './repositories/bot-faq.repository';
 
 @ApiTags('kleem.botFaq')
 @ApiBearerAuth()
@@ -69,7 +71,7 @@ export class BotFaqController {
     status: HttpStatus.FORBIDDEN,
     description: 'kleem.botFaq.responses.error.forbidden',
   })
-  create(@Body() dto: CreateBotFaqDto) {
+  create(@Body() dto: CreateBotFaqDto): Promise<BotFaqLean> {
     return this.svc.create(dto);
   }
 
@@ -87,7 +89,7 @@ export class BotFaqController {
     status: HttpStatus.FORBIDDEN,
     description: 'غير مسموح الوصول',
   })
-  list() {
+  list(): Promise<BotFaqLean[]> {
     return this.svc.findAll();
   }
 
@@ -107,7 +109,10 @@ export class BotFaqController {
     description: 'بيانات الطلب غير صالحة',
   })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'غير مصرح' })
-  update(@Param('id') id: string, @Body() dto: UpdateBotFaqDto) {
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateBotFaqDto,
+  ): Promise<BotFaqLean | null> {
     return this.svc.update(id, dto);
   }
 
@@ -127,7 +132,7 @@ export class BotFaqController {
     description: 'لم يتم العثور على السؤال',
   })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'غير مصرح' })
-  delete(@Param('id') id: string) {
+  delete(@Param('id') id: string): Promise<BotFaqLean | null> {
     return this.svc.delete(id);
   }
 
@@ -149,8 +154,8 @@ export class BotFaqController {
     status: HttpStatus.UNAUTHORIZED,
     description: 'غير مصرح',
   })
-  bulk(@Body() body: BulkImportDto) {
-    return this.svc.bulkImport(body);
+  bulk(@Body() body: BulkImportDto): Promise<BotFaqLean[]> {
+    return this.svc.bulkImport(body) as unknown as Promise<BotFaqLean[]>;
   }
 
   // رفع ملف JSON من لوحة التحكم (بديل اختياري)
@@ -182,10 +187,12 @@ export class BotFaqController {
     description: 'صيغة الملف غير صالحة',
   })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'غير مصرح' })
-  async bulkFile(@UploadedFile() file: Express.Multer.File) {
+  async bulkFile(
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<BotFaqLean[]> {
     const text = file?.buffer?.toString('utf8') || '[]';
-    const items = JSON.parse(text);
-    return this.svc.bulkImport({ items });
+    const items = JSON.parse(text) as CreateBotFaqDto[];
+    return this.svc.bulkImport({ items }) as unknown as Promise<BotFaqLean[]>;
   }
 
   @Post('reindex')
@@ -198,7 +205,7 @@ export class BotFaqController {
     description: 'تمت إعادة الفهرسة بنجاح',
     schema: {
       example: {
-        count: 42,
+        count: COUNT_DEFAULT,
       },
     },
   })
@@ -206,7 +213,7 @@ export class BotFaqController {
     status: HttpStatus.UNAUTHORIZED,
     description: 'غير مصرح',
   })
-  reindex() {
+  reindex(): Promise<{ count: number }> {
     return this.svc.reindexAll();
   }
 }
@@ -250,7 +257,7 @@ export class BotFaqPublicController {
           question: 'كيف يمكنني إعادة تعيين كلمة المرور؟',
           answer:
             'يمكنك إعادة تعيين كلمة المرور من خلال النقر على "نسيت كلمة المرور" في صفحة تسجيل الدخول.',
-          score: 0.95,
+          score: SCORE_THRESHOLD,
         },
       ],
     },
@@ -263,7 +270,16 @@ export class BotFaqPublicController {
     status: HttpStatus.TOO_MANY_REQUESTS,
     description: 'تم تجاوز الحد المسموح من الطلبات (30 طلب/دقيقة)',
   })
-  async semanticSearch(@Query('q') q: string, @Query('topK') topK?: string) {
+  async semanticSearch(
+    @Query('q') q: string,
+    @Query('topK') topK?: string,
+  ): Promise<
+    {
+      question: string;
+      answer: string;
+      score: number;
+    }[]
+  > {
     if (!q?.trim()) return [];
     const limit = Math.min(Number(topK) || 5, 20); // الحد الأقصى 20 نتيجة
     return this.svc.semanticSearch(q, limit);

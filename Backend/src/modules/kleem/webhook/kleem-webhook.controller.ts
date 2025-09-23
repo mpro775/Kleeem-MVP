@@ -17,7 +17,6 @@ import {
   ApiParam,
   ApiBody,
   ApiBearerAuth,
-  ApiExcludeEndpoint,
   ApiProperty,
   ApiPropertyOptional,
 } from '@nestjs/swagger';
@@ -25,6 +24,8 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
 import { BotChatsService } from '../botChats/botChats.service';
+import { AppendMessage } from '../botChats/repositories/bot-chats.repository';
+import { BotChatSessionLean } from '../botChats/repositories/bot-chats.repository';
 import { KleemChatService } from '../chat/kleem-chat.service';
 import { KleemWsMessage } from '../ws/kleem-ws.types';
 
@@ -76,35 +77,6 @@ class ConversationRequestDto {
   messages: MessageDto[];
 }
 
-class BotReplyRequestDto {
-  @ApiProperty({
-    description: 'نص الرد الآلي',
-    type: String,
-    example: 'مرحباً! كيف يمكنني مساعدتك اليوم؟',
-    required: true,
-  })
-  text: string;
-
-  @ApiPropertyOptional({
-    description: 'بيانات إضافية',
-    type: Object,
-    additionalProperties: true,
-    example: {
-      source: 'bot_engine',
-      confidence: 0.95,
-    },
-  })
-  metadata?: Record<string, unknown>;
-}
-
-class BotReplyResponseDto {
-  @ApiProperty({ description: 'معرف الجلسة', example: 'session-12345' })
-  sessionId: string;
-
-  @ApiProperty({ description: 'فهرس الرسالة في المحادثة', example: 0 })
-  msgIdx: number;
-}
-
 /**
  * واجهة برمجة التطبيقات لمعالجة Webhooks الخاصة بمنصة كليم
  * هذه النقاط النهائية مصممة للاستخدام من قبل أنظمة خارجية للتفاعل مع المحادثات
@@ -150,8 +122,8 @@ export class KleemWebhookController {
   })
   async handleKleemConversation(
     @Param('sessionId') sessionId: string,
-    @Body() body: { messages: any[] },
-  ) {
+    @Body() body: { messages: AppendMessage[] },
+  ): Promise<BotChatSessionLean> {
     return this.chatsSvc.createOrAppend(sessionId, body.messages);
   }
   /**
@@ -163,7 +135,7 @@ export class KleemWebhookController {
   async botReply(
     @Param('sessionId') sessionId: string,
     @Body() body: { text?: string; metadata?: Record<string, unknown> },
-  ) {
+  ): Promise<{ sessionId: string; msgIdx: number }> {
     const text = body?.text ?? '';
     if (!sessionId || !text)
       throw new BadRequestException('sessionId and text are required');

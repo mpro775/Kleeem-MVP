@@ -1,17 +1,8 @@
 // src/modules/kleem/chat/kleem-chat.controller.ts
-import {
-  Controller,
-  Post,
-  Get,
-  Param,
-  Body,
-  UseGuards,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
-  ApiResponse,
   ApiParam,
   ApiBody,
   ApiBearerAuth,
@@ -35,6 +26,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
 import { BotChatsService } from '../botChats/botChats.service';
+import { BotChatSessionLean } from '../botChats/repositories/bot-chats.repository';
 
 import { KleemChatService } from './kleem-chat.service';
 
@@ -90,36 +82,6 @@ class RateMessageKaleemDto {
   feedback?: string;
 }
 
-class ChatSessionResponse {
-  @ApiProperty({
-    description: 'معرف الجلسة',
-    example: 'session-12345',
-  })
-  sessionId: string;
-
-  @ApiProperty({
-    description: 'قائمة الرسائل في الجلسة',
-    type: 'array',
-    items: {
-      type: 'object',
-      properties: {
-        role: { type: 'string', example: 'user' },
-        text: { type: 'string', example: 'مرحباً' },
-        timestamp: { type: 'string', format: 'date-time' },
-        rating: { type: 'number', example: 1, nullable: true },
-        feedback: { type: 'string', nullable: true },
-      },
-    },
-  })
-  messages: Array<{
-    role: string;
-    text: string;
-    timestamp: Date;
-    rating?: number | null;
-    feedback?: string | null;
-  }>;
-}
-
 /**
  * واجهة برمجة التطبيقات للدردشة مع بوت كليم
  * تتيح هذه النقاط النهائية إرسال الرسائل وتقييم الردود واسترجاع محادثات المستخدمين
@@ -166,7 +128,7 @@ export class KleemChatController {
   async sendMessage(
     @Param('sessionId') sessionId: string,
     @Body() body: SendKaleemMessageDto,
-  ) {
+  ): Promise<{ status: string }> {
     return this.kleem.handleUserMessage(sessionId, body.text, body.metadata);
   }
 
@@ -204,7 +166,7 @@ export class KleemChatController {
   async rate(
     @Param('sessionId') sessionId: string,
     @Body() body: RateMessageKaleemDto,
-  ) {
+  ): Promise<{ status: string }> {
     return this.chats.rateMessage(
       sessionId,
       body.msgIdx,
@@ -231,12 +193,14 @@ export class KleemChatController {
   })
   @ApiOkResponse({
     description: 'تم استرجاع المحادثة بنجاح',
-    type: ChatSessionResponse,
+    type: Object,
   })
   @ApiNotFoundResponse({
     description: 'الجلسة غير موجودة',
   })
-  async getSession(@Param('sessionId') sessionId: string) {
+  async getSession(
+    @Param('sessionId') sessionId: string,
+  ): Promise<BotChatSessionLean | null> {
     return this.chats.findBySession(sessionId);
   }
 }

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
+import { DEFAULT_TIMEOUT } from 'src/common/constants/common';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
@@ -7,21 +8,8 @@ import {
   WhatsappInstanceCreateResponse,
   WhatsappSetWebhookResponse,
   WhatsappInstanceInfo,
+  SendMessageResponse,
 } from '../merchants/types/evolution.types';
-
-interface EvolutionWebhookResponse {
-  webhook?: {
-    instanceName: string;
-    webhook: {
-      url: string;
-      webhook_by_events: boolean;
-      webhook_base64: boolean;
-      events: string[];
-      enabled: boolean;
-    };
-  };
-  [key: string]: any;
-}
 
 @Injectable()
 export class EvolutionService {
@@ -35,7 +23,7 @@ export class EvolutionService {
   constructor() {
     this.http = axios.create({
       baseURL: this.baseUrl,
-      timeout: 20_000,
+      timeout: DEFAULT_TIMEOUT,
       headers: {
         apikey: this.apiKey,
         accept: 'application/json',
@@ -51,8 +39,9 @@ export class EvolutionService {
       await this.getStatus(instanceName);
       this.logger.log(`Instance ${instanceName} already exists. Deleting...`);
       await this.deleteInstance(instanceName);
-    } catch (err: any) {
-      if (err?.response?.status !== 404) throw err;
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number } };
+      if (error?.response?.status !== 404) throw err;
     }
     const token = uuidv4();
     const { qr } = await this.startSession(instanceName, token);
@@ -68,12 +57,16 @@ export class EvolutionService {
       );
       this.logger.log(`Instance ${instanceName} deleted successfully.`);
       return data;
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as {
+        response?: { status?: number; data?: unknown };
+        message?: string;
+      };
       this.logger.error(
         'deleteInstance failed',
-        err?.response?.data || err.message,
+        error?.response?.data || error?.message,
       );
-      if (err?.response?.status !== 404) throw err;
+      if (error?.response?.status !== 404) throw err;
       return {
         status: 'NOT_FOUND',
         error: true,
@@ -94,10 +87,14 @@ export class EvolutionService {
       const base64Qr = data?.qrcode?.base64 || '';
       const instanceId = data?.instance?.instanceId || '';
       return { qr: base64Qr, token, instanceId };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as {
+        response?: { status?: number; data?: unknown };
+        message?: string;
+      };
       this.logger.error(
         'startSession failed',
-        err?.response?.data || err.message,
+        error?.response?.data || error?.message,
       );
       throw err;
     }
@@ -105,14 +102,27 @@ export class EvolutionService {
 
   async getStatus(instanceName: string): Promise<WhatsappInstanceInfo> {
     try {
-      const { data } = await this.http.get(`/instance/fetchInstances`, {
-        params: { instanceName },
-      });
-      if (!data?.instance)
-        throw { response: { status: 404 }, message: 'Instance not found' };
-      return data.instance as WhatsappInstanceInfo;
-    } catch (err: any) {
-      this.logger.error('getStatus failed', err?.response?.data || err.message);
+      const { data } = await this.http.get<WhatsappInstanceInfo>(
+        `/instance/fetchInstances`,
+        {
+          params: { instanceName },
+        },
+      );
+      if (!data)
+        throw {
+          response: { status: 404 },
+          message: 'Instance not found',
+        } as unknown;
+      return data;
+    } catch (err: unknown) {
+      const error = err as {
+        response?: { status?: number; data?: unknown };
+        message?: string;
+      };
+      this.logger.error(
+        'getStatus failed',
+        error?.response?.data || error?.message,
+      );
       throw err;
     }
   }
@@ -121,18 +131,25 @@ export class EvolutionService {
     instanceName: string,
     to: string,
     message: string,
-  ): Promise<any> {
+  ): Promise<unknown> {
     try {
-      const { data } = await this.http.post(`/message/sendText`, {
-        instanceName,
-        to,
-        message,
-      });
+      const { data } = await this.http.post<SendMessageResponse>(
+        `/message/sendText`,
+        {
+          instanceName,
+          to,
+          message,
+        },
+      );
       return data;
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as {
+        response?: { status?: number; data?: unknown };
+        message?: string;
+      };
       this.logger.error(
         'sendMessage failed',
-        err?.response?.data || err.message,
+        error?.response?.data || error?.message,
       );
       throw err;
     }
@@ -157,10 +174,14 @@ export class EvolutionService {
       );
       this.logger.log(`Webhook set successfully on ${instanceName} -> ${url}`);
       return data;
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as {
+        response?: { status?: number; data?: unknown };
+        message?: string;
+      };
       this.logger.error(
         'setWebhook failed',
-        err?.response?.data || err.message,
+        error?.response?.data || error?.message,
       );
       throw err;
     }
@@ -172,13 +193,13 @@ export class EvolutionService {
     events: string[] = ['MESSAGES_UPSERT'],
     webhook_by_events = false,
     webhook_base64 = false,
-  ): Promise<EvolutionWebhookResponse> {
-    return this.setWebhook(
+  ): Promise<unknown> {
+    return await this.setWebhook(
       instanceName,
       webhookUrl,
       events,
       webhook_by_events,
       webhook_base64,
-    ) as any;
+    );
   }
 }

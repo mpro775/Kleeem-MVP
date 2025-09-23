@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { BotFaqSearchItem } from 'src/modules/vector/utils/types';
 import { v5 as uuidv5 } from 'uuid';
 
 import { VectorService } from '../../vector/vector.service';
@@ -6,7 +7,10 @@ import { VectorService } from '../../vector/vector.service';
 import { BulkImportDto } from './dto/bulk-import.dto';
 import { CreateBotFaqDto } from './dto/create-botFaq.dto';
 import { UpdateBotFaqDto } from './dto/update-botFaq.dto';
-import { BotFaqRepository } from './repositories/bot-faq.repository';
+import {
+  BotFaqLean,
+  BotFaqRepository,
+} from './repositories/bot-faq.repository';
 import { BotFaq } from './schemas/botFaq.schema';
 import { BOT_FAQ_REPOSITORY } from './tokens';
 
@@ -56,110 +60,149 @@ export class BotFaqService {
           question: doc.question,
           answer: doc.answer,
           type: 'faq',
-          source: (doc.source as any) ?? 'manual',
-          tags: (doc.tags as any) ?? [],
-          locale: (doc.locale as any) ?? 'ar',
+          source: (doc.source as unknown as string) ?? 'manual',
+          tags: (doc.tags as unknown as string[]) ?? [],
+          locale: (doc.locale as unknown as string) ?? 'ar',
         },
       },
     ]);
   }
 
-  async create(dto: CreateBotFaqDto, createdBy?: string) {
+  async create(dto: CreateBotFaqDto, createdBy?: string): Promise<BotFaqLean> {
     const created = await this.repo.create({
-      ...(dto as any),
+      ...(dto as unknown as Partial<BotFaq>),
       vectorStatus: 'pending',
       createdBy,
     });
     try {
       await this.embedAndUpsert({
-        id: String((created as any)._id ?? (created as any).id),
-        question: (created as any).question,
-        answer: (created as any).answer,
-        source: (created as any).source,
-        tags: (created as any).tags,
-        locale: (created as any).locale,
+        id: String(
+          (created as unknown as BotFaqLean)._id ??
+            (created as unknown as BotFaqLean).id,
+        ),
+        question: (created as unknown as BotFaqLean).question,
+        answer: (created as unknown as BotFaqLean).answer,
+        source: (created as unknown as BotFaqLean).source,
+        tags: (created as unknown as BotFaqLean).tags,
+        locale: (created as unknown as BotFaqLean).locale,
       });
-      const updated = await this.repo.updateById(String((created as any)._id), {
-        vectorStatus: 'ok',
-      } as any);
+      const updated = await this.repo.updateById(
+        String((created as unknown as BotFaqLean)._id),
+        {
+          vectorStatus: 'ok',
+        } as unknown as Partial<BotFaq>,
+      );
       return updated ?? created;
-    } catch (e: any) {
-      await this.repo.updateById(String((created as any)._id), {
-        vectorStatus: 'failed',
-      } as any);
+    } catch (e: unknown) {
+      await this.repo.updateById(
+        String((created as unknown as BotFaqLean)._id),
+        {
+          vectorStatus: 'failed',
+        } as unknown as Partial<BotFaq>,
+      );
       // طباعة مختصرة للخطأ (بدون رمي تفاصيل حساسة)
 
-      console.error(
-        '[BotFaq.create] upsert failed:',
-        e?.response?.data ?? e?.message,
-      );
       throw e;
     }
   }
 
-  async findAll() {
+  async findAll(): Promise<BotFaqLean[]> {
     return this.repo.findAllActiveSorted();
   }
 
-  async semanticSearch(q: string, topK = 5) {
+  async semanticSearch(q: string, topK = 5): Promise<BotFaqSearchItem[]> {
     return this.vectorService.searchBotFaqs(q, topK);
   }
 
-  async update(id: string, dto: UpdateBotFaqDto) {
-    const existing = await this.repo.findById(id);
-    if (!existing) return null;
-
-    const willReindex =
+  private shouldReindex(dto: UpdateBotFaqDto): boolean {
+    return (
       'question' in dto ||
       'answer' in dto ||
       'tags' in dto ||
       'locale' in dto ||
-      'source' in dto;
+      'source' in dto
+    );
+  }
+
+  private getFaqData(doc: BotFaqLean | null, existing: BotFaqLean) {
+    return {
+      question: doc?.question || existing.question,
+      answer: doc?.answer || existing.answer,
+      source: doc?.source || existing.source,
+      tags: doc?.tags || existing.tags,
+      locale: doc?.locale || existing.locale,
+    };
+  }
+
+  private async performReindex(
+    id: string,
+    doc: BotFaqLean | null,
+    existing: BotFaqLean,
+  ): Promise<void> {
+    const data = this.getFaqData(doc, existing);
+    await this.embedAndUpsert({
+      id: String(id),
+      ...data,
+    });
+  }
+
+  private async reindexFaq(
+    id: string,
+    doc: BotFaqLean | null,
+    existing: BotFaqLean,
+  ): Promise<void> {
+    try {
+      await this.performReindex(id, doc, existing);
+      await this.repo.updateById(id, {
+        vectorStatus: 'ok',
+      } as unknown as Partial<BotFaq>);
+    } catch (e: unknown) {
+      await this.repo.updateById(id, {
+        vectorStatus: 'failed',
+      } as unknown as Partial<BotFaq>);
+      throw e;
+    }
+  }
+
+  async update(id: string, dto: UpdateBotFaqDto): Promise<BotFaqLean | null> {
+    const existing = await this.repo.findById(id);
+    if (!existing) return null;
+
+    const willReindex = this.shouldReindex(dto);
 
     let doc = await this.repo.updateById(id, {
-      ...(dto as any),
+      ...(dto as unknown as Partial<BotFaq>),
       ...(willReindex ? { vectorStatus: 'pending' } : {}),
     });
 
     if (willReindex) {
-      try {
-        await this.embedAndUpsert({
-          id: String(id),
-          question: (doc as any)?.question ?? (existing as any).question,
-          answer: (doc as any)?.answer ?? (existing as any).answer,
-          source: (doc as any)?.source ?? (existing as any).source,
-          tags: (doc as any)?.tags ?? (existing as any).tags,
-          locale: (doc as any)?.locale ?? (existing as any).locale,
-        });
-        doc = await this.repo.updateById(id, { vectorStatus: 'ok' } as any);
-      } catch (e: any) {
-        await this.repo.updateById(id, { vectorStatus: 'failed' } as any);
-
-        console.error(
-          '[BotFaq.update] upsert failed:',
-          e?.response?.data ?? e?.message,
-        );
-      }
+      await this.reindexFaq(id, doc, existing);
+      doc = await this.repo.updateById(id, {
+        vectorStatus: 'ok',
+      } as unknown as Partial<BotFaq>);
     }
 
     return doc;
   }
 
-  async delete(id: string) {
+  async delete(id: string): Promise<BotFaqLean | null> {
     const deleted = await this.repo.softDelete(id);
     try {
       await this.vectorService.deleteBotFaqPoint(this.pointId(String(id)));
-    } catch (e) {
+    } catch (e: unknown) {
       // eslint-disable-next-line no-console
       console.log(e);
     }
     return deleted;
   }
 
-  async bulkImport(body: BulkImportDto, createdBy?: string) {
+  async bulkImport(
+    body: BulkImportDto,
+    createdBy?: string,
+  ): Promise<{ inserted: number }> {
     const docs = await this.repo.insertMany(
       body.items.map((x) => ({
-        ...(x as any),
+        ...(x as unknown as Partial<BotFaq>),
         vectorStatus: 'pending',
         createdBy,
       })),
@@ -171,8 +214,10 @@ export class BotFaqService {
       const batch = docs.slice(i, i + BATCH);
 
       for (const d of batch) {
-        const faqId = String((d as any)._id ?? (d as any).id);
-        const text = `${(d as any).question}\n${(d as any).answer}`;
+        const faqId = String(
+          (d as unknown as BotFaqLean)._id ?? (d as unknown as BotFaqLean).id,
+        );
+        const text = `${(d as unknown as BotFaqLean).question}\n${(d as unknown as BotFaqLean).answer}`;
         const emb = await this.vectorService.embedText(text);
 
         points.push({
@@ -180,31 +225,31 @@ export class BotFaqService {
           vector: emb,
           payload: {
             faqId,
-            question: (d as any).question,
-            answer: (d as any).answer,
+            question: d.question,
+            answer: d.answer,
             type: 'faq',
-            source: (d as any).source ?? 'manual',
-            tags: (d as any).tags ?? [],
-            locale: (d as any).locale ?? 'ar',
+            source: d.source ?? 'manual',
+            tags: d.tags ?? [],
+            locale: d.locale ?? 'ar',
           },
         });
       }
 
       await this.vectorService.upsertBotFaqs(points);
       await this.repo.updateManyByIds(
-        batch.map((b: any) => String(b._id ?? b.id)),
-        { vectorStatus: 'ok' } as any,
+        batch.map((b) => String(b._id ?? b.id)),
+        { vectorStatus: 'ok' } as unknown as Partial<BotFaq>,
       );
     }
 
     return { inserted: docs.length };
   }
 
-  async reindexAll() {
+  async reindexAll(): Promise<{ count: number }> {
     const docs = await this.repo.findAllActiveLean();
 
     const points: BotFaqPoint[] = [];
-    for (const d of docs as any[]) {
+    for (const d of docs as unknown as BotFaqLean[]) {
       const faqId = String(d._id ?? d.id);
       const text = `${d.question}\n${d.answer}`;
       const emb = await this.vectorService.embedText(text);
@@ -227,8 +272,8 @@ export class BotFaqService {
     if (points.length) {
       await this.vectorService.upsertBotFaqs(points);
       await this.repo.updateManyByIds(
-        (docs as any[]).map((x) => String(x._id ?? x.id)),
-        { vectorStatus: 'ok' } as any,
+        (docs as unknown as BotFaqLean[]).map((x) => String(x._id ?? x.id)),
+        { vectorStatus: 'ok' } as unknown as Partial<BotFaq>,
       );
     }
     return { count: docs.length };

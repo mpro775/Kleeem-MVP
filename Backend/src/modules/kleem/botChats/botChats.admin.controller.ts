@@ -14,12 +14,46 @@ export class BotChatsAdminController {
   constructor(private readonly svc: BotChatsService) {}
 
   @Get()
-  list(@Query() q: QueryBotRatingsDto) {
+  list(@Query() q: QueryBotRatingsDto): Promise<{
+    items: Array<{
+      id: string;
+      sessionId: string;
+      updatedAt: Date;
+      message: string;
+      rating: 0 | 1;
+      feedback?: string;
+      timestamp: Date;
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     return this.svc.listBotRatings(q);
   }
 
   @Get('stats')
-  stats(@Query('from') from?: string, @Query('to') to?: string) {
-    return this.svc.botRatingsStats(from, to);
+  stats(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ): Promise<{
+    summary: {
+      totalRated: number;
+      thumbsUp: number;
+      thumbsDown: number;
+      upRate: number;
+    };
+    weekly: unknown[];
+    topBad: Array<{ text: string; count: number; feedbacks: string[] }>;
+  }> {
+    return this.svc.botRatingsStats(from, to) as Promise<{
+      summary: {
+        totalRated: number;
+        thumbsUp: number;
+        thumbsDown: number;
+        upRate: number;
+      };
+      weekly: unknown[];
+      topBad: Array<{ text: string; count: number; feedbacks: string[] }>;
+    }>;
   }
 }

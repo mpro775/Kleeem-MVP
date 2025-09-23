@@ -3,6 +3,7 @@ import { HttpModule } from '@nestjs/axios';
 import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { DEFAULT_TIMEOUT } from 'src/common/constants/common';
 import { RabbitModule } from 'src/infra/rabbit/rabbit.module';
 
 import { CatalogModule } from '../../catalog/catalog.module';
@@ -23,7 +24,7 @@ import { ZidService } from './zid.service';
 
 @Module({
   imports: [
-    HttpModule.register({ timeout: 10000, maxRedirects: 5 }),
+    HttpModule.register({ timeout: DEFAULT_TIMEOUT, maxRedirects: 5 }),
     ConfigModule,
     MongooseModule.forFeature([
       { name: Merchant.name, schema: MerchantSchema },

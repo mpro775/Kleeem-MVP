@@ -5,6 +5,7 @@ import { QueryBotRatingsDto } from './dto/query-bot-ratings.dto';
 import {
   AppendMessage,
   BotChatRepository,
+  BotChatSessionLean,
 } from './repositories/bot-chats.repository';
 import { BotChatSession } from './schemas/botChats.schema';
 import { BOT_CHAT_REPOSITORY } from './tokens';
@@ -16,7 +17,10 @@ export class BotChatsService {
     private readonly repo: BotChatRepository,
   ) {}
 
-  async createOrAppend(sessionId: string, messages: AppendMessage[]) {
+  async createOrAppend(
+    sessionId: string,
+    messages: AppendMessage[],
+  ): Promise<BotChatSessionLean> {
     return this.repo.createOrAppend(sessionId, messages);
   }
 
@@ -25,43 +29,75 @@ export class BotChatsService {
     msgIdx: number,
     rating: 0 | 1,
     feedback?: string,
-  ) {
+  ): Promise<{ status: string }> {
     await this.repo.rateMessage(sessionId, msgIdx, rating, feedback);
     return { status: 'ok' as const };
   }
 
-  async findBySession(sessionId: string) {
+  async findBySession(sessionId: string): Promise<BotChatSessionLean | null> {
     return this.repo.findBySession(sessionId);
   }
 
-  async findAll(page = 1, limit = 20, q?: string) {
+  async findAll(
+    page = 1,
+    limit = 20,
+    q?: string,
+  ): Promise<{ data: BotChatSessionLean[]; total: number }> {
     const filter: FilterQuery<BotChatSession> = {};
-    if (q) (filter as any)['messages.text'] = { $regex: q, $options: 'i' };
+    if (q)
+      (filter as Record<string, unknown>)['messages.text'] = {
+        $regex: q,
+        $options: 'i',
+      };
     return this.repo.findAll(filter, page, limit);
   }
 
-  async listBotRatings(qry: QueryBotRatingsDto) {
-    const { page, limit, rating, q, sessionId, from, to } = qry;
-
-    const match: Record<string, any> = {
+  private buildBotRatingsMatch(
+    qry: QueryBotRatingsDto,
+  ): Record<string, unknown> {
+    const { rating, sessionId, from, to } = qry;
+    const match: Record<string, unknown> = {
       'messages.role': 'bot',
       'messages.rating': { $ne: null },
     };
     if (rating === '1') match['messages.rating'] = 1;
     if (rating === '0') match['messages.rating'] = 0;
     if (sessionId) match['sessionId'] = sessionId;
-
-    const textFilter: Record<string, any>[] = [];
-    if (q) {
-      textFilter.push({ 'messages.text': { $regex: q, $options: 'i' } });
-      textFilter.push({ 'messages.feedback': { $regex: q, $options: 'i' } });
-    }
-
     if (from || to) {
-      match['messages.timestamp'] = {};
-      if (from) match['messages.timestamp'].$gte = new Date(from);
-      if (to) match['messages.timestamp'].$lte = new Date(to);
+      const timestampFilter: Record<string, unknown> = {};
+      if (from) timestampFilter.$gte = new Date(from);
+      if (to) timestampFilter.$lte = new Date(to);
+      match['messages.timestamp'] = timestampFilter;
     }
+    return match;
+  }
+
+  private buildBotRatingsTextFilter(q?: string): Record<string, unknown>[] {
+    return q
+      ? [
+          { 'messages.text': { $regex: q, $options: 'i' } },
+          { 'messages.feedback': { $regex: q, $options: 'i' } },
+        ]
+      : [];
+  }
+
+  async listBotRatings(qry: QueryBotRatingsDto): Promise<{
+    items: Array<{
+      id: string;
+      sessionId: string;
+      updatedAt: Date;
+      message: string;
+      rating: 0 | 1;
+      feedback?: string;
+      timestamp: Date;
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const { page, limit, q } = qry;
+    const match = this.buildBotRatingsMatch(qry);
+    const textFilter = this.buildBotRatingsTextFilter(q);
 
     const pipeline: PipelineStage[] = [
       { $unwind: '$messages' },
@@ -94,21 +130,45 @@ export class BotChatsService {
       },
     ];
 
-    const res = await this.repo.aggregate(pipeline);
+    const res = (await this.repo.aggregate(pipeline)) as Array<{
+      items?: Array<{
+        id: string;
+        sessionId: string;
+        updatedAt: Date;
+        message: string;
+        rating: 0 | 1;
+        feedback?: string;
+        timestamp: Date;
+      }>;
+      meta?: Array<{ total?: number }>;
+    }>;
     const items = res[0]?.items ?? [];
     const total = res[0]?.meta?.[0]?.total ?? 0;
     return { items, total, page, limit };
   }
 
-  async botRatingsStats(from?: string, to?: string) {
-    const match: Record<string, any> = {
+  async botRatingsStats(
+    from?: string,
+    to?: string,
+  ): Promise<{
+    summary: {
+      totalRated: number;
+      thumbsUp: number;
+      thumbsDown: number;
+      upRate: number;
+    };
+    weekly: unknown[];
+    topBad: Array<{ text: string; count: number; feedbacks: string[] }>;
+  }> {
+    const match: Record<string, unknown> = {
       'messages.role': 'bot',
       'messages.rating': { $ne: null },
     };
     if (from || to) {
-      match['messages.timestamp'] = {};
-      if (from) match['messages.timestamp'].$gte = new Date(from);
-      if (to) match['messages.timestamp'].$lte = new Date(to);
+      const timestampFilter: Record<string, unknown> = {};
+      if (from) timestampFilter.$gte = new Date(from);
+      if (to) timestampFilter.$lte = new Date(to);
+      match['messages.timestamp'] = timestampFilter;
     }
 
     const [agg] = await this.repo.aggregate([
@@ -164,17 +224,31 @@ export class BotChatsService {
     const topBad = await this.repo.getFrequentBadBotReplies(10);
 
     return {
-      summary: agg ?? { totalRated: 0, thumbsUp: 0, thumbsDown: 0, upRate: 0 },
+      summary: (agg ?? {
+        totalRated: 0,
+        thumbsUp: 0,
+        thumbsDown: 0,
+        upRate: 0,
+      }) as {
+        totalRated: number;
+        thumbsUp: number;
+        thumbsDown: number;
+        upRate: number;
+      },
       weekly: weekly.reverse(),
       topBad,
     };
   }
 
-  async getTopQuestions(limit = 10) {
+  async getTopQuestions(
+    limit = 10,
+  ): Promise<{ question: string; count: number }[]> {
     return this.repo.getTopQuestions(limit);
   }
 
-  async getFrequentBadBotReplies(limit = 10) {
+  async getFrequentBadBotReplies(
+    limit = 10,
+  ): Promise<{ text: string; count: number; feedbacks: string[] }[]> {
     return this.repo.getFrequentBadBotReplies(limit);
   }
 }

@@ -25,7 +25,28 @@ import {
   TypingPayload,
   KleemWsMessage,
 } from './kleem-ws.types';
+type JwtPayloadSafe = {
+  userId?: string;
+  merchantId?: string;
+  role?: string;
+};
 
+function isJwtPayloadSafe(v: unknown): v is JwtPayloadSafe {
+  if (v === null || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  const okUser = o.userId === undefined || typeof o.userId === 'string';
+  const okMerchant =
+    o.merchantId === undefined || typeof o.merchantId === 'string';
+  const okRole = o.role === undefined || typeof o.role === 'string';
+  return okUser && okMerchant && okRole;
+}
+
+function hasNonEmptyString(v: unknown): v is string {
+  return typeof v === 'string' && v.trim().length > 0;
+}
+
+const ROLE_ADMIN = 'ADMIN' as const;
+const ROLE_AGENT = 'AGENT' as const;
 @WebSocketGateway({
   path: '/api/kaleem/ws', // ✅ موحّد
   cors: {
@@ -51,8 +72,61 @@ export class KleemGateway
     private readonly wsGauge: Gauge<string>,
   ) {}
 
+  private verifyJwtToken(token: string | undefined): {
+    userId?: string;
+    merchantId?: string;
+    roleIsAdminOrAgent: boolean;
+  } {
+    let userId: string | undefined;
+    let merchantId: string | undefined;
+    let roleIsAdminOrAgent = false;
+
+    try {
+      if (token) {
+        const decoded: unknown = this.jwt.verify(token); // لا نثق بالأنواع الراجعة
+        if (isJwtPayloadSafe(decoded)) {
+          if (hasNonEmptyString(decoded.userId)) {
+            userId = decoded.userId;
+          }
+          if (hasNonEmptyString(decoded.merchantId)) {
+            merchantId = decoded.merchantId;
+          }
+          const roleUpper = hasNonEmptyString(decoded.role)
+            ? decoded.role.toUpperCase()
+            : undefined;
+
+          roleIsAdminOrAgent =
+            roleUpper === ROLE_ADMIN || roleUpper === ROLE_AGENT;
+        }
+        // لو payload غير متوافق، نُبقي القيم على حالها (ضيف بدون صلاحيات)
+      }
+    } catch {
+      // ضيف بدون صلاحيات
+    }
+
+    return { userId, merchantId, roleIsAdminOrAgent };
+  }
+
+  private joinRooms(
+    client: Socket,
+    userId?: string,
+    merchantId?: string,
+    sessionId?: string,
+    roleIsAdminOrAgent?: boolean,
+  ): void {
+    // غرف الهوية
+    if (userId) void client.join(`user:${userId}`);
+    if (merchantId) void client.join(`merchant:${merchantId}`);
+
+    // غرفة الجلسة (للزائر/الليندنج)
+    if (sessionId) void client.join(sessionId);
+
+    // الأدمن/الوكيل من JWT فقط
+    if (roleIsAdminOrAgent) void client.join('kleem_admin');
+  }
+
   // ✅ Redis adapter (مثل ChatGateway السابق)
-  async afterInit() {
+  async afterInit(): Promise<void> {
     const url = process.env.REDIS_URL || 'redis://redis:6379';
     const pub = createClient({ url });
     const sub = pub.duplicate();
@@ -60,43 +134,24 @@ export class KleemGateway
     this.server.adapter(createAdapter(pub, sub));
   }
 
-  handleConnection(client: Socket) {
-    const auth = client.handshake.auth as any;
+  handleConnection(client: Socket): void {
+    const auth = client.handshake.auth as Record<string, unknown>;
     const token = auth?.token as string | undefined;
 
-    let userId: string | undefined;
-    let merchantId: string | undefined;
-    let roleIsAdminOrAgent = false;
+    const { userId, merchantId, roleIsAdminOrAgent } =
+      this.verifyJwtToken(token);
 
-    try {
-      if (token) {
-        const payload: any = this.jwt.verify(token);
-        userId = payload?.userId || payload?.sub || payload?._id;
-        merchantId = payload?.merchantId;
-        const role = (payload?.role || '').toString().toUpperCase();
-        roleIsAdminOrAgent = role === 'ADMIN' || role === 'AGENT'; // ✅ لا تعتمد على query نهائياً
-      }
-    } catch {
-      // ضيف بدون صلاحيات
-    }
-
-    // غرف الهوية
-    if (userId) void client.join(`user:${userId}`);
-    if (merchantId) void client.join(`merchant:${merchantId}`);
-
-    // غرفة الجلسة (للزائر/الليندنج)
-    const q = client.handshake.query as any;
+    const q = client.handshake.query as Record<string, unknown>;
     const sessionId = (q?.sessionId as string) || undefined;
-    if (sessionId) void client.join(sessionId);
 
-    // الأدمن/الوكيل من JWT فقط
-    if (roleIsAdminOrAgent) void client.join('kleem_admin'); // ✅ موحّد
+    this.joinRooms(client, userId, merchantId, sessionId, roleIsAdminOrAgent);
 
     // تتبع الاتصالات النشطة
     this.wsGauge.inc({ namespace: 'kleem' });
   }
 
-  handleDisconnect(client: Socket) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  handleDisconnect(client: Socket): void {
     // cleanup تلقائي من socket.io
 
     // تتبع الاتصالات النشطة
@@ -105,7 +160,7 @@ export class KleemGateway
 
   // (اختياري) اشتراك صريح للأدمن
   @SubscribeMessage('admin:subscribe')
-  onAdminSubscribe(@ConnectedSocket() client: Socket) {
+  onAdminSubscribe(@ConnectedSocket() client: Socket): void {
     void client.join('kleem_admin');
     client.emit('admin:notification', { type: 'joined', title: 'مرحباً بك' });
   }
@@ -114,43 +169,46 @@ export class KleemGateway
   @OnEvent('kleem.bot_reply') onBotReply(p: {
     sessionId: string;
     message: KleemWsMessage;
-  }) {
+  }): void {
     this.server.to(p.sessionId).emit('bot_reply', p.message);
   }
 
   @OnEvent('kleem.admin_new_message')
-  onAdminFeed(p: { sessionId: string; message: KleemWsMessage }) {
+  onAdminFeed(p: { sessionId: string; message: KleemWsMessage }): void {
     this.server.to('kleem_admin').emit('admin_new_message', p);
   }
 
   @OnEvent('admin:notification')
-  onAdminNotification(payload: any) {
+  onAdminNotification(payload: unknown): void {
     this.server.to('kleem_admin').emit('admin:notification', payload);
   }
 
   @OnEvent('notify.user')
-  onNotifyUser(payload: any & { userId: string }) {
+  onNotifyUser(payload: { userId: string }): void {
     this.server.to(`user:${payload.userId}`).emit('notification', payload);
   }
 
   @OnEvent('notify.merchant')
-  onNotifyMerchant(payload: any & { merchantId: string }) {
+  onNotifyMerchant(payload: { merchantId: string }): void {
     this.server
       .to(`merchant:${payload.merchantId}`)
       .emit('notification', payload);
   }
 
-  @OnEvent('kleem.typing') onBotTyping(p: { sessionId: string; role: 'bot' }) {
+  @OnEvent('kleem.typing') onBotTyping(p: {
+    sessionId: string;
+    role: 'bot';
+  }): void {
     this.server.to(p.sessionId).emit('typing', p);
   }
 
   @OnEvent('kleem.bot_chunk') onBotChunk(p: {
     sessionId: string;
     delta: string;
-  }) {
+  }): void {
     this.server.to(p.sessionId).emit('bot_chunk', p);
   }
-  @OnEvent('kleem.bot_done') onBotDone(p: { sessionId: string }) {
+  @OnEvent('kleem.bot_done') onBotDone(p: { sessionId: string }): void {
     this.server.to(p.sessionId).emit('bot_done', p);
   }
 
@@ -159,10 +217,10 @@ export class KleemGateway
   async onUserMessage(
     @MessageBody() body: UserMessagePayload,
     @ConnectedSocket() client: Socket,
-  ) {
+  ): Promise<{ ok: boolean }> {
     try {
       const { sessionId, text, metadata } = body || {};
-      if (!sessionId || !text) return;
+      if (!sessionId || !text) return { ok: false };
       client.emit('typing', { sessionId, role: 'user' });
       await this.kleem.handleUserMessage(sessionId, text, metadata);
       return { ok: true };
@@ -172,7 +230,7 @@ export class KleemGateway
   }
 
   @SubscribeMessage('typing')
-  onTyping(@MessageBody() payload: TypingPayload) {
+  onTyping(@MessageBody() payload: TypingPayload): void {
     if (!payload?.sessionId) return;
     this.server.to(payload.sessionId).emit('typing', payload);
   }
@@ -183,11 +241,11 @@ export class KleemGateway
     @MessageBody()
     body: { sessionId?: string; merchantId?: string; rooms?: string[] },
     @ConnectedSocket() client: Socket,
-  ) {
+  ): Promise<{ ok: boolean }> {
     if (body?.sessionId) void client.join(body.sessionId);
     if (body?.merchantId) void client.join(`merchant:${body.merchantId}`);
     body?.rooms?.forEach((r) => void client.join(r));
-    return { ok: true };
+    return Promise.resolve({ ok: true });
   }
 
   @SubscribeMessage('leave')
@@ -195,10 +253,10 @@ export class KleemGateway
     @MessageBody()
     body: { sessionId?: string; merchantId?: string; rooms?: string[] },
     @ConnectedSocket() client: Socket,
-  ) {
+  ): Promise<{ ok: boolean }> {
     if (body?.sessionId) void client.leave(body.sessionId);
     if (body?.merchantId) void client.leave(`merchant:${body.merchantId}`);
     body?.rooms?.forEach((r) => void client.leave(r));
-    return { ok: true };
+    return Promise.resolve({ ok: true });
   }
 }

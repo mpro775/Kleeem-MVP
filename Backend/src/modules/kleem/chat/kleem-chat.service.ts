@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import axios, { AxiosInstance } from 'axios';
+import { MS_PER_SECOND } from 'src/common/constants/common';
 import { VectorService } from 'src/modules/vector/vector.service';
 
 import { BotChatsService } from '../botChats/botChats.service';
@@ -10,12 +11,12 @@ import { renderPrompt } from '../common/template.service';
 import { CtaService } from '../cta/cta.service';
 import { IntentService } from '../intent/intent.service';
 import { SettingsService } from '../settings/settings.service';
-import { KleemWsMessage } from '../ws/kleem-ws.types';
 
 @Injectable()
 export class KleemChatService {
   private readonly logger = new Logger(KleemChatService.name);
   private readonly n8n: AxiosInstance;
+  private readonly TYPING_PULSE_INTERVAL_SECONDS = 3 / 2; // 1.5 seconds
 
   constructor(
     private readonly chats: BotChatsService,
@@ -33,7 +34,7 @@ export class KleemChatService {
         process.env.N8N_API_URL ||
         'http://n8n:5678'
       ).replace(/\/+$/, ''),
-      timeout: 15000,
+      timeout: MS_PER_SECOND * 15,
       headers: { 'Content-Type': 'application/json' },
     });
   }
@@ -78,11 +79,11 @@ export class KleemChatService {
     if (this.typingIntervals.has(sessionId)) return;
     const id = setInterval(() => {
       this.events.emit('kleem.typing', { sessionId, role: 'bot' as const });
-    }, 1500);
+    }, MS_PER_SECOND * this.TYPING_PULSE_INTERVAL_SECONDS);
     this.typingIntervals.set(sessionId, id);
   }
 
-  stopTyping(sessionId: string) {
+  stopTyping(sessionId: string): void {
     const id = this.typingIntervals.get(sessionId);
     if (id) clearInterval(id);
     this.typingIntervals.delete(sessionId);
@@ -93,7 +94,7 @@ export class KleemChatService {
     sessionId: string,
     text: string,
     metadata?: Record<string, unknown>,
-  ) {
+  ): Promise<{ status: string }> {
     await this.chats.createOrAppend(sessionId, [
       { role: 'user', text, metadata: metadata ?? {} },
     ]);

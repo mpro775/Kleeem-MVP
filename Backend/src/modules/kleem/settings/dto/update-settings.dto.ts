@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsNumber,
   IsOptional,
@@ -7,7 +7,6 @@ import {
   ArrayNotEmpty,
   IsDateString,
   IsUrl,
-  IsIn,
 } from 'class-validator';
 
 export class UpdateBotRuntimeSettingsDto {

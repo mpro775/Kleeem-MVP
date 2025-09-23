@@ -10,7 +10,7 @@ export interface ZidOAuthTokenResponse {
   token_type: string;
   expires_in: number;
   scope?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Product Models
@@ -97,7 +97,6 @@ export interface ZidProductVariant {
   updated_at: string;
 }
 
-// Order Models
 export interface ZidOrder {
   id: number;
   order_number: string;
@@ -129,7 +128,7 @@ export interface ZidOrderItem {
   total: number;
   tax: number;
   discount: number;
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
 }
 
 export interface ZidCustomer {
@@ -187,7 +186,7 @@ export type ZidFulfillmentStatus =
 export interface ZidWebhookEvent {
   id: string;
   event: string;
-  data: any;
+  data: unknown;
   created_at: string;
 }
 
@@ -221,12 +220,16 @@ export interface ZidApiResponse<T> {
   };
 }
 
+export interface ZidWebhookResponse {
+  data?: unknown[] | { data?: unknown[] };
+}
+
 // Error Models
 export interface ZidApiError {
   message: string;
   code?: string;
   status?: number;
-  details?: any;
+  details?: unknown;
 }
 
 // Store Models

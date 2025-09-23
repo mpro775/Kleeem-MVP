@@ -23,6 +23,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 
 import { BotChatsService } from './botChats.service';
+import { BotChatSessionLean } from './repositories/bot-chats.repository';
 
 @ApiTags('Bot Chats')
 @ApiBearerAuth()
@@ -89,7 +90,7 @@ export class BotChatsController {
         timestamp?: Date;
       }[];
     },
-  ) {
+  ): Promise<BotChatSessionLean> {
     return this.svc.createOrAppend(sessionId, body.messages);
   }
 
@@ -134,7 +135,7 @@ export class BotChatsController {
     @Param('sessionId') sessionId: string,
     @Param('msgIdx') msgIdx: string,
     @Body() body: { rating: 0 | 1; feedback?: string },
-  ) {
+  ): Promise<{ status: string }> {
     return this.svc.rateMessage(
       sessionId,
       Number(msgIdx),
@@ -158,7 +159,9 @@ export class BotChatsController {
     status: HttpStatus.NOT_FOUND,
     description: 'المحادثة غير موجودة',
   })
-  async getSession(@Param('sessionId') sessionId: string) {
+  async getSession(
+    @Param('sessionId') sessionId: string,
+  ): Promise<BotChatSessionLean | null> {
     return this.svc.findBySession(sessionId);
   }
 
@@ -192,7 +195,7 @@ export class BotChatsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('q') q?: string,
-  ) {
+  ): Promise<{ data: BotChatSessionLean[]; total: number }> {
     return this.svc.findAll(Number(page) || 1, Number(limit) || 20, q);
   }
 
@@ -208,7 +211,9 @@ export class BotChatsController {
     status: HttpStatus.OK,
     description: 'قائمة بالأسئلة الأكثر شيوعاً',
   })
-  async topQuestions(@Query('limit') limit?: string) {
+  async topQuestions(
+    @Query('limit') limit?: string,
+  ): Promise<{ question: string; count: number }[]> {
     return this.svc.getTopQuestions(Number(limit) || 10);
   }
 
@@ -224,7 +229,13 @@ export class BotChatsController {
     status: HttpStatus.OK,
     description: 'قائمة بالردود التي حصلت على تقييم سيء',
   })
-  async badReplies(@Query('limit') limit?: string) {
+  async badReplies(@Query('limit') limit?: string): Promise<
+    {
+      text: string;
+      count: number;
+      feedbacks: string[];
+    }[]
+  > {
     return this.svc.getFrequentBadBotReplies(Number(limit) || 10);
   }
 }

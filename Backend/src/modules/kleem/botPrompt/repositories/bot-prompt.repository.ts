@@ -10,7 +10,7 @@ export interface BotPromptRepository {
   }): Promise<BotPromptLean[]>;
   findById(id: string): Promise<BotPromptLean | null>;
   findOne(
-    filter: Record<string, any>,
+    filter: Record<string, unknown>,
     sort?: Record<string, 1 | -1>,
   ): Promise<BotPromptLean | null>;
   updateById(
@@ -18,7 +18,7 @@ export interface BotPromptRepository {
     patch: Partial<BotPrompt>,
   ): Promise<BotPromptLean | null>;
   updateMany(
-    filter: Record<string, any>,
+    filter: Record<string, unknown>,
     patch: Partial<BotPrompt>,
   ): Promise<void>;
   deleteById(id: string): Promise<{ deleted: boolean }>;

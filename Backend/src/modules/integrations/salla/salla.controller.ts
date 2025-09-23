@@ -54,6 +54,52 @@ export class SallaController {
     @InjectModel(Merchant.name) private merchantModel: Model<MerchantDocument>,
   ) {}
 
+  private validateWebhookToken(
+    headers: Record<string, string>,
+    query: Record<string, unknown>,
+  ): boolean {
+    const sent =
+      headers['x-salla-token'] || headers['salla-token'] || query?.token;
+    return !(!sent || sent !== process.env.SALLA_WEBHOOK_TOKEN);
+  }
+
+  private validateWebhookSignature(
+    headers: Record<string, string>,
+    body: Record<string, unknown>,
+    req: Request,
+  ): boolean {
+    const sig = headers['x-salla-signature'] || headers['salla-signature'];
+    const secret = process.env.SALLA_WEBHOOK_SECRET || '';
+    if (!sig || !secret) return false;
+
+    const raw: Buffer =
+      (req as Request & { rawBody: Buffer }).rawBody ||
+      Buffer.from(JSON.stringify(body));
+
+    const h1 = crypto.createHmac('sha256', secret).update(raw).digest('hex');
+    const h2 = crypto.createHmac('sha256', secret).update(raw).digest('base64');
+
+    return sig === h1 || sig === h2;
+  }
+
+  private authenticateWebhook(
+    mode: string,
+    headers: Record<string, string>,
+    body: Record<string, unknown>,
+    req: Request,
+  ): boolean {
+    if (mode === 'token') {
+      return this.validateWebhookToken(
+        headers,
+        (req as Request & { query: Record<string, unknown> }).query,
+      );
+    }
+    if (mode === 'signature') {
+      return this.validateWebhookSignature(headers, body, req);
+    }
+    return true; // 'none' mode
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('connect')
   @ApiOperation({
@@ -65,12 +111,15 @@ export class SallaController {
     description: 'يتم توجيه المستخدم إلى صفحة تفويض سلة',
   })
   @ApiResponse({ status: 400, description: 'خطأ في بيانات الطلب' })
-  async connect(@Req() req: Request, @Res() res: Response) {
-    const user: any = (req as any).user;
+  async connect(@Req() req: Request, @Res() res: Response): Promise<void> {
+    const user = (req as Request & { user: { userId: string } }).user;
     const merchant = await this.merchantModel
       .findOne({ userId: user.userId })
       .lean();
-    if (!merchant) return res.status(400).send('No merchant for user');
+    if (!merchant) {
+      res.status(400).send('No merchant for user');
+      return;
+    }
 
     const state = jwt.sign(
       {
@@ -105,9 +154,12 @@ export class SallaController {
     @Query('code') code: string,
     @Query('state') state: string,
     @Res() res: Response,
-  ) {
+  ): Promise<void> {
     try {
-      if (!code || !state) return res.status(400).send('Missing code/state');
+      if (!code || !state) {
+        res.status(400).send('Missing code/state');
+        return;
+      }
       const decoded = jwt.verify(
         state,
         this.config.get<string>('JWT_SECRET')!,
@@ -143,7 +195,7 @@ export class SallaController {
       }
 
       // أغلق نافذة OAuth وأبلغ الصفحة الأصلية
-      return res.type('html').send(`<!doctype html><meta charset="utf-8"/>
+      res.type('html').send(`<!doctype html><meta charset="utf-8"/>
   <title>Connected</title>
   <script>
     try {
@@ -157,10 +209,13 @@ export class SallaController {
       window.location.replace("/dashboard/integrations?provider=salla&connected=1");
     }
   </script>`);
-    } catch (err: any) {
-      this.logger.error('SALLA CALLBACK ERROR', err?.stack || err);
-      return res.redirect(
-        `/dashboard/integrations?provider=salla&connected=0&error=${encodeURIComponent(err?.message || 'failed')}`,
+    } catch (err: unknown) {
+      this.logger.error(
+        'SALLA CALLBACK ERROR',
+        err instanceof Error ? err.stack : err,
+      );
+      res.redirect(
+        `/dashboard/integrations?provider=salla&connected=0&error=${encodeURIComponent(err instanceof Error ? err.message : 'failed')}`,
       );
     }
   }
@@ -185,54 +240,34 @@ export class SallaController {
   @ApiResponse({ status: 200, description: 'تم استلام الحدث بنجاح' })
   @ApiResponse({ status: 500, description: 'خطأ في معالجة الحدث' })
   webhook(
-    @Req() req: any,
-    @Body() body: any,
+    @Req() req: Request,
+    @Body() body: Record<string, unknown>,
     @Headers() headers: Record<string, string>,
     @Res() res: Response,
-  ) {
+  ): void {
     try {
       const mode = (
         process.env.SALLA_WEBHOOK_PROTECTION || 'none'
       ).toLowerCase();
 
-      if (mode === 'token') {
-        const sent =
-          headers['x-salla-token'] ||
-          headers['salla-token'] ||
-          req.query?.token;
-        if (!sent || sent !== process.env.SALLA_WEBHOOK_TOKEN) {
-          this.logger.warn('Invalid Salla webhook token');
-          return res.status(401).json({ ok: false });
-        }
-      } else if (mode === 'signature') {
-        const sig = headers['x-salla-signature'] || headers['salla-signature'];
-        const secret = process.env.SALLA_WEBHOOK_SECRET || '';
-        if (!sig || !secret) return res.status(401).json({ ok: false });
-
-        // HMAC-SHA256(rawBody, secret) hex/base64 — جرّب الطريقتين إن لزم
-        const raw: Buffer = req.rawBody || Buffer.from(JSON.stringify(body));
-        const h1 = crypto
-          .createHmac('sha256', secret)
-          .update(raw)
-          .digest('hex');
-        const h2 = crypto
-          .createHmac('sha256', secret)
-          .update(raw)
-          .digest('base64');
-
-        if (sig !== h1 && sig !== h2) {
-          this.logger.warn('Invalid Salla webhook signature');
-          return res.status(401).json({ ok: false });
-        }
+      if (!this.authenticateWebhook(mode, headers, body, req)) {
+        this.logger.warn(
+          `Invalid Salla webhook ${mode === 'token' ? 'token' : 'signature'}`,
+        );
+        res.status(401).json({ ok: false });
+        return;
       }
 
-      this.logger.log(`Salla webhook: ${body?.event || 'unknown'}`);
-      // TODO: سوّ المعالجة حسب event (product.created / order.created ...)
+      this.logger.log(`Salla webhook: ${(body?.event as string) ?? 'unknown'}`);
 
-      return res.json({ ok: true });
-    } catch (e: any) {
-      this.logger.error(`Salla webhook error: ${e?.message}`, e?.stack);
-      return res.status(500).json({ ok: false });
+      res.json({ ok: true });
+      return;
+    } catch (e: unknown) {
+      this.logger.error(
+        `Salla webhook error: ${e instanceof Error ? e.message : 'unknown'}`,
+        e instanceof Error ? e.stack : undefined,
+      );
+      res.status(500).json({ ok: false });
     }
   }
 }

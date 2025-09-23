@@ -3,6 +3,7 @@ import { HttpModule } from '@nestjs/axios';
 import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { DEFAULT_TIMEOUT } from 'src/common/constants/common';
 
 import { CatalogModule } from '../../catalog/catalog.module';
 import {
@@ -20,7 +21,7 @@ import { SALLA_MERCHANT_REPOSITORY } from './tokens';
 
 @Module({
   imports: [
-    HttpModule.register({ timeout: 10000, maxRedirects: 5 }),
+    HttpModule.register({ timeout: DEFAULT_TIMEOUT, maxRedirects: 5 }),
     ConfigModule,
     MongooseModule.forFeature([
       { name: Merchant.name, schema: MerchantSchema },

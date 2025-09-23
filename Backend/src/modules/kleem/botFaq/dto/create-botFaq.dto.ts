@@ -10,6 +10,7 @@ import {
   IsIn,
   ArrayMaxSize,
 } from 'class-validator';
+import { MAX_LENGTH_FEEDBACK } from 'src/common/constants/common';
 
 export class CreateBotFaqDto {
   @ApiProperty({
@@ -29,14 +30,14 @@ export class CreateBotFaqDto {
     description: 'إجابة السؤال',
     example:
       'يمكنك إعادة تعيين كلمة المرور من خلال النقر على "نسيت كلمة المرور" في صفحة تسجيل الدخول.',
-    maxLength: 3000,
+    maxLength: MAX_LENGTH_FEEDBACK,
     required: true,
   })
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
   )
   @IsString()
-  @MaxLength(3000)
+  @MaxLength(MAX_LENGTH_FEEDBACK)
   answer: string;
 
   @ApiPropertyOptional({

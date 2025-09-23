@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, Document } from 'mongoose';
 
 import { BotFaq } from '../schemas/botFaq.schema';
 
@@ -13,8 +13,8 @@ export class BotFaqMongoRepository implements BotFaqRepository {
   ) {}
 
   async create(data: Partial<BotFaq>): Promise<BotFaqLean> {
-    const doc = await this.model.create(data as any);
-    return doc.toObject() as any;
+    const doc = await this.model.create(data);
+    return doc.toObject() as BotFaqLean;
   }
 
   async findById(id: string): Promise<BotFaqLean | null> {
@@ -26,42 +26,40 @@ export class BotFaqMongoRepository implements BotFaqRepository {
     patch: Partial<BotFaq>,
   ): Promise<BotFaqLean | null> {
     return this.model
-      .findByIdAndUpdate(id, patch as any, { new: true })
+      .findByIdAndUpdate(id, patch, { new: true })
       .lean<BotFaqLean>()
       .exec();
   }
 
   async softDelete(id: string): Promise<BotFaqLean | null> {
     return this.model
-      .findByIdAndUpdate(id, { status: 'deleted' } as any, { new: true })
+      .findByIdAndUpdate(id, { status: 'deleted' }, { new: true })
       .lean<BotFaqLean>()
       .exec();
   }
 
   async findAllActiveSorted(): Promise<BotFaqLean[]> {
     return this.model
-      .find({ status: 'active' } as any)
+      .find({ status: 'active' })
       .sort({ updatedAt: -1 })
       .lean<BotFaqLean[]>()
       .exec();
   }
 
   async findAllActiveLean(): Promise<BotFaqLean[]> {
-    return this.model
-      .find({ status: 'active' } as any)
-      .lean<BotFaqLean[]>()
-      .exec();
+    return this.model.find({ status: 'active' }).lean<BotFaqLean[]>().exec();
   }
 
   async insertMany(items: Partial<BotFaq>[]): Promise<BotFaqLean[]> {
-    const docs = await this.model.insertMany(items as any[]);
-    return docs.map((d) => d.toObject());
+    const docs = (await this.model.insertMany(items)) as (BotFaq & Document)[];
+    const safeDocs = docs || [];
+    return safeDocs.map((d) => d.toObject() as BotFaqLean);
   }
 
   async updateManyByIds(ids: string[], patch: Partial<BotFaq>): Promise<void> {
     await this.model.updateMany(
       { _id: { $in: ids.map((i) => new Types.ObjectId(i)) } },
-      { $set: patch as any },
+      { $set: patch },
     );
   }
 }

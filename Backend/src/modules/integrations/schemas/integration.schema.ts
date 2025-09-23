@@ -40,7 +40,7 @@ IntegrationSchema.index({ merchantId: 1, provider: 1 }, { unique: true });
 
 // إخفاء الحقول الحساسة في المخرجات
 IntegrationSchema.set('toJSON', {
-  transform: (_doc: any, ret: any) => {
+  transform: (_doc, ret) => {
     delete ret.accessToken;
     delete ret.refreshToken;
     delete ret.managerToken;

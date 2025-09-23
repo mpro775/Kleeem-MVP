@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { MS_PER_SECOND } from 'src/common/constants/common';
 
 import { BotRuntimeSettings } from './botRuntimeSettings.schema';
 import { UpdateBotRuntimeSettingsDto } from './dto/update-settings.dto';
@@ -9,7 +10,7 @@ import { SETTINGS_REPOSITORY } from './tokens';
 export class SettingsService {
   private cache: BotRuntimeSettings | null = null;
   private cacheAt = 0;
-  private TTL = 10_000; // 10s
+  private TTL = MS_PER_SECOND * 10; // 10s
 
   constructor(
     @Inject(SETTINGS_REPOSITORY)
@@ -33,13 +34,13 @@ export class SettingsService {
     return this.cache || ({} as BotRuntimeSettings);
   }
 
-  async update(dto: UpdateBotRuntimeSettingsDto) {
+  async update(dto: UpdateBotRuntimeSettingsDto): Promise<BotRuntimeSettings> {
     const existing = await this.repo.findOneLean();
     let updated: BotRuntimeSettings;
     if (!existing) {
-      updated = await this.repo.create(dto as any);
+      updated = await this.repo.create(dto);
     } else {
-      updated = await this.repo.findOneAndUpdate(dto as any);
+      updated = await this.repo.findOneAndUpdate(dto);
     }
     this.cache = updated;
     this.cacheAt = Date.now();

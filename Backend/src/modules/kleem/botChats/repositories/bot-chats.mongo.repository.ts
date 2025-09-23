@@ -10,6 +10,23 @@ import {
   BotChatSessionLean,
 } from './bot-chats.repository';
 
+// حارس نوع صغير
+function isString(v: unknown): v is string {
+  return typeof v === 'string';
+}
+
+// نتائج الـ aggregation لأنماطنا
+type BadBotAggRow = {
+  _id: string; // نص الردّ (رسالة البوت)
+  count: number; // عدد التكرارات
+  feedbacks: unknown[]; // قد تحتوي قيم غير نصية أو undefined
+};
+
+type TopQuestionAggRow = {
+  _id: string; // السؤال
+  count: number; // عدد التكرارات
+};
+
 @Injectable()
 export class BotChatsMongoRepository implements BotChatRepository {
   constructor(
@@ -30,16 +47,16 @@ export class BotChatsMongoRepository implements BotChatRepository {
     }));
 
     if (doc) {
-      (doc as any).messages.push(...toInsert);
+      doc.messages.push(...toInsert);
       doc.markModified('messages');
       const saved = await doc.save();
-      return saved.toObject() as any;
+      return saved.toObject() as BotChatSessionLean;
     }
     const created = await this.model.create({
       sessionId,
       messages: toInsert,
-    } as any);
-    return created.toObject() as any;
+    });
+    return created.toObject() as BotChatSessionLean;
   }
 
   async rateMessage(
@@ -49,12 +66,11 @@ export class BotChatsMongoRepository implements BotChatRepository {
     feedback?: string,
   ): Promise<void> {
     const doc = await this.model.findOne({ sessionId });
-    if (!doc || !(doc as any).messages[msgIdx]) {
+    if (!doc || !doc.messages[msgIdx]) {
       throw new Error('Message not found for rating');
     }
-    (doc as any).messages[msgIdx].rating = rating;
-    if (typeof feedback === 'string')
-      (doc as any).messages[msgIdx].feedback = feedback;
+    doc.messages[msgIdx].rating = rating;
+    if (typeof feedback === 'string') doc.messages[msgIdx].feedback = feedback;
     await doc.save();
   }
 
@@ -79,43 +95,52 @@ export class BotChatsMongoRepository implements BotChatRepository {
     return { data, total };
   }
 
-  async aggregate(pipeline: PipelineStage[]) {
+  async aggregate(pipeline: PipelineStage[]): Promise<unknown[]> {
     return this.model.aggregate(pipeline);
   }
 
-  async getFrequentBadBotReplies(limit = 10) {
-    const agg = await this.model.aggregate([
-      { $unwind: '$messages' },
-      { $match: { 'messages.role': 'bot', 'messages.rating': 0 } },
-      {
-        $group: {
-          _id: '$messages.text',
-          count: { $sum: 1 },
-          feedbacks: { $push: '$messages.feedback' },
+  async getFrequentBadBotReplies(
+    limit = 10,
+  ): Promise<{ text: string; count: number; feedbacks: string[] }[]> {
+    const agg = await this.model
+      .aggregate<BadBotAggRow>([
+        { $unwind: '$messages' },
+        { $match: { 'messages.role': 'bot', 'messages.rating': 0 } },
+        {
+          $group: {
+            _id: '$messages.text',
+            count: { $sum: 1 },
+            feedbacks: { $push: '$messages.feedback' },
+          },
         },
-      },
-      { $sort: { count: -1 } },
-      { $limit: limit },
-    ]);
+        { $sort: { count: -1 } },
+        { $limit: limit },
+      ])
+      .allowDiskUse(true);
 
-    return agg.map((x) => ({
-      text: x._id as string,
-      count: x.count as number,
-      feedbacks: (x.feedbacks as (string | null)[]).filter(Boolean) as string[],
+    return agg.map(({ _id, count, feedbacks }) => ({
+      text: _id,
+      count,
+      feedbacks: feedbacks.filter(isString),
     }));
   }
 
-  async getTopQuestions(limit = 10) {
-    const agg = await this.model.aggregate([
-      { $unwind: '$messages' },
-      { $match: { 'messages.role': 'user' } },
-      { $group: { _id: '$messages.text', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: limit },
-    ]);
-    return agg.map((x) => ({
-      question: x._id as string,
-      count: x.count as number,
+  async getTopQuestions(
+    limit = 10,
+  ): Promise<{ question: string; count: number }[]> {
+    const agg = await this.model
+      .aggregate<TopQuestionAggRow>([
+        { $unwind: '$messages' },
+        { $match: { 'messages.role': 'user' } },
+        { $group: { _id: '$messages.text', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: limit },
+      ])
+      .allowDiskUse(true);
+
+    return agg.map(({ _id, count }) => ({
+      question: _id,
+      count,
     }));
   }
 }

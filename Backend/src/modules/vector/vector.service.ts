@@ -96,8 +96,14 @@ type DocChunkPayload = {
 };
 
 type BotFaqPayload = {
+  faqId: string;
   question: string;
   answer: string;
+  // حقول اختيارية مفيدة للفلترة/العرض
+  type?: 'faq';
+  source?: string; // 'manual' | 'import' | 'crawl' | ... إلخ
+  tags?: string[];
+  locale?: string; // 'ar' | 'en' | ...
 };
 
 /** ===== Helpers ثابتة للـ UUID ===== */

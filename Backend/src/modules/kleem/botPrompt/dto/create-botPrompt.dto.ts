@@ -1,8 +1,4 @@
-import {
-  ApiProperty,
-  ApiPropertyOptional,
-  ApiHideProperty,
-} from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsEnum,
@@ -15,7 +11,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
 } from 'class-validator';
-
+const MAX_TEMPLATE_LENGTH_Kaleem = 10000;
 export class CreateBotPromptDto {
   @IsEnum(['system', 'user'], {
     message: 'النوع يجب أن يكون إما system أو user',
@@ -30,11 +26,13 @@ export class CreateBotPromptDto {
   @IsString()
   @IsNotEmpty({ message: 'محتوى البرومبت مطلوب' })
   @MinLength(10, { message: 'يجب أن يكون طول المحتوى 10 أحرف على الأقل' })
-  @MaxLength(10000, { message: 'يجب ألا يتجاوز المحتوى 10000 حرف' })
+  @MaxLength(MAX_TEMPLATE_LENGTH_Kaleem, {
+    message: 'يجب ألا يتجاوز المحتوى 10000 حرف',
+  })
   @ApiProperty({
     description: 'محتوى البرومبت',
     minLength: 10,
-    maxLength: 10000,
+    maxLength: MAX_TEMPLATE_LENGTH_Kaleem,
     example: 'أنت مساعد ذكي يساعد المستخدمين في الإجابة على استفساراتهم.',
   })
   content: string;

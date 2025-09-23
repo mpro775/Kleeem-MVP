@@ -36,6 +36,7 @@ import { BotPromptService } from './botPrompt.service';
 import { CreateBotPromptDto } from './dto/create-botPrompt.dto';
 import { SetActiveKaleemDto } from './dto/set-active.dto';
 import { UpdateBotPromptDto } from './dto/update-botPrompt.dto';
+import { BotPromptLean } from './repositories/bot-prompt.repository';
 import { BotPrompt } from './schemas/botPrompt.schema';
 @ApiTags('kleem.botPrompt')
 @ApiBearerAuth()
@@ -65,7 +66,7 @@ export class BotPromptController {
   @ApiForbiddenResponse({
     description: 'kleem.botPrompt.responses.error.forbidden',
   })
-  async create(@Body() dto: CreateBotPromptDto) {
+  async create(@Body() dto: CreateBotPromptDto): Promise<BotPromptLean> {
     return this.svc.create(dto);
   }
 
@@ -85,7 +86,7 @@ export class BotPromptController {
       },
     },
   })
-  ping() {
+  ping(): { ok: boolean; who: string } {
     return { ok: true, who: 'bot-prompts' };
   }
 
@@ -116,7 +117,7 @@ export class BotPromptController {
   list(
     @Query('type') type?: 'system' | 'user',
     @Query('includeArchived') includeArchived?: string,
-  ) {
+  ): Promise<BotPromptLean[]> {
     return this.svc.findAll({
       type,
       includeArchived: includeArchived === 'true',
@@ -144,7 +145,7 @@ export class BotPromptController {
   @ApiForbiddenResponse({
     description: 'غير مصرح - يجب أن تكون مسؤولاً',
   })
-  get(@Param('id') id: string) {
+  get(@Param('id') id: string): Promise<BotPromptLean | null> {
     return this.svc.findById(id);
   }
 
@@ -170,7 +171,10 @@ export class BotPromptController {
   @ApiForbiddenResponse({
     description: 'غير مصرح - يجب أن تكون مسؤولاً',
   })
-  async update(@Param('id') id: string, @Body() dto: UpdateBotPromptDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateBotPromptDto,
+  ): Promise<BotPromptLean | null> {
     return this.svc.update(id, dto);
   }
 
@@ -196,7 +200,10 @@ export class BotPromptController {
   @ApiForbiddenResponse({
     description: 'غير مصرح - يجب أن تكون مسؤولاً',
   })
-  async setActive(@Param('id') id: string, @Body() body: SetActiveKaleemDto) {
+  async setActive(
+    @Param('id') id: string,
+    @Body() body: SetActiveKaleemDto,
+  ): Promise<BotPromptLean> {
     return this.svc.setActive(id, body.active);
   }
 
@@ -221,7 +228,7 @@ export class BotPromptController {
   @ApiForbiddenResponse({
     description: 'غير مصرح - يجب أن تكون مسؤولاً',
   })
-  async archive(@Param('id') id: string) {
+  async archive(@Param('id') id: string): Promise<BotPromptLean> {
     return this.svc.archive(id);
   }
 
@@ -247,7 +254,7 @@ export class BotPromptController {
   @ApiForbiddenResponse({
     description: 'غير مصرح - يجب أن تكون مسؤولاً',
   })
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string): Promise<{ deleted: boolean }> {
     return this.svc.remove(id);
   }
   @Get('system/active')
@@ -265,7 +272,7 @@ export class BotPromptController {
   @ApiForbiddenResponse({
     description: 'غير مصرح - يجب أن تكون مسؤولاً',
   })
-  async activeSystem() {
+  async activeSystem(): Promise<string> {
     return this.svc.getActiveSystemPrompt();
   }
   @Get('system/active/content')
@@ -290,7 +297,7 @@ export class BotPromptController {
   @ApiForbiddenResponse({
     description: 'غير مصرح - يجب أن تكون مسؤولاً',
   })
-  async activeSystemContent() {
+  async activeSystemContent(): Promise<{ content: string }> {
     const content = await this.svc.getActiveSystemPromptOrDefault();
     return { content };
   }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, RootFilterQuery } from 'mongoose';
 
 import { BotPrompt } from '../schemas/botPrompt.schema';
 
@@ -13,15 +13,15 @@ export class BotPromptMongoRepository implements BotPromptRepository {
   ) {}
 
   async create(data: Partial<BotPrompt>): Promise<BotPromptLean> {
-    const doc = await this.model.create(data as any);
-    return doc.toObject() as any;
+    const doc = await this.model.create(data);
+    return doc.toObject() as BotPromptLean;
   }
 
   async findAll(filter?: {
     type?: 'system' | 'user';
     includeArchived?: boolean;
   }): Promise<BotPromptLean[]> {
-    const q: any = {};
+    const q: Record<string, unknown> = {};
     if (filter?.type) q.type = filter.type;
     if (!filter?.includeArchived) q.archived = { $ne: true };
     return this.model
@@ -36,7 +36,7 @@ export class BotPromptMongoRepository implements BotPromptRepository {
   }
 
   async findOne(
-    filter: Record<string, any>,
+    filter: Record<string, unknown>,
     sort?: Record<string, 1 | -1>,
   ): Promise<BotPromptLean | null> {
     let q = this.model.findOne(filter);
@@ -49,20 +49,28 @@ export class BotPromptMongoRepository implements BotPromptRepository {
     patch: Partial<BotPrompt>,
   ): Promise<BotPromptLean | null> {
     return this.model
-      .findByIdAndUpdate(id, patch as any, { new: true })
+      .findByIdAndUpdate(id, patch as unknown as Partial<BotPrompt>, {
+        new: true,
+      })
       .lean<BotPromptLean>()
       .exec();
   }
 
   async updateMany(
-    filter: Record<string, any>,
+    filter: Record<string, unknown>,
     patch: Partial<BotPrompt>,
   ): Promise<void> {
-    await this.model.updateMany(filter as any, { $set: patch as any }).exec();
+    await this.model
+      .updateMany(filter as unknown as RootFilterQuery<BotPrompt>, {
+        $set: patch as unknown as Partial<BotPrompt>,
+      })
+      .exec();
   }
 
   async deleteById(id: string): Promise<{ deleted: boolean }> {
-    const res = await this.model.deleteOne({ _id: id } as any).exec();
+    const res = await this.model
+      .deleteOne({ _id: id } as unknown as RootFilterQuery<BotPrompt>)
+      .exec();
     return { deleted: res.deletedCount === 1 };
   }
 }

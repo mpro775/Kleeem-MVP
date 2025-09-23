@@ -31,8 +31,8 @@ export interface ServerToClientEvents {
   bot_done: { sessionId: string };
 
   // إشعارات
-  notification: any; // للمستخدم/التاجر
-  'admin:notification': any; // للأدمن/الوكلاء
+  notification: unknown; // للمستخدم/التاجر
+  'admin:notification': unknown; // للأدمن/الوكلاء
   admin_new_message: { sessionId: string; message: KleemWsMessage };
 }
 

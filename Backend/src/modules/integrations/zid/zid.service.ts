@@ -3,12 +3,14 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Types } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
+import { MS_PER_SECOND } from 'src/common/constants/common';
 
-import { ExternalProduct } from '../types';
+import { ExternalProduct, ZidProductsResponse } from '../types';
 
 import { IntegrationRepository } from './repositories/integration.repository';
 import { MerchantRepository } from './repositories/merchant.repository';
 import { ZID_INTEGRATION_REPOSITORY, ZID_MERCHANT_REPOSITORY } from './tokens';
+import { ZidWebhookResponse } from './zid.model';
 
 export interface ZidOAuthTokenResponse {
   access_token: string;
@@ -16,7 +18,7 @@ export interface ZidOAuthTokenResponse {
   store_id: string;
   token_type: string;
   expires_in: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 @Injectable()
@@ -32,12 +34,69 @@ export class ZidService {
     private readonly merchants: MerchantRepository,
   ) {}
 
-  private async getZidCreds(merchantId: Types.ObjectId) {
+  private extractProductName(obj: Record<string, unknown>): string {
+    if (typeof obj?.name === 'string') {
+      return obj.name;
+    }
+    const nameObj = obj?.name as Record<string, unknown> | undefined;
+    return (nameObj?.ar ?? nameObj?.en ?? '') as string;
+  }
+
+  private processZidProduct(item: unknown): ExternalProduct {
+    const obj = item as Record<string, unknown>;
+    const name = this.extractProductName(obj);
+
+    return {
+      externalId: String(obj.id),
+      title: name,
+      price: typeof obj.price === 'number' ? obj.price : null,
+      currency: typeof obj.currency === 'string' ? obj.currency : undefined,
+      stock: typeof obj.quantity === 'number' ? obj.quantity : null,
+      updatedAt: obj.updated_at ? new Date(obj.updated_at as string) : null,
+      raw: item,
+    };
+  }
+
+  private async fetchProductsPage(
+    authorizationHeader: string,
+    managerToken: string,
+    storeId: string,
+    page: number,
+  ): Promise<{ products: ExternalProduct[]; hasNext: boolean }> {
+    const { data } = await firstValueFrom(
+      this.http.get<ZidProductsResponse>(
+        `https://api.zid.sa/v1/products/?page=${page}&page_size=100`,
+        {
+          headers: {
+            Authorization: authorizationHeader,
+            'X-Manager-Token': managerToken,
+            'Store-Id': storeId,
+            Role: 'Manager',
+          },
+        },
+      ),
+    );
+
+    const items = Array.isArray(data?.data) ? data.data : [];
+    const products = items.map((item) => this.processZidProduct(item));
+    const hasNext = !!data?.links?.next;
+
+    return { products, hasNext };
+  }
+
+  private async getZidCreds(merchantId: Types.ObjectId): Promise<{
+    managerToken: string;
+    authorizationHeader: string;
+    storeId: string;
+  }> {
     const integ = await this.integrations.findZidByMerchant(merchantId);
     if (!integ) throw new Error('Integration not found');
 
     // جدّد لو قارب الانتهاء
-    if (integ.expiresAt && integ.expiresAt.getTime() - Date.now() <= 60_000) {
+    if (
+      integ.expiresAt &&
+      integ.expiresAt.getTime() - Date.now() <= MS_PER_SECOND * 60
+    ) {
       await this.refreshAccessToken(merchantId);
     }
 
@@ -48,7 +107,7 @@ export class ZidService {
       managerToken: fresh.managerToken, // لـ X-Manager-Token / Access-Token
       authorizationHeader:
         fresh.authorizationToken || `Bearer ${fresh.managerToken}`, // fallback
-      storeId: fresh.storeId,
+      storeId: fresh.storeId || '',
     };
   }
 
@@ -107,9 +166,11 @@ export class ZidService {
   async upsertIntegration(
     merchantId: Types.ObjectId,
     tokens: ZidOAuthTokenResponse,
-  ) {
+  ): Promise<void> {
     const now = Date.now();
-    const expiresAt = new Date(now + (tokens.expires_in ?? 3600) * 1000);
+    const expiresAt = new Date(
+      now + (tokens.expires_in ?? MS_PER_SECOND * 60 * 60), // 1 hour
+    );
 
     await this.integrations.upsertZid(merchantId, {
       accessToken: tokens.access_token,
@@ -127,7 +188,7 @@ export class ZidService {
     });
   }
 
-  async refreshAccessToken(merchantId: Types.ObjectId) {
+  async refreshAccessToken(merchantId: Types.ObjectId): Promise<string> {
     const integ = await this.integrations.findZidByMerchant(merchantId);
     if (!integ?.refreshToken) throw new Error('No refresh token');
 
@@ -153,10 +214,13 @@ export class ZidService {
     return data.access_token;
   }
 
-  async getValidAccessToken(merchantId: Types.ObjectId) {
+  async getValidAccessToken(merchantId: Types.ObjectId): Promise<string> {
     const integ = await this.integrations.findZidByMerchant(merchantId);
     if (!integ) throw new Error('Integration not found');
-    if (integ.expiresAt && integ.expiresAt.getTime() - Date.now() > 60_000) {
+    if (
+      integ.expiresAt &&
+      integ.expiresAt.getTime() - Date.now() > MS_PER_SECOND * 60
+    ) {
       return integ.accessToken!;
     }
     return this.refreshAccessToken(merchantId);
@@ -171,52 +235,29 @@ export class ZidService {
     let page = 1;
 
     for (;;) {
-      const { data } = await firstValueFrom(
-        this.http.get<any>(
-          `https://api.zid.sa/v1/products/?page=${page}&page_size=100`,
-          {
-            headers: {
-              Authorization: authorizationHeader,
-              'X-Manager-Token': managerToken,
-              'Store-Id': storeId,
-              Role: 'Manager',
-            },
-          },
-        ),
+      const { products, hasNext } = await this.fetchProductsPage(
+        authorizationHeader,
+        managerToken,
+        storeId,
+        page,
       );
 
-      const items = Array.isArray(data?.results) ? data.results : [];
-      for (const item of items) {
-        const name =
-          typeof item?.name === 'string'
-            ? item.name
-            : (item?.name?.ar ?? item?.name?.en ?? '');
-        results.push({
-          externalId: String(item.id),
-          title: name,
-          price: typeof item.price === 'number' ? item.price : null,
-          currency:
-            typeof item.currency === 'string' ? item.currency : undefined,
-          stock: typeof item.quantity === 'number' ? item.quantity : null,
-          updatedAt: item.updated_at ? new Date(item.updated_at) : null,
-          raw: item,
-        });
-      }
+      results.push(...products);
 
-      if (!data?.next) break;
+      if (!hasNext) break;
       page += 1;
     }
     return results;
   }
 
-  async registerDefaultWebhooks(merchantId: Types.ObjectId) {
+  async registerDefaultWebhooks(merchantId: Types.ObjectId): Promise<void> {
     const { managerToken, authorizationHeader, storeId } =
       await this.getZidCreds(merchantId);
     const base = 'https://api.zid.sa/v1/managers/webhooks';
     const targetUrl = this.config.get<string>('ZID_WEBHOOK_URL')!;
 
     const list = await firstValueFrom(
-      this.http.get<any>(base, {
+      this.http.get<ZidWebhookResponse>(base, {
         headers: {
           Authorization: authorizationHeader,
           'X-Manager-Token': managerToken,
@@ -226,11 +267,20 @@ export class ZidService {
       }),
     );
 
-    const registered: Set<string> = new Set(
-      (list.data?.results ?? list.data ?? []).map(
-        (w: any) => `${w.event}|${w.target_url}`,
-      ),
-    );
+    const webhooks = list.data?.data ?? list.data ?? [];
+    const registeredKeys = Array.isArray(webhooks)
+      ? webhooks
+          .map((w: unknown) => {
+            const webhook = w as Record<string, unknown>;
+            const event =
+              typeof webhook.event === 'string' ? webhook.event : '';
+            const targetUrl =
+              typeof webhook.target_url === 'string' ? webhook.target_url : '';
+            return event && targetUrl ? `${event}|${targetUrl}` : '';
+          })
+          .filter(Boolean)
+      : [];
+    const registered: Set<string> = new Set(registeredKeys);
 
     const events = [
       'product.create',
