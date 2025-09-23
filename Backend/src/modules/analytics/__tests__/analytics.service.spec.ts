@@ -1,7 +1,8 @@
 import { Test } from '@nestjs/testing';
 
 import { AnalyticsService } from '../analytics.service';
-import { AnalyticsRepository } from '../repositories/analytics.repository';
+
+import type { AnalyticsRepository } from '../repositories/analytics.repository';
 
 describe('AnalyticsService', () => {
   let service: AnalyticsService;

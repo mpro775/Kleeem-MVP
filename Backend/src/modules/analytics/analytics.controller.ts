@@ -1,26 +1,28 @@
 // src/analytics/analytics.controller.ts
 
+// external
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   Patch,
   Post,
   Query,
   UseGuards,
-  ForbiddenException,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiQuery,
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
-  ApiBadRequestResponse,
   ApiForbiddenResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
+// internal
 import { CurrentMerchantId, CurrentUserId } from 'src/common';
 import { Public } from 'src/common/decorators/public.decorator';
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
@@ -30,13 +32,95 @@ import { TranslationService } from '../../common/services/translation.service';
 
 import {
   AnalyticsService,
-  Overview,
-  KeywordCount,
-  TopProduct,
+  type KeywordCount,
+  type Overview,
+  type TopProduct,
 } from './analytics.service';
 import { AddToKnowledgeDto } from './dto/add-to-knowledge.dto';
 import { CreateKleemMissingResponseDto } from './dto/create-kleem-missing-response.dto';
 import { CreateMissingResponseDto } from './dto/create-missing-response.dto';
+
+// -----------------------------------------------------------------------------
+// Constants (no-magic-numbers)
+const DEFAULT_PERIOD = 'week' as const;
+const MAX_TOP_KEYWORDS = 100;
+const DEFAULT_TOP_KEYWORDS = 10;
+const MAX_TOP_PRODUCTS = 50;
+const DEFAULT_TOP_PRODUCTS = 5;
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 20;
+const MIN_DAYS = 1;
+const MAX_DAYS = 90;
+const DEFAULT_DAYS = 7;
+
+// API documentation examples
+const EXAMPLE_TOTAL_MESSAGES = 1250;
+const EXAMPLE_AVG_RESPONSE_TIME = 45.5;
+const EXAMPLE_KEYWORD_PERCENTAGE = 12.5;
+const EXAMPLE_KEYWORD_COUNT = 25;
+const EXAMPLE_TOTAL_CONVERSATIONS = 89;
+const EXAMPLE_MISSING_RESPONSES = 12;
+const EXAMPLE_PRODUCTS_COUNT = 156;
+const EXAMPLE_PAGES = 8;
+const EXAMPLE_RESOLUTION_RATE = 71.1;
+const EXAMPLE_AVG_RESOLUTION_TIME = 2.5;
+
+// -----------------------------------------------------------------------------
+// Types & helpers
+type Period = 'week' | 'month' | 'quarter';
+type GroupBy = 'day' | 'hour';
+type BoolString = 'true' | 'false';
+
+type TimelineEntry = {
+  _id: string;
+  count: number;
+};
+
+type MissingResponsesListQuery = {
+  page: number;
+  limit: number;
+  resolved: 'all' | 'true' | 'false';
+  channel: 'all' | 'whatsapp' | 'telegram' | 'webchat';
+  type: 'all' | 'missing_response' | 'unavailable_product';
+  search: string;
+  from?: string;
+  to?: string;
+};
+
+function parseIntSafe(v: unknown, fallback: number): number {
+  const n = typeof v === 'string' ? Number.parseInt(v, 10) : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.min(Math.max(n, min), max);
+}
+
+function buildListQuery(q: Record<string, unknown>): MissingResponsesListQuery {
+  // Map API types to internal service types
+  let type: MissingResponsesListQuery['type'] = 'all';
+  const apiType = q.type as string;
+  if (apiType === 'missing') {
+    type = 'missing_response';
+  } else if (apiType === 'kleem') {
+    // Kleem missing responses might be handled differently or not supported
+    // For now, treat as missing_response or we could add specific handling
+    type = 'missing_response';
+  }
+
+  return {
+    page: parseIntSafe(q.page, DEFAULT_PAGE),
+    limit: parseIntSafe(q.limit, DEFAULT_LIMIT),
+    resolved: (q.resolved as MissingResponsesListQuery['resolved']) ?? 'all',
+    channel: (q.channel as MissingResponsesListQuery['channel']) ?? 'all',
+    type,
+    search: typeof q.search === 'string' ? q.search : '',
+    from: typeof q.from === 'string' ? q.from : undefined,
+    to: typeof q.to === 'string' ? q.to : undefined,
+  };
+}
+
+// -----------------------------------------------------------------------------
 
 @ApiTags('analytics')
 @ApiBearerAuth()
@@ -59,7 +143,7 @@ export class AnalyticsController {
     name: 'period',
     required: false,
     enum: ['week', 'month', 'quarter'],
-    example: 'week',
+    example: DEFAULT_PERIOD,
   })
   @ApiResponse({
     status: 200,
@@ -67,17 +151,23 @@ export class AnalyticsController {
     schema: {
       type: 'object',
       properties: {
-        totalMessages: { type: 'number', example: 1250 },
-        totalConversations: { type: 'number', example: 89 },
-        avgResponseTime: { type: 'number', example: 45.5 },
-        missingResponses: { type: 'number', example: 12 },
+        totalMessages: { type: 'number', example: EXAMPLE_TOTAL_MESSAGES },
+        totalConversations: {
+          type: 'number',
+          example: EXAMPLE_TOTAL_CONVERSATIONS,
+        },
+        avgResponseTime: { type: 'number', example: EXAMPLE_AVG_RESPONSE_TIME },
+        missingResponses: {
+          type: 'number',
+          example: EXAMPLE_MISSING_RESPONSES,
+        },
         topChannels: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
               channel: { type: 'string', example: 'whatsapp' },
-              count: { type: 'number', example: 456 },
+              count: { type: 'number', example: EXAMPLE_TOTAL_CONVERSATIONS },
             },
           },
         },
@@ -90,10 +180,11 @@ export class AnalyticsController {
   })
   async overview(
     @CurrentMerchantId() merchantId: string | null,
-    @Query('period') period: 'week' | 'month' | 'quarter' = 'week',
+    @Query('period') period: Period = DEFAULT_PERIOD,
   ): Promise<Overview> {
-    if (!merchantId)
+    if (!merchantId) {
       throw new ForbiddenException('analytics.responses.error.noMerchant');
+    }
     return this.analytics.getOverview(merchantId, period);
   }
 
@@ -108,15 +199,15 @@ export class AnalyticsController {
     name: 'period',
     required: false,
     enum: ['week', 'month', 'quarter'],
-    example: 'week',
+    example: DEFAULT_PERIOD,
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     type: Number,
-    example: 10,
+    example: DEFAULT_TOP_KEYWORDS,
     minimum: 1,
-    maximum: 100,
+    maximum: MAX_TOP_KEYWORDS,
   })
   @ApiResponse({
     status: 200,
@@ -127,8 +218,8 @@ export class AnalyticsController {
         type: 'object',
         properties: {
           keyword: { type: 'string', example: 'سعر' },
-          count: { type: 'number', example: 25 },
-          percentage: { type: 'number', example: 12.5 },
+          count: { type: 'number', example: EXAMPLE_KEYWORD_COUNT },
+          percentage: { type: 'number', example: EXAMPLE_KEYWORD_PERCENTAGE },
         },
       },
     },
@@ -139,12 +230,17 @@ export class AnalyticsController {
   })
   async topKeywords(
     @CurrentMerchantId() merchantId: string | null,
-    @Query('period') period: 'week' | 'month' | 'quarter' = 'week',
-    @Query('limit') limit = '10',
+    @Query('period') period: Period = DEFAULT_PERIOD,
+    @Query('limit') limit = String(DEFAULT_TOP_KEYWORDS),
   ): Promise<KeywordCount[]> {
-    if (!merchantId)
+    if (!merchantId) {
       throw new ForbiddenException('analytics.responses.error.noMerchant');
-    const n = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100);
+    }
+    const n = clamp(
+      parseIntSafe(limit, DEFAULT_TOP_KEYWORDS),
+      1,
+      MAX_TOP_KEYWORDS,
+    );
     return this.analytics.getTopKeywords(merchantId, period, n);
   }
 
@@ -159,7 +255,7 @@ export class AnalyticsController {
     name: 'period',
     required: false,
     enum: ['week', 'month', 'quarter'],
-    example: 'week',
+    example: DEFAULT_PERIOD,
   })
   @ApiQuery({
     name: 'groupBy',
@@ -175,9 +271,8 @@ export class AnalyticsController {
       items: {
         type: 'object',
         properties: {
-          date: { type: 'string', example: '2023-09-18' },
-          count: { type: 'number', example: 45 },
-          channel: { type: 'string', example: 'whatsapp' },
+          _id: { type: 'string', example: '2023-09-18' },
+          count: { type: 'number', example: EXAMPLE_TOTAL_MESSAGES },
         },
       },
     },
@@ -188,11 +283,12 @@ export class AnalyticsController {
   })
   async messagesTimeline(
     @CurrentMerchantId() merchantId: string | null,
-    @Query('period') period: 'week' | 'month' | 'quarter' = 'week',
-    @Query('groupBy') groupBy: 'day' | 'hour' = 'day',
-  ) {
-    if (!merchantId)
+    @Query('period') period: Period = DEFAULT_PERIOD,
+    @Query('groupBy') groupBy: GroupBy = 'day',
+  ): Promise<TimelineEntry[]> {
+    if (!merchantId) {
       throw new ForbiddenException('analytics.responses.error.noMerchant');
+    }
     return this.analytics.getMessagesTimeline(merchantId, period, groupBy);
   }
 
@@ -209,7 +305,7 @@ export class AnalyticsController {
     schema: {
       type: 'object',
       properties: {
-        total: { type: 'number', example: 156 },
+        total: { type: 'number', example: EXAMPLE_PRODUCTS_COUNT },
       },
     },
   })
@@ -220,9 +316,11 @@ export class AnalyticsController {
   async productsCount(
     @CurrentMerchantId() merchantId: string | null,
   ): Promise<{ total: number }> {
-    if (!merchantId)
+    if (!merchantId) {
       throw new ForbiddenException('analytics.responses.error.noMerchant');
-    return { total: await this.analytics.getProductsCount(merchantId) };
+    }
+    const total = await this.analytics.getProductsCount(merchantId);
+    return { total };
   }
 
   /** Webhook عام */
@@ -241,7 +339,7 @@ export class AnalyticsController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        id: { type: 'string', example: '66f1a2b3c4d5e6f7g8h9i0j' },
+        id: { type: 'string', example: '66f1a2...' },
       },
     },
   })
@@ -249,9 +347,11 @@ export class AnalyticsController {
     description: 'Invalid webhook data',
     type: ErrorResponse,
   })
-  async webhook(@Body() body: CreateMissingResponseDto) {
+  async webhook(
+    @Body() body: CreateMissingResponseDto,
+  ): Promise<{ success: boolean; id: string }> {
     const doc = await this.analytics.createFromWebhook(body);
-    return { success: true, id: (doc as any)._id };
+    return { success: true, id: doc._id.toString() };
   }
 
   /** الرسائل المنسيّة / غير المجاب عنها */
@@ -261,8 +361,18 @@ export class AnalyticsController {
     summary: 'جلب الرسائل المنسية / غير المجاب عنها',
     description: 'Retrieve paginated list of missing/unanswered responses',
   })
-  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    example: DEFAULT_PAGE,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    example: DEFAULT_LIMIT,
+  })
   @ApiQuery({
     name: 'resolved',
     required: false,
@@ -300,26 +410,14 @@ export class AnalyticsController {
     schema: {
       type: 'object',
       properties: {
-        items: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', example: '66f1a2b3c4d5e6f7g8h9i0j' },
-              question: { type: 'string', example: 'ما هو سعر المنتج؟' },
-              channel: { type: 'string', example: 'whatsapp' },
-              resolved: { type: 'boolean', example: false },
-              createdAt: { type: 'string', example: '2023-09-18T10:30:00Z' },
-            },
-          },
-        },
+        items: { type: 'array', items: { type: 'object' } },
         pagination: {
           type: 'object',
           properties: {
-            page: { type: 'number', example: 1 },
-            limit: { type: 'number', example: 20 },
-            total: { type: 'number', example: 156 },
-            pages: { type: 'number', example: 8 },
+            page: { type: 'number', example: DEFAULT_PAGE },
+            limit: { type: 'number', example: DEFAULT_LIMIT },
+            total: { type: 'number', example: EXAMPLE_PRODUCTS_COUNT },
+            pages: { type: 'number', example: EXAMPLE_PAGES },
           },
         },
       },
@@ -331,21 +429,13 @@ export class AnalyticsController {
   })
   async list(
     @CurrentMerchantId() merchantId: string | null,
-    @Query() query: any,
-  ) {
-    if (!merchantId)
+    @Query() query: Record<string, unknown>,
+  ): Promise<unknown> {
+    if (!merchantId) {
       throw new ForbiddenException('analytics.responses.error.noMerchant');
-    return this.analytics.listMissingResponses({
-      merchantId,
-      page: Number(query.page ?? 1),
-      limit: Number(query.limit ?? 20),
-      resolved: query.resolved ?? 'all',
-      channel: query.channel ?? 'all',
-      type: query.type ?? 'all',
-      search: query.search ?? '',
-      from: query.from,
-      to: query.to,
-    });
+    }
+    const parsed = buildListQuery(query);
+    return this.analytics.listMissingResponses({ merchantId, ...parsed });
   }
 
   /** تحديد رسالة كمُعالجة */
@@ -370,7 +460,10 @@ export class AnalyticsController {
     description: 'Invalid response ID',
     type: ErrorResponse,
   })
-  async resolveOne(@CurrentUserId() userId: string, @Param('id') id: string) {
+  async resolveOne(
+    @CurrentUserId() userId: string,
+    @Param('id') id: string,
+  ): Promise<{ success: true; item: unknown }> {
     const doc = await this.analytics.markResolved(id, userId);
     return { success: true, item: doc };
   }
@@ -389,7 +482,7 @@ export class AnalyticsController {
         ids: {
           type: 'array',
           items: { type: 'string' },
-          example: ['66f1a2b3c4d5e6f7g8h9i0j', '66f2b3c4d5e6f7g8h9i0j1'],
+          example: ['id1', 'id2'],
         },
       },
     },
@@ -410,9 +503,11 @@ export class AnalyticsController {
     description: 'Invalid request data',
     type: ErrorResponse,
   })
-  async resolveBulk(@Body() body: { ids: string[] }) {
+  async resolveBulk(
+    @Body() body: { ids: string[] },
+  ): Promise<{ success: true; modifiedCount: number; matchedCount: number }> {
     const r = await this.analytics.bulkResolve(body.ids);
-    return { success: true, ...r };
+    return { success: true, modifiedCount: r.updated, matchedCount: r.updated };
   }
 
   /** تحويل رسالة منسية إلى معرفة (FAQ) */
@@ -431,13 +526,13 @@ export class AnalyticsController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        knowledgeId: { type: 'string', example: '66f3c4d5e6f7g8h9i0j1k2' },
+        knowledgeId: { type: 'string', example: '66f3...' },
         responseMarkedResolved: { type: 'boolean', example: true },
       },
     },
   })
   @ApiBadRequestResponse({
-    description: 'Invalid data or missing response not found',
+    description: 'Invalid data or not found',
     type: ErrorResponse,
   })
   @ApiForbiddenResponse({
@@ -446,12 +541,13 @@ export class AnalyticsController {
   })
   async addToKnowledge(
     @CurrentMerchantId() merchantId: string | null,
-    @CurrentUserId() userId: string, // ✅ ديكوريتر صحيح
+    @CurrentUserId() userId: string,
     @Param('id') id: string,
     @Body() body: AddToKnowledgeDto,
-  ) {
-    if (!merchantId)
+  ): Promise<unknown> {
+    if (!merchantId) {
       throw new ForbiddenException('analytics.responses.error.noMerchant');
+    }
     return this.analytics.addToKnowledge({
       merchantId,
       missingId: id,
@@ -472,9 +568,9 @@ export class AnalyticsController {
     name: 'days',
     required: false,
     type: Number,
-    example: 7,
-    minimum: 1,
-    maximum: 90,
+    example: DEFAULT_DAYS,
+    minimum: MIN_DAYS,
+    maximum: MAX_DAYS,
   })
   @ApiQuery({
     name: 'notify',
@@ -489,19 +585,15 @@ export class AnalyticsController {
     schema: {
       type: 'object',
       properties: {
-        total: { type: 'number', example: 45 },
-        resolved: { type: 'number', example: 32 },
-        unresolved: { type: 'number', example: 13 },
-        resolutionRate: { type: 'number', example: 71.1 },
-        byChannel: {
-          type: 'object',
-          properties: {
-            whatsapp: { type: 'number', example: 25 },
-            telegram: { type: 'number', example: 12 },
-            webchat: { type: 'number', example: 8 },
-          },
+        total: { type: 'number', example: EXAMPLE_MISSING_RESPONSES },
+        resolved: { type: 'number', example: EXAMPLE_MISSING_RESPONSES },
+        unresolved: { type: 'number', example: EXAMPLE_MISSING_RESPONSES },
+        resolutionRate: { type: 'number', example: EXAMPLE_RESOLUTION_RATE },
+        byChannel: { type: 'object' },
+        avgResolutionTime: {
+          type: 'number',
+          example: EXAMPLE_AVG_RESOLUTION_TIME,
         },
-        avgResolutionTime: { type: 'number', example: 2.5 },
       },
     },
   })
@@ -513,11 +605,12 @@ export class AnalyticsController {
     @CurrentMerchantId() merchantId: string | null,
     @CurrentUserId() userId: string,
     @Query('days') days?: string,
-    @Query('notify') notify?: 'true' | 'false',
-  ) {
-    if (!merchantId)
+    @Query('notify') notify?: BoolString,
+  ): Promise<unknown> {
+    if (!merchantId) {
       throw new ForbiddenException('analytics.responses.error.noMerchant');
-    const d = Math.min(Math.max(Number(days ?? 7), 1), 90);
+    }
+    const d = clamp(parseIntSafe(days, DEFAULT_DAYS), MIN_DAYS, MAX_DAYS);
     const result = await this.analytics.stats(merchantId, d);
 
     if (notify === 'true' && userId) {
@@ -541,15 +634,15 @@ export class AnalyticsController {
     name: 'period',
     required: false,
     enum: ['week', 'month', 'quarter'],
-    example: 'week',
+    example: DEFAULT_PERIOD,
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     type: Number,
-    example: 5,
+    example: DEFAULT_TOP_PRODUCTS,
     minimum: 1,
-    maximum: 50,
+    maximum: MAX_TOP_PRODUCTS,
   })
   @ApiResponse({
     status: 200,
@@ -559,10 +652,10 @@ export class AnalyticsController {
       items: {
         type: 'object',
         properties: {
-          productId: { type: 'string', example: '66f4d5e6f7g8h9i0j1k2l3' },
+          productId: { type: 'string', example: '66f4...' },
           productName: { type: 'string', example: 'هاتف سامسونج جالاكسي' },
-          queryCount: { type: 'number', example: 45 },
-          percentage: { type: 'number', example: 28.5 },
+          queryCount: { type: 'number', example: EXAMPLE_PRODUCTS_COUNT },
+          percentage: { type: 'number', example: EXAMPLE_KEYWORD_PERCENTAGE },
         },
       },
     },
@@ -573,12 +666,17 @@ export class AnalyticsController {
   })
   async topProducts(
     @CurrentMerchantId() merchantId: string | null,
-    @Query('period') period: 'week' | 'month' | 'quarter' = 'week',
-    @Query('limit') limit = '5',
+    @Query('period') period: Period = DEFAULT_PERIOD,
+    @Query('limit') limit = String(DEFAULT_TOP_PRODUCTS),
   ): Promise<TopProduct[]> {
-    if (!merchantId)
+    if (!merchantId) {
       throw new ForbiddenException('analytics.responses.error.noMerchant');
-    const n = Math.min(Math.max(parseInt(limit, 10) || 5, 1), 50);
+    }
+    const n = clamp(
+      parseIntSafe(limit, DEFAULT_TOP_PRODUCTS),
+      1,
+      MAX_TOP_PRODUCTS,
+    );
     return this.analytics.getTopProducts(merchantId, period, n);
   }
 
@@ -598,7 +696,7 @@ export class AnalyticsController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        id: { type: 'string', example: '66f1a2b3c4d5e6f7g8h9i0j' },
+        id: { type: 'string', example: '66f1...' },
       },
     },
   })
@@ -606,8 +704,10 @@ export class AnalyticsController {
     description: 'Invalid Kleem webhook data',
     type: ErrorResponse,
   })
-  async kleemWebhook(@Body() body: CreateKleemMissingResponseDto) {
+  async kleemWebhook(
+    @Body() body: CreateKleemMissingResponseDto,
+  ): Promise<{ success: true; id: string }> {
     const doc = await this.analytics.createKleemFromWebhook(body);
-    return { success: true, id: doc._id };
+    return { success: true, id: String(doc._id) };
   }
 }

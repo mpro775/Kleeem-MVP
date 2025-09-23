@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import dayjs from 'dayjs';
-import { Model, Types, FilterQuery } from 'mongoose';
+import { Model, Types, FilterQuery, RootFilterQuery } from 'mongoose';
+import { PipelineStage } from 'mongoose';
+import { MS_PER_SECOND } from 'src/common/constants/common';
 
 import {
   Channel,
@@ -19,6 +20,8 @@ import {
   ProductDocument,
 } from '../../products/schemas/product.schema';
 import { KeywordCount, ChannelCount, TopProduct } from '../analytics.service';
+import { CreateKleemMissingResponseDto } from '../dto/create-kleem-missing-response.dto';
+import { CreateMissingResponseDto } from '../dto/create-missing-response.dto';
 import {
   KleemMissingResponse,
   KleemMissingResponseDocument,
@@ -28,7 +31,12 @@ import {
   MissingResponseDocument,
 } from '../schemas/missing-response.schema';
 
-import { AnalyticsRepository } from './analytics.repository';
+import { AnalyticsRepository, TimelineEntry } from './analytics.repository';
+
+// Local interfaces for response types
+interface StatsResult {
+  [key: string]: unknown;
+}
 
 @Injectable()
 export class MongoAnalyticsRepository implements AnalyticsRepository {
@@ -46,7 +54,11 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     private readonly channelModel: Model<ChannelDocument>,
   ) {}
 
-  async countSessions(merchantId: Types.ObjectId, start: Date, end: Date) {
+  async countSessions(
+    merchantId: Types.ObjectId,
+    start: Date,
+    end: Date,
+  ): Promise<number> {
     return this.sessionModel.countDocuments({
       merchantId,
       createdAt: { $gte: start, $lte: end },
@@ -57,7 +69,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     merchantId: Types.ObjectId,
     start: Date,
     end: Date,
-  ) {
+  ): Promise<number> {
     const agg = await this.sessionModel.aggregate<{ _id: null; total: number }>(
       [
         { $match: { merchantId, createdAt: { $gte: start, $lte: end } } },
@@ -68,7 +80,11 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     return agg[0]?.total ?? 0;
   }
 
-  async countOrders(merchantId: Types.ObjectId, start: Date, end: Date) {
+  async countOrders(
+    merchantId: Types.ObjectId,
+    start: Date,
+    end: Date,
+  ): Promise<number> {
     return this.orderModel.countDocuments({
       merchantId,
       createdAt: { $gte: start, $lte: end },
@@ -79,7 +95,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     merchantId: Types.ObjectId,
     start: Date,
     end: Date,
-  ) {
+  ): Promise<Record<string, number>> {
     const rows = await this.orderModel.aggregate<{
       _id: string;
       count: number;
@@ -96,7 +112,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     merchantId: Types.ObjectId,
     start: Date,
     end: Date,
-  ) {
+  ): Promise<number> {
     const rows = await this.orderModel.aggregate<{ _id: null; total: number }>([
       {
         $match: {
@@ -115,7 +131,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     start: Date,
     end: Date,
     limit: number,
-  ) {
+  ): Promise<KeywordCount[]> {
     return this.sessionModel.aggregate<KeywordCount>([
       { $match: { merchantId, createdAt: { $gte: start, $lte: end } } },
       { $unwind: '$messages' },
@@ -132,7 +148,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     start: Date,
     end: Date,
     limit: number,
-  ) {
+  ): Promise<TopProduct[]> {
     return this.sessionModel
       .aggregate<TopProduct>([
         { $match: { merchantId, createdAt: { $gte: start, $lte: end } } },
@@ -179,7 +195,9 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
       .then((res) => res);
   }
 
-  async getEnabledLogicalChannels(merchantId: Types.ObjectId) {
+  async getEnabledLogicalChannels(
+    merchantId: Types.ObjectId,
+  ): Promise<Set<'telegram' | 'whatsapp' | 'webchat'>> {
     const rows = await this.channelModel
       .find({
         merchantId,
@@ -211,7 +229,11 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     return set;
   }
 
-  async channelsUsage(merchantId: Types.ObjectId, start: Date, end: Date) {
+  async channelsUsage(
+    merchantId: Types.ObjectId,
+    start: Date,
+    end: Date,
+  ): Promise<ChannelCount[]> {
     return this.sessionModel.aggregate<ChannelCount>([
       { $match: { merchantId, createdAt: { $gte: start, $lte: end } } },
       { $group: { _id: '$channel', count: { $sum: 1 } } },
@@ -219,7 +241,11 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     ]);
   }
 
-  async getCsat(merchantId: Types.ObjectId, start: Date, end: Date) {
+  async getCsat(
+    merchantId: Types.ObjectId,
+    start: Date,
+    end: Date,
+  ): Promise<number | null> {
     const r: Array<{ csat: number | null }> = await this.sessionModel.aggregate(
       [
         { $match: { merchantId, createdAt: { $gte: start, $lte: end } } },
@@ -259,7 +285,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     merchantId: Types.ObjectId,
     start: Date,
     end: Date,
-  ) {
+  ): Promise<number | null> {
     const r: Array<{ avgSec: number | null }> =
       await this.sessionModel.aggregate([
         { $match: { merchantId, createdAt: { $gte: start, $lte: end } } },
@@ -311,7 +337,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
                 {
                   $divide: [
                     { $subtract: ['$firstBot', '$firstCustomer'] },
-                    1000,
+                    MS_PER_SECOND,
                   ],
                 },
                 null,
@@ -327,14 +353,16 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     return typeof value === 'number' || value === null ? value : null;
   }
 
-  async countMissingOpen(merchantId: Types.ObjectId) {
+  async countMissingOpen(merchantId: Types.ObjectId): Promise<number> {
     return this.missingResponseModel.countDocuments({
       merchant: merchantId,
       resolved: false,
     });
   }
 
-  async createMissingFromWebhook(dto: any) {
+  async createMissingFromWebhook(
+    dto: CreateMissingResponseDto,
+  ): Promise<MissingResponseDocument> {
     return this.missingResponseModel.create({
       ...dto,
       merchant: new Types.ObjectId(dto.merchant),
@@ -342,7 +370,11 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     });
   }
 
-  async listMissingResponses(filter: any, skip: number, limit: number) {
+  async listMissingResponses(
+    filter: RootFilterQuery<MissingResponseDocument>,
+    skip: number,
+    limit: number,
+  ): Promise<{ items: MissingResponseDocument[]; total: number }> {
     const [items, total] = await Promise.all([
       this.missingResponseModel
         .find(filter)
@@ -355,15 +387,22 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     return { items, total };
   }
 
-  async markMissingResolved(id: string, userId?: string) {
-    return this.missingResponseModel.findByIdAndUpdate(
+  async markMissingResolved(
+    id: string,
+    userId?: string,
+  ): Promise<MissingResponseDocument> {
+    const updated = await this.missingResponseModel.findByIdAndUpdate(
       id,
       { resolved: true, resolvedAt: new Date(), resolvedBy: userId ?? null },
       { new: true },
     );
+    return updated!;
   }
 
-  async bulkResolveMissing(ids: string[], userId?: string) {
+  async bulkResolveMissing(
+    ids: string[],
+    userId?: string,
+  ): Promise<{ updated: number }> {
     const now = new Date();
     await this.missingResponseModel.updateMany(
       { _id: { $in: ids.map((i) => new Types.ObjectId(i)) } },
@@ -372,7 +411,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     return { updated: ids.length };
   }
 
-  async statsMissing(merchantId: string, from: Date) {
+  async statsMissing(merchantId: string, from: Date): Promise<StatsResult[]> {
     const pipeline = [
       {
         $match: {
@@ -405,10 +444,14 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
       },
       { $sort: { _id: 1 } },
     ];
-    return this.missingResponseModel.aggregate(pipeline as any);
+    return this.missingResponseModel.aggregate(pipeline as PipelineStage[]);
   }
 
-  async countPaidOrders(merchantId: Types.ObjectId, start: Date, end: Date) {
+  async countPaidOrders(
+    merchantId: Types.ObjectId,
+    start: Date,
+    end: Date,
+  ): Promise<number> {
     return this.orderModel.countDocuments({
       merchantId,
       createdAt: { $gte: start, $lte: end },
@@ -416,7 +459,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     });
   }
 
-  async countProducts(merchantId: Types.ObjectId) {
+  async countProducts(merchantId: Types.ObjectId): Promise<number> {
     return this.productModel.countDocuments({ merchantId });
   }
 
@@ -425,7 +468,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     start: Date,
     end: Date,
     groupBy: 'day' | 'hour',
-  ) {
+  ): Promise<TimelineEntry[]> {
     const dateFormat = groupBy === 'hour' ? '%Y-%m-%d %H:00' : '%Y-%m-%d';
     return this.sessionModel.aggregate([
       { $match: { merchantId, createdAt: { $gte: start, $lte: end } } },
@@ -447,11 +490,13 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     start: Date,
     end: Date,
     limit: number,
-  ) {
+  ): Promise<KeywordCount[]> {
     return this.topKeywords(merchantId, start, end, limit);
   }
 
-  async createKleemFromWebhook(dto: any) {
+  async createKleemFromWebhook(
+    dto: CreateKleemMissingResponseDto,
+  ): Promise<KleemMissingResponseDocument> {
     dto.question = (dto.question || '').trim();
     if (dto.botReply) dto.botReply = dto.botReply.trim();
     return this.kleemMissingModel.create({
@@ -464,7 +509,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
     filter: FilterQuery<KleemMissingResponseDocument>,
     skip: number,
     limit: number,
-  ) {
+  ): Promise<{ items: KleemMissingResponseDocument[]; total: number }> {
     const [items, total] = await Promise.all([
       this.kleemMissingModel
         .find(filter)
@@ -484,8 +529,8 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
       manualReply: string;
       category: string;
     }>,
-  ) {
-    return this.kleemMissingModel
+  ): Promise<KleemMissingResponseDocument> {
+    const updated = await this.kleemMissingModel
       .findByIdAndUpdate(
         id,
         {
@@ -502,9 +547,10 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
         { new: true },
       )
       .lean();
+    return updated!;
   }
 
-  async bulkResolveKleem(ids: string[]) {
+  async bulkResolveKleem(ids: string[]): Promise<{ updated: number }> {
     await this.kleemMissingModel.updateMany(
       { _id: { $in: ids } },
       { $set: { resolved: true } },

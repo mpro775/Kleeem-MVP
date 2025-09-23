@@ -18,7 +18,6 @@ import { Product, ProductSchema } from '../products/schemas/product.schema';
 import { AnalyticsAdminController } from './analytics.admin.controller';
 import { AnalyticsController } from './analytics.controller';
 import { AnalyticsService } from './analytics.service';
-
 import { MongoAnalyticsRepository } from './repositories/mongo-analytics.repository';
 import {
   KleemMissingResponse,

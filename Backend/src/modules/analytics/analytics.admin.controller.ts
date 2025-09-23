@@ -14,6 +14,7 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 
 import { AnalyticsService } from './analytics.service';
 import { QueryKleemMissingResponsesDto } from './dto/query-kleem-missing-responses.dto';
+import { KleemMissingResponseDocument } from './schemas/kleem-missing-response.schema';
 
 @UseGuards(RolesGuard)
 @Roles('admin')
@@ -22,7 +23,9 @@ export class AnalyticsAdminController {
   constructor(private readonly service: AnalyticsService) {}
 
   @Get()
-  list(@Query() q: QueryKleemMissingResponsesDto) {
+  list(
+    @Query() q: QueryKleemMissingResponsesDto,
+  ): Promise<{ items: KleemMissingResponseDocument[]; total: number }> {
     return this.service.listKleemMissing(q);
   }
 
@@ -31,12 +34,12 @@ export class AnalyticsAdminController {
     @Param('id') id: string,
     @Body()
     body: { resolved?: boolean; manualReply?: string; category?: string },
-  ) {
+  ): Promise<KleemMissingResponseDocument> {
     return this.service.updateKleemMissing(id, body);
   }
 
   @Post('bulk-resolve')
-  bulkResolve(@Body() body: { ids: string[] }) {
+  bulkResolve(@Body() body: { ids: string[] }): Promise<{ updated: number }> {
     return this.service.bulkResolve(body.ids || []);
   }
 }

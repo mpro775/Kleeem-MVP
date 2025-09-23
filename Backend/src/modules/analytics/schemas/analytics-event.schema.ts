@@ -25,7 +25,7 @@ export class AnalyticsEvent {
   channel: string; // e.g. 'whatsapp' | 'telegram' | 'webchat'
 
   @Prop({ type: mongoose.Schema.Types.Mixed, default: {} })
-  payload: any;
+  payload: unknown;
 }
 
 export const AnalyticsEventSchema =

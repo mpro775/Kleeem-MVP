@@ -3,9 +3,28 @@ import type {
   ChannelCount,
   TopProduct,
 } from '../../analytics/analytics.service';
+import type { CreateKleemMissingResponseDto } from '../dto/create-kleem-missing-response.dto';
+import type { CreateMissingResponseDto } from '../dto/create-missing-response.dto';
 import type { KleemMissingResponseDocument } from '../schemas/kleem-missing-response.schema';
 import type { MissingResponseDocument } from '../schemas/missing-response.schema';
-import type { Types } from 'mongoose';
+// Additional imports for proper typing
+import type { RootFilterQuery, FilterQuery, Types } from 'mongoose';
+
+// Response types
+export interface StatsResult {
+  [key: string]: unknown;
+}
+
+export interface TimelineEntry {
+  _id: string;
+  count: number;
+}
+
+export interface UpdateKleemMissingDto {
+  resolved?: boolean;
+  manualReply?: string;
+  category?: string;
+}
 
 export interface AnalyticsRepository {
   // Sessions
@@ -71,18 +90,23 @@ export interface AnalyticsRepository {
   ): Promise<number | null>;
   // Missing (classic)
   countMissingOpen(merchantId: Types.ObjectId): Promise<number>;
-  createMissingFromWebhook(dto: any): Promise<MissingResponseDocument>;
+  createMissingFromWebhook(
+    dto: CreateMissingResponseDto,
+  ): Promise<MissingResponseDocument>;
   listMissingResponses(
-    filter: any,
+    filter: RootFilterQuery<MissingResponseDocument>,
     skip: number,
     limit: number,
-  ): Promise<{ items: any[]; total: number }>;
-  markMissingResolved(id: string, userId?: string): Promise<any>;
+  ): Promise<{ items: MissingResponseDocument[]; total: number }>;
+  markMissingResolved(
+    id: string,
+    userId?: string,
+  ): Promise<MissingResponseDocument>;
   bulkResolveMissing(
     ids: string[],
     userId?: string,
   ): Promise<{ updated: number }>;
-  statsMissing(merchantId: string, from: Date): Promise<any[]>;
+  statsMissing(merchantId: string, from: Date): Promise<StatsResult[]>;
   // Store extras
   countPaidOrders(
     merchantId: Types.ObjectId,
@@ -97,7 +121,7 @@ export interface AnalyticsRepository {
     start: Date,
     end: Date,
     groupBy: 'day' | 'hour',
-  ): Promise<any[]>;
+  ): Promise<TimelineEntry[]>;
   getTopKeywords(
     merchantId: Types.ObjectId,
     start: Date,
@@ -105,19 +129,17 @@ export interface AnalyticsRepository {
     limit: number,
   ): Promise<KeywordCount[]>;
   // Kleem Missing
-  createKleemFromWebhook(dto: any): Promise<KleemMissingResponseDocument>;
+  createKleemFromWebhook(
+    dto: CreateKleemMissingResponseDto,
+  ): Promise<KleemMissingResponseDocument>;
   listKleemMissing(
-    filter: any,
+    filter: FilterQuery<KleemMissingResponseDocument>,
     skip: number,
     limit: number,
-  ): Promise<{ items: any[]; total: number }>;
+  ): Promise<{ items: KleemMissingResponseDocument[]; total: number }>;
   updateKleemMissing(
     id: string,
-    update: Partial<{
-      resolved: boolean;
-      manualReply: string;
-      category: string;
-    }>,
-  ): Promise<any>;
+    update: UpdateKleemMissingDto,
+  ): Promise<KleemMissingResponseDocument>;
   bulkResolveKleem(ids: string[]): Promise<{ updated: number }>;
 }
