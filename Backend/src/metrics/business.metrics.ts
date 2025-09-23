@@ -41,19 +41,19 @@ export class BusinessMetrics {
     private readonly passwordChangeCompleted: Counter<string>,
   ) {}
 
-  incMerchantCreated() {
+  incMerchantCreated(): void {
     this.merchantCreated.inc();
   }
-  incN8nWorkflowCreated() {
+  incN8nWorkflowCreated(): void {
     this.n8nWorkflowCreated.inc();
   }
-  incEmailSent() {
+  incEmailSent(): void {
     this.emailSent.inc();
   }
-  incEmailFailed() {
+  incEmailFailed(): void {
     this.emailFailed.inc();
   }
-  incPasswordChangeCompleted() {
+  incPasswordChangeCompleted(): void {
     this.passwordChangeCompleted.inc();
   }
 }

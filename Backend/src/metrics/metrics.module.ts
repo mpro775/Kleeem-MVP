@@ -6,6 +6,7 @@ import {
   makeCounterProvider,
   makeGaugeProvider,
 } from '@willsoto/nestjs-prometheus';
+import { HISTOGRAM_BUCKETS } from 'src/common/cache/constant';
 
 import { HttpMetricsInterceptor } from '../common/interceptors/http-metrics.interceptor';
 
@@ -13,11 +14,13 @@ import { BusinessMetrics, BusinessMetricsProviders } from './business.metrics';
 import { ProductMetrics, ProductMetricsProviders } from './product.metrics';
 import { SecurityMetrics, SecurityMetricsProviders } from './security.metrics';
 
+import type { Counter, Histogram } from 'prom-client';
+
 export const HttpRequestDurationProvider = makeHistogramProvider({
   name: 'http_request_duration_seconds',
   help: 'HTTP request duration in seconds',
   labelNames: ['method', 'route', 'status_code'],
-  buckets: [0.05, 0.1, 0.25, 0.5, 1, 2, 5],
+  buckets: HISTOGRAM_BUCKETS,
 });
 
 // ✅ G2: مقاييس أساسية محسّنة
@@ -35,7 +38,7 @@ export const DatabaseMetricsProvider = makeHistogramProvider({
   name: 'database_query_duration_seconds',
   help: 'Database query duration in seconds',
   labelNames: ['operation', 'collection', 'status'],
-  buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2],
+  buckets: HISTOGRAM_BUCKETS,
 });
 
 // Injection token for database metrics
@@ -77,25 +80,25 @@ export const CacheHitRateGauge = makeGaugeProvider({
     HttpRequestsTotalProvider,
     {
       provide: 'HTTP_REQUESTS_TOTAL',
-      useFactory: (counter) => counter,
+      useFactory: (counter: Counter) => counter,
       inject: ['PROM_METRIC_HTTP_REQUESTS_TOTAL'],
     },
 
     {
       provide: HTTP_REQUEST_DURATION_SECONDS,
-      useFactory: (histogram) => histogram,
+      useFactory: (histogram: Histogram<string>) => histogram,
       inject: ['PROM_METRIC_HTTP_REQUEST_DURATION_SECONDS'],
     },
     HttpErrorRateProvider,
     {
       provide: HTTP_ERRORS_TOTAL,
-      useFactory: (counter) => counter,
+      useFactory: (counter: Counter<string>) => counter,
       inject: ['PROM_METRIC_HTTP_ERRORS_TOTAL'],
     },
     DatabaseMetricsProvider,
     {
       provide: DATABASE_QUERY_DURATION_SECONDS,
-      useFactory: (histogram) => histogram,
+      useFactory: (histogram: Histogram<string>) => histogram,
       inject: ['PROM_METRIC_DATABASE_QUERY_DURATION_SECONDS'],
     },
     ActiveConnectionsProvider,
@@ -115,18 +118,18 @@ export const CacheHitRateGauge = makeGaugeProvider({
     HttpRequestDurationProvider,
     {
       provide: HTTP_REQUEST_DURATION_SECONDS,
-      useFactory: (histogram) => histogram,
+      useFactory: (histogram: Histogram<string>) => histogram,
       inject: ['PROM_METRIC_HTTP_REQUEST_DURATION_SECONDS'],
     },
     HttpErrorRateProvider,
     {
       provide: HTTP_ERRORS_TOTAL,
-      useFactory: (counter) => counter,
+      useFactory: (counter: Counter<string>) => counter,
       inject: ['PROM_METRIC_HTTP_ERRORS_TOTAL'],
     },
     {
       provide: DATABASE_QUERY_DURATION_SECONDS,
-      useFactory: (histogram) => histogram,
+      useFactory: (histogram: Histogram<string>) => histogram,
       inject: ['PROM_METRIC_DATABASE_QUERY_DURATION_SECONDS'],
     },
     ActiveConnectionsProvider,

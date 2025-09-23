@@ -6,6 +6,15 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { MetricsModule } from '../metrics/metrics.module';
 import { MongooseMetricsPlugin } from '../metrics/mongoose-metrics.plugin';
 
+// Database connection constants (no-magic-numbers)
+const MAX_POOL_SIZE = 50;
+const MIN_POOL_SIZE = 10;
+const SERVER_SELECTION_TIMEOUT_MS = 5000;
+const SOCKET_TIMEOUT_MS = 45000;
+const CONNECT_TIMEOUT_MS = 10000;
+const MAX_IDLE_TIME_MS = 30000;
+const HEARTBEAT_FREQUENCY_MS = 10000;
+const WRITE_CONCERN_WTIMEOUT_MS = 10000;
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -46,20 +55,24 @@ import { MongooseMetricsPlugin } from '../metrics/mongoose-metrics.plugin';
         return {
           uri: mongoUri.replace('directConnection=true', ''), // إن وُجد
           autoIndex: !isProd,
-          maxPoolSize: 50,
-          minPoolSize: 10,
-          serverSelectionTimeoutMS: 5000,
-          socketTimeoutMS: 45000,
-          connectTimeoutMS: 10000,
-          maxIdleTimeMS: 30000,
-          heartbeatFrequencyMS: 10000,
+          maxPoolSize: MAX_POOL_SIZE,
+          minPoolSize: MIN_POOL_SIZE,
+          serverSelectionTimeoutMS: SERVER_SELECTION_TIMEOUT_MS,
+          socketTimeoutMS: SOCKET_TIMEOUT_MS,
+          connectTimeoutMS: CONNECT_TIMEOUT_MS,
+          maxIdleTimeMS: MAX_IDLE_TIME_MS,
+          heartbeatFrequencyMS: HEARTBEAT_FREQUENCY_MS,
           retryWrites: true,
           retryReads: true,
           // مراقبة في التطوير فقط:
           monitorCommands: !isProd,
           ...(enableSSL && { ssl: true, tlsInsecure: false }),
           readPreference: 'primary',
-          writeConcern: { w: 'majority', j: true, wtimeout: 10000 },
+          writeConcern: {
+            w: 'majority',
+            j: true,
+            wtimeout: WRITE_CONCERN_WTIMEOUT_MS,
+          },
         };
       },
       inject: [ConfigService],

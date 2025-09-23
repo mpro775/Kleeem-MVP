@@ -31,19 +31,19 @@ export class ProductMetrics {
     private readonly deleted: Counter<string>,
   ) {}
 
-  incCreated(merchantId?: string, category?: string) {
+  incCreated(merchantId?: string, category?: string): void {
     this.created.inc({
       merchant_id: merchantId || 'unknown',
       category: category || 'none',
     });
   }
-  incUpdated(merchantId?: string, category?: string) {
+  incUpdated(merchantId?: string, category?: string): void {
     this.updated.inc({
       merchant_id: merchantId || 'unknown',
       category: category || 'none',
     });
   }
-  incDeleted(merchantId?: string, category?: string) {
+  incDeleted(merchantId?: string, category?: string): void {
     this.deleted.inc({
       merchant_id: merchantId || 'unknown',
       category: category || 'none',

@@ -1,10 +1,27 @@
 // src/metrics/mongoose-metrics.plugin.ts
-import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+
+// external
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
-import { Histogram } from 'prom-client';
 
 import { DATABASE_QUERY_DURATION_SECONDS } from './metrics.module';
+
+import type { Connection, Schema } from 'mongoose';
+import type { Histogram } from 'prom-client';
+
+// internal
+
+// -----------------------------------------------------------------------------
+// Constants
+const NANOSECONDS_TO_SECONDS = 1e9;
+
+type HookThis = {
+  __start?: bigint;
+  mongooseCollection?: { name: string };
+  model?: { collection?: { name: string } };
+};
+
+type NextFn = (err?: unknown) => void;
 
 @Injectable()
 export class MongooseMetricsPlugin implements OnModuleInit {
@@ -14,50 +31,56 @@ export class MongooseMetricsPlugin implements OnModuleInit {
     private readonly dbQueryDuration: Histogram<string>,
   ) {}
 
-  onModuleInit() {
-    const histogram = this.dbQueryDuration; // 🤝 التقط المرجع في الإغلاق
+  onModuleInit(): void {
+    const histogram = this.dbQueryDuration;
 
-    const attach = (schema: any, op: string) => {
-      schema.pre(op, function (this: any, next: Function) {
+    const ops = [
+      'find',
+      'findOne',
+      'count',
+      'countDocuments',
+      'updateOne',
+      'updateMany',
+      'deleteOne',
+      'deleteMany',
+      'aggregate',
+      'insertMany',
+    ] as const;
+
+    const attach = (schema: Schema, op: string): void => {
+      schema.pre(op as never, function (this: HookThis, next: NextFn): void {
         this.__start = process.hrtime.bigint();
         next();
       });
 
-      schema.post(op, function (this: any, _res: any, next: Function) {
-        const coll =
-          this?.mongooseCollection?.name ||
-          this?.model?.collection?.name ||
-          'unknown';
+      schema.post(
+        op as never,
+        function (this: HookThis, _res: unknown, next: NextFn): void {
+          const coll =
+            this.mongooseCollection?.name ??
+            this.model?.collection?.name ??
+            'unknown';
 
-        const start: bigint | undefined = this.__start;
-        if (start) {
-          const sec = Number(process.hrtime.bigint() - start) / 1e9;
-          histogram.observe(
-            { operation: op, collection: coll, status: 'ok' },
-            sec,
-          );
-        }
-        next();
-      });
+          const start: bigint | undefined = this.__start;
+          if (start) {
+            const sec =
+              Number(process.hrtime.bigint() - start) / NANOSECONDS_TO_SECONDS;
+            histogram.observe(
+              { operation: op, collection: coll, status: 'ok' },
+              sec,
+            );
+          }
+          next();
+        },
+      );
     };
 
-    const plugin = (schema: any) => {
-      // عرّف العمليات صراحةً بدل Regex لالتقاط اسمها بالـ closure
-      const ops = [
-        'find',
-        'findOne',
-        'count',
-        'countDocuments',
-        'updateOne',
-        'updateMany',
-        'deleteOne',
-        'deleteMany',
-        'aggregate',
-        'insertMany',
-      ];
-      for (const op of ops) attach(schema, op);
+    const plugin = (schema: Schema): void => {
+      for (const op of ops) {
+        attach(schema, op);
+      }
     };
 
-    (this.conn as any).plugin(plugin);
+    this.conn.plugin(plugin);
   }
 }

@@ -31,13 +31,13 @@ export class AmqpMetrics {
     @InjectMetric('worker_errors_total')
     private readonly err: Counter<string>,
   ) {}
-  incPublished(exchange: string, routingKey: string) {
+  incPublished(exchange: string, routingKey: string): void {
     this.pub.inc({ exchange, routing_key: routingKey });
   }
-  incConsumed(queue: string) {
+  incConsumed(queue: string): void {
     this.con.inc({ queue });
   }
-  incError(worker: string, queue: string) {
+  incError(worker: string, queue: string): void {
     this.err.inc({ worker, queue });
   }
 }

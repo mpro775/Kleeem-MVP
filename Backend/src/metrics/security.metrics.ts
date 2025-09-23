@@ -1,12 +1,7 @@
 // src/metrics/security.metrics.ts
 import { Injectable } from '@nestjs/common';
-import {
-  InjectMetric,
-  makeCounterProvider,
-  makeHistogramProvider,
-  makeGaugeProvider,
-} from '@willsoto/nestjs-prometheus';
-import { Counter, Histogram, Gauge } from 'prom-client';
+import { InjectMetric, makeCounterProvider } from '@willsoto/nestjs-prometheus';
+import { Counter } from 'prom-client';
 
 // ✅ G2: مقاييس الأمان والأداء
 export const SecurityMetricsProviders = [
@@ -68,7 +63,7 @@ export class SecurityMetrics {
     eventType: string,
     severity: 'low' | 'medium' | 'high' | 'critical',
     source: string,
-  ) {
+  ): void {
     this.securityEvents.inc({ event_type: eventType, severity, source });
   }
 
@@ -77,7 +72,7 @@ export class SecurityMetrics {
     operation: 'create' | 'verify' | 'revoke' | 'refresh',
     result: 'success' | 'failure',
     tokenType: 'access' | 'refresh',
-  ) {
+  ): void {
     this.jwtOperations.inc({ operation, result, token_type: tokenType });
   }
 
@@ -86,7 +81,7 @@ export class SecurityMetrics {
     eventType: 'connect' | 'disconnect' | 'message' | 'error',
     result: 'success' | 'failure',
     reason?: string,
-  ) {
+  ): void {
     this.websocketEvents.inc({
       event_type: eventType,
       result,
@@ -99,7 +94,7 @@ export class SecurityMetrics {
     endpoint: string,
     clientType: 'authenticated' | 'anonymous',
     limitType: 'general' | 'auth' | 'webhook' | 'websocket',
-  ) {
+  ): void {
     this.rateLimitExceeded.inc({
       endpoint,
       client_type: clientType,
@@ -116,7 +111,7 @@ export class SecurityMetrics {
       | 'idempotency_hit'
       | 'rate_limited',
     result: 'success' | 'failure',
-  ) {
+  ): void {
     this.webhookSecurityEvents.inc({ provider, event_type: eventType, result });
   }
 }
