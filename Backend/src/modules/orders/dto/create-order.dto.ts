@@ -13,7 +13,6 @@ import {
   IsNotEmpty,
   IsNumber,
   IsEmail,
-  IsPhoneNumber,
   ValidateNested,
   ArrayMinSize,
   IsDateString,
@@ -97,12 +96,12 @@ class CustomerDto {
   })
   @IsObject({ message: 'يجب أن يكون العنوان كائنًا' })
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }): Record<string, unknown> => {
     // دعم تمرير العنوان كنص: "حي كذا، شارع كذا"
     if (typeof value === 'string') return { line1: value };
     return value;
   })
-  address?: Record<string, any>;
+  address?: Record<string, unknown>;
 
   @ApiPropertyOptional({
     description: 'البريد الإلكتروني',
@@ -171,20 +170,28 @@ export class CreateOrderDto {
   @ArrayMinSize(1, { message: 'يجب إدخال عنصر واحد على الأقل' })
   @ValidateNested({ each: true })
   @Type(() => OrderProductDto)
-  @Transform(({ value, obj }) => {
-    // إذا أُرسلت products مباشرة، اتركها كما هي
-    if (Array.isArray(value)) return value;
-    // إن أُرسلت items (النسخة القديمة من الفرونت)، حوّلها:
-    if (Array.isArray(obj?.items)) {
-      return obj.items.map((i: OrderItemInput) => ({
-        product: i.productId,
-        name: i.name,
-        price: i.price,
-        quantity: i.quantity,
-      }));
-    }
-    return value;
-  })
+  @Transform(
+    ({
+      value,
+      obj,
+    }: {
+      value: unknown;
+      obj: { items?: OrderItemInput[] };
+    }): OrderProductDto[] => {
+      // إذا أُرسلت products مباشرة، اتركها كما هي
+      if (Array.isArray(value)) return value;
+      // إن أُرسلت items (النسخة القديمة من الفرونت)، حوّلها:
+      if (Array.isArray(obj?.items)) {
+        return obj.items.map((i: OrderItemInput) => ({
+          product: i.productId,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+        }));
+      }
+      return value as OrderProductDto[];
+    },
+  )
   products: OrderProductDto[];
 
   @ApiPropertyOptional({
@@ -197,7 +204,7 @@ export class CreateOrderDto {
   })
   @IsObject({ message: 'يجب أن تكون البيانات الإضافية كائنًا' })
   @IsOptional()
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 
   @ApiPropertyOptional({ description: 'مُعرّف خارجي', example: 'INV-2025-001' })
   @IsString({ message: 'يجب أن يكون المعرّف الخارجي نصيًا' })

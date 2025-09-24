@@ -1,107 +1,155 @@
+// src/modules/orders/repositories/mongo-orders.repository.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
-import { PaginationResult } from '../../../common/dto/pagination.dto';
 import { MerchantNotFoundError } from '../../../common/errors/business-errors';
 import { PaginationService } from '../../../common/services/pagination.service';
-import {
-  Merchant,
-  MerchantDocument,
-} from '../../merchants/schemas/merchant.schema';
-import { Order as OrderType } from '../../webhooks/helpers/order';
-import { GetOrdersDto } from '../dto/get-orders.dto';
+import { Merchant } from '../../merchants/schemas/merchant.schema';
+import { GetOrdersDto, SortOrder } from '../dto/get-orders.dto';
 import { Order, OrderDocument } from '../schemas/order.schema';
 import { normalizePhone } from '../utils/phone.util';
 
 import { OrdersRepository } from './orders.repository';
 
-const isObjectId = (v?: string) => !!v && mongoose.Types.ObjectId.isValid(v);
+import type { PaginationResult } from '../../../common/dto/pagination.dto';
+import type { FilterQuery } from 'mongoose';
 
-function toOrderType(orderDoc: any): OrderType {
-  return {
-    _id: orderDoc._id?.toString?.() ?? orderDoc._id,
-    status: orderDoc.status,
-    createdAt: orderDoc.createdAt
-      ? orderDoc.createdAt instanceof Date
-        ? orderDoc.createdAt.toISOString()
-        : orderDoc.createdAt
-      : '',
-    customer: {
-      name: orderDoc.customer?.name,
-      phone: orderDoc.customer?.phone,
-      address: orderDoc.customer?.address,
-    },
-    products: Array.isArray(orderDoc.products)
-      ? orderDoc.products.map((p: any) => ({
-          name: p.name,
-          quantity: p.quantity,
-          price: p.price,
-        }))
-      : [],
-  };
+// ـــــــــــــ أنواع/حرّاس لتفادي any ـــــــــــــ
+type ZidOrderCustomer = {
+  name?: string;
+  phone?: string;
+  address?: string;
+};
+
+type ZidOrderProduct = {
+  id?: string;
+  productId?: string;
+  name?: string;
+  price?: number | string;
+  quantity?: number | string;
+};
+
+type MinimalZidOrder = {
+  id?: string | number;
+  status?: string;
+  created_at?: string | Date;
+  session_id?: string;
+  customer?: ZidOrderCustomer;
+  products?: ZidOrderProduct[];
+};
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null;
+}
+
+function asString(v: unknown, fallback = ''): string {
+  return typeof v === 'string' ? v : fallback;
+}
+
+function asNumber(v: unknown, fallback = 0): number {
+  return typeof v === 'number'
+    ? v
+    : typeof v === 'string'
+      ? Number(v) || fallback
+      : fallback;
+}
+
+function isMinimalZidOrder(v: unknown): v is MinimalZidOrder {
+  if (!isRecord(v)) return false;
+  // لا نلزم كل الحقول؛ يكفي وجود id أو customer/products
+  return 'id' in v || 'customer' in v || 'products' in v;
+}
+
+function toIsoDate(v: unknown): Date {
+  if (v instanceof Date) return v;
+  const s = asString(v);
+  const d = s ? new Date(s) : new Date();
+  return Number.isNaN(d.getTime()) ? new Date() : d;
+}
+
+function toObjectId(v: unknown): Types.ObjectId | undefined {
+  const s = asString(v);
+  return s && Types.ObjectId.isValid(s) ? new Types.ObjectId(s) : undefined;
+}
+
+// ـــــــــــــ util: تطبيع الـ _id إلى string في النتائج ـــــــــــــ
+function toStringId(id: unknown): string {
+  const maybe = id as { toString?: () => string };
+  return typeof maybe?.toString === 'function' ? maybe.toString() : String(id);
 }
 
 @Injectable()
 export class MongoOrdersRepository implements OrdersRepository {
   constructor(
-    @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
-    @InjectModel(Merchant.name) private merchantModel: Model<MerchantDocument>,
-    private paginationService: PaginationService,
+    @InjectModel(Order.name) private readonly orderModel: Model<OrderDocument>,
+    @InjectModel(Merchant.name) private readonly merchantModel: Model<Merchant>,
+    private readonly paginationService: PaginationService,
   ) {}
 
-  async create(data: any): Promise<Order> {
-    return (await this.orderModel.create(data)).toObject();
+  // إنشاء: استقبل دخلًا كـ Record<string, unknown> لتجنّب unknown داخل create
+  async create(data: Record<string, unknown>): Promise<Order> {
+    const doc = await this.orderModel.create(data);
+    return doc.toObject();
   }
 
   async findAll(): Promise<Order[]> {
-    return this.orderModel.find().sort({ createdAt: -1 }).exec();
+    return this.orderModel.find().sort({ createdAt: -1 }).lean().exec();
   }
 
-  async findOne(orderId: string): Promise<OrderType | null> {
-    const orderDoc = await this.orderModel.findById(orderId).lean();
-    return orderDoc ? toOrderType(orderDoc) : null;
+  async findOne(orderId: string): Promise<Order | null> {
+    return this.orderModel.findById(orderId).lean().exec();
   }
 
   async updateStatus(id: string, status: string): Promise<Order | null> {
-    return this.orderModel.findByIdAndUpdate(id, { status }, { new: true });
+    return this.orderModel
+      .findByIdAndUpdate(id, { status }, { new: true })
+      .lean()
+      .exec();
   }
 
-  async upsertFromZid(storeId: string, zidOrder: any): Promise<OrderDocument> {
+  async upsertFromZid(storeId: string, zidOrder: unknown): Promise<Order> {
     const merchant = await this.findMerchantByStoreId(storeId);
     if (!merchant) throw new MerchantNotFoundError(storeId);
-    const merchantId = merchant.id.toString();
+    const merchantId =
+      (merchant as unknown as { id?: string }).id ?? String(merchant['_id']);
 
-    let order = await this.orderModel.findOne({
+    if (!isMinimalZidOrder(zidOrder)) {
+      throw new Error('Invalid ZID order payload');
+    }
+
+    const extId = asString(zidOrder.id, String(zidOrder.id ?? ''));
+    // ابحث عن الطلب السابق
+    let order = await this.orderModel
+      .findOne({ merchantId, externalId: extId, source: 'api' })
+      .exec();
+
+    const phoneRaw = zidOrder.customer?.phone;
+    const phoneNormalized = normalizePhone(asString(phoneRaw));
+
+    const products = (zidOrder.products ?? []).map(
+      (p): Order['products'][number] => ({
+        product: toObjectId(p.id ?? p.productId),
+        name: asString(p.name),
+        price: asNumber(p.price, 0),
+        quantity: asNumber(p.quantity, 1),
+      }),
+    );
+
+    const orderData: Partial<Order> & { createdAt: Date } = {
       merchantId,
-      externalId: zidOrder.id,
+      sessionId: asString(zidOrder.session_id, `zid:${extId}`),
       source: 'api',
-    });
-
-    const phoneNormalized = normalizePhone(zidOrder.customer?.phone);
-    const products = (zidOrder.products ?? []).map((p: any) => ({
-      product: p.id || p.productId || undefined,
-      name: p.name,
-      price: Number(p.price) || 0,
-      quantity: Number(p.quantity) || 1,
-    }));
-
-    const orderData = {
-      merchantId,
-      sessionId: zidOrder.session_id ?? `zid:${zidOrder.id}`,
-      source: 'api',
-      externalId: zidOrder.id,
-      status: zidOrder.status ?? 'pending',
+      externalId: extId,
+      status: asString(zidOrder.status, 'pending'),
       customer: {
-        name: zidOrder.customer?.name ?? '',
-        phone: zidOrder.customer?.phone ?? '',
-        address: zidOrder.customer?.address ?? '',
+        name: asString(zidOrder.customer?.name),
+        phone: asString(zidOrder.customer?.phone),
+        address: asString(zidOrder.customer?.address),
         phoneNormalized,
       },
       products,
-      createdAt: zidOrder.created_at
-        ? new Date(zidOrder.created_at)
-        : new Date(),
+      createdAt: toIsoDate(zidOrder.created_at),
     };
 
     if (order) {
@@ -109,46 +157,64 @@ export class MongoOrdersRepository implements OrdersRepository {
     } else {
       order = await this.orderModel.create(orderData);
     }
-    return order;
+    return order.toObject();
   }
 
-  async findMine(merchantId: string, sessionId: string) {
+  async findMine(merchantId: string, sessionId: string): Promise<Order[]> {
     return this.orderModel
       .find({ merchantId, sessionId })
       .sort({ createdAt: -1 })
-      .lean();
+      .lean()
+      .exec();
   }
 
-  async findMerchantByStoreId(storeId: string) {
-    return this.merchantModel.findOne({ 'zidIntegration.storeId': storeId });
+  async findMerchantByStoreId(storeId: string): Promise<Merchant | null> {
+    return this.merchantModel
+      .findOne({ 'zidIntegration.storeId': storeId })
+      .lean()
+      .exec();
   }
 
   async updateOrderStatusFromZid(
     storeId: string,
-    zidOrder: any,
-  ): Promise<OrderDocument | null> {
+    zidOrder: unknown,
+  ): Promise<Order | null> {
     const merchant = await this.findMerchantByStoreId(storeId);
     if (!merchant) throw new MerchantNotFoundError(storeId);
-    const merchantId = merchant._id;
+    const merchantId =
+      (merchant as unknown as { id?: string }).id ?? String(merchant['_id']);
 
-    return this.orderModel.findOneAndUpdate(
-      { merchantId, externalId: zidOrder.id, source: 'api' },
-      { status: zidOrder.status },
-      { new: true },
-    );
+    const externalId = isMinimalZidOrder(zidOrder)
+      ? asString(zidOrder.id, String(zidOrder.id ?? ''))
+      : '';
+
+    const status = isMinimalZidOrder(zidOrder)
+      ? asString(zidOrder.status)
+      : undefined;
+
+    return this.orderModel
+      .findOneAndUpdate(
+        { merchantId, externalId, source: 'api' } as FilterQuery<Order>,
+        { status },
+        { new: true },
+      )
+      .lean()
+      .exec();
   }
 
   async findByCustomer(merchantId: string, phone: string): Promise<Order[]> {
     return this.orderModel
       .find({ merchantId, 'customer.phone': phone })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
   }
 
   async getOrders(
     merchantId: string,
     dto: GetOrdersDto,
-  ): Promise<PaginationResult<any>> {
-    const baseFilter: any = { merchantId };
+  ): Promise<PaginationResult<Order>> {
+    const baseFilter: FilterQuery<OrderDocument> = { merchantId };
 
     if (dto.search) {
       baseFilter.$or = [
@@ -163,29 +229,29 @@ export class MongoOrdersRepository implements OrdersRepository {
     if (dto.sessionId) baseFilter.sessionId = dto.sessionId;
 
     const sortField = dto.sortBy || 'createdAt';
-    const sortOrder = dto.sortOrder === 'asc' ? 1 : -1;
+    const sortOrder: 1 | -1 = dto.sortOrder === SortOrder.ASC ? 1 : -1;
 
-    const result = await this.paginationService.paginate(
+    const result = await this.paginationService.paginate<OrderDocument>(
       this.orderModel,
       dto,
       baseFilter,
       { sortField, sortOrder, select: '-__v', lean: true },
     );
 
-    const processedItems = result.items.map((item: any) => ({
+    const items = result.items.map((item) => ({
       ...item,
-      _id: item._id?.toString(),
-      merchantId: item.merchantId?.toString(),
+      _id: toStringId((item as unknown as { _id?: unknown })?._id),
+      merchantId: item.merchantId,
     }));
 
-    return { ...result, items: processedItems };
+    return { ...result, items };
   }
 
   async searchOrders(
     merchantId: string,
     query: string,
     dto: GetOrdersDto,
-  ): Promise<PaginationResult<any>> {
+  ): Promise<PaginationResult<Order>> {
     return this.getOrders(merchantId, { ...dto, search: query });
   }
 
@@ -193,24 +259,27 @@ export class MongoOrdersRepository implements OrdersRepository {
     merchantId: string,
     phone: string,
     dto: GetOrdersDto,
-  ): Promise<PaginationResult<any>> {
-    const baseFilter: any = { merchantId, 'customer.phone': phone };
+  ): Promise<PaginationResult<Order>> {
+    const baseFilter: FilterQuery<OrderDocument> = {
+      merchantId,
+      'customer.phone': phone,
+    };
     const sortField = dto.sortBy || 'createdAt';
-    const sortOrder = dto.sortOrder === 'asc' ? 1 : -1;
+    const sortOrder: 1 | -1 = dto.sortOrder === SortOrder.ASC ? 1 : -1;
 
-    const result = await this.paginationService.paginate(
+    const result = await this.paginationService.paginate<OrderDocument>(
       this.orderModel,
       dto,
       baseFilter,
       { sortField, sortOrder, select: '-__v', lean: true },
     );
 
-    const processedItems = result.items.map((item: any) => ({
+    const items = result.items.map((item) => ({
       ...item,
-      _id: item._id?.toString(),
-      merchantId: item.merchantId?.toString(),
+      _id: toStringId((item as unknown as { _id?: unknown })?._id),
+      merchantId: item.merchantId,
     }));
 
-    return { ...result, items: processedItems };
+    return { ...result, items };
   }
 }

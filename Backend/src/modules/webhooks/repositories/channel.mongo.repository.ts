@@ -17,13 +17,13 @@ export class ChannelMongoRepository implements ChannelRepository {
     private readonly model: Model<ChannelDocument>,
   ) {}
 
-  private baseQuery(merchantId: string, provider: any) {
+  private baseQuery(merchantId: string, provider: string) {
     return {
       merchantId: new Types.ObjectId(merchantId),
       provider,
       isDefault: true,
       deletedAt: null,
-    } as any;
+    } as Record<string, unknown>;
   }
 
   async findDefault(
@@ -49,23 +49,23 @@ export class ChannelMongoRepository implements ChannelRepository {
       .exec();
   }
 
-  async findDefaultWaCloudWithVerify(
+  findDefaultWaCloudWithVerify(
     merchantId: string,
   ): Promise<Pick<ChannelLean, '_id' | 'verifyTokenHash'> | null> {
     return this.model
       .findOne(this.baseQuery(merchantId, ChannelProvider.WHATSAPP_CLOUD))
       .select('+verifyTokenHash')
       .lean()
-      .exec() as any;
+      .exec() as Promise<Pick<ChannelLean, '_id' | 'verifyTokenHash'> | null>;
   }
 
-  async findDefaultWaCloudWithAppSecret(
+  findDefaultWaCloudWithAppSecret(
     merchantId: string,
   ): Promise<Pick<ChannelLean, '_id' | 'appSecretEnc'> | null> {
     return this.model
       .findOne(this.baseQuery(merchantId, ChannelProvider.WHATSAPP_CLOUD))
       .select('+appSecretEnc')
       .lean()
-      .exec() as any;
+      .exec() as Promise<Pick<ChannelLean, '_id' | 'appSecretEnc'> | null>;
   }
 }

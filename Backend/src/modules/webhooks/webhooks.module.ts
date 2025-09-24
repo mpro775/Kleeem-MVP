@@ -4,38 +4,28 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { WebhookSignatureGuard } from 'src/common/guards/webhook-signature.guard';
 import { OutboxModule } from 'src/common/outbox/outbox.module';
 
+import { CommonModule } from '../../common/config/common.module';
 import { ChannelsModule } from '../channels/channels.module';
+import { Channel, ChannelSchema } from '../channels/schemas/channel.schema';
 import { ChatModule } from '../chat/chat.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { ChatMediaModule } from '../media/chat-media.module';
+import { MerchantsModule } from '../merchants/merchants.module';
 import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
 import { MessagingModule } from '../messaging/message.module';
-import { Webhook, WebhookSchema } from './schemas/webhook.schema';
-import { WebhooksController } from './webhooks.controller';
-import { WebhooksService } from './webhooks.service';
-
+import { NotificationsModule } from '../notifications/notifications.module';
 import { OrdersModule } from '../orders/orders.module';
 
-
-
+import { ChatWebhooksUnifiedController } from './chat-webhooks-unified.controller';
+import { ChannelMongoRepository } from './repositories/channel.mongo.repository';
+import { WebhookMongoRepository } from './repositories/webhook.mongo.repository';
+import { Webhook, WebhookSchema } from './schemas/webhook.schema';
 import { TelegramWebhookController } from './telegram.webhook.controller';
-
-import { NotificationsModule } from '../notifications/notifications.module';
-import { Channel, ChannelSchema } from '../channels/schemas/channel.schema';
-
+import { WEBHOOK_REPOSITORY, CHANNEL_REPOSITORY } from './tokens';
+import { WebhooksController } from './webhooks.controller';
+import { WebhooksService } from './webhooks.service';
 import { WhatsAppCloudWebhookController } from './whatsapp-cloud.webhook.controller';
 import { WhatsappQrWebhookController } from './whatsapp-qr.webhook.controller';
-import { ChatWebhooksUnifiedController } from './chat-webhooks-unified.controller';
-
-import { MerchantsModule } from '../merchants/merchants.module';
-
-import { WEBHOOK_REPOSITORY } from './tokens';
-import { WebhookMongoRepository } from './repositories/webhook.mongo.repository';
-import { CHANNEL_REPOSITORY } from './tokens';
-import { ChannelMongoRepository } from './repositories/channel.mongo.repository';
-
-import { CommonModule } from '../../common/config/common.module';
-
 
 @Module({
   imports: [

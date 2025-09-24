@@ -18,8 +18,10 @@ import { Cache } from 'cache-manager';
 import { Model } from 'mongoose';
 import { Public } from 'src/common/decorators/public.decorator';
 import { WebhookSignatureGuard } from 'src/common/guards/webhook-signature.guard';
+import { RequestWithUser } from 'src/common/interfaces/request-with-user.interface';
 import { preventDuplicates, idemKey } from 'src/common/utils/idempotency.util';
 
+import { ChannelSecretsLean } from '../channels/repositories/channels.repository';
 import {
   Channel,
   ChannelDocument,
@@ -29,6 +31,10 @@ import { mapEvoStatus } from '../channels/utils/evo-status.util';
 
 import { WhatsAppQrDto } from './dto/whatsapp-qr.dto';
 import { WebhooksController } from './webhooks.controller';
+interface RequestWithWebhookData extends RequestWithUser {
+  merchantId: string;
+  channel: ChannelSecretsLean;
+}
 
 @Public()
 @Controller('webhooks/whatsapp_qr')
@@ -57,10 +63,10 @@ export class WhatsappQrWebhookController {
   )
   async incoming(
     @Param('channelId') channelId: string,
-    @Req() req: any,
+    @Req() req: RequestWithWebhookData,
     @Body() body: WhatsAppQrDto,
-  ) {
-    return this.handleAny(channelId, req, body, undefined);
+  ): Promise<void> {
+    await this.handleAny(channelId, req, body, undefined);
   }
 
   @Post(':channelId/event')
@@ -80,10 +86,10 @@ export class WhatsappQrWebhookController {
   )
   async incomingEvent(
     @Param('channelId') channelId: string,
-    @Req() req: any,
+    @Req() req: RequestWithWebhookData,
     @Body() body: WhatsAppQrDto,
-  ) {
-    return this.handleAny(channelId, req, body, 'event');
+  ): Promise<void> {
+    await this.handleAny(channelId, req, body, 'event');
   }
 
   @Post(':channelId/:evt')
@@ -104,61 +110,80 @@ export class WhatsappQrWebhookController {
   async incomingAny(
     @Param('channelId') channelId: string,
     @Param('evt') evt: string,
-    @Req() req: any,
+    @Req() req: RequestWithWebhookData,
     @Body() body: WhatsAppQrDto,
-  ) {
-    return this.handleAny(channelId, req, body, evt);
+  ): Promise<void> {
+    await this.handleAny(channelId, req, body, evt);
   }
 
-  private async handleAny(
-    channelId: string,
-    req: any,
-    body: WhatsAppQrDto,
-    evt?: string,
-  ) {
-    // ✅ تم التحقق بواسطة الحارس — معنا الآن:
-    // req.merchantId, req.channel
-    const merchantId = String(req.merchantId);
-    if (!merchantId) throw new NotFoundException('Merchant not resolved');
-
-    // حدّث حالة القناة إن وُجدت إشارة
-    const chDoc = await this.channelModel.findById(channelId);
-    if (!chDoc) throw new NotFoundException('channel not found');
-
-    const evoState =
+  private extractEvoState(body: WhatsAppQrDto): string | undefined {
+    return (
       body?.status ||
       body?.instance?.status ||
       body?.connection ||
-      body?.event?.status;
-    const mapped = mapEvoStatus(evoState);
+      body?.event?.status
+    );
+  }
+
+  private async updateChannelStatus(
+    channelId: string,
+    evoState: string | undefined,
+  ): Promise<void> {
+    if (!evoState) return;
+
+    const chDoc = await this.channelModel.findById(channelId);
+    if (!chDoc) throw new NotFoundException('channel not found');
+
+    const mapped = mapEvoStatus(evoState as unknown as Record<string, unknown>);
     if (mapped) {
       chDoc.status = mapped;
       if (mapped === ChannelStatus.CONNECTED) chDoc.qr = undefined;
       await chDoc.save();
     }
+  }
 
-    // فرد body.data.messages إن كانت موجودة
-    const effective = Array.isArray(body?.data?.messages) ? body.data : body;
+  private getEffectiveBody(body: WhatsAppQrDto): WhatsAppQrDto {
+    return Array.isArray(body?.data?.messages) ? body.data : body;
+  }
 
-    // Idempotency: messages[0].key.id
+  private async checkMessageIdempotency(
+    effective: WhatsAppQrDto,
+    channelId: string,
+    merchantId: string,
+  ): Promise<boolean> {
     const messages = effective?.messages;
-    if (Array.isArray(messages) && messages.length > 0) {
-      const messageId = messages[0]?.key?.id || messages[0]?.id;
-      if (messageId) {
-        const key = idemKey({
-          provider: 'whatsapp_qr',
-          channelId,
-          merchantId,
-          messageId,
-        });
-        if (await preventDuplicates(this.cacheManager, key)) {
-          return { status: 'duplicate_ignored', messageId };
-        }
-      }
+    if (!Array.isArray(messages) || messages.length === 0) return false;
+
+    const messageId = messages[0]?.key?.id || messages[0]?.id;
+    if (!messageId) return false;
+
+    const key = idemKey({
+      provider: 'whatsapp_qr',
+      channelId,
+      merchantId,
+      messageId,
+    });
+    return await preventDuplicates(this.cacheManager, key);
+  }
+
+  private async handleAny(
+    channelId: string,
+    req: RequestWithWebhookData,
+    body: WhatsAppQrDto,
+    evt?: string,
+  ): Promise<void> {
+    const merchantId = String(req.merchantId);
+    if (!merchantId) throw new NotFoundException('Merchant not resolved');
+
+    const evoState = this.extractEvoState(body);
+    await this.updateChannelStatus(channelId, evoState);
+
+    const effective = this.getEffectiveBody(body);
+    if (await this.checkMessageIdempotency(effective, channelId, merchantId)) {
+      return;
     }
 
-    // مرّر للمعالجة الموحدة لديك
-    return this.webhooksController.handleIncoming(
+    await this.webhooksController.handleIncoming(
       merchantId,
       { provider: 'whatsapp_qr', channelId, event: evt, ...effective },
       req,

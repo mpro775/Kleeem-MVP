@@ -18,13 +18,19 @@ import { Cache } from 'cache-manager';
 import { Model } from 'mongoose';
 import { Public } from 'src/common/decorators/public.decorator';
 import { WebhookSignatureGuard } from 'src/common/guards/webhook-signature.guard';
+import { RequestWithUser } from 'src/common/interfaces/request-with-user.interface';
 import { preventDuplicates, idemKey } from 'src/common/utils/idempotency.util';
 
+import { ChannelSecretsLean } from '../channels/repositories/channels.repository';
 import { Channel, ChannelDocument } from '../channels/schemas/channel.schema';
 
 import { TelegramUpdateDto } from './dto/telegram-update.dto';
 import { WebhooksController } from './webhooks.controller';
 
+interface RequestWithWebhookData extends RequestWithUser {
+  merchantId: string;
+  channel: ChannelSecretsLean;
+}
 @Public()
 @Controller('webhooks/telegram')
 export class TelegramWebhookController {
@@ -52,12 +58,12 @@ export class TelegramWebhookController {
   )
   async incoming(
     @Param('channelId') channelId: string,
-    @Req() req: any,
+    @Req() req: RequestWithWebhookData,
     @Body() body: TelegramUpdateDto,
-  ) {
+  ): Promise<void> {
     // ✅ تم التحقق بواسطة الحارس — معنا الآن:
     // req.merchantId, req.channel
-    const merchantId = String(req.merchantId);
+    const merchantId = String(req.merchantId); // TODO: check if this is correct
     if (!merchantId) throw new NotFoundException('Merchant not resolved');
 
     const updateId = body?.update_id;
@@ -69,10 +75,10 @@ export class TelegramWebhookController {
         messageId: updateId,
       });
       if (await preventDuplicates(this.cacheManager, key)) {
-        return { status: 'duplicate_ignored', updateId };
+        return;
       }
     }
 
-    return this.webhooksController.handleIncoming(merchantId, body, req);
+    await this.webhooksController.handleIncoming(merchantId, body, req);
   }
 }

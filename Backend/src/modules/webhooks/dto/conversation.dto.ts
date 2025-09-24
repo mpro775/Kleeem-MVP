@@ -1,12 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import {
-  IsArray,
-  IsEnum,
-  IsNotEmpty,
-  IsString,
-  ValidateNested,
-} from 'class-validator';
+import { IsArray, IsNotEmpty, IsString, ValidateNested } from 'class-validator';
 
 export class MessageItem {
   @ApiProperty({
@@ -37,7 +31,7 @@ export class MessageItem {
     description: 'بيانات إضافية للرسالة',
     example: { orderId: '12345', status: 'pending' },
   })
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export class ConversationDto {

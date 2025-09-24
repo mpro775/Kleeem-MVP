@@ -1,6 +1,7 @@
 import type { PaginationResult } from '../../../common/dto/pagination.dto';
 import type { GetProductsDto } from '../dto/get-products.dto';
 import type { Product, ProductDocument } from '../schemas/product.schema';
+import type { ProductLean } from '../types';
 import type { Types, ClientSession } from 'mongoose';
 
 export interface ProductsRepository {
@@ -19,42 +20,44 @@ export interface ProductsRepository {
 
   // counts / listings
   countByMerchant(merchantId: Types.ObjectId): Promise<number>;
-  findAllByMerchant(merchantId: Types.ObjectId): Promise<any[]>;
+  findAllByMerchant(merchantId: Types.ObjectId): Promise<ProductLean[]>;
 
   // public lookups
-  findPublicBySlug(storeSlug: string, productSlug: string): Promise<any | null>;
-  // جديدة: تعتمد merchantId مباشرة
+  findPublicBySlug(
+    storeSlug: string,
+    productSlug: string,
+  ): Promise<ProductLean | null>;
+  // تعتمد merchantId مباشرة
   findPublicBySlugWithMerchant(
     merchantId: Types.ObjectId,
     productSlug: string,
-  ): Promise<any | null>;
+  ): Promise<ProductLean | null>;
 
   // paginated lists
   list(
     merchantId: Types.ObjectId,
     dto: GetProductsDto,
-  ): Promise<PaginationResult<any>>;
+  ): Promise<PaginationResult<ProductLean>>;
   listPublic(
     storeSlug: string,
     dto: GetProductsDto,
-  ): Promise<PaginationResult<any>>;
-  // جديدة: تعتمد merchantId مباشرة
+  ): Promise<PaginationResult<ProductLean>>;
   listPublicByMerchant(
     merchantId: Types.ObjectId,
     dto: GetProductsDto,
-  ): Promise<PaginationResult<any>>;
+  ): Promise<PaginationResult<ProductLean>>;
 
   // search
   searchText(
     merchantId: Types.ObjectId,
     query: string,
     limit?: number,
-  ): Promise<any[]>;
+  ): Promise<ProductLean[]>;
   searchHeuristics(
     merchantId: Types.ObjectId,
     query: string,
     limit?: number,
-  ): Promise<any[]>;
+  ): Promise<ProductLean[]>;
 
   // external sync (+session اختياري)
   findByExternal(
@@ -72,7 +75,7 @@ export interface ProductsRepository {
   setAvailability(
     id: Types.ObjectId,
     isAvailable: boolean,
-  ): Promise<any | null>;
-  findByIdsScoped(ids: string[], merchantId: string): Promise<any[]>;
+  ): Promise<ProductLean | null>;
+  findByIdsScoped(ids: string[], merchantId: string): Promise<ProductLean[]>;
   removeByExternal(merchantId: string, externalId: string): Promise<void>;
 }

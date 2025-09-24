@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 
 import { CacheService } from '../../../common/cache/cache.service';
 import { CategoriesService } from '../../categories/categories.service';
+import { StorefrontDocument } from '../../storefront/schemas/storefront.schema';
 import { StorefrontService } from '../../storefront/storefront.service';
 import { ProductsRepository } from '../repositories/products.repository';
 import { ProductIndexService } from '../services/product-index.service';
@@ -23,13 +24,15 @@ export class ProductEventsConsumer {
   async onProductCreated(msg: {
     aggregate: { id: string };
     payload: { merchantId: string };
-  }) {
+  }): Promise<void> {
     const id = msg.aggregate.id;
     const doc = await this.productsRepo.findById(new Types.ObjectId(id));
     if (!doc) return;
 
     // اجلب storefront/category ثم upsert (Idempotent)
-    const sf = await this.storefronts.findByMerchant(doc.merchantId.toString());
+    const sf = (await this.storefronts.findByMerchant(
+      doc.merchantId.toString(),
+    )) as StorefrontDocument | null;
     const catName = doc.category
       ? ((
           await this.categories.findOne(
@@ -52,14 +55,14 @@ export class ProductEventsConsumer {
   async onProductUpdated(msg: {
     aggregate: { id: string };
     payload: { merchantId: string };
-  }) {
+  }): Promise<void> {
     await this.onProductCreated(msg); // نفس المسار
   }
 
   async onProductDeleted(msg: {
     aggregate: { id: string };
     payload: { merchantId: string };
-  }) {
+  }): Promise<void> {
     await this.indexer.removeOne(msg.aggregate.id);
     await this.cache.invalidate(`v1:products:list:${msg.payload.merchantId}:*`);
     await this.cache.invalidate(

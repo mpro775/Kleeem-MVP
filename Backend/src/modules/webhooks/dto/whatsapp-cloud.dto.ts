@@ -42,19 +42,19 @@ class WhatsAppCloudMessageDto {
 
   @IsObject()
   @IsOptional()
-  image?: any;
+  image?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  document?: any;
+  document?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  audio?: any;
+  audio?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  video?: any;
+  video?: Record<string, unknown>;
 }
 
 class WhatsAppCloudStatusDto {

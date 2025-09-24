@@ -1,82 +1,185 @@
-import { Injectable, Inject, forwardRef, Logger } from '@nestjs/common';
+// src/modules/products/services/product-sync.service.ts
+import {
+  Injectable,
+  Inject,
+  forwardRef,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { Types } from 'mongoose';
 
 import { CategoriesService } from '../../categories/categories.service';
-import { ExternalProduct } from '../../integrations/types';
 import { StorefrontService } from '../../storefront/storefront.service';
-import { ProductSource } from '../dto/create-product.dto';
-import { ProductsRepository } from '../repositories/products.repository';
-import { Product } from '../schemas/product.schema';
 
 import { ProductIndexService } from './product-index.service';
 
+import type { ExternalProduct } from '../../integrations/types';
+import type { Storefront } from '../../storefront/schemas/storefront.schema';
+import type { ProductsRepository } from '../repositories/products.repository';
+import type { Product, ProductDocument } from '../schemas/product.schema';
+
+/* ===================== ثوابت لتجنّب الأرقام السحرية ===================== */
+const MAX_SYNC_IMAGES = 6;
+const STATUS_ACTIVE = 'active';
+const SYNC_OK = 'ok';
+
+/* =============================== حُرّاس/مساعدات =============================== */
+function ensureObjectId(id: string): Types.ObjectId {
+  if (!Types.ObjectId.isValid(id)) {
+    throw new BadRequestException('Invalid merchantId');
+  }
+  return new Types.ObjectId(id);
+}
+
+function toNumber(n: unknown, fallback = 0): number {
+  if (typeof n === 'number' && Number.isFinite(n)) return n;
+  const parsed = Number(n);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function toBooleanFromStock(stock: unknown): boolean {
+  return toNumber(stock, 0) > 0;
+}
+
+type RawImage = { url?: unknown };
+type RawPayload =
+  | {
+      description?: unknown;
+      images?: unknown;
+      permalink?: unknown;
+    }
+  | null
+  | undefined;
+
+function extractDescription(raw: unknown): string {
+  const r = raw as RawPayload;
+  const s = r && typeof r.description === 'string' ? r.description : '';
+  return s;
+}
+
+function extractPermalink(raw: unknown): string | null {
+  const r = raw as RawPayload;
+  const p = r && typeof r.permalink === 'string' ? r.permalink : null;
+  return p;
+}
+
+function extractImages(raw: unknown, max = MAX_SYNC_IMAGES): string[] {
+  const r = raw as RawPayload;
+  const maybeImgs = r?.images;
+  if (!Array.isArray(maybeImgs)) return [];
+  const urls: string[] = [];
+  for (const item of maybeImgs.slice(0, max)) {
+    const img = item as RawImage;
+    if (typeof img?.url === 'string' && img.url.trim().length > 0) {
+      urls.push(img.url);
+    }
+  }
+  return urls;
+}
+
+function oidToString(oid: Types.ObjectId): string {
+  return typeof oid.toHexString === 'function'
+    ? oid.toHexString()
+    : String(oid);
+}
+
+async function upsertAndIndex(
+  repo: ProductsRepository,
+  indexer: ProductIndexService,
+  storefronts: StorefrontService,
+  categories: CategoriesService,
+  merchantId: Types.ObjectId,
+  provider: 'zid' | 'salla',
+  docData: Partial<Product> & { externalId: string },
+  logger: Logger,
+): Promise<ProductDocument> {
+  const doc = await repo.upsertExternal(merchantId, provider, docData);
+
+  try {
+    const sf = (await storefronts.findByMerchant(
+      oidToString(doc.merchantId),
+    )) as Storefront | null;
+    const catName =
+      doc.category &&
+      (await categories.findOne(
+        oidToString(doc.category),
+        oidToString(doc.merchantId),
+      ));
+    await indexer.upsert(doc, sf ?? undefined, catName?.name ?? null);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.warn(`vector upsert (external) failed: ${msg}`);
+  }
+
+  return doc;
+}
+
+/* ====================================================================== */
 @Injectable()
 export class ProductSyncService {
   private readonly logger = new Logger(ProductSyncService.name);
 
   constructor(
-    @Inject('ProductsRepository')
-    private readonly repo: ProductsRepository,
+    @Inject('ProductsRepository') private readonly repo: ProductsRepository,
     private readonly indexer: ProductIndexService,
     @Inject(forwardRef(() => StorefrontService))
     private readonly storefronts: StorefrontService,
     private readonly categories: CategoriesService,
   ) {}
 
+  /**
+   * إدراج/تحديث منتج خارجي (Zid/Salla) ثم فهرسته.
+   * يقلّ التعقيد بتجزئة المنطق إلى مساعدات صغيرة واضحة.
+   */
   async upsertExternalProduct(
     merchantId: string,
     provider: 'zid' | 'salla',
     p: ExternalProduct,
   ): Promise<{ created: boolean; id: string }> {
-    const mId = new Types.ObjectId(merchantId);
+    const mId = ensureObjectId(merchantId);
 
+    // هل موجود مسبقًا؟
     const existed = await this.repo.findByExternal(mId, p.externalId);
+
+    // بناء بيانات الوثيقة بدقّة وبدون any
+    const price = toNumber(p.price, 0);
+    const isAvailable = toBooleanFromStock(p.stock);
+    const images = extractImages(p.raw);
+    const permalink = extractPermalink(p.raw);
+    const description = extractDescription(p.raw);
 
     const docData: Partial<Product> & { externalId: string } = {
       merchantId: mId,
-      source: ProductSource.API,
+      source: 'api', // يطابق union في Product
       externalId: p.externalId,
       platform: provider,
 
-      name: p.title ?? '',
-      description: (p.raw as any)?.description ?? '',
-      price: typeof p.price === 'number' ? p.price : Number(p.price) || 0,
-      isAvailable: (p.stock ?? 0) > 0,
-      images: Array.isArray((p.raw as any)?.images)
-        ? ((p.raw as any).images as Array<{ url?: string }>[])
-            .map((img) => (img as any)?.url)
-            .filter((url): url is string => Boolean(url))
-            .slice(0, 6)
-        : [],
+      name: typeof p.title === 'string' ? p.title : '',
+      description,
+      price,
+      isAvailable,
+      images,
 
-      // mapping للفئة لاحقاً
-      category: undefined,
-
-      sourceUrl: (p.raw as any)?.permalink ?? null,
-      originalUrl: (p.raw as any)?.permalink ?? null,
+      category: undefined, // تعيين لاحقًا إن لزم
+      sourceUrl: permalink,
+      originalUrl: permalink,
 
       keywords: [],
-      status: 'active',
-      syncStatus: 'ok',
+      status: STATUS_ACTIVE,
+      syncStatus: SYNC_OK,
     };
 
-    const doc = await this.repo.upsertExternal(mId, provider, docData);
+    const doc = await upsertAndIndex(
+      this.repo,
+      this.indexer,
+      this.storefronts,
+      this.categories,
+      mId,
+      provider,
+      docData,
+      this.logger,
+    );
 
-    try {
-      const sf = await this.storefronts.findByMerchant(
-        doc.merchantId.toString(),
-      );
-      const catName = doc.category
-        ? await this.categories.findOne(
-            doc.category.toString(),
-            doc.merchantId.toString(),
-          )
-        : null;
-      await this.indexer.upsert(doc, sf, catName?.name ?? null);
-    } catch (e) {
-      this.logger.warn?.('vector upsert (external) failed', e);
-    }
-
-    return { created: !existed, id: doc._id.toString() };
+    return { created: !existed, id: oidToString(doc._id) };
   }
 }

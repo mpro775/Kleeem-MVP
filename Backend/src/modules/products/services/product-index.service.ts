@@ -7,7 +7,7 @@ import { toEmbeddable } from '../utils/product.utils';
 export class ProductIndexService {
   private readonly logger = new Logger(ProductIndexService.name);
   private async retry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
-    let last: any;
+    let last: unknown;
     for (let i = 1; i <= attempts; i++) {
       try {
         return await fn();
@@ -24,10 +24,10 @@ export class ProductIndexService {
   constructor(private readonly vector: VectorService) {}
 
   async upsert(
-    productDoc: any,
+    productDoc: unknown,
     storefront?: { slug?: string; domain?: string } | null,
     categoryName?: string | null,
-  ) {
+  ): Promise<void> {
     try {
       const ep = toEmbeddable(productDoc, storefront, categoryName ?? null);
       await this.retry(() => this.vector.upsertProducts([ep]));
@@ -36,7 +36,7 @@ export class ProductIndexService {
     }
   }
 
-  async removeOne(productId: string) {
+  async removeOne(productId: string): Promise<void> {
     try {
       await this.vector.deleteProductPointsByMongoIds([productId]);
     } catch (e) {
@@ -45,7 +45,7 @@ export class ProductIndexService {
   }
 
   /** حذف مجموعة منتجات */
-  async removeMany(productIds: string[]) {
+  async removeMany(productIds: string[]): Promise<void> {
     if (!productIds?.length) return;
     try {
       await this.vector.deleteProductPointsByMongoIds(productIds);

@@ -29,41 +29,31 @@ import { Throttle } from '@nestjs/throttler';
 import axios from 'axios';
 import * as bcrypt from 'bcrypt';
 import { Cache } from 'cache-manager';
-
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-
-import { OrdersService } from '../orders/orders.service';
-import { normalizeIncomingMessage } from './schemas/utils/normalize-incoming';
-import { ClientSession, Connection, Types } from 'mongoose';
+import { ClientSession, Connection } from 'mongoose';
 import { Public } from 'src/common/decorators/public.decorator';
-
-import { mapOrderDocumentToOrder } from './helpers/order-map';
-import {
-  downloadRemoteFile,
-  downloadTelegramFile,
-} from './schemas/utils/download-files';
-
-import { ChatMediaService } from '../media/chat-media.service';
-import { EvolutionService } from '../integrations/evolution.service';
-
-
-import { ChatGateway } from '../chat/chat.gateway';
-
 import { OutboxService } from 'src/common/outbox/outbox.service';
 
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TranslationService } from '../../common/services/translation.service';
-
-
-import { ChannelProvider } from '../channels/schemas/channel.schema';
 import { decryptSecret } from '../channels/utils/secrets.util';
+import { ChatGateway } from '../chat/chat.gateway';
+import { EvolutionService } from '../integrations/evolution.service';
+import { ChatMediaService } from '../media/chat-media.service';
 import { MessageService } from '../messaging/message.service';
+import { OrdersService } from '../orders/orders.service';
+
 import {
   buildOrderDetailsMessage,
   buildOrdersListMessage,
 } from './helpers/order-format';
-
+import { mapOrderDocumentToOrder } from './helpers/order-map';
 import { ChannelRepository } from './repositories/channel.repository';
 import { CHANNEL_REPOSITORY } from './tokens';
+import {
+  downloadRemoteFile,
+  downloadTelegramFile,
+} from './utils/download-files';
+import { normalizeIncomingMessage } from './utils/normalize-incoming';
 
 // ================= Utils =================
 function detectOrderIntent(msg: string): {

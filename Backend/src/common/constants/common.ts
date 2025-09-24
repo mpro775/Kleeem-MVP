@@ -53,3 +53,13 @@ export const ONE_MINUTE_MS = 60 * MS_PER_SECOND;
 export const RESEND_VERIFICATION_WINDOW_MS = ONE_MINUTE_MS;
 export const PASSWORD_RESET_WINDOW_MS = ONE_MINUTE_MS;
 export const HOUR_IN_SECONDS = 3600;
+
+// File size constants
+export const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
+
+// Image quality constants
+export const IMAGE_QUALITY_HIGH = 85;
+export const IMAGE_QUALITY_MEDIUM_HIGH = 80;
+export const IMAGE_QUALITY_MEDIUM = 70;
+export const IMAGE_QUALITY_MEDIUM_LOW = 60;
+export const IMAGE_QUALITY_LOW = 50;

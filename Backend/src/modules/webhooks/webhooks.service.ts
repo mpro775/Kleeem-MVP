@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
+import { ClientSession, Connection } from 'mongoose';
 import { OutboxService } from 'src/common/outbox/outbox.service';
 
 import { MessageService } from '../messaging/message.service';
@@ -26,12 +26,12 @@ export class WebhooksService {
     message: {
       role: 'customer' | 'bot' | 'agent';
       text: string;
-      metadata?: any;
+      metadata?: Record<string, unknown>;
     },
     outboxEvent:
       | { type: 'chat.incoming'; routingKey: string }
       | { type: 'chat.reply'; routingKey: string },
-    dbSession?: any,
+    dbSession?: ClientSession,
   ) {
     await this.messageService.createOrAppend(
       {
@@ -64,11 +64,14 @@ export class WebhooksService {
         exchange: outboxEvent.type,
         routingKey: outboxEvent.routingKey,
       },
-      dbSession,
+      dbSession as ClientSession,
     );
   }
 
-  async handleEvent(eventType: string, payload: any) {
+  async handleEvent(
+    eventType: string,
+    payload: Record<string, unknown>,
+  ): Promise<{ sessionId: string; status: 'accepted' }> {
     const { merchantId, from, messageText, metadata } = payload || {};
     if (!merchantId || !from || !messageText) {
       throw new BadRequestException(`Invalid payload`);
@@ -88,16 +91,20 @@ export class WebhooksService {
         );
 
         await this.appendAndEnqueue(
-          merchantId,
-          from,
+          merchantId as string,
+          from as string,
           channel,
-          { role: 'customer', text: messageText, metadata },
+          {
+            role: 'customer',
+            text: messageText as string,
+            metadata: metadata as Record<string, unknown>,
+          },
           { type: 'chat.incoming', routingKey: channel },
           session,
         );
       });
 
-      return { sessionId: from, status: 'accepted' };
+      return { sessionId: from as string, status: 'accepted' };
     } finally {
       await session.endSession();
     }

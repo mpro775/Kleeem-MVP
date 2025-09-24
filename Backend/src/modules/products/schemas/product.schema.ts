@@ -1,5 +1,6 @@
 // src/modules/products/schemas/product.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { NextFunction } from 'express';
 import { HydratedDocument, Types } from 'mongoose';
 
 import { Currency } from '../enums/product.enums';
@@ -130,7 +131,7 @@ export class Product {
 export const ProductSchema = SchemaFactory.createForClass(Product);
 
 // افتراضيات قبل الحفظ
-ProductSchema.virtual('publicUrl').get(function (this: any) {
+ProductSchema.virtual('publicUrl').get(function (this: ProductDocument) {
   const pid = this.slug || this._id?.toString();
 
   // لو فيه دومين مخصص للمتجر: https://domain/product/:pid
@@ -152,34 +153,34 @@ ProductSchema.virtual('publicUrl').get(function (this: any) {
   return base ? `${base}/product/${pid}` : `/product/${pid}`;
 });
 // مشتقات جاهزة في الاسترجاع
-function computeDerived(doc: any) {
+function computeDerived(doc: ProductDocument) {
   const now = new Date();
   const ofr = doc.offer;
+
+  // Check if offer is valid and active
+  const isValidOffer =
+    ofr?.enabled && ofr.newPrice != null && ofr.newPrice >= 0;
   let active = false;
-  if (ofr?.enabled && ofr.newPrice != null && ofr.newPrice >= 0) {
-    if (ofr.startAt && ofr.endAt) {
-      active = now >= new Date(ofr.startAt) && now <= new Date(ofr.endAt);
-    } else if (ofr.startAt && !ofr.endAt) {
-      active = now >= new Date(ofr.startAt);
-    } else if (!ofr.startAt && ofr.endAt) {
-      active = now <= new Date(ofr.endAt);
-    } else {
-      active = true;
-    }
+
+  if (isValidOffer) {
+    const startValid = !ofr.startAt || now >= new Date(ofr.startAt);
+    const endValid = !ofr.endAt || now <= new Date(ofr.endAt);
+    active = startValid && endValid;
   }
-  doc.hasActiveOffer = !!active;
-  doc.priceEffective = active ? Number(ofr.newPrice) : Number(doc.price);
+
+  doc.hasActiveOffer = active;
+  doc.priceEffective = active ? Number(ofr!.newPrice) : Number(doc.price);
 }
-function recomputePublicUrlStored(doc: any) {
+function recomputePublicUrlStored(doc: ProductDocument) {
   try {
     // الـ virtual أعلاه
-    doc.publicUrlStored = doc.publicUrl;
+    doc.publicUrlStored = (doc as unknown as { publicUrl: string }).publicUrl;
   } catch {
     // ignore
   }
 }
 
-ProductSchema.pre('save', function (next) {
+ProductSchema.pre('save', function (next: NextFunction) {
   recomputePublicUrlStored(this);
   next();
 });
@@ -198,11 +199,11 @@ ProductSchema.post('init', function () {
 ProductSchema.post('save', function () {
   computeDerived(this);
 });
-ProductSchema.post('find', function (docs) {
+ProductSchema.post('find', function (docs: ProductDocument[]) {
   docs.forEach(computeDerived);
 });
 ProductSchema.post('findOne', function (doc) {
-  if (doc) computeDerived(doc);
+  if (doc) computeDerived(doc as ProductDocument);
 });
 // ✅ فهارس محسّنة للـ Cursor Pagination
 // فهرس أساسي للـ pagination مع merchantId

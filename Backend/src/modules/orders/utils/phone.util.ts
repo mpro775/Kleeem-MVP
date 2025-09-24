@@ -1,5 +1,5 @@
 // utils/phone.util.ts (اختياري للتوحيد)
-export function normalizePhone(p?: string) {
+export function normalizePhone(p?: string): string | undefined {
   if (!p) return undefined;
   const digits = p.replace(/\D+/g, '');
   return digits; // أضف منطق كود الدولة إن أردت

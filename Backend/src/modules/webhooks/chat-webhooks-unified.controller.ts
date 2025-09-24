@@ -43,10 +43,12 @@ export class ChatWebhooksUnifiedController {
   })
   async incomingBySlug(
     @Param('slug') slug: string,
-    @Body() body: any,
-    @Req() req: any,
-  ) {
-    const { merchantId } = await this.slugResolver.resolve(slug);
+    @Body() body: Record<string, unknown>,
+    @Req() req: Request,
+  ): Promise<void> {
+    const { merchantId } = (await this.slugResolver.resolve(slug)) as {
+      merchantId: string;
+    };
 
     const channel = body?.channel ?? 'webchat'; // ✅ مهم جداً
 
@@ -68,7 +70,7 @@ export class ChatWebhooksUnifiedController {
 
     // مرّر نفس الـ merchantId المستخرج من السلاج كـ param،
     // والـ patched كـ body:
-    return this.webhooks.handleIncoming(patched.merchantId, patched, req);
+    await this.webhooks.handleIncoming(patched.merchantId, patched, req);
   }
 
   /** ردود البوت/النظام عبر slug موحّد */
@@ -85,11 +87,16 @@ export class ChatWebhooksUnifiedController {
       },
     },
   })
-  async replyBySlug(@Param('slug') slug: string, @Body() body: any) {
-    const { merchantId } = await this.slugResolver.resolve(slug);
+  async replyBySlug(
+    @Param('slug') slug: string,
+    @Body() body: Record<string, unknown>,
+  ): Promise<void> {
+    const { merchantId } = (await this.slugResolver.resolve(slug)) as {
+      merchantId: string;
+    };
 
     // نوجّه المناداة لمنتهىك الحالي الموحد
-    return this.webhooks.handleBotReply(merchantId, {
+    await this.webhooks.handleBotReply(merchantId, {
       sessionId: body?.sessionId,
       text: body?.text,
       channel: 'webchat',
@@ -98,7 +105,7 @@ export class ChatWebhooksUnifiedController {
   }
   @Post('incoming/:slug/ping')
   @Public()
-  async ping(@Param('slug') slug: string) {
+  async ping(@Param('slug') slug: string): Promise<{ ok: boolean }> {
     await this.slugResolver.resolve(slug); // يتأكد أن slug صحيح
     return { ok: true };
   }

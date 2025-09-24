@@ -14,7 +14,10 @@ export class ProductSetupConfigService {
     private readonly configModel: Model<ProductSetupConfig>,
   ) {}
 
-  async saveOrUpdate(merchantId: string, dto: ProductSetupConfigDto) {
+  async saveOrUpdate(
+    merchantId: string,
+    dto: ProductSetupConfigDto,
+  ): Promise<ProductSetupConfig> {
     return this.configModel.findOneAndUpdate(
       { merchantId: merchantId },
       { ...dto, merchantId },
@@ -22,7 +25,9 @@ export class ProductSetupConfigService {
     );
   }
 
-  async getByMerchantId(merchantId: string) {
+  async getByMerchantId(
+    merchantId: string,
+  ): Promise<ProductSetupConfig | null> {
     return this.configModel.findOne({
       merchantId: merchantId,
     });

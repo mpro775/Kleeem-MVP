@@ -2,7 +2,6 @@ import { Injectable, Inject } from '@nestjs/common';
 
 import { PaginationResult } from '../../common/dto/pagination.dto';
 import { LeadsService } from '../leads/leads.service';
-import { Order as OrderType } from '../webhooks/helpers/order';
 
 import { CreateOrderDto } from './dto/create-order.dto';
 import { GetOrdersDto } from './dto/get-orders.dto';
@@ -35,10 +34,12 @@ export class OrdersService {
     try {
       await this.leadsService.create(dto.merchantId, {
         sessionId: dto.sessionId,
-        data: dto.customer,
+        data: dto.customer as unknown as Record<string, unknown>,
         source: 'order',
       });
-    } catch (e) {}
+    } catch (e: unknown) {
+      console.error(e);
+    }
 
     return created;
   }
@@ -47,7 +48,7 @@ export class OrdersService {
     return this.ordersRepository.findAll();
   }
 
-  async findOne(orderId: string): Promise<OrderType | null> {
+  async findOne(orderId: string): Promise<Order | null> {
     return this.ordersRepository.findOne(orderId);
   }
 
@@ -55,15 +56,18 @@ export class OrdersService {
     return this.ordersRepository.updateStatus(id, status);
   }
 
-  async upsertFromZid(storeId: string, zidOrder: any) {
+  async upsertFromZid(storeId: string, zidOrder: unknown): Promise<Order> {
     return this.ordersRepository.upsertFromZid(storeId, zidOrder);
   }
 
-  async findMine(merchantId: string, sessionId: string) {
+  async findMine(merchantId: string, sessionId: string): Promise<Order[]> {
     return this.ordersRepository.findMine(merchantId, sessionId);
   }
 
-  async updateOrderStatusFromZid(storeId: string, zidOrder: any) {
+  async updateOrderStatusFromZid(
+    storeId: string,
+    zidOrder: unknown,
+  ): Promise<Order | null> {
     return this.ordersRepository.updateOrderStatusFromZid(storeId, zidOrder);
   }
 
@@ -74,7 +78,7 @@ export class OrdersService {
   async getOrders(
     merchantId: string,
     dto: GetOrdersDto,
-  ): Promise<PaginationResult<any>> {
+  ): Promise<PaginationResult<Order>> {
     return this.ordersRepository.getOrders(merchantId, dto);
   }
 
@@ -82,7 +86,7 @@ export class OrdersService {
     merchantId: string,
     query: string,
     dto: GetOrdersDto,
-  ): Promise<PaginationResult<any>> {
+  ): Promise<PaginationResult<Order>> {
     return this.ordersRepository.searchOrders(merchantId, query, dto);
   }
 
@@ -90,7 +94,7 @@ export class OrdersService {
     merchantId: string,
     phone: string,
     dto: GetOrdersDto,
-  ): Promise<PaginationResult<any>> {
+  ): Promise<PaginationResult<Order>> {
     return this.ordersRepository.getOrdersByCustomer(merchantId, phone, dto);
   }
 }

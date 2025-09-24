@@ -34,27 +34,27 @@ class WhatsAppQrMessageContentDto {
 
   @IsObject()
   @IsOptional()
-  extendedTextMessage?: any;
+  extendedTextMessage?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  imageMessage?: any;
+  imageMessage?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  documentMessage?: any;
+  documentMessage?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  audioMessage?: any;
+  audioMessage?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  videoMessage?: any;
+  videoMessage?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  stickerMessage?: any;
+  stickerMessage?: Record<string, unknown>;
 }
 
 class WhatsAppQrMessageDto {

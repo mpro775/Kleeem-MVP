@@ -30,7 +30,7 @@ export class Order {
 
   // اتركها مرنة لكن احرص أن تضيف phoneNormalized لاحقًا بالخدمة
   @Prop({ required: true, type: Object })
-  customer: Record<string, any>;
+  customer: Record<string, unknown>;
 
   // ✅ استخدم الـSchema الفرعي بدل class مباشرة
   @Prop({ type: [OrderProductSchema], required: true })

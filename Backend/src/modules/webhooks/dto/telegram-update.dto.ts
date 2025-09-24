@@ -168,35 +168,35 @@ class TelegramMessageDto {
 
   @IsObject()
   @IsOptional()
-  animation?: any;
+  animation?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  audio?: any;
+  audio?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  document?: any;
+  document?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  photo?: any[];
+  photo?: Record<string, unknown>[];
 
   @IsObject()
   @IsOptional()
-  sticker?: any;
+  sticker?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  video?: any;
+  video?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  video_note?: any;
+  video_note?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  voice?: any;
+  voice?: Record<string, unknown>;
 
   @IsString()
   @IsOptional()
@@ -210,27 +210,27 @@ class TelegramMessageDto {
 
   @IsObject()
   @IsOptional()
-  contact?: any;
+  contact?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  dice?: any;
+  dice?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  game?: any;
+  game?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  poll?: any;
+  poll?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  venue?: any;
+  venue?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  location?: any;
+  location?: Record<string, unknown>;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -249,7 +249,7 @@ class TelegramMessageDto {
 
   @IsArray()
   @IsOptional()
-  new_chat_photo?: any[];
+  new_chat_photo?: Record<string, unknown>[];
 
   @IsBoolean()
   @IsOptional()
@@ -269,7 +269,7 @@ class TelegramMessageDto {
 
   @IsObject()
   @IsOptional()
-  message_auto_delete_timer_changed?: any;
+  message_auto_delete_timer_changed?: Record<string, unknown>;
 
   @IsNumber()
   @IsOptional()
@@ -286,11 +286,11 @@ class TelegramMessageDto {
 
   @IsObject()
   @IsOptional()
-  invoice?: any;
+  invoice?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  successful_payment?: any;
+  successful_payment?: Record<string, unknown>;
 
   @IsString()
   @IsOptional()
@@ -298,27 +298,27 @@ class TelegramMessageDto {
 
   @IsObject()
   @IsOptional()
-  passport_data?: any;
+  passport_data?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  proximity_alert_triggered?: any;
+  proximity_alert_triggered?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  voice_chat_started?: any;
+  voice_chat_started?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  voice_chat_ended?: any;
+  voice_chat_ended?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  voice_chat_participants_invited?: any;
+  voice_chat_participants_invited?: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  reply_markup?: any;
+  reply_markup?: Record<string, unknown>;
 }
 
 class TelegramCallbackQueryDto {
@@ -360,7 +360,7 @@ class TelegramInlineQueryDto {
 
   @IsString()
   @IsOptional()
-  location?: any;
+  location?: Record<string, unknown>;
 
   @IsString()
   query: string;
@@ -379,7 +379,7 @@ class TelegramChosenInlineResultDto {
 
   @IsString()
   @IsOptional()
-  location?: any;
+  location?: Record<string, unknown>;
 
   @IsString()
   @IsOptional()
@@ -401,7 +401,7 @@ class TelegramShippingQueryDto {
   invoice_payload: string;
 
   @IsObject()
-  shipping_address: any;
+  shipping_address: Record<string, unknown>;
 }
 
 class TelegramPreCheckoutQueryDto {
@@ -427,7 +427,7 @@ class TelegramPreCheckoutQueryDto {
 
   @IsObject()
   @IsOptional()
-  order_info?: any;
+  order_info?: Record<string, unknown>;
 }
 
 class TelegramPollAnswerDto {
@@ -456,14 +456,14 @@ class TelegramChatMemberUpdatedDto {
   date: number;
 
   @IsObject()
-  old_chat_member: any;
+  old_chat_member: Record<string, unknown>;
 
   @IsObject()
-  new_chat_member: any;
+  new_chat_member: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
-  invite_link?: any;
+  invite_link?: Record<string, unknown>;
 }
 
 class TelegramChatJoinRequestDto {
@@ -484,7 +484,7 @@ class TelegramChatJoinRequestDto {
 
   @IsObject()
   @IsOptional()
-  invite_link?: any;
+  invite_link?: Record<string, unknown>;
 }
 
 export class TelegramUpdateDto {
