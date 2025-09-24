@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { ChatWidgetService } from '../../../chat/chat-widget.service';
 import { MerchantCacheService } from '../merchant-cache.service';

@@ -37,7 +37,7 @@ const FORBIDDEN_MSG = 'غير مخوّل' as const;
 const HARD_DELETE_FOR_ADMINS_ONLY = 'الحذف الإجباري للمشرفين فقط' as const;
 
 const SLUG_RE = /^[a-z](?:[a-z0-9-]{1,48}[a-z0-9])$/;
-const SLUG_MAX = 50 as const;
+const SLUG_MAX = 50;
 
 // ========= Types =========
 type RoleName = 'ADMIN' | 'MERCHANT' | 'MEMBER';

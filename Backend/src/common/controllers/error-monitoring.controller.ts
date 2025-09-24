@@ -30,13 +30,13 @@ export class ErrorMonitoringController {
     status: 200,
     description: 'Error statistics retrieved successfully',
   })
-  async getErrorStats(
+  getErrorStats(
     @Query('merchantId') merchantId?: string,
     @Query('severity') severity?: string,
     @Query('category') category?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
-  ): Promise<ReturnType<ErrorManagementService['getErrorStats']>> {
+  ): ReturnType<ErrorManagementService['getErrorStats']> {
     const filters = {
       merchantId,
       severity,
@@ -74,7 +74,7 @@ export class ErrorMonitoringController {
     status: 200,
     description: 'Health status retrieved successfully',
   })
-  async getHealthStatus(): Promise<{
+  getHealthStatus(): {
     status: string;
     timestamp: string;
     services: {
@@ -87,8 +87,8 @@ export class ErrorMonitoringController {
       byCategory: Record<string, number>;
       recentErrors: number;
     };
-  }> {
-    const stats = await this.errorManagementService.getErrorStats();
+  } {
+    const stats = this.errorManagementService.getErrorStats();
 
     return {
       status: 'healthy',

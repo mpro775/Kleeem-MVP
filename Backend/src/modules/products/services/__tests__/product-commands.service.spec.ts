@@ -1,11 +1,12 @@
 import { ConfigService } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { CacheService } from '../../../../common/cache/cache.service';
 import { OutboxService } from '../../../../common/outbox/outbox.service';
 import { TranslationService } from '../../../../common/services/translation.service';
 import { CategoriesService } from '../../../categories/categories.service';
 import { StorefrontService } from '../../../storefront/storefront.service';
+import { type ProductDocument } from '../../schemas/product.schema';
 import { ProductCommandsService } from '../product-commands.service';
 import { ProductIndexService } from '../product-index.service';
 import { ProductMediaService } from '../product-media.service';
@@ -160,7 +161,7 @@ describe('ProductCommandsService', () => {
       // Mock the transaction to execute the callback and return the created product
       mockSession.withTransaction.mockImplementation(async (callback) => {
         const result = await callback();
-        return result;
+        return result as ProductDocument;
       });
 
       await svc.create({
@@ -345,7 +346,6 @@ describe('ProductCommandsService', () => {
         '507f1f77bcf86cd799439011',
         'merchant1',
         files,
-        { replace: true },
       );
 
       expect(media.uploadMany).toHaveBeenCalledWith(
@@ -391,12 +391,7 @@ describe('ProductCommandsService', () => {
 
       media.uploadMany.mockResolvedValue(urls);
 
-      await svc.uploadImages(
-        '507f1f77bcf86cd799439011',
-        'merchant1',
-        files,
-        true,
-      );
+      await svc.uploadImages('507f1f77bcf86cd799439011', 'merchant1', files);
 
       expect(media.uploadMany).toHaveBeenCalledWith(
         'merchant1',

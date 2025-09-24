@@ -4,22 +4,23 @@
 
 import { faker } from '@faker-js/faker';
 import { InternalServerErrorException, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import { MailService } from '../mail.service';
+
+import type { ConfigService } from '@nestjs/config';
 
 // --- Mock nodemailer (لا اتصالات حقيقية) ---
 const sendMailMock = jest.fn();
 const createTransportMock = jest.fn(() => ({ sendMail: sendMailMock }));
 
 jest.mock('nodemailer', () => ({
-  createTransport: (...args: any[]) => createTransportMock(),
+  createTransport: () => createTransportMock(),
 }));
 
 // Helper: ConfigService.get mock
-function makeConfig(values: Record<string, any>): ConfigService {
+function makeConfig(values: Record<string, unknown>): ConfigService {
   return {
-    get: jest.fn((key: string) => values[key]),
+    get: jest.fn((key: string): unknown => values[key]),
   } as unknown as ConfigService;
 }
 

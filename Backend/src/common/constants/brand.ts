@@ -19,4 +19,5 @@ export const ALLOWED_DARK_BRANDS = [
 export type AllowedDarkBrand = (typeof ALLOWED_DARK_BRANDS)[number];
 
 export const ALLOWED_DARK_SET = new Set(ALLOWED_DARK_BRANDS); // كلّها lowercase
-export const toLowerHex = (v?: string) => (v || '').trim().toLowerCase();
+export const toLowerHex = (v?: string): string =>
+  (v || '').trim().toLowerCase();

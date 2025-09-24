@@ -1,5 +1,5 @@
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
 
 import { OutboxService } from '../../../common/outbox/outbox.service';

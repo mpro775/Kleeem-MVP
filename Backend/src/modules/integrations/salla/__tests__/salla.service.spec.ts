@@ -1,16 +1,17 @@
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
 import { of } from 'rxjs';
 
-import { SallaIntegrationRepository } from '../../salla/repositories/integration.repository';
-import { SallaMerchantRepository } from '../../salla/repositories/merchant.repository';
 import { SallaService } from '../../salla/salla.service';
 import {
   SALLA_INTEGRATION_REPOSITORY,
   SALLA_MERCHANT_REPOSITORY,
 } from '../../salla/tokens';
+
+import type { SallaIntegrationRepository } from '../../salla/repositories/integration.repository';
+import type { SallaMerchantRepository } from '../../salla/repositories/merchant.repository';
 
 describe('SallaService', () => {
   let service: SallaService;
@@ -108,7 +109,8 @@ describe('SallaService', () => {
     );
 
     const tok = await service.getValidAccessToken(merchantId);
-    expect(integRepo.upsert).toHaveBeenCalled();
+    const upsertCall = expect(integRepo.upsert.bind(integRepo));
+    upsertCall.toHaveBeenCalled();
     expect(tok).toBe('tB');
   });
 

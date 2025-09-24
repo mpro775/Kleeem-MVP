@@ -1,6 +1,6 @@
 import { HttpModule } from '@nestjs/axios';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { MerchantsModule } from '../../merchants/merchants.module';
 import { EvolutionService } from '../evolution.service';
@@ -19,41 +19,19 @@ describe('IntegrationsModule', () => {
         {
           module: class MockMongooseModule {},
           providers: [
-            {
-              provide: 'IntegrationModel',
-              useValue: {},
-            },
-            {
-              provide: 'MerchantModel',
-              useValue: {},
-            },
+            { provide: 'IntegrationModel', useValue: {} },
+            { provide: 'MerchantModel', useValue: {} },
           ],
           exports: ['IntegrationModel', 'MerchantModel'],
         },
         // Mock HttpModule
-        {
-          module: class MockHttpModule {},
-          providers: [],
-          exports: [],
-        },
+        { module: class MockHttpModule {}, providers: [], exports: [] },
         // Mock MerchantsModule
-        {
-          module: class MockMerchantsModule {},
-          providers: [],
-          exports: [],
-        },
+        { module: class MockMerchantsModule {}, providers: [], exports: [] },
         // Mock SallaModule
-        {
-          module: class MockSallaModule {},
-          providers: [],
-          exports: [],
-        },
+        { module: class MockSallaModule {}, providers: [], exports: [] },
         // Mock ZidModule
-        {
-          module: class MockZidModule {},
-          providers: [],
-          exports: [],
-        },
+        { module: class MockZidModule {}, providers: [], exports: [] },
         IntegrationsModule,
       ],
     })
@@ -71,9 +49,7 @@ describe('IntegrationsModule', () => {
   });
 
   afterEach(async () => {
-    if (module) {
-      await module.close();
-    }
+    await module?.close();
   });
 
   describe('Module Configuration', () => {
@@ -82,23 +58,18 @@ describe('IntegrationsModule', () => {
     });
 
     it('should have IntegrationsController', () => {
-      const controller = module.get<IntegrationsController>(
-        IntegrationsController,
-      );
-      expect(controller).toBeDefined();
+      const controller = module.get(IntegrationsController);
       expect(controller).toBeInstanceOf(IntegrationsController);
     });
 
     it('should have EvolutionService', () => {
-      const evolutionService = module.get<EvolutionService>(EvolutionService);
-      expect(evolutionService).toBeDefined();
+      const evolutionService = module.get(EvolutionService);
       expect(evolutionService).toBeInstanceOf(EvolutionService);
     });
   });
 
   describe('Module Dependencies', () => {
     it('should export EvolutionService', async () => {
-      // Create a test module that imports IntegrationsModule
       const testModule = await Test.createTestingModule({
         imports: [
           {
@@ -109,26 +80,10 @@ describe('IntegrationsModule', () => {
             ],
             exports: ['IntegrationModel', 'MerchantModel'],
           },
-          {
-            module: class MockHttpModule {},
-            providers: [],
-            exports: [],
-          },
-          {
-            module: class MockMerchantsModule {},
-            providers: [],
-            exports: [],
-          },
-          {
-            module: class MockSallaModule {},
-            providers: [],
-            exports: [],
-          },
-          {
-            module: class MockZidModule {},
-            providers: [],
-            exports: [],
-          },
+          { module: class MockHttpModule {}, providers: [], exports: [] },
+          { module: class MockMerchantsModule {}, providers: [], exports: [] },
+          { module: class MockSallaModule {}, providers: [], exports: [] },
+          { module: class MockZidModule {}, providers: [], exports: [] },
           IntegrationsModule,
         ],
       })
@@ -144,15 +99,11 @@ describe('IntegrationsModule', () => {
         .useModule(class MockZidModule {})
         .compile();
 
-      const evolutionService =
-        testModule.get<EvolutionService>(EvolutionService);
-      expect(evolutionService).toBeDefined();
-
+      expect(testModule.get(EvolutionService)).toBeDefined();
       await testModule.close();
     });
 
     it('should export SallaModule', async () => {
-      // Test that SallaModule is properly exported
       const testModule = await Test.createTestingModule({
         imports: [
           {
@@ -163,34 +114,16 @@ describe('IntegrationsModule', () => {
             ],
             exports: ['IntegrationModel', 'MerchantModel'],
           },
-          {
-            module: class MockHttpModule {},
-            providers: [],
-            exports: [],
-          },
-          {
-            module: class MockMerchantsModule {},
-            providers: [],
-            exports: [],
-          },
-          {
-            module: class MockSallaModule {},
-            providers: [],
-            exports: [],
-          },
-          {
-            module: class MockZidModule {},
-            providers: [],
-            exports: [],
-          },
+          { module: class MockHttpModule {}, providers: [], exports: [] },
+          { module: class MockMerchantsModule {}, providers: [], exports: [] },
+          { module: class MockSallaModule {}, providers: [], exports: [] },
+          { module: class MockZidModule {}, providers: [], exports: [] },
           IntegrationsModule,
         ],
         providers: [
           {
             provide: 'TestService',
-            useFactory: (sallaModule: any) => {
-              return { sallaModule };
-            },
+            useFactory: (sallaModule: unknown) => ({ sallaModule }),
             inject: [SallaModule],
           },
         ],
@@ -207,14 +140,11 @@ describe('IntegrationsModule', () => {
         .useModule(class MockZidModule {})
         .compile();
 
-      // If this doesn't throw, SallaModule is properly exported
       expect(testModule).toBeDefined();
-
       await testModule.close();
     });
 
     it('should export ZidModule', async () => {
-      // Test that ZidModule is properly exported
       const testModule = await Test.createTestingModule({
         imports: [
           {
@@ -225,34 +155,16 @@ describe('IntegrationsModule', () => {
             ],
             exports: ['IntegrationModel', 'MerchantModel'],
           },
-          {
-            module: class MockHttpModule {},
-            providers: [],
-            exports: [],
-          },
-          {
-            module: class MockMerchantsModule {},
-            providers: [],
-            exports: [],
-          },
-          {
-            module: class MockSallaModule {},
-            providers: [],
-            exports: [],
-          },
-          {
-            module: class MockZidModule {},
-            providers: [],
-            exports: [],
-          },
+          { module: class MockHttpModule {}, providers: [], exports: [] },
+          { module: class MockMerchantsModule {}, providers: [], exports: [] },
+          { module: class MockSallaModule {}, providers: [], exports: [] },
+          { module: class MockZidModule {}, providers: [], exports: [] },
           IntegrationsModule,
         ],
         providers: [
           {
             provide: 'TestService',
-            useFactory: (zidModule: any) => {
-              return { zidModule };
-            },
+            useFactory: (zidModule: unknown) => ({ zidModule }),
             inject: [ZidModule],
           },
         ],
@@ -269,22 +181,20 @@ describe('IntegrationsModule', () => {
         .useModule(class MockZidModule {})
         .compile();
 
-      // If this doesn't throw, ZidModule is properly exported
       expect(testModule).toBeDefined();
-
       await testModule.close();
     });
   });
 
   describe('Provider Configuration', () => {
     it('should have EvolutionService as provider', () => {
-      const providers =
+      const providers: unknown[] =
         Reflect.getMetadata('providers', IntegrationsModule) || [];
       expect(providers).toContain(EvolutionService);
     });
 
     it('should have IntegrationsController as controller', () => {
-      const controllers =
+      const controllers: unknown[] =
         Reflect.getMetadata('controllers', IntegrationsModule) || [];
       expect(controllers).toContain(IntegrationsController);
     });
@@ -292,83 +202,63 @@ describe('IntegrationsModule', () => {
 
   describe('Import Configuration', () => {
     it('should import required modules', () => {
-      const imports = Reflect.getMetadata('imports', IntegrationsModule) || [];
+      const imports: unknown[] =
+        Reflect.getMetadata('imports', IntegrationsModule) || [];
 
-      // Check if MongooseModule.forFeature is called with correct schemas
-      const mongooseImport = imports.find((imp: any) => {
-        return imp && typeof imp.forFeature === 'function';
-      });
-
-      // Check for HttpModule
-      const hasHttpModule = imports.some(
-        (imp: any) => imp === HttpModule || (imp && imp.name === 'HttpModule'),
+      // بدل المتغيّرات غير المستخدمة، خلِّ التوقعات مباشرة:
+      const hasMongooseLike = imports.some(
+        (imp: unknown) =>
+          !!imp &&
+          typeof (imp as { forFeature?: unknown }).forFeature === 'function',
+      );
+      const hasHttp = imports.some(
+        (imp: unknown) =>
+          imp === HttpModule ||
+          (imp as { name?: string })?.name === 'HttpModule',
+      );
+      const hasSalla = imports.some(
+        (imp: unknown) =>
+          imp === SallaModule ||
+          (imp as { name?: string })?.name === 'SallaModule',
+      );
+      const hasZid = imports.some(
+        (imp: unknown) =>
+          imp === ZidModule || (imp as { name?: string })?.name === 'ZidModule',
       );
 
-      // Check for SallaModule
-      const hasSallaModule = imports.some(
-        (imp: any) =>
-          imp === SallaModule || (imp && imp.name === 'SallaModule'),
-      );
-
-      // Check for ZidModule
-      const hasZidModule = imports.some(
-        (imp: any) => imp === ZidModule || (imp && imp.name === 'ZidModule'),
-      );
-
-      // Note: These tests verify the module structure
-      // In a real test environment, you might want to verify the actual imports
       expect(imports.length).toBeGreaterThan(0);
+      expect(hasMongooseLike).toBe(true);
+      expect(hasHttp).toBe(true);
+      expect(hasSalla).toBe(true);
+      expect(hasZid).toBe(true);
     });
   });
 
   describe('Forward Reference', () => {
     it('should handle MerchantsModule forward reference', () => {
-      // Test that the module can handle forward references
-      // This is important for circular dependencies
-      const imports = Reflect.getMetadata('imports', IntegrationsModule) || [];
-
-      // Check if forwardRef is used (indicated by the presence of MerchantsModule import)
-      const hasMerchantsModule = imports.some((imp: any) => {
-        // Check for forwardRef wrapper or direct module import
-        return (
+      const imports: unknown[] =
+        Reflect.getMetadata('imports', IntegrationsModule) || [];
+      const hasMerchantsModule = imports.some(
+        (imp: unknown) =>
           imp === MerchantsModule ||
-          (imp && typeof imp === 'function') ||
-          (imp && imp.name === 'MerchantsModule')
-        );
-      });
-
-      expect(imports).toBeDefined();
+          typeof imp === 'function' ||
+          (imp as { name?: string })?.name === 'MerchantsModule',
+      );
+      expect(Array.isArray(imports)).toBe(true);
+      expect(hasMerchantsModule).toBe(true);
     });
   });
 
   describe('Schema Registration', () => {
-    it('should register Integration schema', async () => {
-      // This test verifies that the Integration schema is properly registered
-      // In a real MongoDB test, you would check if the model is available
-
-      try {
-        // Try to get the model token - if module is properly configured, this should work
-        const integrationToken = 'IntegrationModel';
-        expect(integrationToken).toBe('IntegrationModel');
-      } catch (error) {
-        // If there's an error, it might be due to missing MongoDB connection
-        // which is expected in unit tests
-        expect(error).toBeDefined();
-      }
+    it('should register Integration schema', () => {
+      // هنا مجرد smoke test على token
+      const integrationToken = 'IntegrationModel';
+      expect(integrationToken).toBe('IntegrationModel');
     });
 
-    it('should register Merchant schema', async () => {
-      // This test verifies that the Merchant schema is properly registered
-
-      try {
-        // Try to get the model token - if module is properly configured, this should work
-        const merchantToken = 'MerchantModel';
-        expect(merchantToken).toBe('MerchantModel');
-      } catch (error) {
-        // If there's an error, it might be due to missing MongoDB connection
-        // which is expected in unit tests
-        expect(error).toBeDefined();
-      }
+    it('should register Merchant schema', () => {
+      const merchantToken = 'MerchantModel';
+      expect(merchantToken).toBe('MerchantModel');
     });
   });
 });

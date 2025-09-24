@@ -1,18 +1,16 @@
-import { VectorService } from '../vector.service';
-import { QdrantWrapper } from '../utils/qdrant.client';
-
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 
 import { Collections } from '../utils/collections';
 import { EmbeddingsClient } from '../utils/embeddings.client';
+import { geminiRerankTopN } from '../utils/geminiRerank';
+import { QdrantWrapper } from '../utils/qdrant.client';
+import { VectorService } from '../vector.service';
 
 // ⚠️ موك لدالة إعادة الترتيب
 jest.mock('../geminiRerank', () => ({
   geminiRerankTopN: jest.fn().mockResolvedValue([2, 0, 1]), // يرجّع فهارس مرتبة
 }));
-
-import { geminiRerankTopN } from '../utils/geminiRerank';
 
 describe('VectorService', () => {
   let service: VectorService;
@@ -74,29 +72,31 @@ describe('VectorService', () => {
   describe('onModuleInit', () => {
     it('initializes qdrant and ensures collections', async () => {
       await service.onModuleInit();
-      expect(qdrant.init).toHaveBeenCalledWith('http://qdrant:6333');
-      expect(qdrant.ensureCollection).toHaveBeenCalledTimes(6);
-      expect(qdrant.ensureCollection).toHaveBeenCalledWith(
+      expect(qdrant.init.bind(qdrant)).toHaveBeenCalledWith(
+        'http://qdrant:6333',
+      );
+      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledTimes(6);
+      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledWith(
         Collections.Products,
         384,
       );
-      expect(qdrant.ensureCollection).toHaveBeenCalledWith(
+      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledWith(
         Collections.Offers,
         384,
       );
-      expect(qdrant.ensureCollection).toHaveBeenCalledWith(
+      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledWith(
         Collections.FAQs,
         384,
       );
-      expect(qdrant.ensureCollection).toHaveBeenCalledWith(
+      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledWith(
         Collections.Documents,
         384,
       );
-      expect(qdrant.ensureCollection).toHaveBeenCalledWith(
+      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledWith(
         Collections.Web,
         384,
       );
-      expect(qdrant.ensureCollection).toHaveBeenCalledWith(
+      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledWith(
         Collections.BotFAQs,
         384,
       );
@@ -137,23 +137,28 @@ describe('VectorService', () => {
       await service.upsertProducts(products);
 
       // delete لكل عنصر قبل upsert
-      expect(qdrant.delete).toHaveBeenCalledTimes(products.length);
+      expect(qdrant.delete.bind(qdrant)).toHaveBeenCalledTimes(products.length);
       products.forEach((p) => {
-        expect(qdrant.delete).toHaveBeenCalledWith(Collections.Products, {
-          filter: { must: [{ key: 'mongoId', match: { value: p.id } }] },
-        });
+        expect(qdrant.delete.bind(qdrant)).toHaveBeenCalledWith(
+          Collections.Products,
+          {
+            filter: { must: [{ key: 'mongoId', match: { value: p.id } }] },
+          },
+        );
       });
 
       // بسبب batchSize=2: استدعاء upsert مرتين (2 + 1)
-      expect(qdrant.upsert).toHaveBeenCalledTimes(2);
-      expect(embeddings.embed).toHaveBeenCalledTimes(products.length);
+      expect(qdrant.upsert.bind(qdrant)).toHaveBeenCalledTimes(2);
+      expect(embeddings.embed.bind(embeddings)).toHaveBeenCalledTimes(
+        products.length,
+      );
     });
 
     it('no-op when products array is empty', async () => {
       await service.onModuleInit();
       await service.upsertProducts([]);
-      expect(qdrant.upsert).not.toHaveBeenCalled();
-      expect(qdrant.delete).not.toHaveBeenCalled();
+      expect(qdrant.upsert.bind(qdrant)).not.toHaveBeenCalled();
+      expect(qdrant.delete.bind(qdrant)).not.toHaveBeenCalled();
     });
   });
 
@@ -201,8 +206,8 @@ describe('VectorService', () => {
       const res = await service.querySimilarProducts('عباية سوداء', 'm1', 2);
       // mock rerankTopN يعيد [2,0,1] على المرشحين؛ بعد فلترة minScore تصبح عناصر (0 و 2) فقط
       // إذن بعد rerank → نحاول التقاط فهارس rerank ضمن الطول الجديد
-      expect(embeddings.embed).toHaveBeenCalledTimes(1);
-      expect(qdrant.search).toHaveBeenCalledTimes(1);
+      expect(embeddings.embed.bind(embeddings)).toHaveBeenCalledTimes(1);
+      expect(qdrant.search.bind(qdrant)).toHaveBeenCalledTimes(1);
       expect((geminiRerankTopN as jest.Mock).mock.calls[0][0]).toMatchObject({
         query: 'عباية سوداء',
         topN: 2,
@@ -229,7 +234,7 @@ describe('VectorService', () => {
         new Error('Rerank down'),
       );
 
-      qdrant.search.mockResolvedValue([
+      qdrant.search.bind(qdrant).mockResolvedValue([
         {
           payload: {
             mongoId: 'x',
@@ -308,9 +313,9 @@ describe('VectorService', () => {
         expect(r).toHaveProperty('data');
       });
 
-      expect(embeddings.embed).toHaveBeenCalledTimes(1);
-      expect(qdrant.search).toHaveBeenCalledTimes(3);
-      expect(geminiRerankTopN).toHaveBeenCalledTimes(1);
+      expect(embeddings.embed.bind(embeddings)).toHaveBeenCalledTimes(1);
+      expect(qdrant.search.bind(qdrant)).toHaveBeenCalledTimes(3);
+      expect(geminiRerankTopN.bind(geminiRerankTopN)).toHaveBeenCalledTimes(1);
     });
 
     it('returns [] if all sources empty or below min score', async () => {

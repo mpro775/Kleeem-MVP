@@ -1,11 +1,11 @@
+import axios from 'axios';
+
 import { EvolutionService } from '../evolution.service';
 
 // mock axios.create to inject our fake client
 jest.mock('axios', () => {
   return { create: jest.fn() };
 });
-
-import axios from 'axios';
 
 describe('EvolutionService', () => {
   const httpMock = {

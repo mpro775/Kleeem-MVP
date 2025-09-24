@@ -3,7 +3,7 @@ import 'jest-extended';
 jest.setTimeout(120000); // 2 minutes for E2E tests
 
 // Global setup for E2E tests
-beforeAll(async () => {
+beforeAll(() => {
   // Suppress console output during tests to reduce noise
   const originalConsole = global.console;
   global.console = {

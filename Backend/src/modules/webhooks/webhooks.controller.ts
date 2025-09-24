@@ -122,7 +122,7 @@ export class WebhooksController {
     return this.service.handleBotReply({
       ...body,
       merchantId,
-      channel: body.channel as PublicChannel,
+      channel: body.channel as unknown as PublicChannel,
     });
   }
 

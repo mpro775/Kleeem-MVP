@@ -1,12 +1,12 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { LeadsService } from '../../leads/leads.service';
 import { VectorService } from '../../vector/vector.service';
-import { StorefrontCategoryRepository } from '../repositories/category.repository';
-import { StorefrontMerchantRepository } from '../repositories/merchant.repository';
-import { StorefrontOrderRepository } from '../repositories/order.repository';
-import { StorefrontProductRepository } from '../repositories/product.repository';
-import { StorefrontRepository } from '../repositories/storefront.repository';
+import { type StorefrontCategoryRepository } from '../repositories/category.repository';
+import { type StorefrontMerchantRepository } from '../repositories/merchant.repository';
+import { type StorefrontOrderRepository } from '../repositories/order.repository';
+import { type StorefrontProductRepository } from '../repositories/product.repository';
+import { type StorefrontRepository } from '../repositories/storefront.repository';
 import { StorefrontService } from '../storefront.service';
 import {
   STOREFRONT_CATEGORY_REPOSITORY,
@@ -80,7 +80,7 @@ describe('StorefrontService', () => {
   it('checkSlugAvailable should normalize and query repo', async () => {
     sfRepo.existsSlug.mockResolvedValue(false);
     const out = await service.checkSlugAvailable(' My Slug ');
-    expect(sfRepo.existsSlug).toHaveBeenCalledWith('my-slug');
+    expect(sfRepo.existsSlug.bind(sfRepo)).toHaveBeenCalledWith('my-slug');
     expect(out.available).toBe(true);
   });
 
@@ -107,11 +107,13 @@ describe('StorefrontService', () => {
       domain: 'new.example.com',
     } as any);
 
-    expect(prodRepo.updateManyByMerchantSet).toHaveBeenCalledWith('m1', {
+    expect(
+      prodRepo.updateManyByMerchantSet.bind(prodRepo),
+    ).toHaveBeenCalledWith('m1', {
       storefrontSlug: 'new-slug',
       storefrontDomain: 'new.example.com',
     });
-    expect(prodRepo.resaveById).toHaveBeenCalledTimes(2);
+    expect(prodRepo.resaveById.bind(prodRepo)).toHaveBeenCalledTimes(2);
     expect((vectorMock.upsertProducts as any).mock.calls.length).toBe(2);
   });
 
@@ -144,8 +146,11 @@ describe('StorefrontService', () => {
     orderRepo.findMyOrders.mockResolvedValue([{ _id: 'o1' as any } as any]);
 
     const out = await service.getMyOrdersForSession('m1', 's1', undefined, 10);
-    expect(leadsMock.getPhoneBySession).toHaveBeenCalledWith('m1', 's1');
-    expect(orderRepo.findMyOrders).toHaveBeenCalledWith('m1', {
+    expect(leadsMock.getPhoneBySession.bind(leadsMock)).toHaveBeenCalledWith(
+      'm1',
+      's1',
+    );
+    expect(orderRepo.findMyOrders.bind(orderRepo)).toHaveBeenCalledWith('m1', {
       sessionId: 's1',
       phone: '0555',
       limit: 10,

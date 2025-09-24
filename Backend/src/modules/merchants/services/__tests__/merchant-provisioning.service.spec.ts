@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { TranslationService } from '../../../../common/services/translation.service';
 import { BusinessMetrics } from '../../../../metrics/business.metrics';
@@ -49,7 +49,7 @@ describe('MerchantProvisioningService', () => {
 
     const res = await svc.create({ name: 'x' } as any);
     expect(res).toBe(merchant);
-    expect(n8n.createForMerchant).toHaveBeenCalledWith('m1');
+    expect(n8n.createForMerchant.bind(n8n)).toHaveBeenCalledWith('m1');
     expect(merchant.save).toHaveBeenCalled();
     expect(storefront.create).toHaveBeenCalled();
   });
@@ -62,9 +62,9 @@ describe('MerchantProvisioningService', () => {
     storefront.create.mockRejectedValue(new Error('boom'));
 
     await expect(svc.create({} as any)).rejects.toBeTruthy();
-    expect(n8n.setActive).toHaveBeenCalledWith('wf1', false);
-    expect(n8n.delete).toHaveBeenCalledWith('wf1');
+    expect(n8n.setActive.bind(n8n)).toHaveBeenCalledWith('wf1', false);
+    expect(n8n.delete.bind(n8n)).toHaveBeenCalledWith('wf1');
     expect(storefront.deleteByMerchant).not.toHaveBeenCalled(); // storefront فشل قبل الإنشاء
-    expect(repo.remove).toHaveBeenCalledWith('m1');
+    expect(repo.remove.bind(repo)).toHaveBeenCalledWith('m1');
   });
 });

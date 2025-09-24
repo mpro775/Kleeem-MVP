@@ -219,7 +219,7 @@ export class N8nWorkflowService {
         merchantId: hist.merchantId,
         workflowId,
         version: hist.version + 1,
-        workflowJson: hist.workflowJson as unknown,
+        workflowJson: hist.workflowJson,
         updatedBy,
         isRollback: true,
       });

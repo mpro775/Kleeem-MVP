@@ -7,6 +7,9 @@ export const MAX_HTTP_BUFFER_SIZE = 1e6;
 
 // Time conversion constants
 export const MS_PER_SECOND = 1000;
+// File size conversion constants
+export const BYTES_PER_KILOBYTE = 1 << 10; // 2^10
+export const BYTES_PER_MEGABYTE = BYTES_PER_KILOBYTE * BYTES_PER_KILOBYTE;
 // Sentry configuration constants
 export const SENTRY_PRODUCTION_SAMPLE_RATE = 0.1; // 10% sampling in production
 export const MAX_LENGTH_FEEDBACK = 1000;
@@ -55,7 +58,7 @@ export const PASSWORD_RESET_WINDOW_MS = ONE_MINUTE_MS;
 export const HOUR_IN_SECONDS = 3600;
 
 // File size constants
-export const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
+export const MAX_IMAGE_SIZE_BYTES = 2 * BYTES_PER_MEGABYTE; // 2 MB
 
 // Image quality constants
 export const IMAGE_QUALITY_HIGH = 85;

@@ -1,16 +1,16 @@
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { OutboxModule } from '../../common/outbox/outbox.module';
 import { ChatModule } from '../chat/chat.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { ChatMediaModule } from '../media/chat-media.module';
-import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
+import { MerchantSchema } from '../merchants/schemas/merchant.schema';
 import { MessagingModule } from '../messaging/message.module';
 import { OrdersModule } from '../orders/orders.module';
 
-import { Webhook, WebhookSchema } from './schemas/webhook.schema';
+import { WebhookSchema } from './schemas/webhook.schema';
 import { WebhooksController } from './webhooks.controller';
 import { WebhooksModule } from './webhooks.module';
 import { WebhooksService } from './webhooks.service';
@@ -71,12 +71,12 @@ describe('WebhooksModule', () => {
   describe('Schema Configuration', () => {
     it('should register Webhook schema', () => {
       // Verify that the Webhook model is available
-      expect(() => moduleRef.get('WebhookModel')).not.toThrow();
+      expect(() => moduleRef.get('WebhookModel')).not.toThrow(); // eslint-disable-line @typescript-eslint/no-unsafe-return
     });
 
     it('should register Merchant schema', () => {
       // Verify that the Merchant model is available
-      expect(() => moduleRef.get('MerchantModel')).not.toThrow();
+      expect(() => moduleRef.get('MerchantModel')).not.toThrow(); // eslint-disable-line @typescript-eslint/no-unsafe-return
     });
   });
 

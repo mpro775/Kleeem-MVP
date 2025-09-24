@@ -7,15 +7,29 @@ import importPlugin from 'eslint-plugin-import';
 import prettierPlugin from 'eslint-plugin-prettier';
 import eslintConfigPrettier from 'eslint-config-prettier';
 
+// Ensure TS type-checked rules only run on TS files
+const tsTypeChecked = tseslint.configs.recommendedTypeChecked.map((cfg) => ({
+  ...cfg,
+  files: ['**/*.ts', '**/*.tsx'],
+}));
+
 export default tseslint.config(
   // تجاهل مجلدات البناء والتقارير
-  { ignores: ['eslint.config.*', 'dist/**', 'coverage/**', '*.log'] },
+  {
+    ignores: [
+      'eslint.config.*',
+      'dist/**',
+      'coverage/**',
+      '*.log',
+      'jest*.config.*',
+    ],
+  },
 
   // قواعد JS الافتراضية
   js.configs.recommended,
 
-  // قواعد TS مع type-check
-  ...tseslint.configs.recommendedTypeChecked,
+  // قواعد TS مع type-check (محصورة بملفات TS فقط)
+  ...tsTypeChecked,
 
   // إطفاء التعارضات مع Prettier
   eslintConfigPrettier,
@@ -24,24 +38,16 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        // خلي ESLint يستخدم الـ Project Service (بدون tsconfigRootDir/‏project)
         projectService: true,
       },
       globals: { ...globals.node },
     },
     plugins: {
+      '@typescript-eslint': tseslint.plugin,
       import: importPlugin,
       prettier: prettierPlugin,
     },
     rules: {
-      '@typescript-eslint/consistent-type-imports': 'error',
-      '@typescript-eslint/no-misused-promises': [
-        'warn',
-        { checksVoidReturn: false },
-      ],
-      '@typescript-eslint/explicit-module-boundary-types': 'warn',
-      '@typescript-eslint/no-floating-promises': 'warn',
-
       complexity: ['warn', 12],
       'max-depth': ['warn', 4],
       'max-statements': ['warn', 30],
@@ -85,6 +91,7 @@ export default tseslint.config(
   // ملفات src: تشديد بعض القواعد
   {
     files: ['src/**/*.ts'],
+    plugins: { '@typescript-eslint': tseslint.plugin },
     rules: {
       '@typescript-eslint/explicit-module-boundary-types': 'error',
       'max-lines-per-function': [
@@ -94,12 +101,33 @@ export default tseslint.config(
     },
   },
 
+  // قواعد TS عامة (لكل ملفات TS)
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    plugins: { '@typescript-eslint': tseslint.plugin },
+    rules: {
+      '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/no-misused-promises': [
+        'warn',
+        { checksVoidReturn: false },
+      ],
+      '@typescript-eslint/explicit-module-boundary-types': 'warn',
+      '@typescript-eslint/no-floating-promises': 'warn',
+    },
+  },
+
   // سكربتات وأدوات
   {
-    files: ['scripts/**/*.{ts,js}', 'tools/**/*.{ts,js}'],
+    files: [
+      'scripts/*.{ts,js}',
+      'scripts/**/*.{ts,js}',
+      'tools/*.{ts,js}',
+      'tools/**/*.{ts,js}',
+    ],
     languageOptions: {
       parserOptions: { allowDefaultProject: true }, // بدون type-check ثقيل
     },
+    plugins: { '@typescript-eslint': tseslint.plugin },
     rules: {
       'no-console': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
@@ -115,12 +143,25 @@ export default tseslint.config(
     },
   },
 
+  // سكربتات JS فقط: عطّل Project Service تماماً
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      parserOptions: { allowDefaultProject: true, projectService: false },
+    },
+    plugins: { '@typescript-eslint': tseslint.plugin },
+    rules: { '@typescript-eslint/*': 'off' },
+  },
+
   // ✅ أوفررايد واحد واضح للاختبارات + بيئة Jest
   {
     files: ['**/*.spec.ts', '**/*.test.ts', 'test/**/*.ts'],
-    plugins: { jest: jestPlugin },
+    plugins: { jest: jestPlugin, '@typescript-eslint': tseslint.plugin },
     languageOptions: {
-      parserOptions: { projectService: true },
+      parserOptions: {
+        project: ['./tsconfig.json', './tsconfig.test.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
       globals: { ...jestPlugin.environments.globals.globals },
     },
     rules: {
@@ -138,9 +179,20 @@ export default tseslint.config(
     },
   },
 
+  // ملفات إعدادات الجذر (مثل jest*.js): اسمح بدون Project Service
+  {
+    files: ['*.config.js', '*.config.mjs', 'jest*.js', 'jest-*.js'],
+    languageOptions: {
+      parserOptions: { allowDefaultProject: true, projectService: false },
+    },
+    plugins: { '@typescript-eslint': tseslint.plugin },
+    rules: { '@typescript-eslint/*': 'off' },
+  },
+
   // ملفات JS فقط: طفي قواعد TS
   {
     files: ['**/*.js'],
+    plugins: { '@typescript-eslint': tseslint.plugin },
     rules: { '@typescript-eslint/*': 'off' },
   },
 );

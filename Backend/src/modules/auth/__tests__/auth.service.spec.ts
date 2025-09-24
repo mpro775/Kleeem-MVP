@@ -98,6 +98,7 @@ describe('AuthService', () => {
       password: 'x',
       confirmPassword: 'x',
     } as RegisterDto);
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(repo.createUser).toHaveBeenCalledWith({
       name: 'Ali',
       email: 'a@a.com',

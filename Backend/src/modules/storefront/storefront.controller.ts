@@ -29,6 +29,7 @@ import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
 } from '../../common';
+import { DEFAULT_LIMIT } from '../../common/constants/common';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
@@ -38,6 +39,7 @@ import {
   BannerDto,
 } from './dto/create-storefront.dto';
 import { UpdateStorefrontByMerchantDto } from './dto/update-storefront-by-merchant.dto';
+import { Storefront } from './schemas/storefront.schema';
 import { StorefrontService } from './storefront.service';
 /**
  * واجهة تحكم المتجر
@@ -50,24 +52,24 @@ import { StorefrontService } from './storefront.service';
 @ApiExtraModels(BannerDto)
 export class StorefrontController {
   constructor(private svc: StorefrontService) {}
-  @Public() @Get('merchant') badMerchantReq() {
+  @Public() @Get('merchant') badMerchantReq(): never {
     throw new BadRequestException('merchantId is required');
   }
   @Public() @Get('merchant/:merchantId') async findByMerchant(
     @Param('merchantId') merchantId: string,
-  ) {
-    return this.svc.findByMerchant(merchantId);
+  ): Promise<unknown> {
+    return await this.svc.findByMerchant(merchantId);
   }
   @Patch('merchant/:id') async update(
     @Param('id') id: string,
     @Body() dto: UpdateStorefrontDto,
-  ) {
+  ): Promise<Storefront> {
     return this.svc.update(id, dto);
   }
   @Patch('by-merchant/:merchantId') async updateByMerchant(
     @Param('merchantId') merchantId: string,
     @Body() dto: UpdateStorefrontByMerchantDto,
-  ) {
+  ): Promise<Storefront> {
     return this.svc.updateByMerchant(merchantId, dto);
   }
 
@@ -75,7 +77,9 @@ export class StorefrontController {
   @Get('slug/check')
   @ApiOperation({ summary: 'التحقق من توفر slug' })
   @ApiSuccessResponse(Object, 'نتيجة التحقق')
-  async checkSlug(@Query('slug') slug: string) {
+  async checkSlug(
+    @Query('slug') slug: string,
+  ): Promise<{ available: boolean }> {
     if (!slug) throw new BadRequestException('slug مطلوب');
     return this.svc.checkSlugAvailable(slug);
   }
@@ -96,7 +100,7 @@ export class StorefrontController {
     status: 404,
     description: 'لم يتم العثور على إعدادات واجهة المتجر',
   })
-  async storefront(@Param('slugOrId') slugOrId: string) {
+  async storefront(@Param('slugOrId') slugOrId: string): Promise<unknown> {
     return this.svc.getStorefront(slugOrId);
   }
   @Post()
@@ -117,7 +121,7 @@ export class StorefrontController {
     type: CreateStorefrontDto,
     description: 'بيانات واجهة المتجر المطلوب إنشاؤها',
   })
-  async create(@Body() dto: CreateStorefrontDto) {
+  async create(@Body() dto: CreateStorefrontDto): Promise<Storefront> {
     return this.svc.create(dto);
   }
 
@@ -142,8 +146,8 @@ export class StorefrontController {
   async uploadBanners(
     @Param('merchantId') merchantId: string,
     @UploadedFiles() files: Express.Multer.File[],
-  ) {
-    return this.svc.uploadBannerImagesToMinio(merchantId, files);
+  ): Promise<unknown> {
+    return await this.svc.uploadBannerImagesToMinio(merchantId, files);
   }
   @Public()
   @Get('merchant/:merchantId/my-orders')
@@ -154,17 +158,22 @@ export class StorefrontController {
     @Query('sessionId') sessionId: string,
     @Query('phone') phone?: string, // ✅ دعم الهاتف مباشرة من الطلب
     @Query('limit') limit = '50',
-  ) {
+  ): Promise<unknown> {
     if (!merchantId || (!sessionId && !phone)) {
       throw new BadRequestException('merchantId و sessionId/phone مطلوبة');
     }
-    const lim = Math.min(parseInt(limit, 10) || 50, 200);
-    return this.svc.getMyOrdersForSession(merchantId, sessionId, phone, lim);
+    const lim = Math.min(parseInt(limit, 10) || DEFAULT_LIMIT, 200);
+    return await this.svc.getMyOrdersForSession(
+      merchantId,
+      sessionId,
+      phone,
+      lim,
+    );
   }
 
   @Get('/public/storefront/:slug/brand.css')
   @Header('Content-Type', 'text/css')
-  async getBrandCss(@Param('slug') slug: string) {
+  async getBrandCss(@Param('slug') slug: string): Promise<string> {
     return this.svc.getBrandCssBySlug(slug);
   }
 }

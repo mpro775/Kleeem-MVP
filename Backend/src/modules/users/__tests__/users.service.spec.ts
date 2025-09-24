@@ -1,8 +1,10 @@
 import { Test } from '@nestjs/testing';
 
-import { PaginationResult } from '../../../common/dto/pagination.dto';
-import { UsersRepository } from '../repositories/users.repository';
+import { UserRole } from '../schemas/user.schema';
 import { UsersService } from '../users.service';
+
+import type { PaginationResult } from '../../../common/dto/pagination.dto';
+import type { UsersRepository } from '../repositories/users.repository';
 
 describe('UsersService', () => {
   let svc: UsersService;
@@ -33,7 +35,9 @@ describe('UsersService', () => {
       name: 'n',
       merchantId: 'm',
       firstLogin: true,
-      role: 'admin',
+      role: UserRole.ADMIN,
+      emailVerified: true,
+      active: true,
     });
     const dto = await svc.findOne('64a00000000000000000000');
     expect(dto.email).toBe('e');

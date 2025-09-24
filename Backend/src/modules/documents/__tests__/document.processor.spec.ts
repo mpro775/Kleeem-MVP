@@ -17,7 +17,8 @@ import { DocumentProcessor } from '../processors/document.processor';
 import type { VectorService } from '../../vector/vector.service';
 import type { DocumentsService } from '../documents.service';
 import type { DocumentSchemaClass } from '../schemas/document.schema';
-
+import type { Job } from 'bull';
+import type { Model } from 'mongoose';
 // موك لوحدة fs: readFileSync و promises.writeFile/unlink
 jest.mock('fs', () => ({
   readFileSync: jest.fn(() => Buffer.from('PDFDATA')),
@@ -37,8 +38,7 @@ jest.mock('xlsx', () => ({
   utils: { sheet_to_csv: jest.fn() },
 }));
 
-import type { Job } from 'bull';
-import type { Model } from 'mongoose';
+type DocumentJobData = { docId: string; merchantId: string };
 
 describe('DocumentProcessor', () => {
   const fixedNow = 1712345678901;
@@ -69,14 +69,18 @@ describe('DocumentProcessor', () => {
     (XLSX.readFile as jest.Mock).mockReset();
     (XLSX.utils.sheet_to_csv as jest.Mock).mockReset();
 
-    (vectorService.embed as any).mockReset().mockResolvedValue([0.1, 0.2, 0.3]);
-    (vectorService.upsertDocumentChunks as any)
+    (vectorService.embedText as unknown as jest.Mock)
+      .mockReset()
+      .mockResolvedValue([0.1, 0.2, 0.3]);
+    (vectorService.upsertDocumentChunks as unknown as jest.Mock)
       .mockReset()
       .mockResolvedValue(undefined);
 
-    (docModel.findByIdAndUpdate as any).mockReset().mockReturnValue({
-      exec: jest.fn().mockResolvedValue(undefined),
-    });
+    (docModel.findByIdAndUpdate as unknown as jest.Mock)
+      .mockReset()
+      .mockReturnValue({
+        exec: jest.fn().mockResolvedValue(undefined),
+      });
   });
 
   afterEach(() => {
@@ -84,11 +88,11 @@ describe('DocumentProcessor', () => {
     jest.useRealTimers();
   });
 
-  function buildJob(docId = faker.string.uuid()): Job<unknown> {
+  function buildJob(docId = faker.string.uuid()): Job<DocumentJobData> {
     return {
       id: 'j1',
       data: { docId, merchantId: faker.string.uuid() },
-    } as unknown as Job<unknown>;
+    } as unknown as Job<DocumentJobData>;
   }
 
   test('مسار PDF سعيد: استخراج → تقسيم → embed → upsert → تحديث الحالة إلى completed وحذف الملف المؤقت', async () => {
@@ -134,7 +138,7 @@ describe('DocumentProcessor', () => {
 
     // تم استدعاء embed لعدد القطع
     expect(
-      (vectorService.embed as unknown as jest.Mock).mock.calls.length,
+      (vectorService.embedText as unknown as jest.Mock).mock.calls.length,
     ).toBe(3);
 
     // upsert تم لعدد القطع
@@ -192,7 +196,7 @@ describe('DocumentProcessor', () => {
 
     // أول embed ينجح، الثاني يفشل
 
-    (vectorService.embed as unknown as jest.Mock)
+    (vectorService.embedText as unknown as jest.Mock)
       .mockResolvedValueOnce([0.1])
       .mockRejectedValueOnce(new Error('embedding service down'));
 
@@ -271,13 +275,12 @@ describe('DocumentProcessor', () => {
     );
     await processor.process(job);
 
-    expect(
-      (mammoth as unknown as jest.Mock).extractRawText,
-    ).toHaveBeenCalledWith(
+    expect((mammoth as any).extractRawText).toHaveBeenCalledWith(
       expect.objectContaining({ path: expect.any(String) }),
     );
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(vectorService.embed).toHaveBeenCalled();
+    expect(vectorService.embedText).toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(vectorService.upsertDocumentChunks).toHaveBeenCalled();
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(docModel.findByIdAndUpdate).toHaveBeenCalledWith(docId, {

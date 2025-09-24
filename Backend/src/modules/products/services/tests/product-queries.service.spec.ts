@@ -1,7 +1,9 @@
 import { ConfigService } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { ProductQueriesService } from '../product-queries.service';
+
+import type { Types } from 'mongoose';
 
 const repo = {
   findById: jest.fn(),
@@ -65,7 +67,9 @@ describe('ProductQueriesService', () => {
     const products = [{ _id: 'p1' }, { _id: 'p2' }];
     repo.findAllByMerchant.mockResolvedValue(products);
 
-    const result = await svc.findAllByMerchant(merchantId as any);
+    const result = await svc.findAllByMerchant(
+      merchantId as unknown as Types.ObjectId,
+    );
 
     expect(repo.findAllByMerchant).toHaveBeenCalledWith(merchantId);
     expect(result).toBe(products);
@@ -137,7 +141,7 @@ describe('ProductQueriesService', () => {
 
   it('searchCatalog -> uses correct config values', async () => {
     cfg.get = jest.fn((k: string) => {
-      if (k === 'vars.products.heuristicTopN') return 15;
+      if (k === 'vars.products.heuristicTopN') return 10;
       return 20;
     });
 

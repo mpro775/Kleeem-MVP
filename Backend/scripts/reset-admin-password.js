@@ -1,43 +1,54 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 
-// عدّل المسار/الاسم وفق سكيمة المستخدم عندك
+const SALT_ROUNDS = 10;
+const DEFAULT_ROLE = 'ADMIN';
+const DEFAULT_EMAIL = 'admin@kaleem.com';
+
 const UserSchema = new mongoose.Schema({
-  email: String,
-  password: String,
-  role: String,
+  email: { type: String, required: true, index: true },
+  password: { type: String, required: true }, // غيّر للاسم الفعلي لو عندك passwordHash
+  role: { type: String, required: true },
 });
+
 const User = mongoose.model('User', UserSchema, 'users'); // collection: users
 
-(async () => {
-  try {
-    const uri = process.env.MONGODB_URI;
-    if (!uri) throw new Error('MONGODB_URI not set');
-    await mongoose.connect(uri);
+async function main() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) throw new Error('MONGODB_URI not set');
 
-    const email = 'admin@kaleem.com';
-    const newPass = process.argv[2]; // مرّر كلمة المرور الجديدة من سطر الأوامر
-    if (!newPass) throw new Error('Provide new password as argv[2]');
+  const email = process.env.ADMIN_EMAIL ?? DEFAULT_EMAIL;
+  const newPass = process.argv[2];
+  if (!newPass) throw new Error('Provide new password as argv[2]');
 
-    const hash = await bcrypt.hash(newPass, 10);
-    const updated = await User.findOneAndUpdate(
-      { email },
-      { $set: { password: hash, role: 'ADMIN' } }, // غيّر الحقل إلى passwordHash إن كان اسمك مختلف
-      { new: true },
-    );
+  await mongoose.connect(uri);
 
-    if (!updated) {
-      // لو ما وجد المستخدم، أنشئه كأدمن
-      await User.create({ email, password: hash, role: 'ADMIN' });
-      console.log('Admin created with new password.');
-    } else {
-      console.log('Admin password updated.');
-    }
+  const hash = await bcrypt.hash(newPass, SALT_ROUNDS);
 
-    await mongoose.disconnect();
-    process.exit(0);
-  } catch (e) {
-    console.error(e);
-    process.exit(1);
+  const updated = await User.findOneAndUpdate(
+    { email },
+    { $set: { password: hash, role: DEFAULT_ROLE } },
+    { new: true },
+  );
+
+  if (!updated) {
+    await User.create({ email, password: hash, role: DEFAULT_ROLE });
+    console.log('Admin created with new password.');
+  } else {
+    console.log('Admin password updated.');
   }
-})();
+}
+
+try {
+  await main();
+  await mongoose.disconnect();
+  process.exit(0);
+} catch (err) {
+  console.error(err);
+  try {
+    await mongoose.disconnect();
+  } catch {
+    // ignore
+  }
+  process.exit(1);
+}

@@ -1,4 +1,4 @@
-import { ExternalProduct, ZidProductsResponse } from '../types';
+import type { ExternalProduct, ZidProductsResponse } from '../types';
 
 describe('Integration Types', () => {
   describe('ExternalProduct Interface', () => {

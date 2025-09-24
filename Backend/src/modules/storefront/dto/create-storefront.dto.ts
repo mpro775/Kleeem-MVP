@@ -16,6 +16,7 @@ import {
   MaxLength,
   ArrayMaxSize,
 } from 'class-validator';
+import { MAX_SLUG_LENGTH } from 'src/modules/merchants/constants/merchant.constants';
 
 export class BannerDto {
   @ApiPropertyOptional({
@@ -126,7 +127,7 @@ export class CreateStorefrontDto {
   })
   @IsOptional()
   @IsString()
-  @MaxLength(50)
+  @MaxLength(MAX_SLUG_LENGTH)
   @Matches(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, {
     message: 'slug غير صالح (a-z, 0-9 و- فقط، 3–50)',
   })

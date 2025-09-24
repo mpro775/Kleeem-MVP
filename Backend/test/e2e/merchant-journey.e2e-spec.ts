@@ -1,7 +1,7 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { type INestApplication, ValidationPipe } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { io as SocketClient, Socket } from 'socket.io-client';
+import { io as SocketClient, type Socket } from 'socket.io-client';
 import request from 'supertest';
 
 import { AppModule } from '../../src/app.module';
@@ -91,7 +91,7 @@ describe('Merchant Complete Journey (E2E)', () => {
       // For E2E test, we'll simulate the verification step
     });
 
-    it('should verify email (simulated)', async () => {
+    it('should verify email (simulated)', () => {
       // In production, this would involve clicking an email link
       // For testing, we'll directly mark the email as verified
       // This would typically be done through a verification endpoint

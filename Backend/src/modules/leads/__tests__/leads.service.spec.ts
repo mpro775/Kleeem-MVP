@@ -1,8 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { LeadsService } from '../leads.service';
-import { LeadRepository } from '../repositories/lead.repository';
 import { LEAD_REPOSITORY } from '../tokens';
+
+import type { LeadRepository } from '../repositories/lead.repository';
 
 describe('LeadsService', () => {
   let service: LeadsService;
@@ -43,7 +44,7 @@ describe('LeadsService', () => {
 
     const res = await service.create('m1', dto);
 
-    expect(repo.create).toHaveBeenCalledWith(
+    expect(repo.create.bind(repo)).toHaveBeenCalledWith(
       expect.objectContaining({
         merchantId: 'm1',
         sessionId: 's1',
@@ -59,14 +60,14 @@ describe('LeadsService', () => {
   it('findAllForMerchant should delegate to repo', async () => {
     repo.findAllForMerchant.mockResolvedValue([{ _id: 'x' as any } as any]);
     const out = await service.findAllForMerchant('m2');
-    expect(repo.findAllForMerchant).toHaveBeenCalledWith('m2');
+    expect(repo.findAllForMerchant.bind(repo)).toHaveBeenCalledWith('m2');
     expect(out.length).toBe(1);
   });
 
   it('getPhoneBySession should return phone', async () => {
     repo.getPhoneBySession.mockResolvedValue('0555123456');
     const p = await service.getPhoneBySession('m1', 's1');
-    expect(repo.getPhoneBySession).toHaveBeenCalledWith('m1', 's1');
+    expect(repo.getPhoneBySession.bind(repo)).toHaveBeenCalledWith('m1', 's1');
     expect(p).toBe('0555123456');
   });
 

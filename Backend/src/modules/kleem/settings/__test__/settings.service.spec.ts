@@ -1,8 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
-import { SettingsRepository } from '../repositories/settings.repository';
 import { SettingsService } from '../settings.service';
 import { SETTINGS_REPOSITORY } from '../tokens';
+
+import type { SettingsRepository } from '../repositories/settings.repository';
 
 describe('SettingsService', () => {
   let service: SettingsService;
@@ -30,7 +31,7 @@ describe('SettingsService', () => {
     const a = await service.get();
     const b = await service.get();
     expect(a.launchDate).toBe('2024-01-01');
-    expect(repo.findOneLean).toHaveBeenCalledTimes(1);
+    expect(repo.findOneLean.bind(repo)).toHaveBeenCalledTimes(1);
     expect(b.launchDate).toBe('2024-01-01');
   });
 
@@ -38,7 +39,7 @@ describe('SettingsService', () => {
     repo.findOneLean.mockResolvedValueOnce(null);
     repo.create.mockResolvedValue({ applyUrl: 'x' } as any);
     const out = await service.update({ applyUrl: 'x' } as any);
-    expect(repo.create).toHaveBeenCalledWith({ applyUrl: 'x' });
+    expect(repo.create.bind(repo)).toHaveBeenCalledWith({ applyUrl: 'x' });
     expect(out.applyUrl).toBe('x');
   });
 
@@ -46,7 +47,9 @@ describe('SettingsService', () => {
     repo.findOneLean.mockResolvedValueOnce({ trialOffer: 'old' } as any);
     repo.findOneAndUpdate.mockResolvedValue({ trialOffer: 'new' } as any);
     const out = await service.update({ trialOffer: 'new' } as any);
-    expect(repo.findOneAndUpdate).toHaveBeenCalledWith({ trialOffer: 'new' });
+    expect(repo.findOneAndUpdate.bind(repo)).toHaveBeenCalledWith({
+      trialOffer: 'new',
+    });
     expect(out.trialOffer).toBe('new');
   });
 });

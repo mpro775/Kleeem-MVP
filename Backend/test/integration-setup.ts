@@ -1,4 +1,3 @@
-// test/integration-setup.ts
 import 'jest-extended';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 

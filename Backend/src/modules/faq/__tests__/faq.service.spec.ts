@@ -1,7 +1,8 @@
 import { Test } from '@nestjs/testing';
 
 import { FaqService } from '../faq.service';
-import { FaqRepository } from '../repositories/faq.repository';
+
+import type { FaqRepository } from '../repositories/faq.repository';
 
 describe('FaqService', () => {
   let service: FaqService;
@@ -69,7 +70,8 @@ describe('FaqService', () => {
       question: 'q2',
     });
     expect(out.success).toBe(true);
-    expect(repo.updateFieldsById).toHaveBeenCalled();
+    const updateCall = expect(repo.updateFieldsById.bind(repo));
+    updateCall.toHaveBeenCalled();
   });
 
   it('softDelete -> ok', async () => {

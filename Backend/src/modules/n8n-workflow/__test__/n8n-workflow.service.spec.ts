@@ -1,11 +1,12 @@
 import { HttpException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { MerchantsService } from '../../merchants/merchants.service';
 import { WorkflowHistoryService } from '../../workflow-history/workflow-history.service';
 import { N8nWorkflowService } from '../n8n-workflow.service';
-import { N8nClientRepository } from '../repositories/n8n-client.repository';
 import { N8N_CLIENT } from '../tokens';
+
+import type { N8nClientRepository } from '../repositories/n8n-client.repository';
 
 const historyMock = {
   create: jest.fn(),
@@ -48,11 +49,17 @@ describe('N8nWorkflowService', () => {
 
     const wfId = await service.createForMerchant('m1');
 
-    expect(clientMock.createWorkflow).toHaveBeenCalled();
-    expect(clientMock.setActive).toHaveBeenCalledWith('wf-123', true);
-    expect(merchantsMock.update).toHaveBeenCalledWith('m1', {
-      workflowId: 'wf-123',
-    });
+    expect(clientMock.createWorkflow.bind(clientMock)).toHaveBeenCalled();
+    expect(clientMock.setActive.bind(clientMock)).toHaveBeenCalledWith(
+      'wf-123',
+      true,
+    );
+    expect(merchantsMock.update.bind(merchantsMock)).toHaveBeenCalledWith(
+      'm1',
+      {
+        workflowId: 'wf-123',
+      },
+    );
     expect(historyMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
         merchantId: 'm1',
@@ -91,7 +98,7 @@ describe('N8nWorkflowService', () => {
 
     await service.update('wf-1', (j) => ({ ...j, active: false }), 'user-1');
 
-    expect(clientMock.patchWorkflow).toHaveBeenCalledWith(
+    expect(clientMock.patchWorkflow.bind(clientMock)).toHaveBeenCalledWith(
       'wf-1',
       expect.objectContaining({ active: false }),
     );
@@ -117,7 +124,7 @@ describe('N8nWorkflowService', () => {
 
     await service.rollback('wf-1', 2, 'user-x');
 
-    expect(clientMock.patchWorkflow).toHaveBeenCalled();
+    expect(clientMock.patchWorkflow.bind(clientMock)).toHaveBeenCalled();
     expect(historyMock.create).toHaveBeenCalledWith(
       expect.objectContaining({ isRollback: true, version: 3 }),
     );
@@ -132,11 +139,16 @@ describe('N8nWorkflowService', () => {
 
   it('delete should call client', async () => {
     await service.delete('wf-1');
-    expect(clientMock.deleteWorkflow).toHaveBeenCalledWith('wf-1');
+    expect(clientMock.deleteWorkflow.bind(clientMock)).toHaveBeenCalledWith(
+      'wf-1',
+    );
   });
 
   it('setActive should call client', async () => {
     await service.setActive('wf-1', true);
-    expect(clientMock.setActive).toHaveBeenCalledWith('wf-1', true);
+    expect(clientMock.setActive.bind(clientMock)).toHaveBeenCalledWith(
+      'wf-1',
+      true,
+    );
   });
 });

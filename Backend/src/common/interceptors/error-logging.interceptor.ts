@@ -133,9 +133,9 @@ export class ErrorLoggingInterceptor implements NestInterceptor {
     );
   }
 
-  private async logAsync(error: unknown, meta: ErrorMeta): Promise<void> {
+  private logAsync(error: unknown, meta: ErrorMeta): void {
     try {
-      const errorId = await this.errorManagementService.logError(
+      const errorId = this.errorManagementService.logError(
         error as string | Error,
         meta,
       );

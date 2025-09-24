@@ -74,7 +74,9 @@ function getUserIdFromAuth(req: RequestWithMeta): string | undefined {
   const auth = req.authUser;
   if (!auth || !auth._id) return undefined;
   try {
-    return String(auth._id);
+    if (typeof auth._id === 'string') return auth._id;
+    if (typeof auth._id === 'number') return String(auth._id);
+    return undefined;
   } catch {
     return undefined;
   }
@@ -87,7 +89,9 @@ function getMerchantIdFromAuth(req: RequestWithMeta): string | undefined {
   const auth = req.authUser;
   if (!auth || !auth.merchantId) return undefined;
   try {
-    return String(auth.merchantId);
+    if (typeof auth.merchantId === 'string') return auth.merchantId;
+    if (typeof auth.merchantId === 'number') return String(auth.merchantId);
+    return undefined;
   } catch {
     return undefined;
   }

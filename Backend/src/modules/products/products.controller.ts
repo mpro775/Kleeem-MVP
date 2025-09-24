@@ -17,7 +17,6 @@ import {
   ForbiddenException,
   BadRequestException,
   InternalServerErrorException,
-  NotFoundException,
   UploadedFiles,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -35,7 +34,8 @@ import { Types } from 'mongoose';
 import {
   ApiCreatedResponse as CommonApiCreatedResponse,
   CurrentUser, // ✅ موجود عندك
-  CurrentMerchantId, // ✅ موجود عندك
+  CurrentMerchantId,
+  PaginationResult, // ✅ موجود عندك
 } from '../../common';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -48,6 +48,8 @@ import { ProductSetupConfigDto } from './dto/product-setup-config.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductSetupConfigService } from './product-setup-config.service';
 import { ProductsService } from './products.service';
+
+const MAX_IMAGES = 6;
 
 @ApiTags('المنتجات')
 @ApiBearerAuth()
@@ -138,7 +140,10 @@ export class ProductsController {
   async getProducts(
     @Query() dto: GetProductsDto,
     @CurrentMerchantId() merchantId: string,
-  ) {
+  ): Promise<{
+    items: ProductResponseDto[];
+    meta: PaginationResult<ProductResponseDto>;
+  }> {
     if (!merchantId) {
       throw new ForbiddenException(
         this.translationService.translate('auth.errors.merchantRequired'),
@@ -151,7 +156,12 @@ export class ProductsController {
       items: plainToInstance(ProductResponseDto, result.items, {
         excludeExtraneousValues: true,
       }),
-      meta: result.meta,
+      meta: {
+        items: plainToInstance(ProductResponseDto, result.items, {
+          excludeExtraneousValues: true,
+        }),
+        meta: result.meta,
+      },
     };
   }
 
@@ -162,13 +172,21 @@ export class ProductsController {
   async getPublicProducts(
     @Param('storeSlug') storeSlug: string,
     @Query() dto: GetProductsDto,
-  ) {
+  ): Promise<{
+    items: ProductResponseDto[];
+    meta: PaginationResult<ProductResponseDto>;
+  }> {
     const result = await this.productsService.getPublicProducts(storeSlug, dto);
     return {
       items: plainToInstance(ProductResponseDto, result.items, {
         excludeExtraneousValues: true,
       }),
-      meta: result.meta,
+      meta: {
+        items: plainToInstance(ProductResponseDto, result.items, {
+          excludeExtraneousValues: true,
+        }),
+        meta: result.meta,
+      },
     };
   }
 
@@ -176,7 +194,9 @@ export class ProductsController {
   @Get('legacy')
   @ApiOperation({ summary: 'جلب جميع المنتجات للتاجر (طريقة قديمة)' })
   @ApiOkResponse({ type: ProductResponseDto, isArray: true })
-  async findAll(@Query('merchantId') merchantId: string) {
+  async findAll(
+    @Query('merchantId') merchantId: string,
+  ): Promise<ProductResponseDto[]> {
     if (!merchantId)
       throw new BadRequestException(
         this.translationService.translate('validation.required'),
@@ -201,7 +221,10 @@ export class ProductsController {
     @Query('q') query: string,
     @Query() dto: GetProductsDto,
     @CurrentMerchantId() merchantId: string,
-  ) {
+  ): Promise<{
+    items: ProductResponseDto[];
+    meta: PaginationResult<ProductResponseDto>;
+  }> {
     if (!merchantId) {
       throw new ForbiddenException(
         this.translationService.translate('auth.errors.merchantRequired'),
@@ -224,18 +247,27 @@ export class ProductsController {
       items: plainToInstance(ProductResponseDto, result.items, {
         excludeExtraneousValues: true,
       }),
-      meta: result.meta,
+      meta: {
+        items: plainToInstance(ProductResponseDto, result.items, {
+          excludeExtraneousValues: true,
+        }),
+        meta: result.meta,
+      },
     };
   }
 
   @Post(':id/images')
-  @UseInterceptors(FilesInterceptor('files', 6))
+  @UseInterceptors(FilesInterceptor('files', MAX_IMAGES))
   async uploadProductImages(
     @Param('id') id: string,
-    @Query('replace') replace = 'false',
     @UploadedFiles() files: Express.Multer.File[],
     @CurrentMerchantId() jwtMerchantId: string | null, // ✅
-  ) {
+  ): Promise<{
+    urls: string[];
+    count: number;
+    accepted: number;
+    remaining: number;
+  }> {
     if (!jwtMerchantId) {
       throw new ForbiddenException('لا يوجد تاجر مرتبط بالحساب');
     }
@@ -243,7 +275,6 @@ export class ProductsController {
       id,
       jwtMerchantId, // ✅
       files,
-      { replace: replace === 'true' },
     );
     return {
       urls: result.urls,
@@ -263,7 +294,7 @@ export class ProductsController {
   })
   async findOne(
     @Param('id') id: string,
-    @Request() req: any, // تبقى عامة؛ قد لا يوجد user
+    @Request() req: Request & { user: { role: string; merchantId: string } }, // تبقى عامة؛ قد لا يوجد user
   ): Promise<ProductResponseDto> {
     const product = await this.productsService.findOne(id);
 
@@ -296,7 +327,7 @@ export class ProductsController {
     @Param('id') id: string,
     @Body() dto: UpdateProductDto,
     @CurrentMerchantId() jwtMerchantId: string | null, // ✅
-    @CurrentUser() user: any, // ✅ للوصول إلى role
+    @CurrentUser() user: { role: string; merchantId: string }, // ✅ للوصول إلى role
   ): Promise<ProductResponseDto> {
     const product = await this.productsService.findOne(id);
     if (
@@ -323,7 +354,11 @@ export class ProductsController {
     @Param('merchantId') merchantId: string,
     @Body() config: ProductSetupConfigDto,
     @CurrentMerchantId() jwtMerchantId: string | null, // ✅
-  ) {
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data: ProductSetupConfigDto;
+  }> {
     if (!jwtMerchantId || merchantId !== String(jwtMerchantId)) {
       throw new ForbiddenException(
         this.translationService.translate('auth.errors.accessDenied'),
@@ -344,15 +379,15 @@ export class ProductsController {
         message: this.translationService.translate(
           'products.messages.configSaved',
         ),
-        data: result,
+        data: result as ProductSetupConfigDto,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new InternalServerErrorException({
         success: false,
         message: this.translationService.translateError(
           'system.configurationError',
         ),
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -361,7 +396,7 @@ export class ProductsController {
   async getSetupProducts(
     @Param('merchantId') merchantId: string,
     @CurrentMerchantId() jwtMerchantId: string | null, // ✅
-  ) {
+  ): Promise<ProductSetupConfigDto | null> {
     if (!jwtMerchantId || merchantId !== String(jwtMerchantId)) {
       throw new ForbiddenException(
         this.translationService.translate('auth.errors.accessDenied'),
@@ -369,17 +404,16 @@ export class ProductsController {
     }
     const config =
       await this.productSetupConfigService.getByMerchantId(merchantId);
-    return config ?? null;
+    return config as ProductSetupConfigDto | null;
   }
 
   @Post(':id/availability')
   async updateAvailability(
     @Param('id') id: string,
     @Body('isAvailable') isAvailable: boolean,
-    @CurrentMerchantId() jwtMerchantId: string | null, // ⬅️ إن احتجت التحقق، أضِفه هنا
-  ) {
+  ): Promise<void> {
     // إن أردت تقييدها بمالك المنتج أضف فحصًا مشابهًا لـ update/remove
-    return this.productsService.setAvailability(id, isAvailable);
+    await this.productsService.setAvailability(id, isAvailable);
   }
 
   @Delete(':id')
@@ -392,7 +426,7 @@ export class ProductsController {
   async remove(
     @Param('id') id: string,
     @CurrentMerchantId() jwtMerchantId: string | null, // ✅
-    @CurrentUser() user: any, // ✅ للوصول إلى role
+    @CurrentUser() user: { role: string; merchantId: string }, // ✅ للوصول إلى role
   ): Promise<{ message: string }> {
     const product = await this.productsService.findOne(id); // ✅ كُنّا نفحص بدون جلب
 
@@ -412,7 +446,7 @@ export class ProductsController {
   async getPublicBySlug(
     @Param('storeSlug') storeSlug: string,
     @Param('productSlug') productSlug: string,
-  ) {
+  ): Promise<ProductResponseDto> {
     const p = await this.productsService.getPublicBySlug(
       storeSlug,
       productSlug,

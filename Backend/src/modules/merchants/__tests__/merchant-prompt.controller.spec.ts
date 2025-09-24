@@ -1,21 +1,21 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { StorefrontService } from '../../storefront/storefront.service';
 import { MerchantPromptController } from '../controllers/merchant-prompt.controller';
-import { AdvancedTemplateDto } from '../dto/requests/advanced-template.dto';
-import { PreviewPromptDto } from '../dto/requests/preview-prompt.dto';
-import { QuickConfigDto } from '../dto/requests/quick-config.dto';
 import { MerchantsService } from '../merchants.service';
 import { PromptBuilderService } from '../services/prompt-builder.service';
 import { PromptPreviewService } from '../services/prompt-preview.service';
 import { PromptVersionService } from '../services/prompt-version.service';
+
+import type { AdvancedTemplateDto } from '../dto/requests/advanced-template.dto';
+import type { PreviewPromptDto } from '../dto/requests/preview-prompt.dto';
+import type { QuickConfigDto } from '../dto/requests/quick-config.dto';
 
 describe('MerchantPromptController', () => {
   let controller: MerchantPromptController;
   let merchantsService: jest.Mocked<MerchantsService>;
   let versionService: jest.Mocked<PromptVersionService>;
   let previewService: jest.Mocked<PromptPreviewService>;
-  let storefrontService: jest.Mocked<StorefrontService>;
   let promptBuilder: jest.Mocked<PromptBuilderService>;
 
   const mockMerchant = {
@@ -74,7 +74,6 @@ describe('MerchantPromptController', () => {
     merchantsService = module.get(MerchantsService);
     versionService = module.get(PromptVersionService);
     previewService = module.get(PromptPreviewService);
-    storefrontService = module.get(StorefrontService);
     promptBuilder = module.get(PromptBuilderService);
   });
 
@@ -88,9 +87,9 @@ describe('MerchantPromptController', () => {
 
       const result = await controller.getQuickConfig('64a00000000000000000001');
 
-      expect(merchantsService.findOne).toHaveBeenCalledWith(
-        '64a00000000000000000001',
-      );
+      expect(
+        merchantsService.findOne.bind(merchantsService),
+      ).toHaveBeenCalledWith('64a00000000000000000001');
       expect(result).toEqual(mockMerchant.quickConfig);
     });
   });
@@ -103,11 +102,6 @@ describe('MerchantPromptController', () => {
         targetAudience: 'young adults',
       } as QuickConfigDto;
 
-      const updatedMerchant = {
-        ...mockMerchant,
-        quickConfig: quickConfigDto,
-      };
-
       merchantsService.updateQuickConfig.mockResolvedValue(
         quickConfigDto as any,
       );
@@ -117,10 +111,9 @@ describe('MerchantPromptController', () => {
         quickConfigDto,
       );
 
-      expect(merchantsService.updateQuickConfig).toHaveBeenCalledWith(
-        '64a00000000000000000001',
-        quickConfigDto,
-      );
+      expect(
+        merchantsService.updateQuickConfig.bind(merchantsService),
+      ).toHaveBeenCalledWith('64a00000000000000000001', quickConfigDto);
       expect(result).toEqual(quickConfigDto);
     });
   });
@@ -133,9 +126,9 @@ describe('MerchantPromptController', () => {
         '64a00000000000000000001',
       );
 
-      expect(merchantsService.findOne).toHaveBeenCalledWith(
-        '64a00000000000000000001',
-      );
+      expect(
+        merchantsService.findOne.bind(merchantsService),
+      ).toHaveBeenCalledWith('64a00000000000000000001');
       expect(result).toEqual({
         template: mockMerchant.currentAdvancedConfig.template,
         note: mockMerchant.currentAdvancedConfig.note,
@@ -170,9 +163,9 @@ describe('MerchantPromptController', () => {
         previewDto,
       );
 
-      expect(merchantsService.findOne).toHaveBeenCalledWith(
-        '64a00000000000000000001',
-      );
+      expect(
+        merchantsService.findOne.bind(merchantsService),
+      ).toHaveBeenCalledWith('64a00000000000000000001');
       expect(result).toEqual({ preview: mockPreview });
     });
   });
@@ -193,11 +186,13 @@ describe('MerchantPromptController', () => {
         advancedDto,
       );
 
-      expect(versionService.snapshot).toHaveBeenCalledWith(
+      expect(versionService.snapshot.bind(versionService)).toHaveBeenCalledWith(
         '64a00000000000000000001',
         advancedDto.note,
       );
-      expect(merchantsService.saveAdvancedVersion).toHaveBeenCalledWith(
+      expect(
+        merchantsService.saveAdvancedVersion.bind(merchantsService),
+      ).toHaveBeenCalledWith(
         '64a00000000000000000001',
         advancedDto.template,
         advancedDto.note,
@@ -217,7 +212,7 @@ describe('MerchantPromptController', () => {
 
       const result = await controller.listVersions('64a00000000000000000001');
 
-      expect(versionService.list).toHaveBeenCalledWith(
+      expect(versionService.list.bind(versionService)).toHaveBeenCalledWith(
         '64a00000000000000000001',
       );
       expect(result).toEqual(mockVersions);
@@ -235,7 +230,7 @@ describe('MerchantPromptController', () => {
         versionIndex,
       );
 
-      expect(versionService.revert).toHaveBeenCalledWith(
+      expect(versionService.revert.bind(versionService)).toHaveBeenCalledWith(
         '64a00000000000000000001',
         versionIndex,
       );
@@ -256,9 +251,9 @@ describe('MerchantPromptController', () => {
 
       const result = await controller.finalPrompt('64a00000000000000000001');
 
-      expect(merchantsService.findOne).toHaveBeenCalledWith(
-        '64a00000000000000000001',
-      );
+      expect(
+        merchantsService.findOne.bind(merchantsService),
+      ).toHaveBeenCalledWith('64a00000000000000000001');
       expect(result).toEqual({
         prompt: mockMerchantWithPrompt.finalPromptTemplate,
       });

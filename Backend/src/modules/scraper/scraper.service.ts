@@ -42,13 +42,13 @@ export class ScraperService {
   ) {}
 
   @Cron(CronExpression.EVERY_10_MINUTES)
-  async scheduleMinimalScrape() {
+  async scheduleMinimalScrape(): Promise<void> {
     this.logger.debug('Enqueue minimal scrape');
     await this.scraperQueue.add('scrape', { mode: 'minimal' });
   }
 
   @Cron(CronExpression.EVERY_WEEK)
-  async scheduleFullScrape() {
+  async scheduleFullScrape(): Promise<void> {
     this.logger.debug('Enqueue weekly full scrape');
     await this.scraperQueue.add('scrape', { mode: 'full' });
   }
@@ -67,7 +67,7 @@ export class ScraperService {
       return resp.data.data;
     } catch (err) {
       this.logger.error(
-        `Extractor service failed for ${rawUrl}: ${err.message}`,
+        `Extractor service failed for ${rawUrl}: ${err instanceof Error ? err.message : String(err)}`,
       );
       throw new InternalServerErrorException('Extractor failure');
     }

@@ -23,6 +23,10 @@ import { ScraperService } from './scraper.service';
 
 class ScrapeUrlDto {
   url: string;
+
+  constructor(url: string) {
+    this.url = url;
+  }
 }
 
 @ApiTags('المُعالج')
@@ -57,7 +61,20 @@ export class ScraperController {
     description: 'خطأ في الخادم أثناء عملية الاستخلاص',
   })
   @HttpCode(HttpStatus.OK)
-  async runScraping(@Body() dto: ScrapeUrlDto) {
+  async runScraping(@Body() dto: ScrapeUrlDto): Promise<
+    | { price: number; isAvailable: boolean }
+    | {
+        platform: string;
+        name: string;
+        price: number;
+        isAvailable: boolean;
+        images: string[];
+        description: string;
+        category: string;
+        lowQuantity: string;
+        specsBlock: string[];
+      }
+  > {
     return this.scraperService.scrapeProduct(dto.url);
   }
 }

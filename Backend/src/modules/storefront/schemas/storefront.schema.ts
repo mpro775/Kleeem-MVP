@@ -1,7 +1,8 @@
 // src/modules/storefront/storefront.schema.ts
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { CallbackError, Document, Types } from 'mongoose';
+import { MAX_SLUG_LENGTH } from 'src/modules/merchants/constants/merchant.constants';
 
 export type StorefrontDocument = Storefront & Document;
 
@@ -67,27 +68,30 @@ function normalizeSlug(input: string): string {
     .replace(/[\s_]+/g, '-');
   s = s.replace(/[^a-z0-9-]/g, '');
   s = s.replace(/-+/g, '-').replace(/^-+|-+$/g, '');
-  if (s.length > 50) s = s.slice(0, 50).replace(/-+$/g, '');
+  if (s.length > MAX_SLUG_LENGTH)
+    s = s.slice(0, MAX_SLUG_LENGTH).replace(/-+$/g, '');
   return s;
 }
 
 StorefrontSchema.pre('validate', function (next) {
-  if ((this as any).slug) {
-    (this as any).slug = normalizeSlug((this as any).slug);
+  if (this.slug) {
+    this.slug = normalizeSlug(this.slug);
   }
   next();
 });
 StorefrontSchema.pre('save', async function (next) {
   try {
     // اجلب publicSlug من merchant وحدث الـ slug
-    const mId = (this as any).merchant;
+    const mId = this.merchant;
     if (mId) {
       const MerchantModel = this.model('Merchant');
-      const m = (await MerchantModel.findById(mId).select('publicSlug')) as any;
-      if (m?.publicSlug) (this as any).slug = m.publicSlug;
+      const m = (await MerchantModel.findById(mId).select(
+        'publicSlug',
+      )) as unknown as { publicSlug?: string };
+      if (m?.publicSlug) this.slug = m.publicSlug;
     }
     next();
   } catch (e) {
-    next(e);
+    next(e as CallbackError);
   }
 });

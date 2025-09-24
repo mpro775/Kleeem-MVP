@@ -2,14 +2,12 @@
 import * as bcrypt from 'bcrypt';
 import { config } from 'dotenv';
 import * as mongoose from 'mongoose';
-
-// 1) حمّل المتغيّرات من .env
-config();
-
-// 2) استيراد موديل الـ User (تأكد أن المسار صحيح بالنسبة لك)
 import { Connection, Model } from 'mongoose';
 
 import { UserSchema } from '../src/modules/users/schemas/user.schema';
+
+// 1) حمّل المتغيّرات من .env
+config();
 
 // 3) إعداد اتصال Mongoose
 async function connectDb(): Promise<Connection> {

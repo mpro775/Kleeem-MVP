@@ -7,6 +7,8 @@ import {
   ValidateIf,
 } from 'class-validator';
 
+import { MIN_PASSWORD_LENGTH } from '../../../../common/constants/common';
+
 export enum ProductSource {
   INTERNAL = 'internal',
   SALLA = 'salla',
@@ -27,6 +29,6 @@ export class UpdateProductSourceDto {
       o.source !== ProductSource.INTERNAL || o.syncMode === 'immediate',
   )
   @IsString()
-  @MinLength(6)
+  @MinLength(MIN_PASSWORD_LENGTH)
   confirmPassword?: string;
 }

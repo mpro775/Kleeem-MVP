@@ -1,6 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
 
 import { Merchant } from '../../merchants/schemas/merchant.schema';
@@ -66,7 +66,7 @@ describe('IntegrationsController', () => {
       });
 
       // Act
-      const result = await controller.status(req);
+      const result = await controller.status(req as any);
 
       // Assert
       expect(result).toEqual({
@@ -133,7 +133,7 @@ describe('IntegrationsController', () => {
         });
 
       // Act
-      const result = await controller.status(req);
+      const result = await controller.status(req as any);
 
       // Assert
       expect(result).toEqual({
@@ -168,7 +168,7 @@ describe('IntegrationsController', () => {
       });
 
       // Act
-      const result = await controller.status(req);
+      const result = await controller.status(req as any);
 
       // Assert
       expect(merchantModel.findOne).toHaveBeenCalledWith({
@@ -203,7 +203,7 @@ describe('IntegrationsController', () => {
       });
 
       // Act
-      const result = await controller.status(req);
+      const result = await controller.status(req as any);
 
       // Assert
       expect(result).toEqual({
@@ -232,8 +232,10 @@ describe('IntegrationsController', () => {
       });
 
       // Act & Assert
-      await expect(controller.status(req)).rejects.toThrow(NotFoundException);
-      await expect(controller.status(req)).rejects.toThrow(
+      await expect(controller.status(req as any)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(controller.status(req as any)).rejects.toThrow(
         'Merchant not found',
       );
     });
@@ -275,7 +277,7 @@ describe('IntegrationsController', () => {
         });
 
       // Act
-      const result = await controller.status(req);
+      const result = await controller.status(req as any);
 
       // Assert
       expect((result as any).salla.connected).toBe(true); // Should be connected when no expiration
@@ -298,7 +300,7 @@ describe('IntegrationsController', () => {
       });
 
       // Act
-      const result = await controller.status(req);
+      const result = await controller.status(req as any);
 
       // Assert
       expect(result).toEqual({

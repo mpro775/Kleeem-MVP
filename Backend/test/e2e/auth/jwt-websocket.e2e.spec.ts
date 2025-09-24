@@ -1,7 +1,7 @@
 // test/e2e/auth/jwt-websocket.e2e.spec.ts
-import { INestApplication } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
-import { io, Socket } from 'socket.io-client';
+import { type INestApplication } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { io, type Socket } from 'socket.io-client';
 import request from 'supertest';
 
 import { AppModule } from '../../../src/app.module';
@@ -12,7 +12,6 @@ describe('JWT & WebSocket E2E (H4)', () => {
   let accessToken: string;
   let refreshToken: string;
   let wsClient: Socket;
-  let validAccessToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -225,7 +224,7 @@ describe('JWT & WebSocket E2E (H4)', () => {
             // محاولة إرسال رسالة → يجب قطع الاتصال
             wsClient.emit('join', { sessionId: 'test-session' });
           } catch (error) {
-            reject(error);
+            reject(error as Error);
           }
         });
 

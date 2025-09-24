@@ -53,7 +53,9 @@ describe('TokenService', () => {
     service = module.get<TokenService>(TokenService);
     jwtService = module.get(JwtService);
     cacheManager = module.get(CACHE_MANAGER);
-
+    const decodeSpy = jest.spyOn(jwtService, 'decode');
+    const verifySpy = jest.spyOn(jwtService, 'verify');
+    const signSpy = jest.spyOn(jwtService, 'sign');
     it('should be defined', () => {
       expect(service).toBeDefined();
     });
@@ -77,11 +79,11 @@ describe('TokenService', () => {
         const result = await service.createTokenPair(mockPayload, sessionInfo);
 
         expect(result).toEqual(mockTokens);
-        expect(jwtService.sign).toHaveBeenCalledTimes(2);
+        expect(signSpy).toHaveBeenCalledTimes(2);
         expect(cacheManager.set).toHaveBeenCalledWith(
-          expect.stringMatching(/^sess:/),
-          expect.any(String),
-          expect.any(Number),
+          expect.stringMatching.bind(expect)(/^sess:/),
+          expect.any.bind(expect)(String),
+          expect.any.bind(expect)(Number),
         );
       });
 
@@ -101,7 +103,10 @@ describe('TokenService', () => {
     describe('refreshTokens', () => {
       const mockRefreshToken = 'valid.refresh.token';
       const mockDecodedToken: JwtPayload = {
-        ...mockPayload,
+        userId: mockPayload.userId as string,
+        role: mockPayload.role as 'MERCHANT' | 'ADMIN' | 'MEMBER',
+        merchantId: mockPayload.merchantId as string,
+        sub: mockPayload.userId as string,
         jti: 'refresh-jti-123',
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
@@ -130,26 +135,26 @@ describe('TokenService', () => {
 
         expect(result).toHaveProperty('accessToken', 'new.access.token');
         expect(result).toHaveProperty('refreshToken', 'new.refresh.token');
-        expect(jwtService.decode).toHaveBeenCalledWith(mockRefreshToken);
-        expect(jwtService.verify).toHaveBeenCalledWith(mockRefreshToken);
+        expect(decodeSpy).toHaveBeenCalledWith(mockRefreshToken);
+        expect(verifySpy).toHaveBeenCalledWith(mockRefreshToken);
         expect(cacheManager.del).toHaveBeenCalledWith(
           `sess:${mockDecodedToken.jti}`,
         );
       });
 
-      it('should throw UnauthorizedException for invalid token', async () => {
+      it('should throw UnauthorizedException for invalid token', () => {
         jwtService.decode.mockReturnValue(null);
 
-        await expect(service.refreshTokens('invalid.token')).rejects.toThrow(
+        expect(() => service.refreshTokens('invalid.token')).toThrow(
           UnauthorizedException,
         );
       });
 
-      it('should throw UnauthorizedException for revoked session', async () => {
+      it('should throw UnauthorizedException for revoked session', () => {
         jwtService.decode.mockReturnValue(mockDecodedToken);
         cacheManager.get.mockResolvedValue(null); // Session not found = revoked
 
-        await expect(service.refreshTokens(mockRefreshToken)).rejects.toThrow(
+        expect(() => service.refreshTokens(mockRefreshToken)).toThrow(
           UnauthorizedException,
         );
       });
@@ -181,7 +186,7 @@ describe('TokenService', () => {
         cacheManager.get.mockResolvedValueOnce(null);
 
         // Second rotation with same token should fail
-        await expect(service.refreshTokens(mockRefreshToken)).rejects.toThrow(
+        expect(() => service.refreshTokens(mockRefreshToken)).toThrow(
           UnauthorizedException,
         );
       });

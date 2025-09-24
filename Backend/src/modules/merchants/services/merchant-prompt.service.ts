@@ -57,10 +57,7 @@ export class MerchantPromptService {
       } as QuickConfig;
     }
 
-    const ctx = buildHbsContext(merged, dto.testVars ?? {}) as Record<
-      string,
-      unknown
-    >;
+    const ctx = buildHbsContext(merged, dto.testVars ?? {});
     const audience = dto.audience ?? 'merchant';
 
     const withGuard = await this.promptBuilder.compileTemplate(merged);

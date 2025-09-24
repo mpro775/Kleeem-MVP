@@ -1,8 +1,8 @@
 // test/e2e/webhooks/whatsapp-cloud.e2e.spec.ts
 import { createHmac } from 'crypto';
 
-import { INestApplication } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { type INestApplication } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 
 import { AppModule } from '../../../src/app.module';
@@ -185,6 +185,8 @@ describe('WhatsApp Cloud Webhook E2E (H1)', () => {
         .send(payload)
         .expect(200);
 
+      expect(firstResponse.body).toHaveProperty('status', 'duplicate_ignored');
+      expect(firstResponse.body).toHaveProperty('sourceMessageId', messageId);
       expect(secondResponse.body).toHaveProperty('status', 'duplicate_ignored');
       expect(secondResponse.body).toHaveProperty('sourceMessageId', messageId);
     });

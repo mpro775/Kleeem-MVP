@@ -1,7 +1,8 @@
 import { Test } from '@nestjs/testing';
 
 import { InstructionsService } from '../instructions.service';
-import { InstructionsRepository } from '../repositories/instructions.repository';
+
+import type { InstructionsRepository } from '../repositories/instructions.repository';
 
 describe('InstructionsService', () => {
   let service: InstructionsService;
@@ -35,7 +36,8 @@ describe('InstructionsService', () => {
       active: true,
     } as any);
     const out = await service.create({ instruction: 'do x', merchantId: 'm1' });
-    expect(repo.create).toHaveBeenCalledWith(
+    const createCall = expect(repo.create.bind(repo));
+    createCall.toHaveBeenCalledWith(
       expect.objectContaining({
         instruction: 'do x',
         merchantId: 'm1',
@@ -48,7 +50,8 @@ describe('InstructionsService', () => {
   it('findAll → delegates with pagination', async () => {
     repo.findAll.mockResolvedValue([{ _id: 'a' } as any]);
     const out = await service.findAll({ merchantId: 'm1', limit: 10, page: 2 });
-    expect(repo.findAll).toHaveBeenCalledWith({
+    const findAllCall = expect(repo.findAll.bind(repo));
+    findAllCall.toHaveBeenCalledWith({
       merchantId: 'm1',
       limit: 10,
       page: 2,
@@ -58,9 +61,10 @@ describe('InstructionsService', () => {
 
   it('activate/deactivate → setActive', async () => {
     await service.activate('id1');
-    expect(repo.setActive).toHaveBeenCalledWith('id1', true);
+    const setActiveCall = expect(repo.setActive.bind(repo));
+    setActiveCall.toHaveBeenCalledWith('id1', true);
     await service.deactivate('id1');
-    expect(repo.setActive).toHaveBeenCalledWith('id1', false);
+    setActiveCall.toHaveBeenCalledWith('id1', false);
   });
 
   it('getActiveInstructions → delegates', async () => {
@@ -68,7 +72,10 @@ describe('InstructionsService', () => {
       { _id: 'x', instruction: 'rule' } as any,
     ]);
     const res = await service.getActiveInstructions('m1');
-    expect(repo.getActiveInstructions).toHaveBeenCalledWith('m1');
-    expect(res.length).toBe(1);
+    const getActiveInstructionsCall = expect(
+      repo.getActiveInstructions.bind(repo),
+    );
+    getActiveInstructionsCall.toHaveBeenCalledWith('m1');
+    expect(res).toHaveLength(1);
   });
 });

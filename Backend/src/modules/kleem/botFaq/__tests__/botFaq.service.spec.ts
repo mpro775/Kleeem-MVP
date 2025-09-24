@@ -1,9 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { VectorService } from '../../../vector/vector.service';
 import { BotFaqService } from '../botFaq.service';
-import { BotFaqRepository } from '../repositories/bot-faq.repository';
 import { BOT_FAQ_REPOSITORY } from '../tokens';
+
+import type { BotFaqRepository } from '../repositories/bot-faq.repository';
 
 describe('BotFaqService', () => {
   let service: BotFaqService;
@@ -61,7 +62,7 @@ describe('BotFaqService', () => {
     );
     expect(vector.embedText).toHaveBeenCalled();
     expect(vector.upsertBotFaqs).toHaveBeenCalled();
-    expect(repo.updateById).toHaveBeenCalledWith('1', {
+    expect(repo.updateById.bind(repo)).toHaveBeenCalledWith('1', {
       vectorStatus: 'ok',
     } as any);
     expect((res as any).vectorStatus).toBe('ok');
@@ -84,7 +85,7 @@ describe('BotFaqService', () => {
     const out = await service.update('1', { question: 'Q2' } as any);
     expect(vector.embedText).toHaveBeenCalled();
     expect(vector.upsertBotFaqs).toHaveBeenCalled();
-    expect(repo.updateById).toHaveBeenLastCalledWith('1', {
+    expect(repo.updateById.bind(repo)).toHaveBeenLastCalledWith('1', {
       vectorStatus: 'ok',
     } as any);
     expect((out as any)._id).toBe('1');
@@ -94,7 +95,7 @@ describe('BotFaqService', () => {
     repo.softDelete.mockResolvedValue({ _id: '1', status: 'deleted' } as any);
     vector.deleteBotFaqPoint.mockResolvedValue(undefined as any);
     const res = await service.delete('1');
-    expect(repo.softDelete).toHaveBeenCalledWith('1');
+    expect(repo.softDelete.bind(repo)).toHaveBeenCalledWith('1');
     expect(vector.deleteBotFaqPoint).toHaveBeenCalled();
     expect((res as any).status).toBe('deleted');
   });
@@ -120,7 +121,7 @@ describe('BotFaqService', () => {
     const out = await service.reindexAll();
     expect(vector.embedText).toHaveBeenCalledTimes(2);
     expect(vector.upsertBotFaqs).toHaveBeenCalled();
-    expect(repo.updateManyByIds).toHaveBeenCalledWith(['a', 'b'], {
+    expect(repo.updateManyByIds.bind(repo)).toHaveBeenCalledWith(['a', 'b'], {
       vectorStatus: 'ok',
     } as any);
     expect(out.count).toBe(2);

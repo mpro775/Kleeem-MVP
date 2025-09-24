@@ -1,11 +1,12 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
 
 import { UsersService } from '../../users/users.service';
 import { NotificationsService } from '../notifications.service';
-import { NotificationRepository } from '../repositories/notification.repository';
 import { NOTIFICATION_REPOSITORY } from '../tokens';
+
+import type { NotificationRepository } from '../repositories/notification.repository';
 
 describe('NotificationsService', () => {
   let service: NotificationsService;
@@ -58,15 +59,18 @@ describe('NotificationsService', () => {
       data: { x: 1 },
     });
 
-    expect(repo.create).toHaveBeenCalledWith(
+    expect(repo.create.bind(repo)).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'u1', type: 'test' }),
     );
-    expect(events.emit).toHaveBeenCalledWith('notify.user', expect.any(Object));
-    expect(events.emit).toHaveBeenCalledWith(
+    expect(events.emit.bind(events)).toHaveBeenCalledWith(
+      'notify.user',
+      expect.any(Object),
+    );
+    expect(events.emit.bind(events)).toHaveBeenCalledWith(
       'notify.merchant',
       expect.any(Object),
     );
-    expect(events.emit).toHaveBeenCalledWith(
+    expect(events.emit.bind(events)).toHaveBeenCalledWith(
       'admin:notification',
       expect.any(Object),
     );
@@ -80,7 +84,7 @@ describe('NotificationsService', () => {
       limit: 20,
     });
     const res = await service.listForUser('u1', {});
-    expect(repo.listForUser).toHaveBeenCalledWith('u1', {
+    expect(repo.listForUser.bind(repo)).toHaveBeenCalledWith('u1', {
       page: 1,
       limit: 20,
       unreadOnly: false,
@@ -92,12 +96,12 @@ describe('NotificationsService', () => {
     await expect(
       service.markRead('u1', String(new Types.ObjectId())),
     ).resolves.toEqual({ ok: true });
-    expect(repo.markRead).toHaveBeenCalled();
+    expect(repo.markRead.bind(repo)).toHaveBeenCalled();
   });
 
   it('markAllRead should call repo and return ok', async () => {
     await expect(service.markAllRead('u1')).resolves.toEqual({ ok: true });
-    expect(repo.markAllRead).toHaveBeenCalledWith('u1');
+    expect(repo.markAllRead.bind(repo)).toHaveBeenCalledWith('u1');
   });
 
   it('notifyUser respects inApp disabled', async () => {
@@ -115,7 +119,9 @@ describe('NotificationsService', () => {
     await service.notifyUser('u2', { type: 'x', title: 't' });
 
     // still emits admin:notification, but not notify.user
-    const calls = (events.emit as any).mock.calls.map((c: any[]) => c[0]);
+    const calls = (events.emit as any).mock.calls.map(
+      (c: any[]) => c[0] as string,
+    );
     expect(calls.includes('notify.user')).toBe(false);
     expect(calls.includes('admin:notification')).toBe(true);
   });

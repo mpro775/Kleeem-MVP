@@ -1,8 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { BotPromptService } from '../botPrompt.service';
-import { BotPromptRepository } from '../repositories/bot-prompt.repository';
 import { BOT_PROMPT_REPOSITORY } from '../tokens';
+
+import type { BotPromptRepository } from '../repositories/bot-prompt.repository';
 
 describe('BotPromptService', () => {
   let service: BotPromptService;
@@ -39,7 +40,7 @@ describe('BotPromptService', () => {
       content: 'x',
       active: true,
     } as any);
-    expect(repo.updateMany).toHaveBeenCalledWith(
+    expect(repo.updateMany.bind(repo)).toHaveBeenCalledWith(
       { type: 'system' },
       { active: false },
     );
@@ -64,7 +65,7 @@ describe('BotPromptService', () => {
       active: true,
     } as any);
     const out = await service.publish('a');
-    expect(repo.updateMany).toHaveBeenCalled();
+    expect(repo.updateMany.bind(repo)).toHaveBeenCalled();
     expect(out.version).toBe(4);
     expect(out.active).toBe(true);
   });

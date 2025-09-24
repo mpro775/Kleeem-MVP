@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { BusinessMetrics } from '../../../metrics/business.metrics';
 import { ChatWidgetService } from '../../chat/chat-widget.service';
@@ -7,10 +7,11 @@ import { N8nWorkflowService } from '../../n8n-workflow/n8n-workflow.service';
 import { StorefrontService } from '../../storefront/storefront.service';
 import { CleanupCoordinatorService } from '../cleanup-coordinator.service';
 import { MerchantsService } from '../merchants.service';
-import { MerchantsRepository } from '../repositories/merchants.repository';
 import { PromptBuilderService } from '../services/prompt-builder.service';
 import { PromptPreviewService } from '../services/prompt-preview.service';
 import { PromptVersionService } from '../services/prompt-version.service';
+
+import type { MerchantsRepository } from '../repositories/merchants.repository';
 
 describe('MerchantsService', () => {
   let service: MerchantsService;
@@ -93,7 +94,7 @@ describe('MerchantsService', () => {
     repo.create.mockResolvedValue(mockMerchant);
 
     const result = await service.create({} as any);
-    expect(repo.create).toHaveBeenCalled();
+    expect(repo.create.bind(repo)).toHaveBeenCalled();
     expect(result).toEqual(mockMerchant);
   });
 
@@ -102,7 +103,7 @@ describe('MerchantsService', () => {
     repo.findOne.mockResolvedValue(mockMerchant);
 
     const result = await service.findOne('1');
-    expect(repo.findOne).toHaveBeenCalledWith('1');
+    expect(repo.findOne.bind(repo)).toHaveBeenCalledWith('1');
     expect(result).toEqual(mockMerchant);
   });
 
@@ -111,7 +112,9 @@ describe('MerchantsService', () => {
     repo.update.mockResolvedValue(mockMerchant);
 
     const result = await service.update('1', { name: 'New Name' } as any);
-    expect(repo.update).toHaveBeenCalledWith('1', { name: 'New Name' });
+    expect(repo.update.bind(repo)).toHaveBeenCalledWith('1', {
+      name: 'New Name',
+    });
     expect(result).toEqual(mockMerchant);
   });
 
@@ -119,7 +122,7 @@ describe('MerchantsService', () => {
     repo.remove.mockResolvedValue({ message: 'Merchant deleted successfully' });
 
     const result = await service.remove('1');
-    expect(repo.remove).toHaveBeenCalledWith('1');
+    expect(repo.remove.bind(repo)).toHaveBeenCalledWith('1');
     expect(result).toEqual({ message: 'Merchant deleted successfully' });
   });
 });

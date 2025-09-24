@@ -1,5 +1,5 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { type INestApplication, ValidationPipe } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
 import Redis from 'ioredis-mock';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import request from 'supertest';

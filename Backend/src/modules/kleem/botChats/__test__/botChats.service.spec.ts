@@ -1,8 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { BotChatsService } from '../botChats.service';
-import { BotChatRepository } from '../repositories/bot-chats.repository';
 import { BOT_CHAT_REPOSITORY } from '../tokens';
+
+import type { BotChatRepository } from '../repositories/bot-chats.repository';
 
 describe('BotChatsService', () => {
   let service: BotChatsService;
@@ -37,21 +38,29 @@ describe('BotChatsService', () => {
     const res = await service.createOrAppend('s1', [
       { role: 'user', text: 'hi' },
     ]);
-    expect(repo.createOrAppend).toHaveBeenCalledWith('s1', expect.any(Array));
+    expect(repo.createOrAppend.bind(repo)).toHaveBeenCalledWith(
+      's1',
+      expect.any(Array),
+    );
     expect(res.sessionId).toBe('s1');
   });
 
   it('rateMessage updates via repository', async () => {
     repo.rateMessage.mockResolvedValue();
     const out = await service.rateMessage('s1', 0, 1, 'good');
-    expect(repo.rateMessage).toHaveBeenCalledWith('s1', 0, 1, 'good');
+    expect(repo.rateMessage.bind(repo)).toHaveBeenCalledWith(
+      's1',
+      0,
+      1,
+      'good',
+    );
     expect(out).toEqual({ status: 'ok' });
   });
 
   it('findAll applies filter and pagination', async () => {
     repo.findAll.mockResolvedValue({ data: [], total: 0 });
     const res = await service.findAll(1, 20, 'hello');
-    expect(repo.findAll).toHaveBeenCalled();
+    expect(repo.findAll.bind(repo)).toHaveBeenCalled();
     expect(res.total).toBe(0);
   });
 

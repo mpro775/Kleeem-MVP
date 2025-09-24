@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 
 import { TranslationService } from '../../../../common/services/translation.service';
 import { MerchantCacheService } from '../merchant-cache.service';
@@ -45,7 +45,7 @@ describe('MerchantCacheService', () => {
     const result = await svc.findOne('id1');
 
     expect(cache.get).toHaveBeenCalledWith('merchant:id1');
-    expect(repo.findOne).toHaveBeenCalledWith('id1');
+    expect(repo.findOne.bind(repo)).toHaveBeenCalledWith('id1');
     expect(prompt.compileTemplate).toHaveBeenCalledWith(merchant);
     expect(config.get).toHaveBeenCalledWith('vars.cache.merchantTtlMs');
     expect(cache.set).toHaveBeenCalledWith('merchant:id1', merchant, 600000);
@@ -60,7 +60,7 @@ describe('MerchantCacheService', () => {
     const result = await svc.findOne('id1');
 
     expect(cache.get).toHaveBeenCalledWith('merchant:id1');
-    expect(repo.findOne).not.toHaveBeenCalled();
+    expect(repo.findOne.bind(repo)).not.toHaveBeenCalled();
     expect(prompt.compileTemplate).not.toHaveBeenCalled();
     expect(cache.set).not.toHaveBeenCalled();
     expect(result).toBe(cachedMerchant);

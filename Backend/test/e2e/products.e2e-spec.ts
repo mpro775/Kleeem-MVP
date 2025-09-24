@@ -1,16 +1,13 @@
-import { INestApplication } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { type INestApplication } from '@nestjs/common';
+import { Test, type TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 
 import { AppModule } from '../../src/app.module';
-import { MerchantsService } from '../../src/modules/merchants/merchants.service';
-import { ProductsService } from '../../src/modules/products/products.service';
-import { Product } from '../../src/modules/products/schemas/product.schema';
+import { type Product } from '../../src/modules/products/schemas/product.schema';
 
 describe('Products E2E', () => {
   let app: INestApplication;
-  let productsService: ProductsService;
-  let merchantsService: MerchantsService;
+
   let createdMerchantId: string;
   let createdProductId: string;
 
@@ -21,16 +18,13 @@ describe('Products E2E', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-
-    productsService = moduleFixture.get<ProductsService>(ProductsService);
-    merchantsService = moduleFixture.get<MerchantsService>(MerchantsService);
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  beforeEach(async () => {
+  beforeEach(() => {
     // Clean up any existing test data
     jest.clearAllMocks();
   });

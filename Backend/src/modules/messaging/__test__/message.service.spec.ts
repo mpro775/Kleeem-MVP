@@ -1,12 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
 
 import { GeminiService } from '../../ai/gemini.service';
 import { ChatGateway } from '../../chat/chat.gateway';
 import { MessageService } from '../message.service';
 import {
-  MessageRepository,
-  MessageSessionEntity,
+  type MessageRepository,
+  type MessageItem,
+  type MessageSessionEntity,
 } from '../repositories/message.repository';
 import { MESSAGE_SESSION_REPOSITORY } from '../tokens';
 
@@ -41,7 +42,8 @@ describe('MessageService', () => {
       sessionId: 'S1',
       channel: 'webchat',
       messages: [],
-    }) as any;
+      handoverToAgent: false,
+    }) as MessageSessionEntity;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -63,10 +65,11 @@ describe('MessageService', () => {
     created.messages = [
       {
         _id: new Types.ObjectId(),
-        role: 'user',
+        role: 'bot',
         text: 'hi',
+        metadata: {},
         timestamp: new Date(),
-      } as any,
+      },
     ];
     repo.createSessionWithMessages.mockResolvedValue(created);
 
@@ -77,8 +80,8 @@ describe('MessageService', () => {
       messages: [{ role: 'customer', text: 'hi' }],
     });
 
-    expect(repo.createSessionWithMessages).toHaveBeenCalled();
-    expect(gateway.sendMessageToSession).toHaveBeenCalledWith(
+    expect(repo.createSessionWithMessages.bind(repo)).toHaveBeenCalled();
+    expect(gateway.sendMessageToSession.bind(gateway)).toHaveBeenCalledWith(
       'S1',
       expect.objectContaining({ text: 'hi' }),
     );
@@ -95,9 +98,9 @@ describe('MessageService', () => {
           role: 'bot',
           text: 'pong',
           timestamp: new Date(),
-        } as any,
+        } as MessageItem,
       ],
-    } as any;
+    } as MessageSessionEntity;
     repo.appendMessagesById.mockResolvedValue(updated);
 
     await service.createOrAppend({
@@ -107,8 +110,8 @@ describe('MessageService', () => {
       messages: [{ role: 'bot', text: 'pong' }],
     });
 
-    expect(repo.appendMessagesById).toHaveBeenCalled();
-    expect(gateway.sendMessageToSession).toHaveBeenCalledWith(
+    expect(repo.appendMessagesById.bind(repo)).toHaveBeenCalled();
+    expect(gateway.sendMessageToSession.bind(gateway)).toHaveBeenCalledWith(
       'S1',
       expect.objectContaining({ text: 'pong' }),
     );
@@ -127,11 +130,10 @@ describe('MessageService', () => {
       'm1',
     );
 
-    expect(repo.updateMessageRating).toHaveBeenCalled();
-    expect(gemini.generateAndSaveInstructionFromBadReply).toHaveBeenCalledWith(
-      'bad reply text',
-      'm1',
-    );
+    expect(repo.updateMessageRating.bind(repo)).toHaveBeenCalled();
+    expect(
+      gemini.generateAndSaveInstructionFromBadReply.bind(gemini),
+    ).toHaveBeenCalledWith('bad reply text', 'm1');
   });
 
   it('rateMessage should not call gemini when rating is 1', async () => {
@@ -143,7 +145,7 @@ describe('MessageService', () => {
       1,
     );
     expect(
-      gemini.generateAndSaveInstructionFromBadReply,
+      gemini.generateAndSaveInstructionFromBadReply.bind(gemini),
     ).not.toHaveBeenCalled();
   });
 
@@ -165,7 +167,10 @@ describe('MessageService', () => {
       { text: 'x', count: 2, feedbacks: [] },
     ]);
     const out = await service.getFrequentBadBotReplies('m1', 5);
-    expect(repo.aggregateFrequentBadBotReplies).toHaveBeenCalledWith('m1', 5);
+    expect(repo.aggregateFrequentBadBotReplies.bind(repo)).toHaveBeenCalledWith(
+      'm1',
+      5,
+    );
     expect(out[0].text).toBe('x');
   });
 

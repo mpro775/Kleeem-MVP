@@ -1,10 +1,11 @@
 import { NotFoundException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
 
 import { PlansService } from './plans.service';
-import { PlanRepository } from './repositories/plan.repository';
 import { PLAN_REPOSITORY } from './tokens';
+
+import type { PlanRepository } from './repositories/plan.repository';
 
 describe('PlansService', () => {
   let service: PlansService;
@@ -51,7 +52,8 @@ describe('PlansService', () => {
       isActive: 'true',
       sort: 'priceAsc',
     } as any);
-    expect(repo.paginate).toHaveBeenCalledWith(
+    const paginateCall = expect(repo.paginate.bind(repo));
+    paginateCall.toHaveBeenCalledWith(
       expect.objectContaining({ isActive: true, archivedNotTrue: true }),
       'priceAsc',
       1,

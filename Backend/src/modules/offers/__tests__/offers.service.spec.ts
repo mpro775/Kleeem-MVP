@@ -1,13 +1,12 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
 
 import { OffersService } from '../offers.service';
-import { MerchantRepository } from '../repositories/merchant.repository';
-import {
-  ProductRepository,
-  ProductLean,
-} from '../repositories/product.repository';
+import { type ProductRepository } from '../repositories/product.repository';
 import { PRODUCT_REPOSITORY, MERCHANT_REPOSITORY } from '../tokens';
+
+import type { MerchantRepository } from '../repositories/merchant.repository';
+import type { ProductLean } from '../repositories/product.repository';
 
 describe('OffersService', () => {
   let service: OffersService;
@@ -34,7 +33,7 @@ describe('OffersService', () => {
   });
 
   it('listAllOffers should map products and compute discounts', async () => {
-    merchantRepo.getPublicSlug.mockResolvedValue('acme');
+    merchantRepo.getPublicSlug.bind(merchantRepo).mockResolvedValue('acme');
     const now = Date.now();
     const start = new Date(now - 3600_000).toISOString();
     const end = new Date(now + 3600_000).toISOString();
