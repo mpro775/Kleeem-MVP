@@ -47,6 +47,8 @@ import { DispatchersModule } from './infra/dispatchers/dispatchers.module';
 import { RabbitModule } from './infra/rabbit/rabbit.module';
 import { AmqpMetrics, AmqpMetricsProviders } from './metrics/amqp.metrics';
 import { MetricsModule } from './metrics/metrics.module';
+import { HttpMetricsInterceptor } from './common/interceptors/http-metrics.interceptor';
+import { PerformanceTrackingInterceptor } from './common/interceptors/performance-tracking.interceptor';
 import { AiModule } from './modules/ai/ai.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -350,6 +352,8 @@ const getHeader = (req: IncomingMessage, name: string): string | undefined => {
     { provide: APP_GUARD, useClass: RolesGuard },
     RedisConfig,
     OutboxDispatcher,
+    HttpMetricsInterceptor,
+    PerformanceTrackingInterceptor,
   ],
   exports: [AmqpMetrics],
   controllers: [AppController],

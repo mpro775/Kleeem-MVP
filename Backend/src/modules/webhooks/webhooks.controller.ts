@@ -29,7 +29,6 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AgentReplyDto } from './dto/agent-reply.dto';
 import { BotReplyDto } from './dto/bot-reply.dto';
 import { TestBotReplyDto } from './dto/test-bot-reply.dto';
-import { CHANNEL_REPOSITORY } from './tokens';
 import { WebhooksService } from './webhooks.service';
 
 import type { ChannelRepository } from './repositories/channel.repository';
@@ -42,7 +41,7 @@ import type { PublicChannel } from './types/channels';
 export class WebhooksController {
   constructor(
     private readonly service: WebhooksService,
-    @Inject(CHANNEL_REPOSITORY)
+    @Inject('ChannelsRepository')
     private readonly channelsRepo: ChannelRepository,
   ) {}
 

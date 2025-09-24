@@ -8,6 +8,8 @@ import { SlugResolverService } from '../public/slug-resolver.service';
 
 import { WebhooksController } from './webhooks.controller';
 
+import type { Request } from 'express';
+
 @ApiTags('Webhooks (Unified Slug)')
 @Public()
 @Controller('webhooks/chat')
@@ -50,29 +52,29 @@ export class ChatWebhooksUnifiedController {
       merchantId: string;
     };
 
-    const channel = body?.channel ?? 'webchat'; // ✅ مهم جداً
+    // channel يجب أن يكون string
+    const channel = typeof body.channel === 'string' ? body.channel : 'webchat';
 
     const patched = {
       merchantId,
-      channel, // ✅ أضفناها
+      channel,
       provider: 'webchat',
-      channelId: 'slug:' + slug,
-      sessionId: body?.sessionId,
-      user: body?.user,
-      text: body?.text,
-      payload: body?.payload,
+      channelId: `slug:${slug}`,
+      sessionId:
+        typeof body.sessionId === 'string' ? body.sessionId : undefined,
+      user: body.user,
+      text: typeof body.text === 'string' ? body.text : undefined,
+      payload: body.payload,
       raw: body,
       metadata: {
-        embedMode: body?.embedMode ?? 'bubble',
+        embedMode:
+          typeof body.embedMode === 'string' ? body.embedMode : 'bubble',
         source: 'slug-endpoint',
       },
     };
 
-    // مرّر نفس الـ merchantId المستخرج من السلاج كـ param،
-    // والـ patched كـ body:
-    await this.webhooks.handleIncoming(patched.merchantId, patched, req);
+    await this.webhooks.handleIncoming(merchantId, patched, req);
   }
-
   /** ردود البوت/النظام عبر slug موحّد */
   @Post('reply/:slug')
   @ApiOperation({ summary: 'Bot/system reply via public slug' })
@@ -97,8 +99,8 @@ export class ChatWebhooksUnifiedController {
 
     // نوجّه المناداة لمنتهىك الحالي الموحد
     await this.webhooks.handleBotReply(merchantId, {
-      sessionId: body?.sessionId,
-      text: body?.text,
+      sessionId: body?.sessionId as string,
+      text: body?.text as string,
       channel: 'webchat',
       metadata: { ...(body?.metadata || {}), via: 'slug-endpoint' },
     });

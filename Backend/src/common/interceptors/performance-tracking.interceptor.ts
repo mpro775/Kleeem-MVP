@@ -19,7 +19,7 @@ import { shouldBypass } from './bypass.util';
 
 // type-only
 import type { RequestWithUser } from '../interfaces/request-with-user.interface';
-import type { SentryService } from '../services/sentry.service';
+import { SentryService } from '../services/sentry.service';
 import type { Response } from 'express';
 
 // -----------------------------------------------------------------------------

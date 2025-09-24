@@ -379,8 +379,9 @@ describe('BotReplyDto', () => {
 
       expect(dto.metadata?.tags).toEqual(['helpful', 'accurate', 'fast']);
       expect(dto.metadata?.history).toHaveLength(2);
-      expect(dto.metadata?.history[0]).toHaveProperty('timestamp');
-      expect(dto.metadata?.history[0]).toHaveProperty('action');
+      const history = (dto.metadata as any)?.history as any[];
+      expect(history[0]).toHaveProperty('timestamp');
+      expect(history[0]).toHaveProperty('action');
     });
 
     it('should handle function in metadata (should be ignored/serialized)', () => {

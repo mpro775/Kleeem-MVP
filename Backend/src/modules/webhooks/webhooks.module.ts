@@ -21,7 +21,7 @@ import { ChannelMongoRepository } from './repositories/channel.mongo.repository'
 import { WebhookMongoRepository } from './repositories/webhook.mongo.repository';
 import { Webhook, WebhookSchema } from './schemas/webhook.schema';
 import { TelegramWebhookController } from './telegram.webhook.controller';
-import { WEBHOOK_REPOSITORY, CHANNEL_REPOSITORY } from './tokens';
+import { WEBHOOK_REPOSITORY } from './tokens';
 import { WebhooksController } from './webhooks.controller';
 import { WebhooksService } from './webhooks.service';
 import { WhatsAppCloudWebhookController } from './whatsapp-cloud.webhook.controller';
@@ -52,7 +52,7 @@ import { WhatsappQrWebhookController } from './whatsapp-qr.webhook.controller';
     WebhooksController, // لإعادة استخدامه في TelegramWebhookController
     { provide: WEBHOOK_REPOSITORY, useClass: WebhookMongoRepository },
     WebhookSignatureGuard,
-    { provide: CHANNEL_REPOSITORY, useClass: ChannelMongoRepository },
+    { provide: 'ChannelsRepository', useClass: ChannelMongoRepository },
   ],
   controllers: [
     WebhooksController,

@@ -1,6 +1,6 @@
 // src/modules/auth/auth.module.ts
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -56,7 +56,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     MailModule, // ← استيراد MailModule ليوفر MailService
 
     UsersModule,
-    MerchantsModule, // لازمه ل AuthController الذي يستعمل MerchantsService
+    forwardRef(() => MerchantsModule), // لازمه ل AuthController الذي يستعمل MerchantsService
     MetricsModule,
     CommonServicesModule,
   ],

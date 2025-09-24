@@ -40,7 +40,7 @@ describe('DocumentsController', () => {
     const returned = { _id: 'd1' };
     svc.uploadFile.mockResolvedValue(returned);
 
-    const res = await controller.upload(merchantId, file);
+    const res = await controller.upload({ merchantId }, file);
 
     expect(svc.uploadFile).toHaveBeenCalledWith(merchantId, file);
     expect(res).toBe(returned);
@@ -51,7 +51,7 @@ describe('DocumentsController', () => {
     const items = [{ _id: 'd1' }];
     svc.list.mockResolvedValue(items);
 
-    const res = await controller.list(merchantId);
+    const res = await controller.list({ merchantId });
     expect(svc.list).toHaveBeenCalledWith(merchantId);
     expect(res).toBe(items);
   });
@@ -64,7 +64,7 @@ describe('DocumentsController', () => {
     const redirect = jest.fn();
     const res: any = { redirect };
 
-    await controller.download(merchantId, docId, res);
+    await controller.download({ merchantId }, { docId }, res);
 
     expect(svc.getPresignedUrl).toHaveBeenCalledWith(merchantId, docId);
     expect(redirect).toHaveBeenCalledWith(url);
@@ -75,7 +75,7 @@ describe('DocumentsController', () => {
     const docId = 'd1';
     svc.delete.mockResolvedValue(undefined);
 
-    const res = await controller.remove(merchantId, docId);
+    const res = await controller.remove({ merchantId }, { docId });
 
     expect(svc.delete).toHaveBeenCalledWith(merchantId, docId);
     expect(res).toBeUndefined();

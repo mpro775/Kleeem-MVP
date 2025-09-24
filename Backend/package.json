@@ -1,5 +1,5 @@
 {
-  "name": "musaidbot-backend-nest",
+  "name": "kaleem-backend-nest",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -30,7 +30,14 @@
     "prepare": "husky",
     "lint": "eslint . --ext .ts,.tsx,.js --cache --cache-location .eslintcache",
     "lint:fix": "eslint . --ext .ts,.tsx,.js --fix --cache --cache-location .eslintcache",
-    "lint:strict": "eslint . --ext .ts,.tsx,.js --max-warnings=0 --cache --cache-location .eslintcache"
+    "lint:strict": "eslint . --ext .ts,.tsx,.js --max-warnings=0 --cache --cache-location .eslintcache",
+    "report:init": "rimraf reports && node -e \"require('fs').mkdirSync('reports',{recursive:true})\"",
+    "report:eslint": "eslint . --ext .ts,.tsx,.js -f unix -o reports/eslint-unix.txt -f json -o reports/eslint.json",
+    "report:prettier": "prettier --check \"src/**/*.{ts,js}\" \"test/**/*.ts\" > reports/prettier.txt",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "report:typecheck": "npm run typecheck > reports/typescript.txt",
+    "report:jest": "jest --runInBand --coverage --coverageReporters=text-summary,lcov > reports/jest.txt",
+    "ci:report": "npm run report:init && npm run report:eslint && npm run report:prettier && npm run report:typecheck && npm run report:jest"
   },
   "dependencies": {
     "-": "^0.0.1",

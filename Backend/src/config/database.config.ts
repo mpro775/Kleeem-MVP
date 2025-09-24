@@ -1,12 +1,15 @@
 // src/config/database.config.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { makeHistogramProvider } from '@willsoto/nestjs-prometheus';
+import { HISTOGRAM_BUCKETS } from 'src/common/cache/constant';
 
 import { MetricsModule } from '../metrics/metrics.module';
 import { MongooseMetricsPlugin } from '../metrics/mongoose-metrics.plugin';
 
-// Database connection constants (no-magic-numbers)
+import type { Histogram } from 'prom-client';
+
 const MAX_POOL_SIZE = 50;
 const MIN_POOL_SIZE = 10;
 const SERVER_SELECTION_TIMEOUT_MS = 5000;
@@ -15,10 +18,22 @@ const CONNECT_TIMEOUT_MS = 10000;
 const MAX_IDLE_TIME_MS = 30000;
 const HEARTBEAT_FREQUENCY_MS = 10000;
 const WRITE_CONCERN_WTIMEOUT_MS = 10000;
+
+// Database metrics provider - defined here to avoid circular dependency
+export const DatabaseMetricsProvider = makeHistogramProvider({
+  name: 'database_query_duration_seconds',
+  help: 'Database query duration in seconds',
+  labelNames: ['operation', 'collection', 'status'],
+  buckets: HISTOGRAM_BUCKETS,
+});
+
+export const DATABASE_QUERY_DURATION_SECONDS =
+  'DATABASE_QUERY_DURATION_SECONDS';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    MetricsModule,
+    forwardRef(() => MetricsModule),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
@@ -26,34 +41,28 @@ const WRITE_CONCERN_WTIMEOUT_MS = 10000;
           configService.get<string>('MONGODB_URI') ||
           'mongodb://admin:strongpassword@31.97.155.167:27017/musaidbot?authSource=admin&retryWrites=false&directConnection=true';
         const nodeEnv = configService.get<string>('NODE_ENV') || 'development';
-
-        // التحقق من ما إذا كان الاتصال محلياً أم عن بعد
         const isLocalConnection =
           mongoUri.includes('localhost') ||
           mongoUri.includes('127.0.0.1') ||
-          mongoUri.includes('mongo:27017') || // Docker container
-          mongoUri.includes('mongodb:27017'); // Docker container
+          mongoUri.includes('mongo:27017') ||
+          mongoUri.includes('mongodb:27017');
 
-        // قائمة الخوادم التي لا تدعم SSL
         const nonSSLServers = ['31.97.155.167'];
         const isNonSSLServer = nonSSLServers.some((server) =>
           mongoUri.includes(server),
         );
 
-        const isProduction = nodeEnv === 'production';
-
-        // التحقق من متغير البيئة للتحكم في SSL يدوياً
+        const isProd = nodeEnv === 'production';
         const sslOverride = configService.get<string>('MONGODB_SSL');
         const enableSSL =
           sslOverride === 'true' ||
           (sslOverride !== 'false' &&
-            isProduction &&
+            isProd &&
             !isLocalConnection &&
             !isNonSSLServer);
-        const isProd = nodeEnv === 'production';
 
         return {
-          uri: mongoUri.replace('directConnection=true', ''), // إن وُجد
+          uri: mongoUri.replace('directConnection=true', ''),
           autoIndex: !isProd,
           maxPoolSize: MAX_POOL_SIZE,
           minPoolSize: MIN_POOL_SIZE,
@@ -64,7 +73,6 @@ const WRITE_CONCERN_WTIMEOUT_MS = 10000;
           heartbeatFrequencyMS: HEARTBEAT_FREQUENCY_MS,
           retryWrites: true,
           retryReads: true,
-          // مراقبة في التطوير فقط:
           monitorCommands: !isProd,
           ...(enableSSL && { ssl: true, tlsInsecure: false }),
           readPreference: 'primary',
@@ -78,8 +86,15 @@ const WRITE_CONCERN_WTIMEOUT_MS = 10000;
       inject: [ConfigService],
     }),
   ],
-  providers: [MongooseMetricsPlugin],
-
-  exports: [MongooseModule],
+  providers: [
+    DatabaseMetricsProvider,
+    {
+      provide: DATABASE_QUERY_DURATION_SECONDS,
+      useFactory: (histogram: Histogram<string>) => histogram,
+      inject: ['PROM_METRIC_DATABASE_QUERY_DURATION_SECONDS'],
+    },
+    MongooseMetricsPlugin,
+  ],
+  exports: [MongooseModule, MongooseMetricsPlugin],
 })
 export class DatabaseConfigModule {}

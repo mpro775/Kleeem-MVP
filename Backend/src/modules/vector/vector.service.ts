@@ -87,6 +87,8 @@ type WebPayload = {
   text: string;
   url?: string;
   title?: string;
+  type?: string;
+  source?: string;
 };
 
 type DocChunkPayload = {
@@ -311,7 +313,7 @@ export class VectorService implements OnModuleInit {
     return {
       mongoId: p.id,
       merchantId: p.merchantId,
-      name: p.name,
+      name: p.name ?? '',
       description: p.description ?? '',
     };
   }
@@ -329,9 +331,13 @@ export class VectorService implements OnModuleInit {
     p: EmbeddableProduct,
   ): Pick<ProductPayload, 'specsBlock' | 'keywords' | 'images'> {
     return {
-      specsBlock: Array.isArray(p.specsBlock) ? p.specsBlock : [],
-      keywords: Array.isArray(p.keywords) ? p.keywords : [],
-      images: Array.isArray(p.images) ? p.images : [],
+      specsBlock: Array.isArray(p.specsBlock)
+        ? (p.specsBlock as unknown[])
+        : [],
+      keywords: Array.isArray(p.keywords) ? (p.keywords as unknown[]) : [],
+      images: Array.isArray(p.images)
+        ? p.images.filter((img): img is string => typeof img === 'string')
+        : [],
     };
   }
 

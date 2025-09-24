@@ -7,7 +7,7 @@ import { GetUsersDto, SortOrder } from '../dto/get-users.dto'; // ← SortOrder 
 import { User } from '../schemas/user.schema';
 
 import type { PaginationResult } from '../../../common/dto/pagination.dto';
-import type { PaginationService } from '../../../common/services/pagination.service';
+import { PaginationService } from '../../../common/services/pagination.service';
 import type { CreateUserDto } from '../dto/create-user.dto';
 import type { NotificationsPrefsDto } from '../dto/notifications-prefs.dto';
 import type { UpdateUserDto } from '../dto/update-user.dto';

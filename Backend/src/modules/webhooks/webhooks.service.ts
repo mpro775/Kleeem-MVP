@@ -15,7 +15,7 @@ import { OrdersService } from '../orders/orders.service';
 
 import { ChannelRepository } from './repositories/channel.repository';
 import { WebhookRepository } from './repositories/webhook.repository';
-import { CHANNEL_REPOSITORY, WEBHOOK_REPOSITORY } from './tokens';
+import { WEBHOOK_REPOSITORY } from './tokens';
 import { getIdempotency, setIdempotency } from './utils/cache.util';
 import { isBotEnabled } from './utils/channels.util';
 import {
@@ -61,7 +61,7 @@ export class WebhooksService {
     private readonly evoService: EvolutionService,
     private readonly config: ConfigService,
     private readonly chatGateway: ChatGateway,
-    @Inject(CHANNEL_REPOSITORY)
+    @Inject('ChannelsRepository')
     private readonly channelsRepo: ChannelRepository,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}

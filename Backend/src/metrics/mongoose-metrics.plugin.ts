@@ -1,18 +1,11 @@
 // src/metrics/mongoose-metrics.plugin.ts
-
-// external
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
-
-import { DATABASE_QUERY_DURATION_SECONDS } from './metrics.module';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
 
 import type { Connection, Schema } from 'mongoose';
 import type { Histogram } from 'prom-client';
 
-// internal
-
-// -----------------------------------------------------------------------------
-// Constants
 const NANOSECONDS_TO_SECONDS = 1e9;
 
 type HookThis = {
@@ -27,13 +20,13 @@ type NextFn = (err?: unknown) => void;
 export class MongooseMetricsPlugin implements OnModuleInit {
   constructor(
     @InjectConnection() private readonly conn: Connection,
-    @Inject(DATABASE_QUERY_DURATION_SECONDS)
+    // ✅ حقن مباشر بالاسم نفسه الذي عرّفناه في makeHistogramProvider
+    @InjectMetric('database_query_duration_seconds')
     private readonly dbQueryDuration: Histogram<string>,
   ) {}
 
   onModuleInit(): void {
     const histogram = this.dbQueryDuration;
-
     const ops = [
       'find',
       'findOne',
@@ -76,9 +69,7 @@ export class MongooseMetricsPlugin implements OnModuleInit {
     };
 
     const plugin = (schema: Schema): void => {
-      for (const op of ops) {
-        attach(schema, op);
-      }
+      for (const op of ops) attach(schema, op);
     };
 
     this.conn.plugin(plugin);

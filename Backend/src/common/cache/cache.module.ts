@@ -13,6 +13,7 @@ import { CacheWarmerOrchestrator } from './cache-warmer.orchestrator';
 import { CacheController } from './cache.controller';
 import { CacheMetrics } from './cache.metrics';
 import { CacheService } from './cache.service';
+import { CacheWarmer } from './warmers/cache-warmer.interface';
 import {
   CACHE_TTL_5_MINUTES,
   CACHE_MAX_ITEMS,
@@ -68,12 +69,32 @@ import { ProductsWarmer } from './warmers/products.warmer';
   ],
   providers: [
     CacheService,
-    CacheWarmerOrchestrator,
     CacheMetrics,
     CategoriesWarmer,
     MerchantsWarmer,
     PlansWarmer,
     ProductsWarmer,
+    {
+      provide: 'CACHE_WARMERS',
+      useFactory: (
+        categoriesWarmer: CategoriesWarmer,
+        merchantsWarmer: MerchantsWarmer,
+        plansWarmer: PlansWarmer,
+        productsWarmer: ProductsWarmer,
+      ): CacheWarmer[] => [
+        categoriesWarmer,
+        merchantsWarmer,
+        plansWarmer,
+        productsWarmer,
+      ],
+      inject: [CategoriesWarmer, MerchantsWarmer, PlansWarmer, ProductsWarmer],
+    },
+    {
+      provide: CacheWarmerOrchestrator,
+      useFactory: (warmers: CacheWarmer[]) =>
+        new CacheWarmerOrchestrator(warmers),
+      inject: ['CACHE_WARMERS'],
+    },
   ],
   controllers: [CacheController],
   exports: [CacheService, CacheWarmerOrchestrator],

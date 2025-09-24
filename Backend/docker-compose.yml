@@ -74,15 +74,6 @@ services:
       timeout: 10s
       retries: 3
 
-  structurizr:
-    image: structurizr/lite
-    container_name: kaleem-structurizr
-    ports:
-      - '18080:8080'
-    volumes:
-      - ./docs/structurizr:/usr/local/structurizr
-    networks: [backnet]
-
   mongo:
     image: mongo:5
     container_name: kaleem-mongo
@@ -300,14 +291,13 @@ services:
     networks: [backnet]
     restart: unless-stopped
 
-
   lb:
     image: nginx:alpine
     container_name: kaleem-lb
     depends_on:
       - api
     ports:
-      - "8088:80"          # يستقبل على 8088 على هوست، داخليًا 80
+      - '8088:80' # يستقبل على 8088 على هوست، داخليًا 80
     volumes:
       - ./nginx.lb.conf:/etc/nginx/nginx.conf:ro
     networks: [backnet]
@@ -535,7 +525,7 @@ services:
       - N8N_PROTOCOL=https
       - WEBHOOK_URL=https://n8n.kaleem-ai.com
       - VUE_APP_URL_BASE_API=https://n8n.kaleem-ai.com
-      - N8N_RUNNERS_ENABLED=true
+      - N8N_RUNNERS_ENABLED=false
       - N8N_CORS_ALLOW_ORIGIN=https://localhost:5173
       - N8N_CORS_ALLOW_CREDENTIALS=true
     ports:
@@ -565,8 +555,8 @@ volumes:
   prom_data:
   hf_cache:
   loki_data:
-  glitchtip_pg: 
-  tempo_data: 
+  glitchtip_pg:
+  tempo_data:
 
 networks:
   backnet:

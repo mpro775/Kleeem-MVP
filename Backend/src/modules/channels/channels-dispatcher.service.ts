@@ -35,9 +35,9 @@ export class ChannelsDispatcherService {
   ): Promise<void> {
     if (channel === 'webchat') {
       this.chatGateway.sendMessageToSession(sessionId, {
+        id: '',
         role: 'bot',
         text,
-        ts: Date.now(),
       });
       return;
     }
@@ -51,8 +51,7 @@ export class ChannelsDispatcherService {
 
     if (channel === 'whatsapp') {
       const use: WaTransport =
-        transport ||
-        (await this.waCloud.detectTransport(merchantId, sessionId));
+        transport || (await this.waCloud.detectTransport(merchantId));
       if (use === 'api') {
         try {
           await this.waCloud.sendText(merchantId, sessionId, text);

@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { toEmbeddable } from 'src/modules/products/utils/product.utils';
+import { VectorService } from 'src/modules/vector/vector.service';
 
-import { VectorService } from '../../vector/vector.service';
-import { toEmbeddable } from '../utils/product.utils';
+import type { EmbeddableProduct as VectorEmbeddable } from 'src/modules/vector/utils/types';
 
 @Injectable()
 export class ProductIndexService {
@@ -29,7 +30,18 @@ export class ProductIndexService {
     categoryName?: string | null,
   ): Promise<void> {
     try {
-      const ep = toEmbeddable(productDoc, storefront, categoryName ?? null);
+      const src = toEmbeddable(productDoc, storefront, categoryName ?? null);
+
+      const ep: VectorEmbeddable = {
+        ...src,
+        status:
+          typeof src.status === 'string'
+            ? src.status
+            : src.status == null
+              ? undefined
+              : null,
+      };
+
       await this.retry(() => this.vector.upsertProducts([ep]));
     } catch (e) {
       this.logger.warn('vector upsert failed (final)', e);

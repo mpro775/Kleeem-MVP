@@ -16,7 +16,6 @@ import { SentryService } from './services/sentry.service';
     SentryService,
     ErrorManagementService,
     ErrorLoggingInterceptor,
-    PerformanceTrackingInterceptor,
     AllExceptionsFilter,
   ],
   controllers: [ErrorMonitoringController],
@@ -24,7 +23,6 @@ import { SentryService } from './services/sentry.service';
     SentryService,
     ErrorManagementService,
     ErrorLoggingInterceptor,
-    PerformanceTrackingInterceptor,
     AllExceptionsFilter,
   ],
 })

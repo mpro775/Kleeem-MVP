@@ -1,0 +1,72 @@
+{
+  'openapi': '3.0.3',
+  'info': { 'title': 'Kaleem AI – Auth API (Minimal)', 'version': '1.0.0' },
+  'servers': [{ 'url': 'https://api.kaleem-ai.com' }],
+  'paths':
+    {
+      '/auth/login':
+        {
+          'post':
+            {
+              'summary': 'Login',
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'required': ['email', 'password'],
+                              'properties':
+                                {
+                                  'email': { 'type': 'string' },
+                                  'password': { 'type': 'string' },
+                                },
+                            },
+                        },
+                    },
+                },
+              'responses': { '200': { 'description': 'OK' } },
+            },
+        },
+      '/auth/register':
+        {
+          'post':
+            {
+              'summary': 'Register',
+              'requestBody':
+                {
+                  'required': true,
+                  'content':
+                    {
+                      'application/json':
+                        {
+                          'schema':
+                            {
+                              'type': 'object',
+                              'required':
+                                [
+                                  'email',
+                                  'password',
+                                  'confirmPassword',
+                                  'name',
+                                ],
+                              'properties':
+                                {
+                                  'email': { 'type': 'string' },
+                                  'password': { 'type': 'string' },
+                                  'confirmPassword': { 'type': 'string' },
+                                  'name': { 'type': 'string' },
+                                },
+                            },
+                        },
+                    },
+                },
+              'responses': { '201': { 'description': 'Created' } },
+            },
+        },
+    },
+}

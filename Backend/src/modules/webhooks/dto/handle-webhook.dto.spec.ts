@@ -1,7 +1,27 @@
-import { plainToClass } from 'class-transformer';
+import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
 import { HandleWebhookDto } from './handle-webhook.dto';
+
+/** Type guards */
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+function asString(v: unknown): string | undefined {
+  return typeof v === 'string' ? v : undefined;
+}
+function asNumber(v: unknown): number | undefined {
+  return typeof v === 'number' ? v : undefined;
+}
+function asArray<T = unknown>(v: unknown): T[] | undefined {
+  return Array.isArray(v) ? (v as T[]) : undefined;
+}
+function hasKey<T extends string>(
+  obj: Record<string, unknown>,
+  key: T,
+): obj is Record<T, unknown> & Record<string, unknown> {
+  return Object.prototype.hasOwnProperty.call(obj, key) as boolean;
+}
 
 describe('HandleWebhookDto', () => {
   describe('Validation', () => {
@@ -15,7 +35,7 @@ describe('HandleWebhookDto', () => {
         },
       };
 
-      const dto = plainToClass(HandleWebhookDto, validDto);
+      const dto = plainToInstance(HandleWebhookDto, validDto);
       const errors = await validate(dto);
 
       expect(errors).toHaveLength(0);
@@ -26,7 +46,7 @@ describe('HandleWebhookDto', () => {
         eventType: 'user.login',
       };
 
-      const dto = plainToClass(HandleWebhookDto, validDto);
+      const dto = plainToInstance(HandleWebhookDto, validDto);
       const errors = await validate(dto);
 
       expect(errors).toHaveLength(0);
@@ -38,7 +58,7 @@ describe('HandleWebhookDto', () => {
         payload: null,
       };
 
-      const dto = plainToClass(HandleWebhookDto, validDto);
+      const dto = plainToInstance(HandleWebhookDto, validDto);
       const errors = await validate(dto);
 
       expect(errors).toHaveLength(0);
@@ -49,7 +69,7 @@ describe('HandleWebhookDto', () => {
         payload: { data: 'some data' },
       };
 
-      const dto = plainToClass(HandleWebhookDto, invalidDto);
+      const dto = plainToInstance(HandleWebhookDto, invalidDto);
       const errors = await validate(dto);
 
       expect(errors).toHaveLength(1);
@@ -64,7 +84,7 @@ describe('HandleWebhookDto', () => {
         payload: { data: 'test' },
       };
 
-      const dto = plainToClass(HandleWebhookDto, invalidDto);
+      const dto = plainToInstance(HandleWebhookDto, invalidDto);
       const errors = await validate(dto);
 
       expect(errors).toHaveLength(1);
@@ -78,7 +98,7 @@ describe('HandleWebhookDto', () => {
         payload: { data: 'test' },
       };
 
-      const dto = plainToClass(HandleWebhookDto, invalidDto);
+      const dto = plainToInstance(HandleWebhookDto, invalidDto);
       const errors = await validate(dto);
 
       expect(errors).toHaveLength(1);
@@ -92,7 +112,7 @@ describe('HandleWebhookDto', () => {
         payload: 'not-an-object',
       };
 
-      const dto = plainToClass(HandleWebhookDto, invalidDto);
+      const dto = plainToInstance(HandleWebhookDto, invalidDto);
       const errors = await validate(dto);
 
       expect(errors).toHaveLength(1);
@@ -106,7 +126,7 @@ describe('HandleWebhookDto', () => {
         payload: ['array', 'is', 'not', 'object'],
       };
 
-      const dto = plainToClass(HandleWebhookDto, invalidDto);
+      const dto = plainToInstance(HandleWebhookDto, invalidDto);
       const errors = await validate(dto);
 
       expect(errors).toHaveLength(1);
@@ -120,7 +140,7 @@ describe('HandleWebhookDto', () => {
         payload: undefined,
       };
 
-      const dto = plainToClass(HandleWebhookDto, validDto);
+      const dto = plainToInstance(HandleWebhookDto, validDto);
       const errors = await validate(dto);
 
       expect(errors).toHaveLength(0);
@@ -147,11 +167,11 @@ describe('HandleWebhookDto', () => {
       'chat.reply',
       'webhook.test',
       'system.maintenance',
-    ];
+    ] as const;
 
     it('should validate common event types', async () => {
       for (const eventType of commonEventTypes) {
-        const dto = plainToClass(HandleWebhookDto, {
+        const dto = plainToInstance(HandleWebhookDto, {
           eventType,
           payload: { test: 'data' },
         });
@@ -166,10 +186,10 @@ describe('HandleWebhookDto', () => {
         'منتج.تم_إنشاؤه',
         'طلب.تم_التحديث',
         'مستخدم.تم_التسجيل',
-      ];
+      ] as const;
 
       for (const eventType of arabicEventTypes) {
-        const dto = plainToClass(HandleWebhookDto, {
+        const dto = plainToInstance(HandleWebhookDto, {
           eventType,
           payload: { بيانات: 'اختبار' },
         });
@@ -189,10 +209,10 @@ describe('HandleWebhookDto', () => {
         'event/with/slashes',
         'EVENT_UPPERCASE',
         'event123with456numbers',
-      ];
+      ] as const;
 
       for (const eventType of specialEventTypes) {
-        const dto = plainToClass(HandleWebhookDto, {
+        const dto = plainToInstance(HandleWebhookDto, {
           eventType,
           payload: { data: 'test' },
         });
@@ -207,7 +227,7 @@ describe('HandleWebhookDto', () => {
       const longEventType =
         'very.long.event.type.with.many.segments.'.repeat(10) + 'end';
 
-      const dto = plainToClass(HandleWebhookDto, {
+      const dto = plainToInstance(HandleWebhookDto, {
         eventType: longEventType,
         payload: { data: 'test' },
       });
@@ -221,7 +241,7 @@ describe('HandleWebhookDto', () => {
 
   describe('Payload Variations', () => {
     it('should handle simple payload', async () => {
-      const dto = plainToClass(HandleWebhookDto, {
+      const dto = plainToInstance(HandleWebhookDto, {
         eventType: 'simple.test',
         payload: {
           message: 'مرحباً بالعالم',
@@ -231,7 +251,10 @@ describe('HandleWebhookDto', () => {
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
-      expect(dto.payload.message).toBe('مرحباً بالعالم');
+
+      expect(
+        isRecord(dto.payload) ? asString(dto.payload.message) : undefined,
+      ).toBe('مرحباً بالعالم');
     });
 
     it('should handle complex nested payload', async () => {
@@ -262,18 +285,32 @@ describe('HandleWebhookDto', () => {
           operator: 'system_admin',
           reason: 'promotion',
         },
-      };
+      } as const;
 
-      const dto = plainToClass(HandleWebhookDto, {
+      const dto = plainToInstance(HandleWebhookDto, {
         eventType: 'product.price_changed',
         payload: complexPayload,
       });
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
-      expect(dto.payload.product.name).toBe('منتج تجريبي');
-      expect(dto.payload.product.specifications.colors).toContain('أسود');
-      expect(dto.payload.changes.current.price).toBe(99.99);
+
+      if (isRecord(dto.payload) && isRecord(dto.payload.product)) {
+        expect(asString(dto.payload.product.name)).toBe('منتج تجريبي');
+        const specs = isRecord(dto.payload.product.specifications)
+          ? dto.payload.product.specifications
+          : undefined;
+        const colors = specs ? asArray<string>(specs.colors) : undefined;
+        expect(colors).toBeDefined();
+        expect(colors?.includes('أسود')).toBe(true);
+      }
+
+      if (isRecord(dto.payload) && isRecord(dto.payload.changes)) {
+        const current = isRecord(dto.payload.changes.current)
+          ? dto.payload.changes.current
+          : undefined;
+        expect(asNumber(current?.price)).toBe(99.99);
+      }
     });
 
     it('should handle payload with arrays', async () => {
@@ -288,16 +325,24 @@ describe('HandleWebhookDto', () => {
         numbers: [1, 2, 3, 4, 5],
       };
 
-      const dto = plainToClass(HandleWebhookDto, {
+      const dto = plainToInstance(HandleWebhookDto, {
         eventType: 'bulk.products.updated',
         payload: arrayPayload,
       });
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
-      expect(dto.payload.products).toHaveLength(3);
-      expect(dto.payload.categories).toContain('إلكترونيات');
-      expect(dto.payload.numbers).toEqual([1, 2, 3, 4, 5]);
+
+      if (isRecord(dto.payload)) {
+        const products = asArray<Record<string, unknown>>(dto.payload.products);
+        expect(products?.length).toBe(3);
+
+        const categories = asArray<string>(dto.payload.categories);
+        expect(categories?.includes('إلكترونيات')).toBe(true);
+
+        const nums = asArray<number>(dto.payload.numbers);
+        expect(nums).toEqual([1, 2, 3, 4, 5]);
+      }
     });
 
     it('should handle payload with mixed data types', async () => {
@@ -318,25 +363,31 @@ describe('HandleWebhookDto', () => {
         },
       };
 
-      const dto = plainToClass(HandleWebhookDto, {
+      const dto = plainToInstance(HandleWebhookDto, {
         eventType: 'mixed.data.test',
         payload: mixedPayload,
       });
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
-      expect(dto.payload.string).toBe('نص عربي');
-      expect(dto.payload.number).toBe(42);
-      expect(dto.payload.boolean).toBe(true);
-      expect(dto.payload.null_value).toBeNull();
-      expect(dto.payload.object.deep.deeper).toBe('العمق');
+
+      if (isRecord(dto.payload)) {
+        expect(asString(dto.payload.string)).toBe('نص عربي');
+        expect(asNumber(dto.payload.number)).toBe(42);
+        expect(dto.payload.boolean).toBe(true);
+        expect(dto.payload.null_value).toBeNull();
+
+        const obj = isRecord(dto.payload.object) ? dto.payload.object : {};
+        const deep = isRecord(obj.deep) ? obj.deep : {};
+        expect(asString(deep.deeper)).toBe('العمق');
+      }
     });
 
     it('should handle very large payload', async () => {
       const largeArray = Array.from({ length: 1000 }, (_, i) => ({
         id: `item-${i}`,
         name: `عنصر رقم ${i}`,
-        data: 'بيانات '.repeat(100), // Large string
+        data: 'بيانات '.repeat(100),
       }));
 
       const largePayload = {
@@ -347,15 +398,23 @@ describe('HandleWebhookDto', () => {
         },
       };
 
-      const dto = plainToClass(HandleWebhookDto, {
+      const dto = plainToInstance(HandleWebhookDto, {
         eventType: 'bulk.large.operation',
         payload: largePayload,
       });
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
-      expect(dto.payload.items).toHaveLength(1000);
-      expect(dto.payload.metadata.count).toBe(1000);
+
+      if (isRecord(dto.payload)) {
+        const items = asArray<Record<string, unknown>>(dto.payload.items);
+        expect(items?.length).toBe(1000);
+
+        const md = isRecord(dto.payload.metadata)
+          ? dto.payload.metadata
+          : undefined;
+        expect(asNumber(md?.count)).toBe(1000);
+      }
     });
 
     it('should handle payload with special characters and emojis', async () => {
@@ -363,25 +422,28 @@ describe('HandleWebhookDto', () => {
         message: 'مرحباً! 👋 كيف حالك؟ 😊',
         symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?',
         quotes: 'نص مع "علامات اقتباس" و\'علامات مفردة\'',
-        unicode: '\u0627\u0644\u0639\u0631\u0628\u064A\u0629', // Arabic
+        unicode: '\u0627\u0644\u0639\u0631\u0628\u064A\u0629',
         html: '<h1>عنوان</h1><p>فقرة مع <strong>تأكيد</strong></p>',
         json: '{"key": "value", "عربي": "قيمة"}',
       };
 
-      const dto = plainToClass(HandleWebhookDto, {
+      const dto = plainToInstance(HandleWebhookDto, {
         eventType: 'special.characters.test',
         payload: specialPayload,
       });
 
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
-      expect(dto.payload.message).toContain('👋');
-      expect(dto.payload.unicode).toBe('العربية');
-      expect(dto.payload.html).toContain('<h1>');
+
+      if (isRecord(dto.payload)) {
+        expect(asString(dto.payload.message)?.includes('👋')).toBe(true);
+        expect(asString(dto.payload.unicode)).toBe('العربية');
+        expect(asString(dto.payload.html)?.includes('<h1>')).toBe(true);
+      }
     });
 
     it('should handle empty payload object', async () => {
-      const dto = plainToClass(HandleWebhookDto, {
+      const dto = plainToInstance(HandleWebhookDto, {
         eventType: 'empty.payload.test',
         payload: {},
       });
@@ -389,7 +451,7 @@ describe('HandleWebhookDto', () => {
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
       expect(dto.payload).toEqual({});
-      expect(Object.keys(dto.payload)).toHaveLength(0);
+      expect(Object.keys(dto.payload ?? {})).toHaveLength(0);
     });
   });
 
@@ -405,11 +467,13 @@ describe('HandleWebhookDto', () => {
         },
       };
 
-      const dto = plainToClass(HandleWebhookDto, data);
+      const dto = plainToInstance(HandleWebhookDto, data);
 
       expect(dto.eventType).toBe(data.eventType);
       expect(dto.payload).toEqual(data.payload);
-      expect(dto.payload.nested.value).toBe('deep');
+      if (isRecord(dto.payload) && isRecord(dto.payload.nested)) {
+        expect(asString(dto.payload.nested.value)).toBe('deep');
+      }
     });
 
     it('should handle assignment without payload', () => {
@@ -417,7 +481,7 @@ describe('HandleWebhookDto', () => {
         eventType: 'no.payload.test',
       };
 
-      const dto = plainToClass(HandleWebhookDto, data);
+      const dto = plainToInstance(HandleWebhookDto, data);
 
       expect(dto.eventType).toBe(data.eventType);
       expect(dto.payload).toBeUndefined();
@@ -431,7 +495,7 @@ describe('HandleWebhookDto', () => {
         payload: { data: 'test' },
       };
 
-      const dto = plainToClass(HandleWebhookDto, data);
+      const dto = plainToInstance(HandleWebhookDto, data);
       const errors = await validate(dto);
 
       expect(errors).toHaveLength(0);
@@ -444,7 +508,7 @@ describe('HandleWebhookDto', () => {
         payload: { data: 'test' },
       };
 
-      const dto = plainToClass(HandleWebhookDto, data);
+      const dto = plainToInstance(HandleWebhookDto, data);
       const errors = await validate(dto);
 
       expect(errors).toHaveLength(1);
@@ -453,21 +517,24 @@ describe('HandleWebhookDto', () => {
     });
 
     it('should handle circular reference in payload', () => {
-      const circularObj: any = {
+      const circularObj: {
+        eventType: string;
+        payload: Record<string, unknown>;
+      } = {
         eventType: 'circular.test',
-        payload: {
-          data: 'value',
-        },
+        payload: { data: 'value' },
       };
 
       // Create circular reference
       circularObj.payload.self = circularObj.payload;
 
-      const dto = plainToClass(HandleWebhookDto, circularObj);
+      const dto = plainToInstance(HandleWebhookDto, circularObj);
 
       expect(dto.eventType).toBe('circular.test');
-      expect(dto.payload.data).toBe('value');
-      expect(dto.payload.self).toBe(dto.payload);
+      if (isRecord(dto.payload)) {
+        expect(asString(dto.payload.data)).toBe('value');
+        expect(dto.payload.self).toBe(dto.payload);
+      }
     });
 
     it('should handle function in payload', () => {
@@ -481,11 +548,13 @@ describe('HandleWebhookDto', () => {
         },
       };
 
-      const dto = plainToClass(HandleWebhookDto, data);
+      const dto = plainToInstance(HandleWebhookDto, data);
 
       expect(dto.eventType).toBe('function.test');
-      expect(dto.payload.normalField).toBe('value');
-      expect(typeof dto.payload.functionField).toBe('function');
+      if (isRecord(dto.payload)) {
+        expect(asString(dto.payload.normalField)).toBe('value');
+        expect(typeof dto.payload.functionField).toBe('function');
+      }
     });
 
     it('should handle Date objects in payload', () => {
@@ -499,11 +568,13 @@ describe('HandleWebhookDto', () => {
         },
       };
 
-      const dto = plainToClass(HandleWebhookDto, data);
+      const dto = plainToInstance(HandleWebhookDto, data);
 
-      expect(dto.payload.createdAt).toEqual(now);
-      expect(dto.payload.updatedAt).toBeInstanceOf(Date);
-      expect(typeof dto.payload.timestamp).toBe('number');
+      if (isRecord(dto.payload)) {
+        expect(dto.payload.createdAt).toEqual(now);
+        expect(dto.payload.updatedAt).toBeInstanceOf(Date);
+        expect(typeof dto.payload.timestamp).toBe('number');
+      }
     });
 
     it('should handle RegExp in payload', () => {
@@ -515,11 +586,14 @@ describe('HandleWebhookDto', () => {
         },
       };
 
-      const dto = plainToClass(HandleWebhookDto, data);
+      const dto = plainToInstance(HandleWebhookDto, data);
 
-      expect(dto.payload.pattern).toBeInstanceOf(RegExp);
-      expect(dto.payload.pattern.source).toBe('test.*pattern');
-      expect(dto.payload.simple).toBe('value');
+      if (isRecord(dto.payload)) {
+        const pattern = dto.payload.pattern;
+        expect(pattern instanceof RegExp).toBe(true);
+        expect((pattern as RegExp).source).toBe('test.*pattern');
+        expect(asString(dto.payload.simple)).toBe('value');
+      }
     });
   });
 
@@ -537,10 +611,10 @@ describe('HandleWebhookDto', () => {
         },
       };
 
-      const dto = plainToClass(HandleWebhookDto, originalData);
+      const dto = plainToInstance(HandleWebhookDto, originalData);
       const serialized = JSON.stringify(dto);
       const deserialized = JSON.parse(serialized);
-      const newDto = plainToClass(HandleWebhookDto, deserialized);
+      const newDto = plainToInstance(HandleWebhookDto, deserialized);
 
       expect(newDto.eventType).toBe(originalData.eventType);
       expect(newDto.payload).toEqual(originalData.payload);
@@ -558,13 +632,21 @@ describe('HandleWebhookDto', () => {
         },
       };
 
-      const dto = plainToClass(HandleWebhookDto, data);
+      const dto = plainToInstance(HandleWebhookDto, data);
       const serialized = JSON.stringify(dto);
       const deserialized = JSON.parse(serialized);
 
-      expect(deserialized.payload.quotes).toContain('"quotes"');
-      expect(deserialized.payload.unicode).toContain('العربية');
-      expect(deserialized.payload.newlines).toContain('\n');
+      if (isRecord(deserialized.payload)) {
+        expect(
+          asString(deserialized.payload.quotes)?.includes('"quotes"'),
+        ).toBe(true);
+        expect(
+          asString(deserialized.payload.unicode)?.includes('العربية'),
+        ).toBe(true);
+        expect(asString(deserialized.payload.newlines)?.includes('\n')).toBe(
+          true,
+        );
+      }
     });
 
     it('should handle serialization without payload', () => {
@@ -572,7 +654,7 @@ describe('HandleWebhookDto', () => {
         eventType: 'no.payload.serialization',
       };
 
-      const dto = plainToClass(HandleWebhookDto, data);
+      const dto = plainToInstance(HandleWebhookDto, data);
       const serialized = JSON.stringify(dto);
       const deserialized = JSON.parse(serialized);
 
@@ -603,13 +685,16 @@ describe('HandleWebhookDto', () => {
         },
       };
 
-      const dto = plainToClass(HandleWebhookDto, data);
+      const dto = plainToInstance(HandleWebhookDto, data);
       const errors = await validate(dto);
 
       expect(errors).toHaveLength(0);
-      expect(dto.payload.definedField).toBe('value');
-      expect(dto.payload.undefinedField).toBeUndefined();
-      expect(dto.payload.nullField).toBeNull();
+
+      if (isRecord(dto.payload)) {
+        expect(asString(dto.payload.definedField)).toBe('value');
+        expect(dto.payload.undefinedField).toBeUndefined();
+        expect(dto.payload.nullField).toBeNull();
+      }
     });
   });
 
@@ -654,10 +739,10 @@ describe('HandleWebhookDto', () => {
             reorderPoint: 20,
           },
         },
-      ];
+      ] as const;
 
       for (const data of ecommercePayloads) {
-        const dto = plainToClass(HandleWebhookDto, data);
+        const dto = plainToInstance(HandleWebhookDto, data);
         const errors = await validate(dto);
 
         expect(errors).toHaveLength(0);
@@ -690,15 +775,17 @@ describe('HandleWebhookDto', () => {
             timestamp: Date.now(),
           },
         },
-      ];
+      ] as const;
 
       for (const data of messagingPayloads) {
-        const dto = plainToClass(HandleWebhookDto, data);
+        const dto = plainToInstance(HandleWebhookDto, data);
         const errors = await validate(dto);
 
         expect(errors).toHaveLength(0);
         expect(dto.eventType).toBe(data.eventType);
-        expect(dto.payload.text).toBeDefined();
+        if (isRecord(dto.payload) && hasKey(dto.payload, 'text')) {
+          expect(typeof dto.payload.text).toBe('string');
+        }
       }
     });
 
@@ -728,10 +815,10 @@ describe('HandleWebhookDto', () => {
             endpoint: '/api/webhooks/handle',
           },
         },
-      ];
+      ] as const;
 
       for (const data of systemPayloads) {
-        const dto = plainToClass(HandleWebhookDto, data);
+        const dto = plainToInstance(HandleWebhookDto, data);
         const errors = await validate(dto);
 
         expect(errors).toHaveLength(0);

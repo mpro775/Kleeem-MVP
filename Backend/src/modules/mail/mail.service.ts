@@ -32,7 +32,7 @@ export class MailService {
   constructor(private readonly config: ConfigService) {
     // config
     const host = this.config.get<string>('MAIL_HOST');
-    const port = this.config.get<number>('MAIL_PORT');
+    const port = parseInt(this.config.get<string>('MAIL_PORT') || '587', 10);
     const user = this.config.get<string>('MAIL_USER');
     const pass = this.config.get<string>('MAIL_PASS');
     const from = this.config.get<string>('MAIL_FROM');
@@ -41,7 +41,7 @@ export class MailService {
 
     const missing = [
       !ensureNonEmpty(host) ? 'MAIL_HOST' : null,
-      typeof port !== 'number' ? 'MAIL_PORT' : null,
+      !Number.isInteger(port) || port <= 0 ? 'MAIL_PORT' : null,
       !ensureNonEmpty(user) ? 'MAIL_USER' : null,
       !ensureNonEmpty(pass) ? 'MAIL_PASS' : null,
       !ensureNonEmpty(from) ? 'MAIL_FROM' : null,
@@ -60,7 +60,7 @@ export class MailService {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     this.transporter = createTransport({
       host: host!,
-      port: port!,
+      port: port,
       secure,
       auth: { user: user!, pass: pass! },
       // ملاحظة: rejectUnauthorized=false مفيد للبيئات التطويرية؛

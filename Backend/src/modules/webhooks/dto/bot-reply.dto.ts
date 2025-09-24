@@ -37,5 +37,5 @@ export class BotReplyDto {
   })
   @IsOptional()
   @IsObject()
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }

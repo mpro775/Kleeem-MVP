@@ -61,13 +61,13 @@ describe('CategoriesService', () => {
 
   it('move calculates order', async () => {
     repo.findByIdForMerchant.mockResolvedValue({
-      _id: new Types.ObjectId('c1'),
+      _id: new Types.ObjectId(),
       parent: null,
     } as any);
     repo.listSiblings.mockResolvedValue([
-      { _id: 'a', order: 0 },
-      { _id: 'b', order: 1 },
-    ]);
+      { _id: new Types.ObjectId(), order: 0 } as any,
+      { _id: new Types.ObjectId(), order: 1 } as any,
+    ] as any);
     await service.move('c1', 'm1', { position: 1 });
     expect(repo.updateOrder).toHaveBeenCalled(); // eslint-disable-line @typescript-eslint/unbound-method
   });

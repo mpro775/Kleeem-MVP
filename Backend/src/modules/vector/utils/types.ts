@@ -2,18 +2,18 @@
 export interface EmbeddableProduct {
   id: string;
   merchantId: string;
-  name: string;
+  name?: string;
   description?: string;
 
   category?: string | string[];
   categoryName?: string | null;
   categoryId?: string | null;
 
-  specsBlock?: string[] | string;
-  keywords?: string[] | string;
+  specsBlock?: unknown[];
+  keywords?: unknown[];
   attributes?: Record<string, unknown>;
 
-  images?: string[];
+  images?: unknown[];
   slug?: string | null;
   storefrontSlug?: string | null;
   domain?: string | null;
@@ -25,8 +25,8 @@ export interface EmbeddableProduct {
   hasActiveOffer?: boolean;
   priceOld?: number | null;
   priceNew?: number | null;
-  offerStart?: string | null;
-  offerEnd?: string | null;
+  offerStart?: string | Date | null;
+  offerEnd?: string | Date | null;
   discountPct?: number | null;
 
   isAvailable?: boolean | null;
