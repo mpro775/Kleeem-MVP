@@ -73,8 +73,12 @@ interface TypingPayload {
 interface OutgoingMessage {
   id: string;
   text: string;
-  role: 'user' | 'agent' | 'system';
+  role: 'user' | 'agent' | 'system' | 'bot' | 'customer';
   merchantId?: string;
+  timestamp?: Date | number;
+  rating?: number | null;
+  feedback?: string | null;
+  metadata?: Record<string, unknown>;
 }
 
 // ========== Type guards & utils ==========
