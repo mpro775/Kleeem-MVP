@@ -1,0 +1,147 @@
+User:
+  type: object
+  required: [id, name, email, role, firstLogin, emailVerified]
+  properties:
+    id:
+      type: string
+      example: "66f0c3a2b1"
+    name:
+      type: string
+      example: "Ahmed"
+    email:
+      type: string
+      format: email
+      example: "user@example.com"
+    role:
+      type: string
+      enum: [ADMIN, MERCHANT, MEMBER]
+      example: "MERCHANT"
+    merchantId:
+      type: string
+      nullable: true
+      example: "mrc_123"
+    firstLogin:
+      type: boolean
+      example: true
+    emailVerified:
+      type: boolean
+      example: false
+
+TokenPair:
+  type: object
+  required: [accessToken, refreshToken, user]
+  properties:
+    accessToken:
+      type: string
+      example: "eyJhbGciOi...access"
+    refreshToken:
+      type: string
+      example: "eyJhbGciOi...refresh"
+    user:
+      $ref: '#/components/schemas/User'
+
+AccessOnly:
+  type: object
+  required: [accessToken, user]
+  properties:
+    accessToken:
+      type: string
+      example: "eyJhbGciOi...access"
+    user:
+      $ref: '#/components/schemas/User'
+
+RegisterDto:
+  type: object
+  required: [email, password, confirmPassword, name]
+  properties:
+    email:
+      type: string
+      format: email
+    password:
+      type: string
+      minLength: 8
+    confirmPassword:
+      type: string
+      minLength: 8
+    name:
+      type: string
+      minLength: 3
+
+LoginDto:
+  type: object
+  required: [email, password]
+  properties:
+    email:
+      type: string
+      format: email
+    password:
+      type: string
+
+ResendVerificationDto:
+  type: object
+  required: [email]
+  properties:
+    email:
+      type: string
+      format: email
+
+VerifyEmailDto:
+  type: object
+  required: [email, code]
+  properties:
+    email:
+      type: string
+      format: email
+    code:
+      type: string
+      minLength: 6
+      maxLength: 6
+
+RequestPasswordResetDto:
+  type: object
+  required: [email]
+  properties:
+    email:
+      type: string
+      format: email
+
+ResetPasswordDto:
+  type: object
+  required: [email, token, newPassword, confirmPassword]
+  properties:
+    email:
+      type: string
+      format: email
+    token:
+      type: string
+    newPassword:
+      type: string
+      minLength: 8
+    confirmPassword:
+      type: string
+      minLength: 8
+
+ChangePasswordDto:
+  type: object
+  required: [currentPassword, newPassword, confirmPassword]
+  properties:
+    currentPassword:
+      type: string
+    newPassword:
+      type: string
+      minLength: 8
+    confirmPassword:
+      type: string
+      minLength: 8
+
+RefreshRequestDto:
+  type: object
+  properties:
+    refreshToken:
+      type: string
+
+LogoutRequestDto:
+  type: object
+  properties:
+    refreshToken:
+      type: string

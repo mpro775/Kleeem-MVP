@@ -1,4 +1,4 @@
-import axios from "axios";
+import axiosInstance from "@/shared/api/axios";
 import { API_BASE } from "@/context/config";
 
 export type OnboardingBasicPayload = {
@@ -17,7 +17,7 @@ export async function saveBasicInfo(
   token: string,
   payload: OnboardingBasicPayload
 ) {
-  const { data } = await axios.patch(
+  const { data } = await axiosInstance.patch(
     `${API_BASE}/merchants/${merchantId}/onboarding/basic`,
     payload,
     { headers: { Authorization: `Bearer ${token}` } }

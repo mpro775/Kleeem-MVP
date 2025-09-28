@@ -10,6 +10,7 @@ import OtpInputBoxes from "@/shared/ui/OtpInputBoxes";
 import { useAuth } from "@/context/AuthContext";
 import { resendVerificationAPI, verifyEmailAPI } from "@/auth/api";
 import { getAxiosMessage } from "@/shared/lib/errors";
+import { backendUserToUser } from "@/shared/utils/auth";
 
 export default function VerifyEmailPage() {
   const theme = useTheme();
@@ -29,16 +30,17 @@ export default function VerifyEmailPage() {
     const run = async () => {
       if (emailParam && codeParam && codeParam.length === 6) {
         try {
-          // بافتراض أن verifyEmailAPI يرجّع { accessToken, user }
-          const { user: freshUser, accessToken } = await verifyEmailAPI(
+          // verifyEmailAPI يرجّع { accessToken, user: BackendUser }
+          const { user: backendUser, accessToken } = await verifyEmailAPI(
             emailParam,
             codeParam
           );
+          const freshUser = backendUserToUser(backendUser);
           setAuth(
             { ...freshUser, emailVerified: true, firstLogin: true },
             accessToken
           );
-          // setAuth عندك يوجّه تلقائيًا للأونبوردنج لما firstLogin=true
+          // setAuth يوجّه تلقائيًا للأونبوردنج لما firstLogin=true
         } catch (e) {
           toast.error(getAxiosMessage(e, "تعذر تفعيل الحساب"));
         }
@@ -56,10 +58,12 @@ export default function VerifyEmailPage() {
         sessionStorage.getItem("pendingEmail") ||
         "";
 
-      const { user: freshUser, accessToken } = await verifyEmailAPI(
+      const { user: backendUser, accessToken } = await verifyEmailAPI(
         email,
         verificationCode
       );
+
+      const freshUser = backendUserToUser(backendUser);
 
       // 👈 ثبّت الجلسة فورًا (سيحدّث context + localStorage ويقود التوجيه)
       setAuth(

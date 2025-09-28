@@ -1,0 +1,337 @@
+Plan:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3c444"
+    name:
+      type: string
+      example: "Professional Plan"
+    priceCents:
+      type: integer
+      example: 2999
+    currency:
+      type: string
+      enum: [USD, SAR, AED]
+      example: "USD"
+    durationDays:
+      type: integer
+      example: 30
+    messageLimit:
+      type: integer
+      example: 10000
+    llmEnabled:
+      type: boolean
+      example: true
+    isTrial:
+      type: boolean
+      example: false
+    isActive:
+      type: boolean
+      example: true
+    description:
+      type: string
+      example: "Perfect for growing businesses"
+    features:
+      type: array
+      items:
+        type: string
+      example: ["AI Assistant", "Analytics", "Multi-channel"]
+    billingPeriod:
+      type: string
+      enum: [monthly, yearly]
+      example: "monthly"
+    trialPeriodDays:
+      type: integer
+      nullable: true
+      example: 14
+    archived:
+      type: boolean
+      example: false
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, name, priceCents, currency, durationDays, isActive, createdAt, updatedAt]
+
+SubscriptionPlan:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3c555"
+    merchantId:
+      type: string
+      example: "mrc_123"
+    tier:
+      type: string
+      enum: [free, starter, professional, enterprise]
+      example: "professional"
+    planId:
+      type: string
+      example: "plan_123"
+    startDate:
+      type: string
+      format: date-time
+    endDate:
+      type: string
+      format: date-time
+    features:
+      type: array
+      items:
+        type: string
+      example: ["AI Assistant", "Analytics", "Multi-channel"]
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, merchantId, tier, planId, startDate, createdAt, updatedAt]
+
+Category:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "64f0a2..."
+    name:
+      type: string
+    merchantId:
+      type: string
+    parent:
+      type: string
+      nullable: true
+    description:
+      type: string
+      nullable: true
+    image:
+      type: string
+      nullable: true
+    keywords:
+      type: array
+      items:
+        type: string
+    slug:
+      type: string
+    path:
+      type: string
+      example: "المأكولات/القهوة"
+    depth:
+      type: integer
+      minimum: 0
+      example: 0
+    order:
+      type: integer
+      minimum: 0
+      example: 0
+    ancestors:
+      type: array
+      items:
+        type: string
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [id, name, merchantId, slug, createdAt, updatedAt]
+
+Channel:
+  type: object
+  properties:
+    id:
+      type: string
+      example: "chn_123"
+    merchantId:
+      type: string
+      example: "mrc_123"
+    provider:
+      $ref: '#/components/schemas/ChannelProvider'
+    name:
+      type: string
+      example: "Main WhatsApp"
+    enabled:
+      type: boolean
+      example: true
+    isDefault:
+      type: boolean
+      example: false
+    config:
+      type: object
+      description: "Provider-specific settings"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [id, merchantId, provider, name]
+
+ChannelProvider:
+  type: string
+  enum: [whatsapp, telegram, web, api]
+  example: "whatsapp"
+
+Lead:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3cddd"
+    merchantId:
+      type: string
+      example: "mrc_123"
+    sessionId:
+      type: string
+      example: "sess_123456"
+    data:
+      type: object
+      additionalProperties: true
+    source:
+      type: string
+      enum: [whatsapp, web, api]
+      example: "whatsapp"
+    phoneNormalized:
+      type: string
+      example: "+966501234567"
+    name:
+      type: string
+      nullable: true
+      example: "محمد أحمد"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, merchantId, sessionId, data, source, createdAt, updatedAt]
+
+Faq:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3caaa"
+    merchantId:
+      type: string
+      example: "mrc_123"
+    question:
+      type: string
+      example: "ما هي طرق الدفع المتاحة؟"
+    answer:
+      type: string
+      example: "نقبل الدفع عبر بطاقات الائتمان والحوالات البنكية"
+    status:
+      type: string
+      enum: [active, inactive, draft]
+      example: "active"
+    errorMessage:
+      type: string
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, merchantId, question, answer, status, createdAt, updatedAt]
+
+Document:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3cbbb"
+    merchantId:
+      type: string
+      example: "mrc_123"
+    filename:
+      type: string
+      example: "policy.pdf"
+    fileType:
+      type: string
+      example: "application/pdf"
+    storageKey:
+      type: string
+      example: "docs/policy.pdf"
+    status:
+      type: string
+      enum: [pending, processing, completed, failed]
+      example: "completed"
+    errorMessage:
+      type: string
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, merchantId, filename, fileType, storageKey, status, createdAt, updatedAt]
+
+Integration:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3cccc"
+    merchantId:
+      type: string
+      example: "mrc_123"
+    provider:
+      type: string
+      enum: [shopify, woocommerce, magento, custom]
+      example: "shopify"
+    active:
+      type: boolean
+      example: true
+    accessToken:
+      type: string
+      nullable: true
+    refreshToken:
+      type: string
+      nullable: true
+    tokenType:
+      type: string
+      nullable: true
+      example: "Bearer"
+    expiresIn:
+      type: integer
+      nullable: true
+    expiresAt:
+      type: string
+      format: date-time
+      nullable: true
+    managerToken:
+      type: string
+      nullable: true
+    authorizationToken:
+      type: string
+      nullable: true
+    storeId:
+      type: string
+      nullable: true
+      example: "store_123"
+    storeUrl:
+      type: string
+      nullable: true
+      example: "https://mystore.myshopify.com"
+    scopes:
+      type: array
+      items:
+        type: string
+      example: ["read_products", "write_products"]
+    lastSync:
+      type: string
+      format: date-time
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, merchantId, provider, active, createdAt, updatedAt]

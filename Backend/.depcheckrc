@@ -1,0 +1,13 @@
+{
+  "ignores": [
+    "@nestjs/terminus",
+    "@types/*"
+  ],
+  "specials": [
+    "bin",
+    "eslint",
+    "prettier",
+    "typescript",
+    "webpack"
+  ]
+}

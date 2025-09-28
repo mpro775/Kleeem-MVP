@@ -1,0 +1,160 @@
+%% Kaleem AI — C4 Level 3: API Components (Mermaid)
+%% Last updated: 2025-09-27 19:00
+%% Professional C4 Component diagram showing NestJS modules, guards, and data flow
+%% Generated: Auto-rendered via CI/CD pipeline
+
+flowchart TD
+  %% ========== STYLING DEFINITIONS ==========
+  classDef core fill:#f8fafc,color:#334155,stroke:#475569,stroke-width:2px,rx:8px
+  classDef module fill:#f0f9ff,color:#0369a1,stroke:#0369a1,stroke-width:2px,rx:6px
+  classDef guard fill:#fff7ed,color:#7c2d12,stroke:#ea580c,stroke-width:2px,rx:6px
+  classDef service fill:#f0fdf4,color:#166534,stroke:#166534,stroke-width:2px,rx:6px
+  classDef interceptor fill:#fef3c7,color:#92400e,stroke:#f59e0b,stroke-width:2px,rx:6px
+  classDef datastore fill:#fef2f2,color:#dc2626,stroke:#dc2626,stroke-width:2px,rx:8px
+  classDef external fill:#f9fafb,color:#374151,stroke:#6b7280,stroke-width:1px,stroke-dasharray:3 3,rx:4px
+
+  %% ========== API CORE & GUARDS ==========
+  subgraph APICore["🔒 API Core & Security"]
+    subgraph Guards["🛡️ Guards & Validation"]
+      JwtAuthGuard["JWT Auth Guard<br/>Access Token Validation"]:::guard
+      ThrottlerGuard["Throttler Guard<br/>Rate Limiting per Tenant"]:::guard
+      RolesGuard["Roles Guard<br/>RBAC Permissions"]:::guard
+      IdempotencyGuard["Idempotency Guard<br/>Duplicate Prevention"]:::guard
+      ServiceTokenGuard["Service Token Guard<br/>Internal Service Auth"]:::guard
+      WebhookSignatureGuard["Webhook Signature Guard<br/>Channel Verification"]:::guard
+    end
+
+    subgraph Interceptors["⚡ Interceptors & Middleware"]
+      HttpMetricsInterceptor["HTTP Metrics Interceptor<br/>Request/Response Tracking"]:::interceptor
+      PerformanceTrackingInterceptor["Performance Tracking<br/>Latency Monitoring"]:::interceptor
+      ErrorLoggingInterceptor["Error Logging Interceptor<br/>Exception Handling"]:::interceptor
+      ValidationPipe["Validation Pipe<br/>DTO Validation"]:::interceptor
+    end
+
+    subgraph CoreServices["🔧 Core Services"]
+      ConfigService["Configuration Service<br/>Environment Management"]:::service
+      CacheService["Cache Service<br/>L1 (Memory) + L2 (Redis)"]:::service
+      MetricsService["Metrics Service<br/>Prometheus Integration"]:::service
+      EventEmitterService["Event Emitter<br/>Domain Events"]:::service
+    end
+  end
+
+  %% ========== BUSINESS MODULES ==========
+  subgraph BusinessModules["🏢 Business Modules"]
+
+    subgraph Identity["👤 Identity & Access"]
+      AuthModule["Authentication Module<br/>JWT, OAuth, Sessions"]:::module
+      UsersModule["Users Module<br/>User Management"]:::module
+      MerchantsModule["Merchants Module<br/>Multi-tenant Management"]:::module
+    end
+
+    subgraph Commerce["🛒 E-commerce Core"]
+      ProductsModule["Products Module<br/>Catalog, Inventory, Search"]:::module
+      CategoriesModule["Categories Module<br/>Product Organization"]:::module
+      OrdersModule["Orders Module<br/>Order Lifecycle, Payments"]:::module
+      OffersModule["Offers Module<br/>Promotions & Discounts"]:::module
+      PlansModule["Plans Module<br/>Subscription Management"]:::module
+    end
+
+    subgraph Communication["💬 Communication"]
+      ChannelsModule["Channels Module<br/>Multi-platform Integration"]:::module
+      MessagingModule["Messaging Module<br/>Message Processing"]:::module
+      ChatModule["Chat Module<br/>Real-time Conversations"]:::module
+      NotificationsModule["Notifications Module<br/>Push & Email"]:::module
+    end
+
+    subgraph Intelligence["🤖 AI & Intelligence"]
+      AIModule["AI Module<br/>LLM Integration"]:::module
+      VectorModule["Vector Module<br/>Semantic Search"]:::module
+      KnowledgeModule["Knowledge Module<br/>Knowledge Base"]:::module
+      InstructionsModule["Instructions Module<br/>Bot Behavior"]:::module
+    end
+
+    subgraph Integration["🔗 Integrations"]
+      IntegrationsModule["Integrations Module<br/>E-commerce Platforms"]:::module
+      WebhooksModule["Webhooks Module<br/>External Events"]:::module
+      N8nWorkflowModule["n8n Workflow Module<br/>Process Automation"]:::module
+    end
+
+    subgraph Content["📄 Content Management"]
+      DocumentsModule["Documents Module<br/>File Processing"]:::module
+      MediaModule["Media Module<br/>Image/Video Handling"]:::module
+      FAQModule["FAQ Module<br/>Frequently Asked Questions"]:::module
+    end
+
+    subgraph Analytics["📊 Analytics & Reporting"]
+      AnalyticsModule["Analytics Module<br/>Business Intelligence"]:::module
+      LeadsModule["Leads Module<br/>Customer Acquisition"]:::module
+      UsageModule["Usage Module<br/>Platform Analytics"]:::module
+    end
+  end
+
+  %% ========== DATA & STORAGE ==========
+  subgraph DataStorage["💾 Data & Storage"]
+    MongoDB[("MongoDB<br/>Primary Document Store<br/>Multi-tenant Collections")]:::datastore
+    Redis[("Redis Cluster<br/>Cache, Sessions, Rate Limiting<br/>Message Queues")]:::datastore
+    Qdrant[("Qdrant<br/>Vector Database<br/>Semantic Search Index")]:::datastore
+    MinIO[("MinIO<br/>Object Storage<br/>Media & Documents")]:::datastore
+  end
+
+  %% ========== EXTERNAL SYSTEMS ==========
+  subgraph ExternalSystems["🌐 External Systems"]
+    N8nOrchestrator["n8n Workflow Engine<br/>Business Process Automation"]:::external
+    GeminiAI["Google Gemini API<br/>LLM & Embeddings"]:::external
+    OpenAIAPI["OpenAI API<br/>Alternative AI Models"]:::external
+    TelegramAPI["Telegram Bot API<br/>Messaging Platform"]:::external
+    WhatsAppCloud["WhatsApp Cloud API<br/>Business Messaging"]:::external
+    InstagramAPI["Instagram API<br/>Social Commerce"]:::external
+    MessengerAPI["Facebook Messenger<br/>Direct Messaging"]:::external
+    SallaAPI["Salla API<br/>Saudi E-commerce"]:::external
+    ZidAPI["Zid API<br/>MENA E-commerce"]:::external
+    ShopifyAPI["Shopify API<br/>Global Platform"]:::external
+    WooCommerceAPI["WooCommerce API<br/>WordPress Stores"]:::external
+  end
+
+  %% ========== RELATIONSHIPS ==========
+
+  %% All requests flow through guards and interceptors
+  subgraph RequestFlow["🔄 Request Processing Pipeline"]
+    Client -->|HTTP Request| JwtAuthGuard
+    JwtAuthGuard -->|Token Valid| ThrottlerGuard
+    ThrottlerGuard -->|Rate OK| RolesGuard
+    RolesGuard -->|Permission OK| IdempotencyGuard
+    IdempotencyGuard -->|Unique Request| HttpMetricsInterceptor
+    HttpMetricsInterceptor -->|Track Metrics| ErrorLoggingInterceptor
+    ErrorLoggingInterceptor -->|Log Errors| ValidationPipe
+    ValidationPipe -->|Validate DTO| BusinessModules
+  end
+
+  %% Business module data dependencies
+  AuthModule -->|User Sessions| Redis
+  MerchantsModule -->|Tenant Data| MongoDB
+  ProductsModule -->|Product Catalog| MongoDB
+  ProductsModule -->|Vector Search| Qdrant
+  ProductsModule -->|Product Images| MinIO
+  CategoriesModule -->|Category Tree| MongoDB
+  OrdersModule -->|Order Lifecycle| MongoDB
+  OrdersModule -->|Payment Processing| MongoDB
+  LeadsModule -->|Lead Management| MongoDB
+  ChatModule -->|Real-time Messages| MongoDB
+  ChatModule -->|Socket Connections| Redis
+  ChannelsModule -->|Channel Config| MongoDB
+  MessagingModule -->|Message Queue| Redis
+  VectorModule -->|Vector Operations| Qdrant
+  KnowledgeModule -->|Knowledge Base| MongoDB
+  AnalyticsModule -->|Analytics Data| MongoDB
+
+  %% External integrations
+  WebhooksModule -->|Webhook Validation| WebhookSignatureGuard
+  IntegrationsModule -->|Platform Sync| ExternalSystems
+  N8nWorkflowModule -->|Workflow Execution| N8nOrchestrator
+  AIModule -->|AI Processing| GeminiAI
+  AIModule -->|Alternative AI| OpenAIAPI
+
+  %% Cross-cutting concerns
+  CacheService -->|Cache Operations| Redis
+  MetricsService -->|Metrics Collection| Prometheus
+  EventEmitterService -->|Event Publishing| Redis
+
+  %% ========== LAYOUT STYLING ==========
+  class RequestFlow,APICore,BusinessModules,DataStorage,ExternalSystems flow

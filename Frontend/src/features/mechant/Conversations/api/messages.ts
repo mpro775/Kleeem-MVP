@@ -1,9 +1,9 @@
-import axios from "@/shared/api/axios"; // تأكد من مسار الاستيراد الصحيح
 import type {
   ChannelType,
   ChatMessage,
   ConversationSession,
 } from "@/features/mechant/Conversations/type";
+import axiosInstance from "@/shared/api/axios";
 
 export async function rateMessage(
   sessionId: string,
@@ -11,7 +11,7 @@ export async function rateMessage(
   rating: number,
   feedback?: string
 ) {
-  return axios.patch(
+  return axiosInstance.patch(
     `/messages/session/${sessionId}/messages/${messageId}/rate`,
     { rating, feedback }
   );
@@ -20,20 +20,20 @@ export async function fetchConversations(
   merchantId: string,
   channel?: ChannelType
 ): Promise<ConversationSession[]> {
-  const { data } = await axios.get<{ data: ConversationSession[] }>(
+  const { data } = await axiosInstance.get<{ data: ConversationSession[] }>(
     "/messages",
     {
       params: { merchantId, channel },
     }
   );
-  return data.data;
+  return data;
 }
 
 export async function fetchWidgetSessionMessages(
   widgetSlug: string,
   sessionId: string
 ): Promise<ChatMessage[]> {
-  const { data } = await axios.get(
+  const { data } = await axiosInstance.get(
     `/messages/public/${widgetSlug}/webchat/${sessionId}`
   );
   return data?.messages ?? [];
@@ -44,13 +44,13 @@ export async function fetchSessionMessagesDashboard(
   sessionId: string,
   channel: ChannelType = "webchat"
 ): Promise<ChatMessage[]> {
-  const { data } = await axios.get<{ data: ConversationSession[] }>(
+  const { data } = await axiosInstance.get<{ data: ConversationSession[] }>(
     `/messages`,
     {
       params: { merchantId, channel },
     }
   );
-  const session = (data.data || []).find((s) => s.sessionId === sessionId);
+  const session = (data || []).find((s: ConversationSession) => s.sessionId === sessionId);
   return session?.messages ?? [];
 }
 
@@ -66,7 +66,7 @@ export async function sendMessage(payload: {
     ? `/webhooks/chat/incoming/${payload.slug}` // ✅ الموحّد
     : `/webhooks/incoming/${payload.merchantId}`; // ⛔️ قديم كتوافق
 
-  return axios.post(url, {
+  return axiosInstance.post(url, {
     sessionId: payload.sessionId,
     text: payload.messages[0].text,
     channel: payload.channel || "webchat",
@@ -76,7 +76,7 @@ export async function sendMessage(payload: {
 }
 
 export async function setSessionHandover(sessionId: string, handover: boolean) {
-  return axios.patch(`/messages/session/${sessionId}/handover`, {
+  return axiosInstance.patch(`/messages/session/${sessionId}/handover`, {
     handoverToAgent: handover,
   });
 }

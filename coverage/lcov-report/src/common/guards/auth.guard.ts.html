@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">31.57% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>6/19</span>
+                <span class='fraction'>0/19</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">23.52% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>4/17</span>
+                <span class='fraction'>0/17</span>
             </div>
         
             
@@ -108,19 +108,23 @@
 <a name='L43'></a><a href='#L43'>43</a>
 <a name='L44'></a><a href='#L44'>44</a>
 <a name='L45'></a><a href='#L45'>45</a>
-<a name='L46'></a><a href='#L46'>46</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -154,42 +158,44 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// src/common/guards/auth.guard.ts
-import {
+<span class="cstat-no" title="statement not covered" >import {</span>
   Injectable,
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
+<span class="cstat-no" title="statement not covered" >import { Reflector } from '@nestjs/core';</span>
+<span class="cstat-no" title="statement not covered" >import { JwtService } from '@nestjs/jwt';</span>
 import { Request } from 'express';
 &nbsp;
+import type { JwtPayload } from '../interfaces/jwt-payload.interface';
+&nbsp;
 @Injectable()
-export class AuthGuard implements CanActivate {
+export <span class="cstat-no" title="statement not covered" >class <span class="cstat-no" title="statement not covered" ><span class="cstat-no" title="statement not covered" >AuthGuard </span>implements CanActivate {</span></span>
 <span class="fstat-no" title="function not covered" >  constructor(</span>
     private <span class="cstat-no" title="statement not covered" >jwtService: J</span>wtService,
     private <span class="cstat-no" title="statement not covered" >reflector: R</span>eflector,
   ) {}
 &nbsp;
 <span class="fstat-no" title="function not covered" >  async </span>canActivate(context: ExecutionContext): Promise&lt;boolean&gt; {
-    const request = <span class="cstat-no" title="statement not covered" >context.switchToHttp().getRequest();</span>
+    const request = <span class="cstat-no" title="statement not covered" >context.switchToHttp().getRequest&lt;Request&gt;();</span>
     const token = <span class="cstat-no" title="statement not covered" >this.extractTokenFromHeader(request);</span>
-    
+&nbsp;
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!token) {</span>
 <span class="cstat-no" title="statement not covered" >      throw new UnauthorizedException('رمز الوصول مطلوب');</span>
     }
-    
+&nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const payload = <span class="cstat-no" title="statement not covered" >await this.jwtService.verifyAsync(token, {</span>
+      const payload = <span class="cstat-no" title="statement not covered" >await this.jwtService.verifyAsync&lt;JwtPayload&gt;(token, {</span>
         secret: process.env.JWT_SECRET,
       });
-      
+&nbsp;
       // إضافة المستخدم للطلب
 <span class="cstat-no" title="statement not covered" >      request['user'] = payload;</span>
     } catch {
 <span class="cstat-no" title="statement not covered" >      throw new UnauthorizedException('رمز الوصول غير صالح');</span>
     }
-    
+&nbsp;
 <span class="cstat-no" title="statement not covered" >    return true;</span>
   }
 &nbsp;
@@ -205,7 +211,7 @@ export class AuthGuard implements CanActivate {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-08T02:46:06.445Z
+                at 2025-09-25T21:16:27.952Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

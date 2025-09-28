@@ -101,12 +101,8 @@ export default function CartDialog({
         products,
       });
   
-      // ✅ حاول كل الأشكال المحتملة للاستجابة
-      const order =
-        res.data?.data ??        // لو عندك Response Wrapper
-        res.data?.order ??       // لو السيرفر يعيد 'order'
-        res.data ??              // لو يعيد الجسم مباشرة
-        null;
+      // الباك إند يرسل الآن: { success, data: order, requestId, timestamp }
+      const order = res.data;
   
       const id = order?._id || order?.id;
   

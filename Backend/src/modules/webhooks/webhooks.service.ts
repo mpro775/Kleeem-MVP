@@ -11,6 +11,7 @@ import { ChatGateway } from '../chat/chat.gateway';
 import { EvolutionService } from '../integrations/evolution.service';
 import { ChatMediaService } from '../media/chat-media.service';
 import { MessageService } from '../messaging/message.service';
+import { N8nForwarderService } from '../n8n-workflow/n8n-forwarder.service';
 import { OrdersService } from '../orders/orders.service';
 
 import { ChannelRepository } from './repositories/channel.repository';
@@ -57,6 +58,7 @@ export class WebhooksService {
     @Inject(WEBHOOK_REPOSITORY)
     private readonly webhooksRepo: WebhookRepository,
     private readonly ordersServices: OrdersService,
+    private readonly n8nForwarderService: N8nForwarderService,
     private readonly chatMediaService: ChatMediaService,
     private readonly evoService: EvolutionService,
     private readonly config: ConfigService,
@@ -418,22 +420,14 @@ export class WebhooksService {
       botEnabled &&
       directCallFlag
     ) {
-      const base = (
-        this.config.get<string>('N8N_BASE_URL') ||
-        this.config.get<string>('N8N_BASE') ||
-        ''
-      ).replace(/\/+$/, '');
-      const pathTpl =
-        this.config.get<string>('N8N_INCOMING_PATH') ||
-        '/webhook/ai-agent-{merchantId}';
-      const url = base + pathTpl.replace('{merchantId}', n.merchantId);
-      await (
-        await import('axios')
-      ).default.post(url, {
+      // ✅ التفويض إلى n8n عبر داخلي + HMAC/Nonce/TS (الخطوة D)
+      await this.n8nForwarderService.forward(n.merchantId, {
         merchantId: n.merchantId,
         sessionId: n.sessionId,
         channel: n.channel,
         text: n.text,
+        metadata: n.metadata, // لو تحب تمرير سياق إضافي
+        timestamp: Date.now(),
       });
     }
 

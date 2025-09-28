@@ -1,7 +1,8 @@
 // src/infra/dispatchers/dispatchers.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ChannelsModule } from 'src/modules/channels/channels.module';
+
+import { ChannelsModule } from '../../modules/channels/channels.module';
 
 import { ReplyDispatchers } from './reply-dispatchers';
 

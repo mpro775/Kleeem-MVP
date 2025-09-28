@@ -3,7 +3,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, Typography, Box, CircularProgress,
 } from "@mui/material";
-import axios from "@/shared/api/axios";
+import axiosInstance from "@/shared/api/axios";
 
 interface WebchatConnectDialogProps {
   open: boolean;
@@ -27,7 +27,7 @@ export default function WebchatConnectDialog({
   // لو ما فيه channelId، أنشيء قناة webchat افتراضية وأرجع الـ id
   const ensureChannel = async (): Promise<string> => {
     if (channelId) return channelId;
-    const { data } = await axios.post(`/merchants/${merchantId}/channels`, {
+    const { data } = await axiosInstance.post(`/merchants/${merchantId}/channels`, {
       provider: "webchat",
       isDefault: true,
       accountLabel: "Webchat",
@@ -40,7 +40,7 @@ export default function WebchatConnectDialog({
     setError(null);
     try {
       await ensureChannel();
-      await axios.patch(`/channels/${channelId}`, { enabled: true, widgetSettings: {} });
+      await axiosInstance.patch(`/channels/${channelId}`, { enabled: true, widgetSettings: {} });
       setConnected(true);
       onClose(true);
     } catch {

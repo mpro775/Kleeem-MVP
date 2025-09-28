@@ -15,6 +15,7 @@ import {
   Chip,
 } from "@mui/material";
 import { type UseFormReturn, Controller } from "react-hook-form";
+import { useErrorHandler } from "@/shared/errors";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
 import SendRoundedIcon from "@mui/icons-material/SendRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
@@ -52,6 +53,7 @@ export const SupportForm = ({
   files,
   onFilesChange,
 }: SupportFormProps) => {
+  const { handleError } = useErrorHandler();
   const {
     control,
     handleSubmit,
@@ -78,6 +80,7 @@ export const SupportForm = ({
     }
     const check = withinLimits(fileList);
     if (!check.ok) {
+      handleError(new Error(`خطأ في المرفقات: ${check.reason}`));
       alert(`خطأ في المرفقات: ${check.reason}`);
       e.target.value = ""; // Reset input
       return;

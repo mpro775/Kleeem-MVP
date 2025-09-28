@@ -1,6 +1,6 @@
 // src/features/mechant/channels/model.ts
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "@/shared/api/axios";
+import axiosInstance from "@/shared/api/axios";
 
 export type ChannelProvider =
   | "telegram"
@@ -32,11 +32,11 @@ export function useChannels(merchantId: string) {
     queryKey: ["channels", merchantId],
     queryFn: async () => {
       if (!merchantId) return [];
-      const response = await axios.get(`/merchants/${merchantId}/channels`);
+      const response = await axiosInstance.get(`/merchants/${merchantId}/channels`);
       console.log("API Response:", response);
       
-      // Handle the response structure: { success: true, data: [...] }
-      const channels = response.data?.data || response.data || [];
+      // Handle the response structure: axiosInstance normalizes to direct data
+      const channels = response.data || [];
       console.log("Extracted channels:", channels);
       
       return channels;
@@ -49,7 +49,7 @@ export function useUpdateChannelById() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, partial }: { id: string; partial: Partial<ChannelDoc> }) => {
-      const { data } = await axios.patch<ChannelDoc>(`/channels/${id}`, partial);
+      const { data } = await axiosInstance.patch<ChannelDoc>(`/channels/${id}`, partial);
       return data;
     },
     onSuccess: (_d, vars) => {
@@ -63,7 +63,7 @@ export function useDeleteChannelById() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, mode }: { id: string; mode: "disable" | "disconnect" | "wipe" }) => {
-      const { data } = await axios.delete(`/channels/${id}`, { params: { mode } });
+      const { data } = await axiosInstance.delete(`/channels/${id}`, { params: { mode } });
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["channels"] }),
@@ -74,7 +74,7 @@ export function useConnectChannelById() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload?: any }) => {
-      const { data } = await axios.post(`/channels/${id}/actions/connect`, payload ?? {});
+      const { data } = await axiosInstance.post(`/channels/${id}/actions/connect`, payload ?? {});
       return data; // {mode:'webhook'|...}
     },
     onSuccess: (_d, vars) => {
@@ -89,7 +89,7 @@ export function useChannelStatus(id?: string) {
     queryKey: ["channel", id, "status"],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await axios.get<{ status: string; details?: any }>(`/channels/${id}/status`);
+      const { data } = await axiosInstance.get<{ status: string; details?: any }>(`/channels/${id}/status`);
       return data;
     },
     enabled: !!id,

@@ -30,6 +30,7 @@ import {
   Cancel,
 } from "@mui/icons-material";
 import { useAuth } from "@/context/AuthContext";
+import { useErrorHandler } from "@/shared/errors";
 
 import SectionCard from "@/features/mechant/widget-config/ui/SectionCard";
 import { BrandSwatches } from "@/features/mechant/storefront-theme/ui/BrandSwatches";
@@ -65,6 +66,7 @@ const ALLOWED_BRAND_DARK = [
 export default function ChatWidgetConfigSinglePage() {
   const theme = useTheme();
   const { user } = useAuth();
+  const { handleError } = useErrorHandler();
   const merchantId = user?.merchantId ?? "";
   const ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
   const WIDGET_HOST = ORIGIN;
@@ -111,7 +113,10 @@ export default function ChatWidgetConfigSinglePage() {
     if (!merchantId) return;
     getMerchantInfo(merchantId)
       .then((info) => setPublicSlug(info.publicSlug))
-      .catch(() => setPublicSlug(undefined));
+      .catch((e) => {
+        handleError(e);
+        setPublicSlug(undefined);
+      });
   }, [merchantId]);
 
   const effective = draft ?? settings;
@@ -176,7 +181,8 @@ export default function ChatWidgetConfigSinglePage() {
       setSettings({ ...draft, brandColor: safeBrand });
       setDraft(null);
       setShowSuccess(true);
-    } catch {
+    } catch (e) {
+      handleError(e);
       setApiError("فشل حفظ الإعدادات. حاول مجددًا.");
     }
   };

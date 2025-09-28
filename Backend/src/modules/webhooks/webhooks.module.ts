@@ -13,6 +13,7 @@ import { ChatMediaModule } from '../media/chat-media.module';
 import { MerchantsModule } from '../merchants/merchants.module';
 import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
 import { MessagingModule } from '../messaging/message.module';
+import { N8nWorkflowModule } from '../n8n-workflow/n8n-workflow.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { OrdersModule } from '../orders/orders.module';
 
@@ -39,6 +40,7 @@ import { WhatsappQrWebhookController } from './whatsapp-qr.webhook.controller';
     ChatMediaModule,
     IntegrationsModule,
     OutboxModule,
+    N8nWorkflowModule,
     ChatModule,
     // وحدات الاعتمادية
     NotificationsModule,

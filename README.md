@@ -1,280 +1,190 @@
-**النسخة:** 1.0  
-**التاريخ:** 2025-08-15
 
-منصّة **Kleem** توفّر دردشة ذكية **Omnichannel** للتجّار العرب (واتساب + تيليجرام + ويب شات)، بذكاء **Intent-first** (فهم النيّة قبل اختيار المسار) و**Truth‑Before‑Generation** (لا نرد على أسئلة المنتجات إلا بعد الرجوع لكتالوج حقيقي). تدعم متجرًا مصغّرًا (Catalog + Chat‑to‑Buy)، تدريب المعرفة من ملفات Word/Excel/PDF وروابط وFAQs، وفهم الصوت/النص داخل الصور (ASR/OCR).
+# Kaleem AI — Monorepo Overview
 
----
-
-## المحتوى
-- [المزايا](#المزايا)
-- [البنية المختصرة](#البنية-المختصرة)
-- [مخطط بسيط](#مخطط-بسيط)
-- [تشغيل سريع بـ Docker](#تشغيل-سريع-ب-docker)
-- [تشغيل يدوي (بدون Docker)](#تشغيل-يدوي-بدون-docker)
-- [المتغيرات البيئية (.env)](#المتغيرات-البيئية-env)
-- [هيكل المجلدات](#هيكل-المجلدات)
-- [n8n / orchestrator](#n8n--orchestrator)
-- [اختبارات وجودة](#اختبارات-وجودة)
-- [تغذية بيانات أولية (اختياري)](#تغذية-بيانات-أولية-اختياري)
-- [أمان مختصر](#أمان-مختصر)
-- [أشهر الأعطال وحلولها](#أشهر-الأعطال-وحلولها)
-- [المساهمة](#المساهمة)
-- [الترخيص](#الترخيص)
+> Multi‑tenant SaaS for AI‑powered commerce (Arabic‑first).  
+> **Stack:** NestJS (Backend) • React/Vite (Dashboard & Storefront Builder) • MongoDB • Redis • Qdrant (vector DB) • MinIO (object storage) • n8n (workflows) • Prometheus+Grafana+Loki (observability) • Docker Compose
 
 ---
 
-## المزايا
-- **Omnichannel Inbox**: واتساب + تيليجرام + ويب شات من لوحة واحدة (V1)، وخارطة طريق لإنستغرام/فيسبوك.
-- **Intent‑first**: لا نبحث في المنتجات إلا إذا فهمنا أن السؤال عنها.
-- **Truth‑Before‑Generation**: إجابات المنتجات **ملزَم** أن تمر عبر أداة البحث الدلالي (اسم/سعر/رابط/بدائل).
-- **متجر مصغّر**: كتالوج خفيف + زر **Chat‑to‑Buy** يفتح المحادثة مع تمرير سياق المنتج وتسجيل **نية الشراء**.
-- **معرفة وتدريب**: رفع Word/Excel/PDF وروابط وFAQs؛ فهرسة وبحث دلالي.
-- **وسائط**: ASR (تحويل صوت لنص) + OCR (نص داخل الصور) + قراءة محتوى الملفات.
-- **ذاكرة المحادثة (V1)**: استرجاع آخر **10** محادثات لكل عميل؛ تطويرها لملف عميل كامل في V2.
-- **تحليلات**: زمن الاستجابة، الأسئلة المتكررة، التقييمات، الأسئلة غير المجابة (missing_response).
+## 1) What’s in this repo?
+
+- **backend/** — NestJS modular monolith
+  - `src/modules/*` (auth, products, orders, leads, webhooks, analytics, integrations, vector, messaging, documents, etc.)
+  - Swagger at **/api/docs** (OpenAPI 3)
+- **frontend/** — React/Vite merchant dashboard & builder
+- **devops/** — Docker Compose, Prometheus/Grafana/Loki, cAdvisor, Node Exporter, Alertmanager
+- **n8n/** — workflows for AI agent, embeddings, analytics
+- **docs/** — technical docs (setup, deployment, architecture, api, troubleshooting, style, contributing, review process, performance testing)
+
+> If you’re only looking for **how to run** Kaleem locally, jump to **Quick Start**.
 
 ---
 
-## البنية المختصرة
-- **Frontend**: React + Vite + MUI (لوحة التاجر + ودجت الويب شات + متجر مصغّر).
-- **Backend API**: NestJS/TypeScript (Auth/RBAC، Conversations، Products، Knowledge، Storefront، Integrations).
-- **Orchestrator (n8n)**: فهم النيّة، Tool‑gating، Quality Gate، Analytics Hook.
-- **Datastores**: MongoDB (المعاملات)، Qdrant (المتجهات)، MinIO (ملفات)، Redis (كاش)، RabbitMQ (رسائل).
+## 2) Requirements
 
-منافذ افتراضية شائعة:  
-API: `3000` — Frontend: `5173` — n8n: `5678` — Mongo: `27017` — Redis: `6379` — RabbitMQ: `5672/15672` — Qdrant: `6333` — MinIO: `9000/9001`
+- Node.js 20+ and npm 10+
+- Docker & Docker Compose
+- Git
+- (Optional) pnpm 9+
+- For Mac/Windows: make sure Docker has ≥ 8 GB RAM assigned.
 
 ---
 
-## مخطط بسيط
-> (Mermaid للتصوّر السريع — اختياري)
+## 3) Environment Variables
 
-```mermaid
-flowchart LR
-  A[Client: WhatsApp/Telegram/WebChat] -->|Message| B(API: NestJS)
-  B -->|Intent Router| C[n8n Orchestrator]
-  C -->|Product intent| D[searchProducts]
-  C -->|Knowledge intent| E[searchKnowledge]
-  D --> Q[(Qdrant)]
-  E --> M[MongoDB Knowledge]
-  B --> R[(Redis)]
-  B --> O[(MinIO)]
-  B --> X[(MongoDB)]
-  B --> AMQ[(RabbitMQ)]
-  B <--> FE[Frontend Admin/Widget]
-  FE -->|Embed| A
+Create a `.env` in **backend/** and **frontend/** (examples below).
+
+**backend/.env (example):**
 ```
-
----
-
-## تشغيل سريع بـ Docker
-
-> **ملاحظة:** تأكد أن ملفات `.env` موجودة ومضبوطة (راجع القسم التالي).
-
-```bash
-# بناء وتشغيل
-docker compose up -d --build
-
-# متابعة السجلات (خدمة معيّنة)
-docker compose logs -f api
-```
-
-الوصول:
-- **Backend API**: http://localhost:3000  
-- **Frontend Admin**: http://localhost:5173  
-- **n8n**: http://localhost:5678  
-- **Qdrant**: http://localhost:6333  
-- **MinIO Console**: http://localhost:9001
-
-> إن لم تُطابق هذه المنافذ بيئتك، راجع `docker-compose.yml` أو استخدم `docker-compose.override.yml`.
-
----
-
-## تشغيل يدوي (بدون Docker)
-
-### المتطلبات
-- Node.js 20 LTS، pnpm 9+ (أو yarn/npm)، Python 3.10+ (لخدمات الاستخراج)، Git
-- MongoDB 6+، Redis 7+، Qdrant 1.8+، MinIO أو S3 متوافق، RabbitMQ 3.12+
-
-### Backend
-```bash
-cd backend
-pnpm install
-cp .env.example .env
-pnpm start:dev
-```
-
-### Frontend
-```bash
-cd frontend
-pnpm install
-cp .env.example .env
-pnpm dev
-```
-
-### n8n
-- شغّل n8n على `http://localhost:5678`
-- استورد ملف الـ workflow
-- اضبط الاعتمادات وقيم البيئة (روابط الـ API، أسرار التوقيع، …إلخ)
-
----
-
-## المتغيرات البيئية (.env)
-
-> **لا تُرفَع ملفات `.env` للمستودع**. استخدم نسخة `.env.example` كمرجع فقط.
-
-أمثلة رئيسية (بدون أسرار):
-
-```dotenv
-# Core
-NODE_ENV=development
+# App
 PORT=3000
+NODE_ENV=development
+FRONTEND_ORIGIN=http://localhost:5173
 
-# Mongo / Redis / RabbitMQ
-MONGODB_URI=mongodb://admin:CHANGE_ME@mongo:27017/kleem?authSource=admin
+# Database
+MONGO_URI=mongodb://mongo:27017/kaleem
+MONGO_DB=kaleem
+
+# Cache / Queue
 REDIS_URL=redis://redis:6379
-# استخدم vhost واحد متسق (مثلاً /kleem)
-AMQP_VHOST=/kleem
-RABBIT_URL=amqp://kleem:CHANGE_ME@rabbitmq:5672/kleem
 
-# Vectors / Files
+# Vector DB
 QDRANT_URL=http://qdrant:6333
+QDRANT_API_KEY=
+
+# Object Storage
 MINIO_ENDPOINT=minio
 MINIO_PORT=9000
-MINIO_ACCESS_KEY=CHANGE_ME
-MINIO_SECRET_KEY=CHANGE_ME
-MINIO_USE_SSL=false
-MINIO_BUCKET=kleem-files
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_BUCKET=kaleem
 
-# Auth / JWT (RS256 مُستحسن)
-JWT_ALGO=RS256
-JWT_PRIVATE_KEY_PATH=./secrets/jwtRS256.key
-JWT_PUBLIC_KEY_PATH=./secrets/jwtRS256.key.pub
-ACCESS_TOKEN_TTL=1800
-REFRESH_TOKEN_TTL=2592000
+# Observability
+PROMETHEUS_ENABLED=true
+OTEL_EXPORTER_OTLP_ENDPOINT=
 
-# Channels / Integrations
-TELEGRAM_BOT_TOKEN=CHANGE_ME
-WHATSAPP_API_BASE=https://graph.facebook.com/v19.0
-WHATSAPP_WEBHOOK_SECRET=CHANGE_ME
+# Security
+JWT_ACCESS_TTL=900          # 15m
+JWT_REFRESH_TTL=604800      # 7d
+JWT_SECRET=change-me
+JWT_REFRESH_SECRET=change-me-too
 
-# Salla / Zid / Shopify / WooCommerce (صحّح المسارات لكل مزوّد)
-SALLA_CLIENT_ID=CHANGE_ME
-SALLA_CLIENT_SECRET=CHANGE_ME
-SALLA_REDIRECT_URI=https://YOUR_DOMAIN/api/auth/salla/callback
-SALLA_WEBHOOK_URL=https://YOUR_DOMAIN/api/auth/salla/webhook
-ZID_CLIENT_ID=CHANGE_ME
-ZID_CLIENT_SECRET=CHANGE_ME
-ZID_REDIRECT_URI=https://YOUR_DOMAIN/api/auth/zid/callback
-ZID_WEBHOOK_URL=https://YOUR_DOMAIN/api/auth/zid/webhook
-
-# Orchestrator / AI
-N8N_BASE=http://n8n:5678
-N8N_INCOMING_PATH=/webhook/ai-agent
-N8N_SIGNING_SECRET=CHANGE_ME
-EMBEDDING_SERVICE_URL=http://embed:8000
-EXTRACTOR_URL=http://extractor:8001
-
-# Public URLs / CORS
-API_PUBLIC_URL=http://localhost:3000
-WEB_BASE_URL=http://localhost:5173
-FRONTEND_ORIGIN=http://localhost:5173
+# CORS
+CORS_ALLOWED_ORIGINS=http://localhost:5173
 ```
 
-**توليد مفاتيح JWT (RS256):**
+**frontend/.env (example):**
+```
+VITE_API_BASE_URL=http://localhost:3000/api
+VITE_WS_URL=ws://localhost:3000
+VITE_APP_NAME=Kaleem
+```
+
+---
+
+## 4) Quick Start (Local)
+
+> One‑command stack with Docker Compose (MongoDB, Redis, Qdrant, MinIO, Prometheus, Grafana, Loki, n8n).
+
 ```bash
-mkdir -p backend/secrets
-openssl genrsa -out backend/secrets/jwtRS256.key 2048
-openssl rsa -in backend/secrets/jwtRS256.key -pubout -out backend/secrets/jwtRS256.key.pub
+# From repo root
+docker compose -f devops/docker-compose.yml up -d
+
+# Backend (NestJS)
+cd backend
+npm install
+npm run start:dev     # Swagger at http://localhost:3000/api/docs
+
+# Frontend (React/Vite)
+cd ../frontend
+npm install
+npm run dev           # Dashboard at http://localhost:5173
 ```
 
----
+### Default Dev URLs
+- API base: `http://localhost:3000/api`
+- Swagger: `http://localhost:3000/api/docs`
+- Dashboard: `http://localhost:5173`
+- Grafana: `http://localhost:3001`
+- Prometheus: `http://localhost:9090`
+- Loki: `http://localhost:3100`
+- n8n: `http://localhost:5678`
 
-## هيكل المجلدات
-```
-root/
-├─ backend/                # NestJS API (auth, conversations, products, knowledge, storefront, integrations, analytics)
-│  ├─ src/
-│  ├─ test/
-│  └─ README.md
-├─ frontend/               # React + Vite + MUI (admin + widget + micro storefront)
-│  └─ README.md
-├─ n8n/                    # workflows / credentials (محليًا فقط)
-├─ docs/                   # وثائق (SRS/Architecture/Security/…)
-└─ docker-compose.yml
-```
-
-**تضمين الودجت في متجر خارجي (مثال):**
-```html
-<script defer src="https://cdn.kleem.dev/widget.js"
-        data-kleem-merchant="MERCHANT_ID"
-        data-primary-color="#FF8500"
-        data-language="ar"></script>
-```
+> **Credentials** are configured via `.env` and docker secrets. Never commit real secrets.
 
 ---
 
-## n8n / orchestrator
-- **Intent‑first Router**: يوجّه السؤال إلى مسار المنتجات أو المعرفة أو التصعيد.
-- **Tool‑gating للمنتجات**: يمنع إرسال رد منتج بدون استدعاء أداة البحث الدلالي بنجاح.
-- **Quality Gate**: يلتقط الردود غير الكافية ويضيفها لقائمة **الأسئلة غير المجابة** للمراجعة.
-- **Analytics Hook**: يرسل أحداث (سؤال/رد/قناة/زمن/تقييم) للتحليلات.
+## 5) Project Conventions
+
+- **TypeScript everywhere** (strict mode).
+- **Clean Modular Architecture**: each feature under `src/modules/<feature>` with DTOs, services, controllers, repositories.
+- **Testing**: Jest unit & e2e (Playwright for flows).
+- **Lint/Format**: ESLint + Prettier + import order. See `docs/CODE_STYLE.md`.
+- **Commits**: Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`…).
 
 ---
 
-## اختبارات وجودة
-```bash
-# Backend
-pnpm test           # وحدات
-pnpm test:cov       # تغطية
-pnpm test:e2e       # تكامل
-pnpm lint && pnpm format && pnpm typecheck
-```
+## 6) Key Modules (Backend)
+
+- **auth**: JWT access/refresh, rotation, blacklist on Redis, logout & revoke, session guard, roles/permissions.
+- **products**: multi‑language fields, indexing, filtering, compatibility by car model, vector search hooks.
+- **orders**: checkout flow, status transitions, webhooks for channels, saga/outbox for reliability.
+- **vector**: embedding service integration, Qdrant collections, upserts, hybrid search endpoints.
+- **webhooks**: signature verification guard, replay‑attack prevention, per‑merchant per‑channel secrets.
+- **analytics**: Prometheus metrics, business counters (orders_created_total…), latency histograms.
+- **documents**: MinIO storage, PDF/Excel chunking, metadata, ingestion to vectors.
+- **messaging**: Telegram/WhatsApp/IG/FB connectors (via integrations), rate limiting, normalization.
 
 ---
 
-## تغذية بيانات أولية (اختياري)
-- فعّل العلم `ALLOW_SEED=true` مؤقتًا ثم استدعِ سكربت البذور أو endpoint مخصص
-  لإنشاء أدمن (مثلاً `admin@kaleem.com`). **أعد تعطيله** بعد الاستخدام.
+## 7) Observability
+
+- **HTTP metrics** via Nest interceptors (latency, status codes, errors).
+- **Logs**: Pino → Loki (via Promtail).
+- **Dashboards**: Grafana (APIs latency, cache hit ratio, DB ops, memory).
+- Health endpoints: `/api/health` (liveness), `/api/ready` (readiness), `/metrics` (Prometheus).
 
 ---
 
-## أمان مختصر
-- **لا تضع أسرارًا في المستودع**؛ استخدم Vault/Secret Manager إن أمكن.
-- **توقيع Webhook + طابع زمني** + **Idempotency‑Key** على العمليات الحساسة.
-- **CSP/CSRF/XSS**: تفعيل حماية الواجهة (Helmet، تنظيف HTML، SameSite).
-- فحص الملفات (AV) للملفات المرفوعة، وأنواع/أحجام **Allow‑list** فقط.
-- تدوير دوري للأسرار والمفاتيح، وتحديد معدلات (Rate‑limits) لكل قناة/مستخدم/تاجر.
+## 8) Security
+
+- **CORS whitelist** (no wildcard in prod).
+- **Helmet + CSP** (tuned per channel).
+- **JWT best practices** (short access TTL, rotated refresh, blacklist on logout).
+- **Webhook signature guard** per merchant & per channel; constant‑time comparison; nonce cache.
+- **Rate limits** on public endpoints; input validation with class‑validator (i18n errors).
 
 ---
 
-## أشهر الأعطال وحلولها
+## 9) Deployment (Brief)
 
-**1) `getaddrinfo ENOTFOUND api.kaleem-ai`**  
-استخدم **اسم خدمة Docker** بدل الدومين داخل الشبكة (مثل `api`) أو فعّل DNS/hosts بشكل صحيح. تأكد من `API_PUBLIC_URL` و `N8N_BASE` ضمن نفس الشبكة/المجال.
-
-**2) RabbitMQ vhost mismatch**  
-وحّد `RABBIT_URL` و`AMQP_VHOST` (مثال كلاهما على `/kleem`)؛ وأنشئ الـ vhost في RabbitMQ وامنح صلاحيات المستخدم عليه.
-
-**3) Mongo credentials mismatch**  
-تأكد أن `MONGODB_URI` يطابق اسم المستخدم/كلمة المرور المعرّفة لمحرك Mongo (init أو Secrets).
-
-**4) مزوّدي المتاجر (Salla/Zid)**  
-صحّح `*_REDIRECT_URI` و `*_WEBHOOK_URL` لكل مزوّد (لا تخلط المسارات بينهما).
-
-**5) عناوين IP صلبة**  
-استبدلها بأسماء خدمات Docker (`mongo`, `redis`, `qdrant`, `minio`, `rabbitmq`, `n8n`) أو دومينات رسمية.
+- Build images using multi‑stage Dockerfiles.
+- Push to registry.
+- Provision VPS with Docker + compose v2.
+- Configure domain & TLS (reverse proxy).
+- Bring up stack: `docker compose -f devops/docker-compose.yml up -d`.
+- Run migrations & seed scripts if any.
+- Verify health, metrics, dashboards.
+- Full guide: see `docs/DEPLOYMENT.md`.
 
 ---
 
-## المساهمة
-- **Conventional Commits**:  
-  `feat: add omnichannel inbox`  
-  `fix(auth): handle token rotation`  
-  `chore(deps): update qdrant client`
-- قبل أي PR: **lint/format/typecheck/tests**، مع لقطات للشاشة لتغييرات الواجهة.
+## 10) Documentation Map
+
+All detailed docs live in **/docs**:
+
+- `SETUP.md` — local & production setup (step‑by‑step).
+- `ARCHITECTURE.md` — modules, flows, diagrams.
+- `API.md` — endpoints, auth, pagination (cursor), error envelope, webhooks contracts.
+- `DEPLOYMENT.md` — CI/CD, environments, DNS/TLS, backups.
+- `TROUBLESHOOTING.md` — common issues & fixes.
+- `CODE_STYLE.md` — ESLint/Prettier rules & examples.
+- `CONTRIBUTING.md` — PR flow, branching model.
+- `REVIEW_CHECKLIST.md` — code review process.
+- `PERFORMANCE_TESTING.md` — k6 scenarios & benchmarks template.
 
 ---
 
-## الترخيص
-© Kleem. جميع الحقوق محفوظة. (أدرج رخصة مناسبة لاحقًا إن لزم.)
+## 11) Licensing & Credits
+
+© Kaleem AI. Internal repository. See LICENSE if present.

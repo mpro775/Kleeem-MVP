@@ -1,11 +1,13 @@
 import { Box, Paper, Typography, Tabs, Tab, Chip } from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
+import { useErrorHandler } from "@/shared/errors";
 import LinksTab from "@/features/mechant/knowledge/ui/LinksTab";
 import FaqsTab from "@/features/mechant/knowledge/ui/FaqsTab";
 import { useState } from "react";
 
 export default function KnowledgePage() {
   const { user } = useAuth();
+  const { handleError } = useErrorHandler();
   const merchantId = user?.merchantId;
   const [tab, setTab] = useState(0);
 

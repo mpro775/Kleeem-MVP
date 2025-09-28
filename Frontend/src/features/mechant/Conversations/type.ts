@@ -1,7 +1,7 @@
 // types/chat.ts
 
-export type ChannelType = "whatsapp" | "telegram" | "webchat" | "instagram" | "other";
-export type Role = "customer" | "bot" | "agent" | "system";
+export type ChannelType = "whatsapp" | "telegram" | "webchat";
+export type Role = "customer" | "bot" | "agent";
 
 // types/chat.ts
 export interface ChatMessage {
@@ -10,7 +10,7 @@ export interface ChatMessage {
   timestamp: string; // ISO date string
   metadata?: Record<string, unknown>;
   _id?: string; // أضف _id لو متوفر من الباك اند
-  rating?: number | null; // 0 = سيء، 1 = جيد
+  rating?: 0 | 1 | null; // 0 = سيء، 1 = جيد
   feedback?: string | null; // تعليق التاجر
 
 

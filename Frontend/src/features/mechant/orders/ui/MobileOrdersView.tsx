@@ -6,7 +6,6 @@ import {
   Typography,
   Chip,
   Button,
-  Box,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import { format } from "date-fns";

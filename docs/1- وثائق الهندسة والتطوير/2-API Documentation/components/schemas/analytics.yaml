@@ -1,0 +1,318 @@
+Message:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3c666"
+    role:
+      type: string
+      enum: [user, assistant, system]
+      example: "user"
+    text:
+      type: string
+      example: "مرحبا، كيف يمكنني مساعدتك اليوم؟"
+    timestamp:
+      type: string
+      format: date-time
+    metadata:
+      type: object
+      additionalProperties: true
+    keywords:
+      type: array
+      items:
+        type: string
+      example: ["تحية", "مساعدة"]
+    rating:
+      type: integer
+      minimum: 1
+      maximum: 5
+      nullable: true
+    feedback:
+      type: string
+      nullable: true
+    ratedBy:
+      type: string
+      nullable: true
+    ratedAt:
+      type: string
+      format: date-time
+      nullable: true
+    merchantId:
+      type: string
+      example: "mrc_123"
+    sessionId:
+      type: string
+      example: "sess_123456"
+    transport:
+      type: string
+      enum: [whatsapp, telegram, web]
+      example: "whatsapp"
+    channel:
+      type: string
+      example: "chn_123"
+    handoverToAgent:
+      type: boolean
+      example: false
+    messages:
+      type: array
+      items:
+        type: string
+      example: ["msg_1", "msg_2"]
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, role, text, timestamp, merchantId, createdAt, updatedAt]
+
+MissingResponse:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3c777"
+    merchant:
+      type: string
+      example: "mrc_123"
+    channel:
+      type: string
+      example: "chn_123"
+    question:
+      type: string
+      example: "ما هي أسعار الشحن؟"
+    botReply:
+      type: string
+      nullable: true
+      example: "آسف، لم أتمكن من فهم سؤالك"
+    sessionId:
+      type: string
+      example: "sess_123456"
+    aiAnalysis:
+      type: string
+      nullable: true
+    customerId:
+      type: string
+      example: "+966501234567"
+    type:
+      type: string
+      enum: [unanswered, unclear, product_related]
+      example: "unanswered"
+    resolved:
+      type: boolean
+      example: false
+    resolvedAt:
+      type: string
+      format: date-time
+      nullable: true
+    resolvedBy:
+      type: string
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, merchant, channel, question, createdAt, updatedAt]
+
+KleemMissingResponse:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3c888"
+    channel:
+      type: string
+      example: "chn_123"
+    question:
+      type: string
+      example: "كيف يمكنني إعادة طلبي؟"
+    botReply:
+      type: string
+      nullable: true
+    sessionId:
+      type: string
+      nullable: true
+      example: "sess_123456"
+    customerId:
+      type: string
+      nullable: true
+      example: "+966501234567"
+    resolved:
+      type: boolean
+      example: false
+    manualReply:
+      type: string
+      nullable: true
+    category:
+      type: string
+      nullable: true
+      example: "returns"
+    aiAnalysis:
+      type: string
+      nullable: true
+    sourceId:
+      type: string
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, channel, question, createdAt, updatedAt]
+
+AnalyticsEvent:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3c999"
+    merchantId:
+      type: string
+      example: "mrc_123"
+    type:
+      type: string
+      enum: [message_sent, message_received, order_created, user_interaction]
+      example: "message_sent"
+    channel:
+      type: string
+      example: "chn_123"
+    payload:
+      type: object
+      additionalProperties: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, merchantId, type, channel, createdAt, updatedAt]
+
+Stats:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3cfff"
+    merchantId:
+      type: string
+      example: "mrc_123"
+    period:
+      type: string
+      enum: [daily, weekly, monthly, yearly]
+      example: "daily"
+    date:
+      type: string
+      format: date
+      example: "2025-09-26"
+    productCount:
+      type: integer
+      example: 150
+    messagesByChannel:
+      type: object
+      additionalProperties:
+        type: integer
+      example:
+        whatsapp: 245
+        telegram: 89
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, merchantId, period, date, createdAt, updatedAt]
+
+UnavailableProduct:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3c000"
+    merchant:
+      type: string
+      example: "mrc_123"
+    channel:
+      type: string
+      example: "chn_123"
+    productName:
+      type: string
+      example: "Premium Coffee - Out of Stock"
+    question:
+      type: string
+      example: "هل لديكم قهوة بريميوم متوفرة؟"
+    botReply:
+      type: string
+      example: "آسف، هذا المنتج غير متوفر حالياً"
+    sessionId:
+      type: string
+      example: "sess_123456"
+    customerId:
+      type: string
+      example: "+966501234567"
+    context:
+      type: string
+      nullable: true
+    resolved:
+      type: boolean
+      example: false
+    manualReply:
+      type: string
+      nullable: true
+    category:
+      type: string
+      nullable: true
+      example: "availability"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, merchant, channel, productName, question, createdAt, updatedAt]
+
+Notification:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3ceee"
+    userId:
+      type: string
+      example: "user_123"
+    merchantId:
+      type: string
+      example: "mrc_123"
+    type:
+      type: string
+      enum: [info, warning, error, success]
+      example: "info"
+    title:
+      type: string
+      example: "تحديث هام"
+    body:
+      type: string
+      example: "تم تحديث نظامك بنجاح"
+    data:
+      type: object
+      additionalProperties: true
+    severity:
+      type: string
+      enum: [low, medium, high, critical]
+      example: "medium"
+    read:
+      type: boolean
+      example: false
+    readAt:
+      type: string
+      format: date-time
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, userId, merchantId, type, title, body, severity, read, createdAt, updatedAt]

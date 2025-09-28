@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/56</span>
+                <span class='fraction'>0/57</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/46</span>
+                <span class='fraction'>0/47</span>
             </div>
         
             
@@ -199,11 +199,15 @@
 <a name='L134'></a><a href='#L134'>134</a>
 <a name='L135'></a><a href='#L135'>135</a>
 <a name='L136'></a><a href='#L136'>136</a>
-<a name='L137'></a><a href='#L137'>137</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -338,8 +342,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// src/modules/merchants/services/prompt-builder.service.ts
 <span class="cstat-no" title="statement not covered" >import { Injectable } from '@nestjs/common';</span>
 <span class="cstat-no" title="statement not covered" >import * as Handlebars from 'handlebars';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >import { InstructionsService } from '../../instructions/instructions.service'; </span>// ← جديد
+<span class="cstat-no" title="statement not covered" >import { MAX_INSTRUCTION_LENGTH } from '../constants';</span>
 import { MerchantDocument } from '../schemas/merchant.schema';
-<span class="cstat-no" title="statement not covered" >import { InstructionsService } from 'src/modules/instructions/instructions.service'; </span>// ← جديد
 &nbsp;
 const MANDATORY_TOOLING = <span class="cstat-no" title="statement not covered" >[</span>
   // الأدوات:
@@ -380,7 +386,7 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
     // قصّ/حِدّ: حتى 5 تعليمات × 80 حرف
     const limited = <span class="cstat-no" title="statement not covered" >customInstructions</span>
       .slice(0, 5)
-      .map(<span class="fstat-no" title="function not covered" >(s</span>) =&gt; <span class="cstat-no" title="statement not covered" >String(s).slice(0, 80))</span>;
+      .map(<span class="fstat-no" title="function not covered" >(s</span>) =&gt; <span class="cstat-no" title="statement not covered" >String(s).slice(0, MAX_INSTRUCTION_LENGTH))</span>;
 &nbsp;
     const lines: string[] = <span class="cstat-no" title="statement not covered" >[];</span>
 <span class="cstat-no" title="statement not covered" >    lines.push(</span>
@@ -393,20 +399,20 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
     }
 &nbsp;
     // ===== قنوات خدمة العملاء (تظهر فقط عند توفرها) =====
-  const normWa = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(v</span>?: string) =&gt; {</span>
-    const s = <span class="cstat-no" title="statement not covered" >(v || '').trim();</span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!s) <span class="cstat-no" title="statement not covered" >return '';</span></span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (/^https?:\/\/(wa\.me|(?:www\.)?whatsapp\.com)\//i.test(s)) <span class="cstat-no" title="statement not covered" >return s;</span></span>
-    const digits = <span class="cstat-no" title="statement not covered" >s.replace(/\D/g, '');</span>
-<span class="cstat-no" title="statement not covered" >    return digits ? `https://wa.me/${digits}` : '';</span>
-  };
+    const normWa = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(v</span>?: string) =&gt; {</span>
+      const s = <span class="cstat-no" title="statement not covered" >(v || '').trim();</span>
+<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (!s) <span class="cstat-no" title="statement not covered" >return '';</span></span>
+<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (/^https?:\/\/(wa\.me|(?:www\.)?whatsapp\.com)\//i.test(s)) <span class="cstat-no" title="statement not covered" >return s;</span></span>
+      const digits = <span class="cstat-no" title="statement not covered" >s.replace(/\D/g, '');</span>
+<span class="cstat-no" title="statement not covered" >      return digits ? `https://wa.me/${digits}` : '';</span>
+    };
 &nbsp;
-  const waLink = <span class="cstat-no" title="statement not covered" >normWa(customerServiceWhatsapp);</span>
-<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (customerServicePhone || waLink) {</span>
-<span class="cstat-no" title="statement not covered" >    lines.push('قنوات خدمة العملاء (استخدمها عندما يطلب العميل التواصل):');</span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (customerServicePhone) <span class="cstat-no" title="statement not covered" >lines.push(`- الهاتف: ${customerServicePhone}`);</span></span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (waLink) <span class="cstat-no" title="statement not covered" >lines.push(`- واتساب: ${waLink}`);</span></span>
-  }
+    const waLink = <span class="cstat-no" title="statement not covered" >normWa(customerServiceWhatsapp);</span>
+<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (customerServicePhone || waLink) {</span>
+<span class="cstat-no" title="statement not covered" >      lines.push('قنوات خدمة العملاء (استخدمها عندما يطلب العميل التواصل):');</span>
+<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (customerServicePhone) <span class="cstat-no" title="statement not covered" >lines.push(`- الهاتف: ${customerServicePhone}`);</span></span>
+<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (waLink) <span class="cstat-no" title="statement not covered" >lines.push(`- واتساب: ${waLink}`);</span></span>
+    }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (includeClosingPhrase) <span class="cstat-no" title="statement not covered" >lines.push(`ختام: ${closingText}`);</span></span>
 &nbsp;
@@ -452,7 +458,7 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
 &nbsp;
     // تعليمات إضافية من penalties
     const penalties = <span class="cstat-no" title="statement not covered" >await this.instructionsSvc.getActiveInstructions(</span>
-      m.id.toString(),
+      String(m._id),
     );
     const penaltyLines = <span class="cstat-no" title="statement not covered" >penalties.map(<span class="fstat-no" title="function not covered" >(p</span>) =&gt; <span class="cstat-no" title="statement not covered" >p.instruction)</span>;</span>
 &nbsp;
@@ -478,7 +484,7 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-08T02:46:06.917Z
+                at 2025-09-25T21:16:28.534Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

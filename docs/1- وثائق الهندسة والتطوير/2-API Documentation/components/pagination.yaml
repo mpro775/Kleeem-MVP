@@ -1,0 +1,49 @@
+components:
+  parameters:
+    CursorParam:
+      name: cursor
+      in: query
+      required: false
+      description: Cursor token for fetching the next page.
+      schema:
+        type: string
+    LimitParam:
+      name: limit
+      in: query
+      required: false
+      description: Page size (1..100)
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    SortParam:
+      name: sort
+      in: query
+      required: false
+      description: Comma-separated `field:direction`, e.g. `price:asc,name:desc`.
+      schema:
+        type: string
+    FilterParam:
+      name: filter
+      in: query
+      required: false
+      description: Comma-separated key:value pairs, e.g. `brand:Liper,category:Lights`.
+      schema:
+        type: string
+  schemas:
+    ListResponse:
+      type: object
+      required: [success, data, pageInfo]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            oneOf:
+              - $ref: '../schemas/product.yaml#/components/schemas/Product'
+              - $ref: '../schemas/order.yaml#/components/schemas/Order'
+        pageInfo:
+          $ref: '../schemas/responses.yaml#/components/schemas/PageInfo'

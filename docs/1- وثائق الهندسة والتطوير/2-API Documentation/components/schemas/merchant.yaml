@@ -1,0 +1,44 @@
+Merchant:
+  type: object
+  required: [id, name, locale, timezone]
+  properties:
+    id:
+      type: string
+      example: "68a3addee395b1a94f9fcf87"
+    name:
+      type: string
+      example: "Kaleem Demo Store"
+    slug:
+      type: string
+      example: "kaleem-demo"
+    locale:
+      type: string
+      example: "ar"
+    timezone:
+      type: string
+      example: "Asia/Riyadh"
+    contact:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "support@kaleem-ai.com"
+        phone:
+          type: string
+          example: "+966555555555"
+        whatsapp:
+          type: string
+          example: "+966555555555"
+    policies:
+      type: object
+      properties:
+        shipping:
+          type: string
+          example: "نقوم بالشحن خلال 2-4 أيام عمل داخل المملكة."
+        returns:
+          type: string
+          example: "استرجاع خلال 14 يومًا للمنتجات غير المستعملة."
+        warranty:
+          type: string
+          example: "ضمان سنتين على عيوب الصناعة."

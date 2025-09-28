@@ -12,7 +12,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import type { Banner } from "../type";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { uploadBannerImages } from "../api";
+import { uploadBannerImages } from "@/features/mechant/storefront-theme/api";
 
 type BannerValue = string | number | boolean | undefined;
 

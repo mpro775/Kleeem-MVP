@@ -16,7 +16,8 @@ import {
   QrCode2,
 } from "@mui/icons-material";
 import { useMemo, useState, useCallback, type JSX } from "react";
-import axios from "@/shared/api/axios";
+import axiosInstance from "@/shared/api/axios";
+import { useErrorHandler } from "@/shared/errors";
 
 import ChannelCard from "@/features/mechant/channels/ui/ChannelCard";
 import WhatsappQrConnect from "@/features/mechant/channels/ui/WhatsappQrConnect";
@@ -34,39 +35,11 @@ import {
   useChannels,
   useUpdateChannelById,
   useDeleteChannelById,
+  type ChannelDoc,
 } from "@/features/mechant/channels/model";
 
-type ChannelDoc = {
-  _id: string;
-  merchantId: string;
-  provider:
-    | "telegram"
-    | "whatsapp_cloud"
-    | "whatsapp_qr"
-    | "webchat"
-    | "instagram"
-    | "messenger";
-  enabled?: boolean;
-  status?: "connected" | "pending" | "disconnected" | string;
-  webhookUrl?: string;
-  sessionId?: string;
-  instanceId?: string;
-  phoneNumberId?: string;
-  wabaId?: string;
-  accountLabel?: string;
-  widgetSettings?: Record<string, unknown>;
-  scopes?: string[];
-  isDefault?: boolean;
-  deletedAt?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-  __v?: number;
-  botTokenEnc?: string;
-  accessTokenEnc?: string;
-  qr?: string;
-};
 
-const PROVIDER_BY_KEY: Record<ChannelKey, ChannelDoc["provider"]> = {
+const PROVIDER_BY_KEY: Record<ChannelKey, string> = {
   telegram: "telegram",
   whatsappQr: "whatsapp_qr",
   whatsappApi: "whatsapp_cloud",
@@ -75,7 +48,7 @@ const PROVIDER_BY_KEY: Record<ChannelKey, ChannelDoc["provider"]> = {
   messenger: "messenger",
 };
 
-const KEY_BY_PROVIDER: Record<ChannelDoc["provider"], ChannelKey> = {
+const KEY_BY_PROVIDER: Record<string, ChannelKey> = {
   telegram: "telegram",
   whatsapp_qr: "whatsappQr",
   whatsapp_cloud: "whatsappApi",
@@ -86,6 +59,7 @@ const KEY_BY_PROVIDER: Record<ChannelDoc["provider"], ChannelKey> = {
 
 export default function ChannelsIntegrationPage() {
   const { user } = useAuth();
+  const { handleError } = useErrorHandler();
   const merchantId = user?.merchantId ?? "";
 
   const {
@@ -169,13 +143,14 @@ export default function ChannelsIntegrationPage() {
 
       try {
         const provider = PROVIDER_BY_KEY[key];
-        const { data } = await axios.post(`/merchants/${merchantId}/channels`, {
+        const { data } = await axiosInstance.post(`/merchants/${merchantId}/channels`, {
           provider,
           isDefault: true,
         });
         await refetch();
         return data?._id as string;
       } catch (e: any) {
+        handleError(e);
         setToast({
           msg: e?.response?.data?.message || "تعذر إنشاء القناة. حاول مجددًا.",
           type: "error",
@@ -226,7 +201,8 @@ export default function ChannelsIntegrationPage() {
     try {
       await refetch();
       setToast({ msg: "تم الربط بنجاح", type: "success" });
-    } catch {
+    } catch (error) {
+      handleError(error);
       setToast({ msg: "فشل تحديث الحالة بعد الربط", type: "error" });
     }
   };
@@ -382,7 +358,8 @@ export default function ChannelsIntegrationPage() {
                   setSelectedChannel(null);
                   await refetch();
                   setToast({ msg: "تم تعطيل القناة", type: "success" });
-                } catch {
+                } catch (error) {
+                  handleError(error);
                   setToast({ msg: "تعذر تعطيل القناة", type: "error" });
                 }
               }
@@ -400,7 +377,8 @@ export default function ChannelsIntegrationPage() {
                   setSelectedChannel(null);
                   await refetch();
                   setToast({ msg: "تم فصل القناة", type: "success" });
-                } catch {
+                } catch (error) {
+                  handleError(error);
                   setToast({ msg: "تعذر فصل القناة", type: "error" });
                 }
               }
@@ -420,7 +398,8 @@ export default function ChannelsIntegrationPage() {
                   setSelectedChannel(null);
                   await refetch();
                   setToast({ msg: "تم المسح الكامل", type: "success" });
-                } catch {
+                } catch (error) {
+                  handleError(error);
                   setToast({ msg: "تعذر المسح الكامل", type: "error" });
                 }
               }

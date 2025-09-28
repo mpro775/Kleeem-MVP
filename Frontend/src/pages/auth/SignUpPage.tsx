@@ -23,7 +23,9 @@ import { signUpAPI } from "@/auth/api";
 import { useErrorHandler, applyServerFieldErrors } from "@/shared/errors";
 import { useLocation, useNavigate, Link as RouterLink } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import type { User } from "@/context/types";
+import type { BackendUser, User } from "@/context/types";
+import { backendUserToUser } from "@/shared/utils/auth";
+
 const forbidsHtml = (v: string) => !/<[^>]*>/.test(v) && !/[<>]/.test(v);
 const sanitizeInput = (v: string) =>
   v.replace(/<[^>]*>/g, "").replace(/[<>]/g, "");
@@ -137,20 +139,22 @@ export default function SignUpPage() {
       const res = await signUpAPI(name, email, password, confirmPassword);
       // res: { accessToken?: string; user?: User }  ← نتعامل مع الحالتين
 
-      const user = (res as { user: User })?.user;
+      const backendUser = (res as { user: BackendUser })?.user;
       const token = (res as { accessToken: string })?.accessToken;
-      const emailVerified = !!user?.emailVerified;
+      const emailVerified = !!backendUser?.emailVerified;
 
       if (!token || !emailVerified) {
-        const pendingUser: User = {
-          id: user?.id ?? "", // لو السيرفر أعاد user.id استخدمه؛ غير ذلك اتركه مؤقتاً
-          name,
-          email,
-          role: user?.role ?? "MERCHANT",
-          merchantId: user?.merchantId ?? null,
-          firstLogin: true,
-          emailVerified: false,
-        };
+        const pendingUser: User = backendUser
+          ? backendUserToUser(backendUser)
+          : {
+              id: "", // لو السيرفر أعاد user.id استخدمه؛ غير ذلك اتركه مؤقتاً
+              name,
+              email,
+              role: "MERCHANT",
+              merchantId: null,
+              firstLogin: true,
+              emailVerified: false,
+            };
 
         // خزّن البريد للمساعدة
         sessionStorage.setItem("pendingEmail", email);
@@ -167,7 +171,7 @@ export default function SignUpPage() {
       }
 
       // خلاف ذلك: حساب متحقق → دع AuthContext يقود التوجيه الذكي
-      setAuth(user, token); // لا تستدعِ navigate هنا
+      setAuth(backendUserToUser(backendUser), token); // لا تستدعِ navigate هنا
     } catch (err: unknown) {
       if (err instanceof Error && "fields" in err) {
         applyServerFieldErrors(

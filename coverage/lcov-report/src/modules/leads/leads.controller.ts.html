@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">78.57% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>11/14</span>
+                <span class='fraction'>0/14</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">75% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>9/12</span>
+                <span class='fraction'>0/12</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -135,24 +135,28 @@
 <a name='L70'></a><a href='#L70'>70</a>
 <a name='L71'></a><a href='#L71'>71</a>
 <a name='L72'></a><a href='#L72'>72</a>
-<a name='L73'></a><a href='#L73'>73</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -178,7 +182,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -203,79 +207,81 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiParam, 
-  ApiBearerAuth 
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';</span>
+<span class="cstat-no" title="statement not covered" >import {</span>
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
-import { LeadsService } from './leads.service';
-import { CreateLeadDto } from './dto/create-lead.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { Public } from '../../common/decorators/public.decorator';
+&nbsp;
+<span class="cstat-no" title="statement not covered" >import { Public } from '../../common/decorators/public.decorator';</span>
+<span class="cstat-no" title="statement not covered" >import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >import { CreateLeadDto } from './dto/create-lead.dto';</span>
+<span class="cstat-no" title="statement not covered" >import { LeadsService } from './leads.service';</span>
+import { Lead } from './schemas/lead.schema';
 @ApiTags('العملاء المحتملين')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('merchants/:merchantId/leads')
-&nbsp;
-export class LeadsController {
+export <span class="cstat-no" title="statement not covered" >class <span class="cstat-no" title="statement not covered" ><span class="cstat-no" title="statement not covered" >LeadsController </span>{</span></span>
 <span class="fstat-no" title="function not covered" >  constructor(private readonly <span class="cstat-no" title="statement not covered" >l</span>eadsService: L</span>eadsService) {}
 &nbsp;
   @Post()
   @Public()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'إنشاء عميل محتمل جديد',
-    description: 'إنشاء سجل عميل محتمل جديد للتاجر' 
+    description: 'إنشاء سجل عميل محتمل جديد للتاجر',
   })
   @ApiParam({ name: 'merchantId', description: 'معرف التاجر', type: String })
-  @ApiResponse({ 
-    status: 201, 
-    description: 'تم إنشاء العميل المحتمل بنجاح' 
+  @ApiResponse({
+    status: 201,
+    description: 'تم إنشاء العميل المحتمل بنجاح',
   })
-  @ApiResponse({ 
-    status: 400, 
-    description: 'بيانات الطلب غير صالحة' 
+  @ApiResponse({
+    status: 400,
+    description: 'بيانات الطلب غير صالحة',
   })
-  @ApiResponse({ 
-    status: 401, 
-    description: 'غير مصرح - يلزم تسجيل الدخول' 
+  @ApiResponse({
+    status: 401,
+    description: 'غير مصرح - يلزم تسجيل الدخول',
   })
-  @ApiResponse({ 
-    status: 403, 
-    description: 'غير مصرح - لا تملك الصلاحيات الكافية' 
+  @ApiResponse({
+    status: 403,
+    description: 'غير مصرح - لا تملك الصلاحيات الكافية',
   })
-<span class="fstat-no" title="function not covered" >  createLead(</span>
+<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  createLead(</span></span>
     @Param('merchantId') merchantId: string,
     @Body() dto: CreateLeadDto,
-  ) {
+  ): Promise&lt;Lead&gt; {
 <span class="cstat-no" title="statement not covered" >    return this.leadsService.create(merchantId, dto);</span>
   }
 &nbsp;
   @Get()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'الحصول على العملاء المحتملين',
-    description: 'استرجاع قائمة بجميع العملاء المحتملين للتاجر' 
+    description: 'استرجاع قائمة بجميع العملاء المحتملين للتاجر',
   })
   @ApiParam({ name: 'merchantId', description: 'معرف التاجر', type: String })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'تم استرجاع العملاء المحتملين بنجاح' 
+  @ApiResponse({
+    status: 200,
+    description: 'تم استرجاع العملاء المحتملين بنجاح',
   })
-  @ApiResponse({ 
-    status: 401, 
-    description: 'غير مصرح - يلزم تسجيل الدخول' 
+  @ApiResponse({
+    status: 401,
+    description: 'غير مصرح - يلزم تسجيل الدخول',
   })
-  @ApiResponse({ 
-    status: 403, 
-    description: 'غير مصرح - لا تملك الصلاحيات الكافية' 
+  @ApiResponse({
+    status: 403,
+    description: 'غير مصرح - لا تملك الصلاحيات الكافية',
   })
-<span class="fstat-no" title="function not covered" >  getLeads(</span>@Param('merchantId') merchantId: string) {
+<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  getLeads(</span>@Param('merchantId') merchantId: string): Promise&lt;Lead[]&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    return this.leadsService.findAllForMerchant(merchantId);</span>
   }
 }
@@ -286,7 +292,7 @@ export class LeadsController {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-08T02:46:06.445Z
+                at 2025-09-25T21:16:27.952Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -1,0 +1,18 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'telegram'
+  group_by: ['alertname']
+
+receivers:
+  - name: 'telegram'
+    telegram_configs:
+      - bot_token: '${TELEGRAM_BOT_TOKEN}'
+        chat_id: -7730412580
+        parse_mode: 'HTML'
+        message: |
+          <b>{{ .CommonAnnotations.summary }}</b>
+          {{ range .Alerts }}
+          <pre>{{ .Annotations.description }}</pre>
+          {{ end }}

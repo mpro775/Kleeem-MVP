@@ -14,25 +14,30 @@ export interface ChannelBreakdown {
 }
 
 export interface OverviewData {
-  sessions?: {
+  sessions: {
     count: number;
-    changePercent: number;
+    changePercent: number | null;
   };
-  messages?: number;
-  firstResponseTimeSec?: number;
+  messages: number;
+  firstResponseTimeSec?: number | null;
   csat?: number;
   missingOpen?: number;
+  topKeywords?: { keyword: string; count: number }[];
+  topProducts?: { productId: string; name: string; count: number }[];
   channels?: {
+    total: number;
     breakdown: ChannelBreakdown[];
   };
   orders?: {
     count: number;
-    totalSales: number;
+    changePercent: number | null;
     byStatus: Record<string, number>;
+    totalSales: number;
   };
-  storeExtras?: {
-    aov: number; // Average Order Value
+  productsCount: number;
+  storeExtras: {
     paidOrders: number;
+    aov: number;
   };
 }
 
@@ -42,9 +47,8 @@ export interface OverviewData {
 
 // نقطة بيانات في الخط الزمني للمحادثات
 export interface TimelinePoint {
-  date: string; // e.g., "2024-08-25"
-  messages: number;
-  sessions: number;
+  _id: string; // e.g., "2024-08-25"
+  count: number;
 }
 
 // بيانات إحصائيات الإجابات المفقودة
@@ -72,14 +76,16 @@ export interface MissingListData {
 
 // بيانات المنتجات الأعلى مبيعًا
 export interface TopProduct {
+  productId: string;
   name: string;
-  sales: number;
+  count: number;
 }
 
 // بيانات الكلمات المفتاحية الأكثر استخدامًا
 export interface TopKeyword {
   keyword: string;
   count: number;
+  percentage?: number;
 }
 
 // -----------------------------------------------------------------------------

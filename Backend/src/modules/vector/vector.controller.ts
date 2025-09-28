@@ -19,7 +19,9 @@ import {
   ApiBody,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { IdempotencyGuard } from 'src/common/guards/idempotency.guard';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { ServiceTokenGuard } from 'src/common/guards/service-token.guard';
 
 import { Public } from '../../common/decorators/public.decorator';
 import { TranslationService } from '../../common/services/translation.service';
@@ -189,6 +191,7 @@ export class VectorController {
    * بحث موحد في جميع أنواع البيانات
    * يبحث في المنتجات والفئات والعلامات التجارية
    */
+  @UseGuards(ServiceTokenGuard, IdempotencyGuard)
   @Post('unified-search')
   @Public()
   @ApiOperation({

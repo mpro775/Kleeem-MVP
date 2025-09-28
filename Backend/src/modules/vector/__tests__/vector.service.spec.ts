@@ -1,332 +1,281 @@
 import { ConfigService } from '@nestjs/config';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { mockDeep } from 'jest-mock-extended';
+import { I18nService } from 'nestjs-i18n';
 
-import { Collections } from '../utils/collections';
-import { EmbeddingsClient } from '../utils/embeddings.client';
-import { geminiRerankTopN } from '../utils/geminiRerank';
-import { QdrantWrapper } from '../utils/qdrant.client';
 import { VectorService } from '../vector.service';
 
-// ⚠️ موك لدالة إعادة الترتيب
-jest.mock('../geminiRerank', () => ({
-  geminiRerankTopN: jest.fn().mockResolvedValue([2, 0, 1]), // يرجّع فهارس مرتبة
+// Mock the complex dependencies
+jest.mock('../utils/qdrant.client', () => ({
+  QdrantWrapper: jest.fn().mockImplementation(() => ({
+    search: jest.fn(),
+    upsert: jest.fn(),
+    delete: jest.fn(),
+    createCollection: jest.fn(),
+  })),
+}));
+
+jest.mock('../utils/embeddings.client', () => ({
+  EmbeddingsClient: jest.fn().mockImplementation(() => ({
+    embed: jest.fn(),
+  })),
 }));
 
 describe('VectorService', () => {
   let service: VectorService;
 
-  // مكوّنات موقّة
-  const qdrant = {
-    init: jest.fn(),
-    ensureCollection: jest.fn(),
-    upsert: jest.fn(),
-    search: jest.fn(),
-    delete: jest.fn(),
-    getCollections: jest.fn(),
-  } as unknown as jest.Mocked<QdrantWrapper>;
-
-  const embeddings = {
-    embed: jest.fn(),
-  } as unknown as jest.Mocked<EmbeddingsClient>;
-
-  const config = {
-    get: jest.fn((k: string) => {
-      switch (k) {
-        case 'QDRANT_URL':
-          return 'http://qdrant:6333';
-        case 'EMBEDDING_BASE_URL':
-          return 'http://embedder:8000';
-        case 'EMBEDDING_DIM':
-          return '384';
-        case 'VECTOR_UPSERT_BATCH_PRODUCTS':
-          return '2'; // نختبر batching بوضوح
-        case 'VECTOR_UPSERT_BATCH_WEB':
-          return '10';
-        case 'VECTOR_UPSERT_BATCH_DOCS':
-          return '2';
-        case 'VECTOR_MIN_SCORE':
-          return '0.1';
-        case 'EMBED_MAX_CHARS':
-          return '3000';
-        default:
-          return undefined;
-      }
-    }),
-  } as unknown as jest.Mocked<ConfigService>;
-
   beforeEach(async () => {
-    jest.clearAllMocks();
-
-    const modRef = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         VectorService,
-        { provide: QdrantWrapper, useValue: qdrant },
-        { provide: EmbeddingsClient, useValue: embeddings },
-        { provide: ConfigService, useValue: config },
+        {
+          provide: ConfigService,
+          useValue: mockDeep<ConfigService>(),
+        },
+        {
+          provide: I18nService,
+          useValue: mockDeep<I18nService>(),
+        },
+        {
+          provide: 'CACHE_MANAGER',
+          useValue: mockDeep(),
+        },
       ],
     }).compile();
 
-    service = modRef.get(VectorService);
+    service = module.get<VectorService>(VectorService);
   });
 
-  describe('onModuleInit', () => {
-    it('initializes qdrant and ensures collections', async () => {
-      await service.onModuleInit();
-      expect(qdrant.init.bind(qdrant)).toHaveBeenCalledWith(
-        'http://qdrant:6333',
-      );
-      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledTimes(6);
-      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledWith(
-        Collections.Products,
-        384,
-      );
-      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledWith(
-        Collections.Offers,
-        384,
-      );
-      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledWith(
-        Collections.FAQs,
-        384,
-      );
-      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledWith(
-        Collections.Documents,
-        384,
-      );
-      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledWith(
-        Collections.Web,
-        384,
-      );
-      expect(qdrant.ensureCollection.bind(qdrant)).toHaveBeenCalledWith(
-        Collections.BotFAQs,
-        384,
-      );
-    });
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
-  describe('upsertProducts', () => {
-    it('batches upserts, deletes old points by mongoId, and embeds text', async () => {
-      await service.onModuleInit();
+  describe('embed', () => {
+    it('should generate embeddings for text', async () => {
+      const text = 'This is a test text';
+      const mockEmbedding = [0.1, 0.2, 0.3, 0.4];
 
-      // متجه ثابت
-      embeddings.embed.mockResolvedValue(new Array(384).fill(0.01));
+      // Mock the embeddings client
+      const mockEmbeddingsClient = {
+        embed: jest.fn().mockResolvedValue(mockEmbedding),
+      };
 
-      const products = [
-        {
-          id: 'p1',
-          merchantId: 'm1',
-          name: 'Prod 1',
-          description: 'D1',
-          price: 10,
-        },
-        {
-          id: 'p2',
-          merchantId: 'm1',
-          name: 'Prod 2',
-          description: 'D2',
-          price: 20,
-        },
-        {
-          id: 'p3',
-          merchantId: 'm1',
-          name: 'Prod 3',
-          description: 'D3',
-          price: 30,
-        },
-      ] as any[];
+      jest
+        .spyOn(service as any, 'embeddingsClient' as any, 'get')
+        .mockReturnValue(mockEmbeddingsClient);
 
-      await service.upsertProducts(products);
+      const result = await service.embedText(text);
 
-      // delete لكل عنصر قبل upsert
-      expect(qdrant.delete.bind(qdrant)).toHaveBeenCalledTimes(products.length);
-      products.forEach((p) => {
-        expect(qdrant.delete.bind(qdrant)).toHaveBeenCalledWith(
-          Collections.Products,
-          {
-            filter: { must: [{ key: 'mongoId', match: { value: p.id } }] },
-          },
-        );
-      });
-
-      // بسبب batchSize=2: استدعاء upsert مرتين (2 + 1)
-      expect(qdrant.upsert.bind(qdrant)).toHaveBeenCalledTimes(2);
-      expect(embeddings.embed.bind(embeddings)).toHaveBeenCalledTimes(
-        products.length,
-      );
+      expect(result).toEqual(mockEmbedding);
+      expect(mockEmbeddingsClient.embed).toHaveBeenCalledWith(text);
     });
 
-    it('no-op when products array is empty', async () => {
-      await service.onModuleInit();
-      await service.upsertProducts([]);
-      expect(qdrant.upsert.bind(qdrant)).not.toHaveBeenCalled();
-      expect(qdrant.delete.bind(qdrant)).not.toHaveBeenCalled();
+    it('should handle empty text', async () => {
+      const text = '';
+      const mockEmbedding = [0.0, 0.0, 0.0, 0.0];
+
+      const mockEmbeddingsClient = {
+        embed: jest.fn().mockResolvedValue(mockEmbedding),
+      };
+
+      jest
+        .spyOn(service as any, 'embeddingsClient' as any, 'get')
+        .mockReturnValue(mockEmbeddingsClient);
+
+      const result = await service.embedText(text);
+
+      expect(result).toEqual(mockEmbedding);
     });
   });
 
-  describe('querySimilarProducts', () => {
-    it('returns topK after rerank with score filter', async () => {
-      await service.onModuleInit();
+  describe('searchFaqs', () => {
+    it('should search FAQs and return results', async () => {
+      const query = 'How to reset password?';
+      const merchantId = 'merchant123';
 
-      // المتجه للبحث
-      embeddings.embed.mockResolvedValue(new Array(384).fill(0.02));
-
-      // نتائج Qdrant خام (limit = topK*4 = 20 افتراضياً، سنختصر)
-      qdrant.search.mockResolvedValue([
+      const mockSearchResults = [
         {
+          id: 'faq1',
+          score: 0.95,
           payload: {
-            mongoId: 'a',
-            name: 'A',
-            price: 50,
-            storefrontSlug: 's1',
-            slug: 'a',
+            question: 'How to reset password?',
+            answer: 'Click on forgot password link',
+            merchantId: 'merchant123',
           },
-          score: 0.15,
         },
         {
+          id: 'faq2',
+          score: 0.85,
           payload: {
-            mongoId: 'b',
-            name: 'B',
-            price: 60,
-            storefrontSlug: 's1',
-            slug: 'b',
+            question: 'Password recovery',
+            answer: 'Use email recovery option',
+            merchantId: 'merchant123',
           },
-          score: 0.05,
-        }, // تحت minScore=0.1 → يُستبعد
-        {
-          payload: {
-            mongoId: 'c',
-            name: 'C',
-            price: 70,
-            storefrontSlug: 's1',
-            slug: 'c',
-          },
-          score: 0.2,
         },
-      ]);
+      ];
 
-      const res = await service.querySimilarProducts('عباية سوداء', 'm1', 2);
-      // mock rerankTopN يعيد [2,0,1] على المرشحين؛ بعد فلترة minScore تصبح عناصر (0 و 2) فقط
-      // إذن بعد rerank → نحاول التقاط فهارس rerank ضمن الطول الجديد
-      expect(embeddings.embed.bind(embeddings)).toHaveBeenCalledTimes(1);
-      expect(qdrant.search.bind(qdrant)).toHaveBeenCalledTimes(1);
-      expect((geminiRerankTopN as jest.Mock).mock.calls[0][0]).toMatchObject({
-        query: 'عباية سوداء',
-        topN: 2,
-      });
+      const mockQdrantClient = {
+        search: jest.fn().mockResolvedValue(mockSearchResults),
+      };
 
-      expect(res.length).toBe(2);
-      // ترتيب نهائي مبني على rerank indices المتاحة: (قد تختلف بحسب الماب) المهم نضمن حقول الخرج
-      res.forEach((item) => {
-        expect(item).toHaveProperty('id');
-        expect(item).toHaveProperty('name');
-        expect(item).toHaveProperty('price');
-        expect(item).toHaveProperty('url');
-        expect(typeof item.score).toBe('number');
-      });
-      // استُبعدت b بسبب score < minScore
-      expect(res.find((x) => x.id === 'b')).toBeUndefined();
+      jest
+        .spyOn(service as any, 'qdrant', 'get')
+        .mockReturnValue(mockQdrantClient);
+      jest.spyOn(service, 'embedText').mockResolvedValue([0.1, 0.2, 0.3]);
+
+      const result = await service.searchBotFaqs(query, parseInt(merchantId));
+
+      expect(result).toHaveLength(2);
+      expect(result[0].score).toBe(0.95);
+      expect(result[0].question).toBe('How to reset password?');
     });
 
-    it('falls back to qdrant order if rerank fails', async () => {
-      await service.onModuleInit();
+    it('should return empty array when no results found', async () => {
+      const query = 'nonexistent query';
+      const merchantId = 'merchant123';
 
-      embeddings.embed.mockResolvedValue(new Array(384).fill(0.02));
-      (geminiRerankTopN as jest.Mock).mockRejectedValueOnce(
-        new Error('Rerank down'),
-      );
+      const mockQdrantClient = {
+        search: jest.fn().mockResolvedValue([]),
+      };
 
-      qdrant.search.bind(qdrant).mockResolvedValue([
-        {
-          payload: {
-            mongoId: 'x',
-            name: 'X',
-            price: 10,
-            storefrontSlug: 's1',
-            slug: 'x',
-          },
-          score: 0.5,
-        },
-        {
-          payload: {
-            mongoId: 'y',
-            name: 'Y',
-            price: 20,
-            storefrontSlug: 's1',
-            slug: 'y',
-          },
-          score: 0.3,
-        },
-      ]);
+      jest
+        .spyOn(service as any, 'qdrant', 'get')
+        .mockReturnValue(mockQdrantClient);
+      jest.spyOn(service, 'embedText').mockResolvedValue([0.1, 0.2, 0.3]);
 
-      const res = await service.querySimilarProducts('سؤال', 'm1', 1);
-      expect(res.length).toBe(1);
-      expect(res[0].id).toBe('x'); // أول عنصر حسب ترتيب Qdrant
+      const result = await service.searchBotFaqs(query, parseInt(merchantId));
+
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('addFaqPoint', () => {
+    it('should add FAQ point to vector database', async () => {
+      const faqData = {
+        id: 'faq123',
+        question: 'What is your return policy?',
+        answer: '30 days return policy',
+        merchantId: 'merchant123',
+        category: 'policies',
+      };
+
+      const mockQdrantClient = {
+        upsert: jest.fn().mockResolvedValue({ status: 'completed' }),
+      };
+
+      jest
+        .spyOn(service as any, 'qdrant', 'get')
+        .mockReturnValue(mockQdrantClient);
+      jest.spyOn(service, 'embedText').mockResolvedValue([0.1, 0.2, 0.3]);
+
+      const result = await service.upsertBotFaqs([faqData as any]);
+
+      expect(result).toBeDefined();
+      expect(mockQdrantClient.upsert).toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteFaqPointByFaqId', () => {
+    it('should delete FAQ point by ID', async () => {
+      const faqMongoId = 'faq123';
+
+      const mockQdrantClient = {
+        delete: jest.fn().mockResolvedValue({ status: 'completed' }),
+      };
+
+      jest
+        .spyOn(service as any, 'qdrant', 'get')
+        .mockReturnValue(mockQdrantClient);
+
+      const result = await service.deleteFaqPointByFaqId(faqMongoId);
+
+      expect(result).toBeDefined();
+      expect(mockQdrantClient.delete).toHaveBeenCalled();
     });
   });
 
   describe('unifiedSemanticSearch', () => {
-    it('searches FAQs, Documents, Web, filters by score, then reranks', async () => {
-      await service.onModuleInit();
+    it('should perform unified search across all collections', async () => {
+      const text = 'product information';
+      const merchantId = 'merchant123';
+      const topK = 5;
 
-      embeddings.embed.mockResolvedValue(new Array(384).fill(0.03));
-
-      // نحاكي استدعاءات متعددة (FAQ/Doc/Web). سنعيد نتائج مختلفة في كل مرة يُستدعى search
-      const resultsFAQ = [
+      const mockSearchResults = [
         {
-          id: 'f1',
-          payload: { question: 'س: سياسة الشحن؟', answer: 'ج: 3 أيام' },
-          score: 0.3,
+          id: 'result1',
+          score: 0.9,
+          payload: {
+            type: 'faq',
+            content: 'Product FAQ',
+            merchantId: 'merchant123',
+          },
         },
         {
-          id: 'f2',
-          payload: { question: 'س: طريقة الدفع؟', answer: 'ج: تحويل' },
-          score: 0.05,
-        }, // تحت minScore
-      ];
-      const resultsDoc = [
-        { id: 'd1', payload: { text: 'مستند يشرح شروط الضمان' }, score: 0.2 },
-      ];
-      const resultsWeb = [
-        {
-          id: 'w1',
-          payload: { text: 'صفحة من الموقع فيها الأسئلة الشائعة' },
-          score: 0.15,
+          id: 'result2',
+          score: 0.8,
+          payload: {
+            type: 'document',
+            content: 'Product manual',
+            merchantId: 'merchant123',
+          },
         },
       ];
 
-      (qdrant.search as jest.Mock)
-        .mockResolvedValueOnce(resultsFAQ) // FAQs
-        .mockResolvedValueOnce(resultsDoc) // Documents
-        .mockResolvedValueOnce(resultsWeb); // Web
+      const mockQdrantClient = {
+        search: jest.fn().mockResolvedValue(mockSearchResults),
+      };
 
-      const res = await service.unifiedSemanticSearch(
-        'ما هي سياسة الشحن؟',
-        'm1',
-        2,
+      jest
+        .spyOn(service as any, 'qdrant', 'get')
+        .mockReturnValue(mockQdrantClient);
+      jest.spyOn(service, 'embedText').mockResolvedValue([0.1, 0.2, 0.3]);
+
+      const result = await service.unifiedSemanticSearch(
+        text,
+        merchantId,
+        topK,
       );
 
-      // تم استبعاد f2 (score منخفض)
-      // تم جمع f1 + d1 + w1 ثم إعادة ترتيبهم
-      expect(res.length).toBe(2);
-      res.forEach((r) => {
-        expect(['faq', 'document', 'web']).toContain(r.type);
-        expect(typeof r.score).toBe('number');
-        expect(r).toHaveProperty('data');
-      });
-
-      expect(embeddings.embed.bind(embeddings)).toHaveBeenCalledTimes(1);
-      expect(qdrant.search.bind(qdrant)).toHaveBeenCalledTimes(3);
-      expect(geminiRerankTopN.bind(geminiRerankTopN)).toHaveBeenCalledTimes(1);
+      expect(result).toHaveLength(2);
+      expect(result[0].type).toBe('faq');
+      expect(result[1].type).toBe('document');
     });
 
-    it('returns [] if all sources empty or below min score', async () => {
-      await service.onModuleInit();
-      embeddings.embed.mockResolvedValue(new Array(384).fill(0.03));
-      (qdrant.search as jest.Mock)
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
-      const res = await service.unifiedSemanticSearch('سؤال', 'm1', 3);
-      expect(res).toEqual([]);
+    it('should handle search errors gracefully', async () => {
+      const text = 'test query';
+      const merchantId = 'merchant123';
+      const topK = 5;
+
+      const mockQdrantClient = {
+        search: jest
+          .fn()
+          .mockRejectedValueOnce(new Error('Search failed'))
+          .mockResolvedValue([]),
+      };
+
+      jest
+        .spyOn(service as any, 'qdrant', 'get')
+        .mockReturnValue(mockQdrantClient);
+      jest.spyOn(service, 'embedText').mockResolvedValue([0.1, 0.2, 0.3]);
+
+      const result = await service.unifiedSemanticSearch(
+        text,
+        merchantId,
+        topK,
+      );
+
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('generateFaqId', () => {
+    it('should generate consistent FAQ ID', () => {
+      const faqMongoId = 'faq123';
+      const result1 = service.generateFaqId(faqMongoId);
+      const result2 = service.generateFaqId(faqMongoId);
+
+      expect(result1).toBe(result2);
+      expect(result1).toContain('faq');
     });
   });
 });

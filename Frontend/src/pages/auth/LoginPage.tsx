@@ -16,6 +16,7 @@ import { RiEyeCloseLine } from "react-icons/ri";
 import { TfiEye } from "react-icons/tfi";
 import { useAuth } from "@/context/AuthContext";
 import { loginAPI } from "@/auth/api";
+import { backendUserToUser } from "@/shared/utils/auth";
 import AuthLayout from "@/auth/AuthLayout";
 import GradientIcon from "@/shared/ui/GradientIcon";
 import { useErrorHandler, applyServerFieldErrors } from "@/shared/errors";
@@ -65,7 +66,8 @@ export default function LoginPage() {
   const handleLogin = async (data: LoginFormData) => {
     try {
       setLoading(true);
-      const { accessToken, user } = await loginAPI(data.email, data.password);
+      const { accessToken, user: backendUser } = await loginAPI(data.email, data.password);
+      const user = backendUserToUser(backendUser);
       login(user, accessToken);
     } catch (err: unknown) {
       // إذا كان الخطأ يحتوي على أخطاء حقول، قم بتطبيقها

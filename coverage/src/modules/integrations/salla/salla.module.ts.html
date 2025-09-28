@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>0/18</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>0/16</span>
             </div>
         
             
@@ -94,24 +94,44 @@
 <a name='L29'></a><a href='#L29'>29</a>
 <a name='L30'></a><a href='#L30'>30</a>
 <a name='L31'></a><a href='#L31'>31</a>
-<a name='L32'></a><a href='#L32'>32</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -119,6 +139,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -126,24 +156,29 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// src/integrations/salla/salla.module.ts
-<span class="cstat-no" title="statement not covered" >import { Module, forwardRef } from '@nestjs/common';</span>
 <span class="cstat-no" title="statement not covered" >import { HttpModule } from '@nestjs/axios';</span>
+<span class="cstat-no" title="statement not covered" >import { Module, forwardRef } from '@nestjs/common';</span>
 <span class="cstat-no" title="statement not covered" >import { ConfigModule } from '@nestjs/config';</span>
 <span class="cstat-no" title="statement not covered" >import { MongooseModule } from '@nestjs/mongoose';</span>
+<span class="cstat-no" title="statement not covered" >import { DEFAULT_TIMEOUT } from 'src/common/constants/common';</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >import { SallaController } from './salla.controller';</span>
-<span class="cstat-no" title="statement not covered" >import { SallaService } from './salla.service';</span>
-&nbsp;
+<span class="cstat-no" title="statement not covered" >import { CatalogModule } from '../../catalog/catalog.module';</span>
 <span class="cstat-no" title="statement not covered" >import {</span>
   Merchant,
   MerchantSchema,
 } from '../../merchants/schemas/merchant.schema';
 <span class="cstat-no" title="statement not covered" >import { Integration, IntegrationSchema } from '../schemas/integration.schema';</span>
-<span class="cstat-no" title="statement not covered" >import { CatalogModule } from '../../catalog/catalog.module';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >import { SallaIntegrationMongoRepository } from './repositories/integration.mongo.repository';</span>
+<span class="cstat-no" title="statement not covered" >import { SallaMerchantMongoRepository } from './repositories/merchant.mongo.repository';</span>
+<span class="cstat-no" title="statement not covered" >import { SallaController } from './salla.controller';</span>
+<span class="cstat-no" title="statement not covered" >import { SallaService } from './salla.service';</span>
+<span class="cstat-no" title="statement not covered" >import { SALLA_INTEGRATION_REPOSITORY } from './tokens';</span>
+<span class="cstat-no" title="statement not covered" >import { SALLA_MERCHANT_REPOSITORY } from './tokens';</span>
 &nbsp;
 @Module({
   imports: [
-    HttpModule.register({ timeout: 10000, maxRedirects: 5 }),
+    HttpModule.register({ timeout: DEFAULT_TIMEOUT, maxRedirects: 5 }),
     ConfigModule,
     MongooseModule.forFeature([
       { name: Merchant.name, schema: MerchantSchema },
@@ -152,7 +187,17 @@
     forwardRef(<span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >CatalogModule)</span>,
   ],
   controllers: [SallaController],
-  providers: [SallaService],
+  providers: [
+    SallaService,
+    {
+      provide: SALLA_INTEGRATION_REPOSITORY,
+      useClass: SallaIntegrationMongoRepository,
+    },
+    {
+      provide: SALLA_MERCHANT_REPOSITORY,
+      useClass: SallaMerchantMongoRepository,
+    },
+  ],
   exports: [SallaService],
 })
 export <span class="cstat-no" title="statement not covered" >class <span class="cstat-no" title="statement not covered" ><span class="cstat-no" title="statement not covered" >SallaModule </span>{}</span></span>
@@ -163,7 +208,7 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-08T02:46:06.917Z
+                at 2025-09-25T21:16:28.534Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

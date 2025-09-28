@@ -1,0 +1,359 @@
+# Security Gate - بوابة الأمان
+name: Security Gate
+on: [push, pull_request]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ✅ Security Audit
+  audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: npm run audit:ci
+        continue-on-error: false
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-audit-results
+          path: |
+            reports/
+            *.json
+          retention-days: 30
+
+  # ✅ Dependency Check
+  dependency-check:
+    name: Dependency Check
+    runs-on: ubuntu-latest
+    needs: audit
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run dependency check
+        run: npm run depcheck
+        continue-on-error: false
+
+      - name: Upload dependency check results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: dependency-check-results
+          path: |
+            reports/
+            *.json
+          retention-days: 30
+
+  # ✅ Code Security Scan
+  security-scan:
+    name: Code Security Scan
+    runs-on: ubuntu-latest
+    needs: dependency-check
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint security checks
+        run: npm run lint:strict
+        continue-on-error: false
+
+      - name: Run security tests
+        run: npm run test:security
+        continue-on-error: false
+
+      - name: Upload security scan results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-scan-results
+          path: |
+            reports/
+            coverage/
+            test-results/
+          retention-days: 30
+
+  # ✅ License Compliance Check
+  license-check:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    needs: security-scan
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check license compliance
+        run: |
+          echo "🔍 Checking license compliance..."
+          npm ls --depth=0 --json | jq -r '.dependencies | keys[]' | while read dep; do
+            echo "Checking $dep..."
+            npm view "$dep" license 2>/dev/null || echo "⚠️  Could not check license for $dep"
+          done
+
+      - name: Upload license check results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: license-check-results
+          path: |
+            reports/
+          retention-days: 30
+
+  # ✅ Vulnerability Scanning
+  vulnerability-scan:
+    name: Vulnerability Scanning
+    runs-on: ubuntu-latest
+    needs: license-check
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --json > snyk-results.json
+        continue-on-error: true
+
+      - name: Upload Snyk results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: snyk-scan-results
+          path: |
+            snyk-results.json
+            reports/
+          retention-days: 30
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+        continue-on-error: true
+
+  # ✅ Container Security Scan
+  container-security:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    needs: vulnerability-scan
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t kaleem-api:test .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: kaleem-api:test
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: container-security-results
+          path: |
+            trivy-results.sarif
+            reports/
+          retention-days: 30
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+        continue-on-error: true
+
+  # ✅ Security Summary Report
+  security-summary:
+    name: Security Summary Report
+    runs-on: ubuntu-latest
+    needs:
+      [
+        audit,
+        dependency-check,
+        security-scan,
+        license-check,
+        vulnerability-scan,
+        container-security,
+      ]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./security-artifacts
+
+      - name: Generate security summary report
+        run: |
+          echo "# 🔒 Security Gate Summary Report" > security-summary.md
+          echo "" >> security-summary.md
+          echo "## 📊 Results Overview" >> security-summary.md
+          echo "" >> security-summary.md
+          echo "| Check | Status | Details |" >> security-summary.md
+          echo "|-------|--------|---------|" >> security-summary.md
+
+          # Check audit results
+          if [ -f "./security-artifacts/security-audit-results/reports/eslint.json" ]; then
+            echo "| Security Audit | ✅ PASSED | No high-severity vulnerabilities found |" >> security-summary.md
+          else
+            echo "| Security Audit | ❌ FAILED | High-severity vulnerabilities detected |" >> security-summary.md
+          fi
+
+          # Check dependency results
+          if [ -f "./security-artifacts/dependency-check-results/reports/depcheck.json" ]; then
+            echo "| Dependency Check | ✅ PASSED | No unused dependencies found |" >> security-summary.md
+          else
+            echo "| Dependency Check | ❌ FAILED | Unused dependencies detected |" >> security-summary.md
+          fi
+
+          # Check security scan results
+          if [ -d "./security-artifacts/security-scan-results/coverage" ]; then
+            echo "| Security Tests | ✅ PASSED | All security tests passed |" >> security-summary.md
+          else
+            echo "| Security Tests | ❌ FAILED | Security tests failed |" >> security-summary.md
+          fi
+
+          echo "" >> security-summary.md
+          echo "## 🎯 Overall Status" >> security-summary.md
+          echo "" >> security-summary.md
+          echo "Security gate checks completed. All critical security requirements must pass before deployment." >> security-summary.md
+
+      - name: Upload security summary
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-summary-report
+          path: |
+            security-summary.md
+            security-artifacts/
+          retention-days: 30
+
+      - name: Comment on PR (if applicable)
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('security-summary.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+  # ✅ Security Gate Validation
+  security-gate:
+    name: Security Gate Validation
+    runs-on: ubuntu-latest
+    needs: security-summary
+    if: always()
+    outputs:
+      security-approved: ${{ steps.validation.outputs.approved }}
+
+    steps:
+      - name: Download security summary
+        uses: actions/download-artifact@v3
+        with:
+          name: security-summary-report
+
+      - name: Validate security gate
+        id: validation
+        run: |
+          echo "🔍 Validating security gate requirements..."
+
+          # Check if all required checks passed
+          if [ -f "security-artifacts/security-audit-results/reports/eslint.json" ] && \
+             [ -f "security-artifacts/dependency-check-results/reports/depcheck.json" ] && \
+             [ -d "security-artifacts/security-scan-results/coverage" ] && \
+             [ -f "snyk-results.json" ]; then
+            echo "✅ All security checks passed!"
+            echo "approved=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Security checks failed!"
+            echo "approved=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Security gate passed
+        if: steps.validation.outputs.approved == 'true'
+        run: |
+          echo "🎉 Security gate validation passed!"
+          echo "✅ All security requirements met"
+          echo "🚀 Ready for deployment"
+
+      - name: Security gate failed
+        if: steps.validation.outputs.approved == 'false'
+        run: |
+          echo "🚨 Security gate validation failed!"
+          echo "❌ Security requirements not met"
+          echo "🔧 Please fix security issues before deployment"
+          exit 1

@@ -189,16 +189,18 @@ export default function Dashboard() {
   const productsCount = overview?.productsCount ?? productsCountFallback ?? 0;
 
   const topProducts = Array.isArray(overview?.topProducts)
-    ? overview!.topProducts.map((p: { name: string; count: number }) => ({
+    ? overview!.topProducts.map((p: { productId: string; name: string; count: number }) => ({
+        productId: p.productId,
         name: p.name,
-        value: p.count,
+        count: p.count,
       }))
     : [];
 
   const keywords = Array.isArray(overview?.topKeywords)
-    ? overview!.topKeywords.map((kw: { keyword: string; count: number }) => ({
+    ? overview!.topKeywords.map((kw: { keyword: string; count: number; percentage?: number }) => ({
         keyword: kw.keyword,
         count: kw.count,
+        percentage: kw.percentage,
       }))
     : [];
 
@@ -216,6 +218,8 @@ export default function Dashboard() {
   const frt = overview?.firstResponseTimeSec;
   const missingOpen = overview?.missingOpen ?? 0;
   const revenue = overview?.orders?.totalSales ?? 0;
+  const ordersCount = overview?.orders?.count ?? 0;
+  const ordersDelta = overview?.orders?.changePercent ?? 0;
   const paidOrders = overview?.storeExtras?.paidOrders ?? 0;
   const aov = overview?.storeExtras?.aov ?? null;
 
@@ -271,11 +275,8 @@ export default function Dashboard() {
           key="revenue"
           title="إيراد الفترة"
           value={`${revenue.toLocaleString()}`}
-          subtitle={
-            aov
-              ? `AOV: ${Number(aov).toLocaleString()} | مدفوعة: ${paidOrders}`
-              : undefined
-          }
+          subtitle={`${ordersDelta >= 0 ? "▲" : "▼"} ${Math.abs(ordersDelta).toFixed(0)}%`}
+          highlight={ordersDelta >= 0 ? "pos" : "neg"}
         />
       );
     } else {
@@ -294,6 +295,7 @@ export default function Dashboard() {
     missingOpen,
     hasStore,
     revenue,
+    ordersDelta,
     aov,
     paidOrders,
     productsCount,

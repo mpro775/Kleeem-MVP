@@ -1,0 +1,185 @@
+ApiResponseBase:
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: true
+    message:
+      type: string
+      nullable: true
+      example: null
+    requestId:
+      type: string
+      nullable: true
+      example: "req_123"
+    timestamp:
+      type: string
+      format: date-time
+      example: "2025-09-26T00:00:00.000Z"
+  required: [success, timestamp]
+  additionalProperties: false
+
+ApiResponseAny:
+  allOf:
+  - $ref: '#/components/schemas/ApiResponseBase'
+  - type: object
+    properties:
+      data:
+        type: object
+
+PageInfo:
+  type: object
+  properties:
+    nextCursor:
+      type: string
+      nullable: true
+    previousCursor:
+      type: string
+      nullable: true
+    hasNext:
+      type: boolean
+    hasPrev:
+      type: boolean
+    limit:
+      type: integer
+      minimum: 1
+      maximum: 100
+      example: 20
+  required: [hasNext, hasPrev, limit]
+  additionalProperties: false
+
+CursorPageObject:
+  type: object
+  properties:
+    items:
+      type: array
+      items:
+        type: object
+    pageInfo:
+      $ref: '#/components/schemas/PageInfo'
+  required: [items, pageInfo]
+  additionalProperties: false
+
+ApiResponseCursorPage:
+  allOf:
+  - $ref: '#/components/schemas/ApiResponseBase'
+  - type: object
+    properties:
+      data:
+        $ref: '#/components/schemas/CursorPageObject'
+
+ErrorResponse:
+  type: object
+  properties:
+    code:
+      type: string
+      example: "VALIDATION_ERROR"
+    message:
+      type: string
+      example: "Invalid request data"
+    details:
+      oneOf:
+      - type: array
+        items:
+          type: string
+      - type: object
+        additionalProperties: true
+    timestamp:
+      type: string
+      format: date-time
+    requestId:
+      type: string
+      nullable: true
+  required: [code, message, timestamp]
+  additionalProperties: false
+
+ApiSuccessBase:
+  type: object
+  required: [success, timestamp]
+  properties:
+    success:
+      type: boolean
+      example: true
+    data: {}
+    requestId:
+      type: string
+      nullable: true
+      example: "req-abc123"
+    timestamp:
+      type: string
+      format: date-time
+      example: "2025-09-25T19:45:00.000Z"
+  description: "Global success envelope returned by ResponseInterceptor. `data` contains the actual payload."
+
+ApiError:
+  type: object
+  required: [status, code, message, timestamp]
+  properties:
+    status:
+      type: integer
+      example: 401
+    code:
+      type: string
+      example: "INVALID_TOKEN"
+    message:
+      type: string
+      example: "توكن غير صحيح"
+    timestamp:
+      type: string
+      format: date-time
+    requestId:
+      type: string
+      nullable: true
+    details:
+      type: object
+      additionalProperties: true
+  description: "Unified error contract produced by AllExceptionsFilter (non-wrapped)."
+
+MessageResponse:
+  type: object
+  properties:
+    status:
+      type: string
+      example: "ok"
+    message:
+      type: string
+      example: "Success"
+
+ValidateResetResponse:
+  type: object
+  properties:
+    valid:
+      type: boolean
+      example: true
+
+AccessOnlyResponse:
+  allOf:
+  - $ref: '#/components/schemas/ApiSuccessBase'
+  - type: object
+    properties:
+      data:
+        $ref: '#/components/schemas/AccessOnly'
+
+TokenPairResponse:
+  allOf:
+  - $ref: '#/components/schemas/ApiSuccessBase'
+  - type: object
+    properties:
+      data:
+        $ref: '#/components/schemas/TokenPair'
+
+MessageResponseEnvelope:
+  allOf:
+  - $ref: '#/components/schemas/ApiSuccessBase'
+  - type: object
+    properties:
+      data:
+        $ref: '#/components/schemas/MessageResponse'
+
+ValidateResetResponseEnvelope:
+  allOf:
+  - $ref: '#/components/schemas/ApiSuccessBase'
+  - type: object
+    properties:
+      data:
+        $ref: '#/components/schemas/ValidateResetResponse'

@@ -12,24 +12,13 @@ import {
 } from "@mui/material";
 import { useAuth } from "@/context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "@/shared/api/axios";
 import { API_BASE } from "@/context/config";
 import OnboardingLayout from "@/app/layout/OnboardingLayout";
+import type { IntegrationsStatus } from "@/features/integtarions/api/integrationsApi";
 
 type Source = "internal" | "salla" | "zid";
-type ProviderState = {
-  active?: boolean;
-  connected?: boolean;
-  lastSync?: string | null;
-};
-type InternalStatus = { productSource: "internal"; skipped: true };
-type ExternalStatus = {
-  productSource: "salla" | "zid";
-  salla?: ProviderState;
-  zid?: ProviderState;
-};
-type IntegrationsStatus = InternalStatus | ExternalStatus;
-const isExternal = (s: IntegrationsStatus): s is ExternalStatus =>
+const isExternal = (s: IntegrationsStatus) =>
   s.productSource === "salla" || s.productSource === "zid";
 
 export default function SourceSelectPage() {
@@ -69,7 +58,7 @@ export default function SourceSelectPage() {
   }, []);
   const setProductSource = async (src: Source) => {
     if (!user?.merchantId) return;
-    await axios.patch(
+    await axiosInstance.patch(
       `${API_BASE}/merchants/${user.merchantId}/product-source`,
       { source: src },
       { headers }
@@ -79,7 +68,7 @@ export default function SourceSelectPage() {
   const fetchStatus = async (src: Source): Promise<IntegrationsStatus> => {
     if (src === "internal") return { productSource: "internal", skipped: true };
     try {
-      const { data } = await axios.get<IntegrationsStatus>(
+      const { data } = await axiosInstance.get<IntegrationsStatus>(
         `${API_BASE}/integrations/status`,
         { headers }
       );

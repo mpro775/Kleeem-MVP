@@ -1,18 +1,20 @@
-import axios from "@/shared/api/axios";
+import axiosInstanceInstance from "@/shared/api/axiosInstance";
 import type {
   Category,
   CategoryNode,
 } from "@/features/mechant/categories/type";
 
+// الباك إند يرسل الآن صيغة موحدة دائماً: { success, data, requestId, timestamp }
+// لا نحتاج للـ unwrap
 function unwrap<T>(data: any): T {
-  return (data?.data ?? data) as T;
+  return data as T;
 }
 
 // جلب الشجرة (مع كسر الكاش)
 export async function getCategoriesTree(
   merchantId: string
 ): Promise<CategoryNode[]> {
-  const res = await axios.get(`/categories`, {
+  const res = await axiosInstance.get(`/categories`, {
     params: { merchantId, tree: true, _t: Date.now() }, // ← يكسر الكاش
     validateStatus: (s) => (s >= 200 && s < 300) || s === 304,
   });
@@ -23,7 +25,7 @@ export async function getCategoriesTree(
 }
 export async function hasAnyCategory(merchantId: string): Promise<boolean> {
   if (!merchantId) return false;
-  const res = await axios.get(`/categories`, { params: { merchantId } });
+  const res = await axiosInstance.get(`/categories`, { params: { merchantId } });
   // الكنترولر يرجّع Array مباشرة، لكن نراعي إن بعض المشاريع تلفّها داخل data
   const list = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
   return Array.isArray(list) && list.length > 0;
@@ -32,7 +34,7 @@ export async function hasAnyCategory(merchantId: string): Promise<boolean> {
 export async function getCategoriesFlat(
   merchantId: string
 ): Promise<Category[]> {
-  const res = await axios.get(`/categories`, {
+  const res = await axiosInstance.get(`/categories`, {
     params: { merchantId, _t: Date.now() },
     validateStatus: (s) => (s >= 200 && s < 300) || s === 304,
   });
@@ -45,7 +47,7 @@ export async function uploadCategoryImage(
 ): Promise<{ url: string }> {
   const form = new FormData();
   form.append("file", file);
-  const { data } = await axios.post(`/categories/${categoryId}/image`, form, {
+  const { data } = await axiosInstance.post(`/categories/${categoryId}/image`, form, {
     params: { merchantId },
     headers: { "Content-Type": "multipart/form-data" },
   });
@@ -53,7 +55,7 @@ export async function uploadCategoryImage(
 }
 // جلب مسار الـ breadcrumbs لفئة محددة
 export async function getBreadcrumbs(id: string, merchantId: string) {
-  const { data } = await axios.get(`/categories/${id}/breadcrumbs`, {
+  const { data } = await axiosInstance.get(`/categories/${id}/breadcrumbs`, {
     params: { merchantId },
   });
   return data as Array<{
@@ -69,7 +71,7 @@ export async function getSubtree(
   id: string,
   merchantId: string
 ): Promise<CategoryNode> {
-  const { data } = await axios.get(`/categories/${id}/subtree`, {
+  const { data } = await axiosInstance.get(`/categories/${id}/subtree`, {
     params: { merchantId },
   });
   return data;
@@ -84,7 +86,7 @@ export async function createCategory(payload: {
   description?: string;
   keywords?: string[];
 }): Promise<Category> {
-  const { data } = await axios.post(`/categories`, payload);
+  const { data } = await axiosInstance.post(`/categories`, payload);
   return data;
 }
 
@@ -100,7 +102,7 @@ export async function updateCategory(
     keywords?: string[];
   }
 ) {
-  const { data } = await axios.put(`/categories/${id}`, payload, {
+  const { data } = await axiosInstance.put(`/categories/${id}`, payload, {
     params: { merchantId }, // ✅ يمرر merchantId كـ query
   });
   return data;
@@ -112,7 +114,7 @@ export async function moveCategory(
   newParent: string | null,
   merchantId: string
 ) {
-  const { data } = await axios.patch(
+  const { data } = await axiosInstance.patch(
     `/categories/${id}/move`,
     { parent: newParent ?? null },
     { params: { merchantId } }
@@ -129,7 +131,7 @@ export async function moveCategoryAdvanced(
     position?: number | null;
   }
 ) {
-  const { data } = await axios.patch(`/categories/${id}/move`, payload, {
+  const { data } = await axiosInstance.patch(`/categories/${id}/move`, payload, {
     params: { merchantId },
   });
   return data;
@@ -140,7 +142,7 @@ export async function deleteCategory(
   merchantId: string,
   cascade = false
 ): Promise<void> {
-  await axios.delete(`/categories/${id}`, {
+  await axiosInstance.delete(`/categories/${id}`, {
     params: { merchantId, cascade },
   });
 }

@@ -1,0 +1,75 @@
+{
+  "success": true,
+  "message": null,
+  "requestId": "req_orders_001",
+  "timestamp": "2025-09-26T10:30:00.000Z",
+  "data": {
+    "items": [
+      {
+        "id": "ord_9012",
+        "merchantId": "68a3addee395b1a94f9fcf87",
+        "items": [
+          {
+            "productId": "p_1001",
+            "name": "LED Street Light 50W",
+            "qty": 2,
+            "price": 80
+          }
+        ],
+        "subtotal": 160,
+        "shipping": 10,
+        "total": 170,
+        "currency": "USD",
+        "status": "paid",
+        "createdAt": "2025-09-25T10:21:00Z",
+        "customer": {
+          "id": "cus_1234",
+          "name": "Mohamed",
+          "phone": "+966501234567"
+        },
+        "shippingAddress": {
+          "country": "SA",
+          "city": "Riyadh",
+          "line1": "King Fahd Road, Street 10",
+          "postal": "12222"
+        }
+      },
+      {
+        "id": "ord_9013",
+        "merchantId": "68a3addee395b1a94f9fcf87",
+        "items": [
+          {
+            "productId": "p_1002",
+            "name": "LED Street Light 100W",
+            "qty": 1,
+            "price": 120
+          }
+        ],
+        "subtotal": 120,
+        "shipping": 15,
+        "total": 135,
+        "currency": "USD",
+        "status": "shipped",
+        "createdAt": "2025-09-25T14:30:00Z",
+        "customer": {
+          "id": "cus_1235",
+          "name": "Sarah",
+          "phone": "+966507654321"
+        },
+        "shippingAddress": {
+          "country": "SA",
+          "city": "Jeddah",
+          "line1": "Prince Sultan Street, Building 5",
+          "postal": "21411"
+        }
+      }
+    ],
+    "pageInfo": {
+      "nextCursor": "eyJpZCI6Im9yZF85MDEzIn0",
+      "previousCursor": null,
+      "hasNext": false,
+      "hasPrev": false,
+      "limit": 20
+    }
+  }
+}

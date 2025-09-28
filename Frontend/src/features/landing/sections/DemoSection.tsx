@@ -104,7 +104,7 @@ export default function DemoSection() {
             {/* حاوية المحادثة الحية: تبقى في DOM ويتم إظهارها بالأنميشن */}
             <Box ref={liveChatRef} sx={{ height: "100%" }}>
               {isChatLive && (
-                <LiveChat messagesContainerRef={messagesContainerRef} />
+                <LiveChat messagesContainerRef={messagesContainerRef as React.RefObject<HTMLDivElement>} />
               )}
             </Box>
           </Box>

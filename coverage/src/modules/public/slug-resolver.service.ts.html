@@ -110,25 +110,33 @@
 <a name='L45'></a><a href='#L45'>45</a>
 <a name='L46'></a><a href='#L46'>46</a>
 <a name='L47'></a><a href='#L47'>47</a>
-<a name='L48'></a><a href='#L48'>48</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -161,15 +169,16 @@
 <span class="cstat-no" title="statement not covered" >import { Injectable } from '@nestjs/common';</span>
 <span class="cstat-no" title="statement not covered" >import { InjectModel } from '@nestjs/mongoose';</span>
 <span class="cstat-no" title="statement not covered" >import { Model, Types } from 'mongoose';</span>
-<span class="cstat-no" title="statement not covered" >import {</span>
-  Merchant,
-  MerchantDocument,
-} from '../merchants/schemas/merchant.schema';
+&nbsp;
 <span class="cstat-no" title="statement not covered" >import {</span>
   Channel,
   ChannelDocument,
   ChannelProvider,
 } from '../channels/schemas/channel.schema';
+<span class="cstat-no" title="statement not covered" >import {</span>
+  Merchant,
+  MerchantDocument,
+} from '../merchants/schemas/merchant.schema';
 &nbsp;
 @Injectable()
 export <span class="cstat-no" title="statement not covered" >class <span class="cstat-no" title="statement not covered" ><span class="cstat-no" title="statement not covered" >SlugResolverService </span>{</span></span>
@@ -178,13 +187,16 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
     @InjectModel(Channel.name) private <span class="cstat-no" title="statement not covered" >channels: M</span>odel&lt;ChannelDocument&gt;,
   ) {}
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>resolve(slug: string) {
+<span class="fstat-no" title="function not covered" >  async </span>resolve(slug: string): Promise&lt;{
+    merchantId: string;
+    webchatChannelId: string | undefined;
+  }&gt; {
     const m = <span class="cstat-no" title="statement not covered" >await this.merchants</span>
       .findOne({ publicSlug: slug, publicSlugEnabled: true })
       .select('_id')
       .lean();
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!m) <span class="cstat-no" title="statement not covered" >throw new Error('slug not found or disabled');</span></span>
-    const merchantId = <span class="cstat-no" title="statement not covered" >String(m._id);</span>
+    const merchantId = (<span class="cstat-no" title="statement not covered" >m._id as Types.ObjectId).toString();</span>
 &nbsp;
     const webchatDefault = <span class="cstat-no" title="statement not covered" >await this.channels</span>
       .findOne({
@@ -199,7 +211,7 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
 <span class="cstat-no" title="statement not covered" >    return {</span>
       merchantId,
       webchatChannelId: webchatDefault?._id
-        ? String(webchatDefault._id)
+        ? (webchatDefault._id as Types.ObjectId).toString()
         : undefined,
     };
   }
@@ -211,7 +223,7 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-08T02:46:06.917Z
+                at 2025-09-25T21:16:28.534Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

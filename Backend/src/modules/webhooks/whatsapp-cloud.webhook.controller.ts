@@ -11,6 +11,7 @@ import {
   HttpCode,
   Inject,
   ForbiddenException,
+  UseInterceptors,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Cache } from 'cache-manager';
@@ -22,12 +23,14 @@ import { preventDuplicates, idemKey } from 'src/common/utils/idempotency.util';
 import { ChannelSecretsLean } from '../channels/repositories/channels.repository';
 
 import { WhatsAppCloudDto } from './dto/whatsapp-cloud.dto';
+import { WebhookLoggingInterceptor } from './interceptors/webhook-logging.interceptor';
 import { WebhooksController } from './webhooks.controller';
 interface RequestWithWebhookData extends RequestWithUser {
   merchantId: string;
   channel: ChannelSecretsLean;
 }
 @Public() // يوقف JWT فقط؛ الـ Guard سيتكفل بالتحقق
+@UseInterceptors(WebhookLoggingInterceptor)
 @Controller('webhooks/whatsapp_cloud')
 export class WhatsAppCloudWebhookController {
   constructor(

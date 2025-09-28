@@ -14,6 +14,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { useAuth } from "@/context/AuthContext";
+import { useErrorHandler } from "@/shared/errors";
 import { useLeadsManager } from "@/features/mechant/leads/hooks";
 import EnabledToggleCard from "@/features/mechant/leads/ui/EnabledToggleCard";
 import FieldsEditor from "@/features/mechant/leads/ui/FieldsEditor";
@@ -23,6 +24,7 @@ export default function LeadsManagerPage() {
   const theme = useTheme();
   const isSm = useMediaQuery(theme.breakpoints.down("sm"));
   const { user } = useAuth();
+  const { handleError } = useErrorHandler();
   const merchantId = user?.merchantId ?? null;
 
   const {
@@ -121,7 +123,8 @@ export default function LeadsManagerPage() {
                   type: ok ? "success" : "error",
                 });
                 if (ok) refreshAll();
-              } catch {
+              } catch (e) {
+                handleError(e);
                 setSnack({
                   open: true,
                   msg: "حدث خطأ أثناء الحفظ",
@@ -153,13 +156,22 @@ export default function LeadsManagerPage() {
               onRemove={removeField}
               onChange={updateField}
               onSave={async () => {
-                const ok = await saveAll();
-                setSnack({
-                  open: true,
-                  msg: ok ? "تم حفظ التعديلات" : "فشل الحفظ",
-                  type: ok ? "success" : "error",
-                });
-                if (ok) refreshAll();
+                try {
+                  const ok = await saveAll();
+                  setSnack({
+                    open: true,
+                    msg: ok ? "تم حفظ التعديلات" : "فشل الحفظ",
+                    type: ok ? "success" : "error",
+                  });
+                  if (ok) refreshAll();
+                } catch (e) {
+                  handleError(e);
+                  setSnack({
+                    open: true,
+                    msg: "حدث خطأ أثناء الحفظ",
+                    type: "error",
+                  });
+                }
               }}
             />
           </Paper>

@@ -189,7 +189,7 @@ export default function PromptStudioPage() {
                   promptTestUrl={`${
                     import.meta.env.VITE_PUBLIC_WEB_ORIGIN ||
                     window.location.origin
-                  }/api/merchants/${merchantId}/prompt/test`}
+                  }/api/merchants/${merchantId}/prompt/preview`}
                 />
               </Box>
             )}
@@ -274,7 +274,7 @@ export default function PromptStudioPage() {
                 promptTestUrl={`${
                   import.meta.env.VITE_PUBLIC_WEB_ORIGIN ||
                   window.location.origin
-                }/api/merchants/${merchantId}/prompt/test`}
+                }/api/merchants/${merchantId}/prompt/preview`}
               />
             </Box>
           )}

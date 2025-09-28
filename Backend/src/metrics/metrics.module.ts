@@ -6,7 +6,8 @@ import {
   makeCounterProvider,
   makeGaugeProvider,
 } from '@willsoto/nestjs-prometheus';
-import { HISTOGRAM_BUCKETS } from 'src/common/cache/constant';
+
+import { HISTOGRAM_BUCKETS } from '../common/cache/constant';
 
 // HttpMetricsInterceptor is now provided by the app module to avoid circular dependencies
 

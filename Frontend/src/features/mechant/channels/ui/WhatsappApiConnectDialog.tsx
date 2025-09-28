@@ -16,7 +16,7 @@ import Grid from "@mui/material/Grid";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import axios from "@/shared/api/axios";
+import axiosInstance from "@/shared/api/axios";
 
 type Props = {
   open: boolean;
@@ -62,7 +62,7 @@ export default function WhatsappApiConnectDialog({
 
   const ensureChannel = async (): Promise<string> => {
     if (channelId) return channelId;
-    const { data } = await axios.post(`/merchants/${merchantId}/channels`, {
+    const { data } = await axiosInstance.post(`/merchants/${merchantId}/channels`, {
       provider: "whatsapp_cloud",
       isDefault: true,
       accountLabel: "WhatsApp Cloud",
@@ -86,7 +86,7 @@ export default function WhatsappApiConnectDialog({
     setError(null);
     try {
       await ensureChannel();
-      await axios.patch(`/channels/${channelId}`, {
+      await axiosInstance.patch(`/channels/${channelId}`, {
         accessToken: form.accessToken,
         appSecret: form.appSecret,
         verifyToken: form.verifyToken,

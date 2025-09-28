@@ -4,10 +4,10 @@ import { HttpModule } from '@nestjs/axios';
 import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MulterModule } from '@nestjs/platform-express';
-import { MetricsModule } from 'src/metrics/metrics.module';
 
 import { OutboxModule } from '../../common/outbox/outbox.module';
 import { CommonServicesModule } from '../../common/services/common-services.module';
+import { MetricsModule } from '../../metrics/metrics.module';
 import { AuthModule } from '../auth/auth.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import {

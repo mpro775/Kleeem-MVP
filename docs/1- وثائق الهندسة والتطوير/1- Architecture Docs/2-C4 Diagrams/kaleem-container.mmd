@@ -1,0 +1,135 @@
+%% Kaleem AI — C4 Level 2: Container Diagram (Mermaid)
+%% Last updated: 2025-09-27 18:50
+%% Professional C4 Container diagram showing runtime containers and data flow
+%% Generated: Auto-rendered via CI/CD pipeline
+
+flowchart TD
+  %% ========== PERSONAS ==========
+  subgraph Actors["System Actors"]
+    Customer["End Customer<br/>Chat, Browse, Purchase"]:::actor
+    Merchant["Merchant / Store Owner<br/>Configure, Monitor, Manage"]:::actor
+  end
+
+  %% ========== EDGE / DMZ LAYER ==========
+  subgraph DMZ["Edge / DMZ Layer"]
+    Nginx["Nginx<br/>TLS Termination / Reverse Proxy"]:::edge
+    EvolutionAPI["WhatsApp Evolution API<br/>Self-hosted Gateway"]:::edge
+  end
+
+  %% ========== CORE APPLICATION LAYER ==========
+  subgraph Core["Kaleem Core Application"]
+    subgraph Frontend["Frontend Applications"]
+      MerchantDashboard["Merchant Dashboard<br/>React/Vite SPA"]:::frontend
+      WebchatWidget["Webchat Widget<br/>Customer Interface"]:::frontend
+    end
+
+    subgraph Backend["Backend Services"]
+      API["API Server<br/>NestJS / REST & GraphQL"]:::backend
+      Workers["Background Workers<br/>Node.js / Async Jobs"]:::backend
+      N8nOrchestrator["n8n Workflow Engine<br/>Business Process Automation"]:::backend
+    end
+
+    subgraph DataLayer["Data Persistence Layer"]
+      MongoDB["MongoDB<br/>Primary Document Store<br/>Multi-tenant Collections"]:::database
+      Redis["Redis Cluster<br/>Cache, Sessions, Rate Limiting<br/>Queue Backend"]:::database
+      Qdrant["Qdrant<br/>Vector Database<br/>Semantic Search Index"]:::database
+      MinIO["MinIO<br/>Object Storage<br/>Media & Documents"]:::database
+    end
+  end
+
+  %% ========== EXTERNAL SYSTEMS ==========
+  subgraph ExternalChannels["External Channels"]
+    TelegramAPI["Telegram Bot API<br/>Messaging Platform"]:::external
+    WhatsAppCloud["WhatsApp Cloud API<br/>Business Messaging"]:::external
+    InstagramAPI["Instagram Basic Display API<br/>Social Commerce"]:::external
+    MessengerAPI["Facebook Messenger Platform<br/>Direct Messaging"]:::external
+  end
+
+  subgraph CommercePlatforms["E-commerce Platforms"]
+    SallaAPI["Salla API<br/>Saudi Market Platform"]:::external
+    ZidAPI["Zid API<br/>MENA E-commerce"]:::external
+    ShopifyAPI["Shopify API<br/>Global E-commerce"]:::external
+    WooCommerceAPI["WooCommerce API<br/>WordPress Plugin"]:::external
+  end
+
+  subgraph AIProviders["AI & ML Services"]
+    GeminiAPI["Google Gemini API<br/>LLM & Embeddings"]:::external
+    OpenAIAPI["OpenAI API<br/>GPT Models"]:::external
+  end
+
+  subgraph ObservabilityStack["Observability & Monitoring"]
+    Prometheus["Prometheus<br/>Metrics Collection"]:::monitoring
+    Grafana["Grafana<br/>Dashboards & Alerting"]:::monitoring
+    Loki["Loki<br/>Log Aggregation"]:::monitoring
+    Tempo["Tempo<br/>Distributed Tracing"]:::monitoring
+  end
+
+  subgraph SecurityConfig["Security & Configuration"]
+    SecretsManager["Secrets Manager<br/>Environment Variables<br/>API Keys & Tokens"]:::security
+    Vault["HashiCorp Vault<br/>Secret Management"]:::security
+  end
+
+  %% ========== RELATIONSHIPS ==========
+
+  %% User interactions with edge
+  Customer -->|HTTPS / WebSocket| Nginx
+  Merchant -->|HTTPS / Dashboard| Nginx
+  WebchatWidget -->|HTTPS / Embedded| Nginx
+
+  %% Edge to core services
+  Nginx -->|HTTPS / Load Balanced| API
+  Nginx -->|HTTPS / Static Assets| MerchantDashboard
+
+  %% WhatsApp Evolution gateway (self-hosted)
+  API <-->|Webhook / SendMessage| EvolutionAPI
+
+  %% Core service interactions
+  API -->|HTTP / Sync| MongoDB
+  API -->|Cache Operations| Redis
+  API -->|Vector Search Queries| Qdrant
+  API -->|File Upload/Download| MinIO
+  API -->|Workflow Triggers| N8nOrchestrator
+  API -->|Metrics / Telemetry| Prometheus
+  API -->|Structured Logs| Loki
+  API -->|Trace Spans| Tempo
+  API -->|Secret Retrieval| SecretsManager
+
+  %% Background workers
+  API -->|Job Enqueue| Redis
+  Workers -->|Job Consumption| Redis
+  Workers -->|Data Operations| MongoDB
+  Workers -->|Vector Operations| Qdrant
+  Workers -->|File Operations| MinIO
+  Workers -->|Message Publishing| ExternalChannels
+  Workers -->|LLM API Calls| GeminiAPI
+
+  %% External channel integrations
+  API <-->|Webhook Events| TelegramAPI
+  API <-->|Webhook Events| WhatsAppCloud
+  API <-->|Webhook Events| InstagramAPI
+  API <-->|Webhook Events| MessengerAPI
+
+  %% Commerce platform integrations
+  API <-->|Catalog / Order Sync| SallaAPI
+  API <-->|Catalog / Order Sync| ZidAPI
+  API <-->|Catalog / Order Sync| ShopifyAPI
+  API <-->|Catalog / Order Sync| WooCommerceAPI
+
+  %% Observability data flow
+  Workers -->|Metrics / Telemetry| Prometheus
+  Workers -->|Application Logs| Loki
+  Workers -->|Trace Spans| Tempo
+  Prometheus -->|Metrics Query| Grafana
+
+  %% ========== STYLING ==========
+  classDef actor fill:#e8f4fd,color:#1976d2,stroke:#1976d2,stroke-width:2px,rx:8px
+  classDef edge fill:#fff3e0,color:#f57c00,stroke:#f57c00,stroke-width:2px,rx:8px
+  classDef frontend fill:#f0f9ff,color:#0369a1,stroke:#0369a1,stroke-width:2px,rx:8px
+  classDef backend fill:#f0fdf4,color:#166534,stroke:#166534,stroke-width:2px,rx:8px
+  classDef database fill:#fef2f2,color:#dc2626,stroke:#dc2626,stroke-width:2px,rx:8px
+  classDef external fill:#f9fafb,color:#374151,stroke:#6b7280,stroke-width:1px,stroke-dasharray:3 3,rx:4px
+  classDef monitoring fill:#f8fafc,color:#334155,stroke:#475569,stroke-width:2px,rx:8px
+  classDef security fill:#fef7f0,color:#ea580c,stroke:#ea580c,stroke-width:2px,rx:8px
+
+  %% ========== LAYOUT STYLING ==========
+  class Actors,DMZ,Core,ExternalChannels,CommercePlatforms,AIDataProviders,ObservabilityStack,SecurityConfig flow

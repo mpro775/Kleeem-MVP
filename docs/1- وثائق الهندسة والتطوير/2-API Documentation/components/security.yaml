@@ -1,0 +1,12 @@
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ServiceToken:
+      type: apiKey
+      in: header
+      name: X-Service-Token
+security:
+  - BearerAuth: []

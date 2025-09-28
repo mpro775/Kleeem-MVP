@@ -1,0 +1,167 @@
+%% Kaleem — C4 Level 2: Container (Mermaid) — FULL STACK
+%% Last updated: 2025-09-27 17:52
+flowchart LR
+
+  %% ========== STYLING DEFINITIONS ==========
+  classDef actor fill:#e8f4fd,color:#1976d2,stroke:#1976d2,stroke-width:2px,rx:8px
+  classDef edge fill:#fff3e0,color:#f57c00,stroke:#f57c00,stroke-width:2px,rx:8px
+  classDef container fill:#f0fdf4,color:#166534,stroke:#166534,stroke-width:2px,rx:8px
+  classDef datastore fill:#fef2f2,color:#dc2626,stroke:#dc2626,stroke-width:2px,rx:8px
+  classDef external fill:#f9fafb,color:#374151,stroke:#6b7280,stroke-width:1px,stroke-dasharray:3 3,rx:4px
+  classDef monitoring fill:#f8fafc,color:#334155,stroke:#475569,stroke-width:2px,rx:8px
+  classDef security fill:#fef7f0,color:#ea580c,stroke:#ea580c,stroke-width:2px,rx:8px
+  classDef queue fill:#fef3c7,color:#92400e,stroke:#f59e0b,stroke-width:2px,rx:8px
+  classDef tool fill:#fff7ed,color:#7c2d12,stroke:#fdba74,stroke-width:1px,stroke-dasharray:3 3,rx:4px
+
+  %% Edge / DMZ
+  subgraph DMZ["Edge / DMZ"]
+    LB["Nginx Load Balancer"]:::edge
+    Nginx["Nginx Reverse Proxy / TLS"]:::edge
+    Evolution["WhatsApp Evolution API"]:::external
+  end
+
+  %% Core Application
+  subgraph Core["Kaleem Core Application"]
+    API["API Server (NestJS)"]:::container
+    Dashboard["Merchant Dashboard (React/Vite)"]:::container
+    Widget["Webchat Widget"]:::container
+    N8n["n8n Workflow Engine (Production)"]:::container
+    N8nSandbox["n8n Workflow Engine (Sandbox)"]:::container
+    Embedding["Embedding Service (Python/FastAPI)"]:::container
+    Extractor["Document Extractor Service (Python)"]:::container
+    AIReplyWorker["AI Reply Worker (Node.js)"]:::container
+    WebhookDispatcher["Webhook Dispatcher Worker (Node.js)"]:::container
+    IndexingWorker["Indexing Worker (Python)"]:::container
+
+    subgraph DataLayer["Data Persistence Layer"]
+      MongoDB[("MongoDB<br/>Primary Document Store")]:::datastore
+      MongoExpress[("mongo-express<br/>Admin Interface")]:::tool
+      Redis[("Redis<br/>Cache, Sessions, Queues")]:::datastore
+      RedisCommander[("redis-commander<br/>Admin Interface")]:::tool
+      Qdrant[("Qdrant<br/>Vector Database")]:::datastore
+      MinIO[("MinIO<br/>Object Storage")]:::datastore
+      RabbitMQ[["RabbitMQ<br/>Message Broker"]]:::queue
+    end
+  end
+
+  %% Observability Stack
+  subgraph Observability["Observability / APM"]
+    Prometheus["Prometheus<br/>Metrics Collection"]:::monitoring
+    Alertmanager["Alertmanager<br/>Alert Management"]:::monitoring
+    Grafana["Grafana<br/>Dashboards & Alerting"]:::monitoring
+    Loki["Loki<br/>Log Aggregation"]:::monitoring
+    Promtail["Promtail<br/>Log Shipping"]:::monitoring
+    Tempo["Tempo<br/>Distributed Tracing"]:::monitoring
+    OtelCollector["OpenTelemetry Collector<br/>Trace Ingestion"]:::monitoring
+    CAdvisor["cAdvisor<br/>Container Metrics"]:::monitoring
+    RedisExporter["Redis Exporter<br/>Redis Metrics"]:::monitoring
+    MongoExporter["MongoDB Exporter<br/>Database Metrics"]:::monitoring
+    NodeExporter["Node Exporter<br/>System Metrics"]:::monitoring
+    Glitchtip["Glitchtip<br/>Error Tracking"]:::monitoring
+    GlitchtipPostgres[("Postgres<br/>Glitchtip Database")]:::datastore
+  end
+
+  %% External Systems
+  subgraph ExternalChannels["External Channels"]
+    TelegramAPI["Telegram Bot API"]:::external
+    WhatsAppCloud["WhatsApp Cloud API"]:::external
+    InstagramAPI["Instagram Basic Display API"]:::external
+    MessengerAPI["Facebook Messenger Platform"]:::external
+  end
+
+  subgraph CommercePlatforms["E-commerce Platforms"]
+    SallaAPI["Salla API"]:::external
+    ZidAPI["Zid API"]:::external
+    ShopifyAPI["Shopify API"]:::external
+    WooCommerceAPI["WooCommerce API"]:::external
+  end
+
+  subgraph AIProviders["AI & ML Services"]
+    GeminiAPI["Google Gemini API"]:::external
+    OpenAIAPI["OpenAI API"]:::external
+  end
+
+  SecretsManager[("Secrets Manager<br/>Environment Variables")]:::security
+
+  %% User Interactions
+  Customer -->|HTTPS / WebSocket| Nginx
+  Merchant -->|HTTPS / Dashboard| LB
+  LB -->|Load Balancing| API
+  Nginx -->|Reverse Proxy| API
+  Widget -->|HTTPS / Embedded| Nginx
+
+  %% API Dependencies
+  API -->|CRUD Operations| MongoDB
+  API -->|Cache & Sessions| Redis
+  API -->|Vector Search| Qdrant
+  API -->|File Storage| MinIO
+  API -->|Workflow Triggers| N8n
+  API -->|Sandbox Workflows| N8nSandbox
+  API -->|Message Queue| RabbitMQ
+  API -->|Secret Retrieval| SecretsManager
+
+  %% External Integrations
+  API <-->|Webhook Events| TelegramAPI
+  API <-->|Webhook Events| WhatsAppCloud
+  API <-->|Webhook Events| InstagramAPI
+  API <-->|Webhook Events| MessengerAPI
+  API <-->|SendMessage API| Evolution
+
+  %% E-commerce Platform Integrations
+  API <-->|Catalog & Order Sync| SallaAPI
+  API <-->|Catalog & Order Sync| ZidAPI
+  API <-->|Catalog & Order Sync| ShopifyAPI
+  API <-->|Catalog & Order Sync| WooCommerceAPI
+
+  %% AI Service Integrations
+  API -->|LLM API Calls| GeminiAPI
+  API -->|Alternative AI| OpenAIAPI
+
+  %% Background Workers
+  API -->|Job Enqueue| RabbitMQ
+  AIReplyWorker -->|Job Processing| RabbitMQ
+  WebhookDispatcher -->|Job Processing| RabbitMQ
+  IndexingWorker -->|Job Processing| RabbitMQ
+
+  %% Worker Dependencies
+  AIReplyWorker -->|AI Processing| GeminiAPI
+  IndexingWorker -->|Vector Operations| Qdrant
+  Embedding -->|HTTP API| API
+  Extractor -->|HTTP API| API
+
+  %% Admin Interface Connections
+  MongoExpress -->|Admin Access| MongoDB
+  RedisCommander -->|Admin Access| Redis
+
+  %% Observability Data Flow
+  API -->|/metrics| Prometheus
+  AIReplyWorker -->|/metrics| Prometheus
+  WebhookDispatcher -->|/metrics| Prometheus
+  IndexingWorker -->|/metrics| Prometheus
+  RedisExporter -->|Redis Metrics| Prometheus
+  MongoExporter -->|MongoDB Metrics| Prometheus
+  CAdvisor -->|Container Metrics| Prometheus
+  NodeExporter -->|System Metrics| Prometheus
+
+  %% Logging Pipeline
+  API -->|Application Logs| Promtail
+  AIReplyWorker -->|Application Logs| Promtail
+  WebhookDispatcher -->|Application Logs| Promtail
+  IndexingWorker -->|Application Logs| Promtail
+  Promtail -->|Log Aggregation| Loki
+
+  %% Distributed Tracing
+  API -->|Trace Data| OtelCollector
+  OtelCollector -->|Trace Storage| Tempo
+
+  %% Monitoring Dashboard
+  Prometheus -->|Metrics Query| Grafana
+  Alertmanager -->|Alert Management| Grafana
+  Loki -->|Log Query| Grafana
+
+  %% Error Tracking
+  API -->|Error Reports| Glitchtip
+  GlitchtipPostgres -->|Data Storage| Glitchtip
+
+  %% ========== LAYOUT STYLING ==========
+  class Actors,DMZ,Core,ExternalChannels,CommercePlatforms,AIDataProviders,Observability,Security flow

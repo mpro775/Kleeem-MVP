@@ -3,18 +3,21 @@ import * as raw from "@/features/mechant/Conversations/api/messages";          /
 // إن كان لديك ملف مستقل لرسائل الموظف:
 import { sendAgentMessage as sendAgent } from "./messageagent";
 import type { ChatMessage,  ChannelType } from "@/features/mechant/Conversations/type";
+import axiosInstance from "@/shared/api/axios";
 
 export async function listConversations(merchantId: string, channel?: ChannelType) {
   return raw.fetchConversations(merchantId, channel); // يرجّع ConversationSession[]
 }
 
 export async function getSessionDetails(sessionId: string) {
-  return raw.getSessionDetails(sessionId); // يرجّع session كامل (handover, messages, ...)
+  // Get session details including handover status
+  const { data } = await axiosInstance.get(`/messages/session/${sessionId}`);
+  return data;
 }
 
 export async function listMessages(sessionId: string) {
-  const session = await raw.getSessionDetails(sessionId);
-  return (session?.messages ?? []) as ChatMessage[];
+  const messages = await raw.fetchSessionMessagesDashboard("", sessionId);
+  return messages as ChatMessage[];
 }
 
 export async function setSessionHandover(sessionId: string, handover: boolean) {

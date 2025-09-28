@@ -1,128 +1,141 @@
-import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { mockDeep } from 'jest-mock-extended';
 
-import { BusinessMetrics } from '../../../metrics/business.metrics';
-import { ChatWidgetService } from '../../chat/chat-widget.service';
-import { N8nWorkflowService } from '../../n8n-workflow/n8n-workflow.service';
-import { StorefrontService } from '../../storefront/storefront.service';
-import { CleanupCoordinatorService } from '../cleanup-coordinator.service';
 import { MerchantsService } from '../merchants.service';
-import { PromptBuilderService } from '../services/prompt-builder.service';
-import { PromptPreviewService } from '../services/prompt-preview.service';
-import { PromptVersionService } from '../services/prompt-version.service';
 
-import type { MerchantsRepository } from '../repositories/merchants.repository';
+import type { MongoMerchantsRepository } from '../repositories/mongo-merchants.repository';
 
 describe('MerchantsService', () => {
   let service: MerchantsService;
-  let repo: jest.Mocked<MerchantsRepository>;
+  let repository: jest.Mocked<MongoMerchantsRepository>;
 
   beforeEach(async () => {
-    const repoMock: jest.Mocked<MerchantsRepository> = {
-      create: jest.fn(),
-      existsByPublicSlug: jest.fn(),
-      update: jest.fn(),
-      findAll: jest.fn(),
-      findOne: jest.fn(),
-      saveBasicInfo: jest.fn(),
-      remove: jest.fn(),
-      softDelete: jest.fn(),
-      restore: jest.fn(),
-      purge: jest.fn(),
-      isSubscriptionActive: jest.fn(),
-      buildFinalPrompt: jest.fn(),
-      saveAdvancedVersion: jest.fn(),
-      listAdvancedVersions: jest.fn(),
-      revertAdvancedVersion: jest.fn(),
-      updateQuickConfig: jest.fn(),
-      getStatus: jest.fn(),
-      ensureForUser: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MerchantsService,
-        { provide: 'MerchantsRepository', useValue: repoMock },
         {
-          provide: PromptBuilderService,
-          useValue: {
-            compileTemplate: jest.fn().mockResolvedValue('compiled'),
-          },
+          provide: 'MerchantsRepository',
+          useValue: mockDeep<MongoMerchantsRepository>(),
         },
-        {
-          provide: PromptVersionService,
-          useValue: { snapshot: jest.fn(), list: jest.fn(), revert: jest.fn() },
-        },
-        {
-          provide: PromptPreviewService,
-          useValue: { preview: jest.fn().mockResolvedValue('previewed') },
-        },
-        {
-          provide: StorefrontService,
-          useValue: { create: jest.fn(), deleteByMerchant: jest.fn() },
-        },
-        {
-          provide: CleanupCoordinatorService,
-          useValue: { purgeAll: jest.fn() },
-        },
-        {
-          provide: N8nWorkflowService,
-          useValue: {
-            createForMerchant: jest.fn(),
-            delete: jest.fn(),
-            setActive: jest.fn(),
-          },
-        },
-        {
-          provide: BusinessMetrics,
-          useValue: {
-            incMerchantCreated: jest.fn(),
-            incN8nWorkflowCreated: jest.fn(),
-          },
-        },
-        { provide: ChatWidgetService, useValue: { syncWidgetSlug: jest.fn() } },
-        { provide: ConfigService, useValue: { get: jest.fn() } },
       ],
     }).compile();
 
     service = module.get<MerchantsService>(MerchantsService);
-    repo = module.get('MerchantsRepository');
+    repository = module.get('MerchantsRepository');
   });
 
-  it('should create merchant and compile prompt', async () => {
-    const mockMerchant: any = { id: '1', save: jest.fn() };
-    repo.create.mockResolvedValue(mockMerchant);
-
-    const result = await service.create({} as any);
-    expect(repo.create.bind(repo)).toHaveBeenCalled();
-    expect(result).toEqual(mockMerchant);
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
-  it('should find one merchant and compile prompt', async () => {
-    const mockMerchant: any = { id: '1', save: jest.fn() };
-    repo.findOne.mockResolvedValue(mockMerchant);
+  describe('findOne', () => {
+    it('should return merchant when found', async () => {
+      const mockMerchant = {
+        id: '1',
+        name: 'Test Merchant',
+        email: 'merchant@example.com',
+        status: 'active',
+      };
 
-    const result = await service.findOne('1');
-    expect(repo.findOne.bind(repo)).toHaveBeenCalledWith('1');
-    expect(result).toEqual(mockMerchant);
-  });
+      repository.findOne.mockResolvedValue(mockMerchant as any);
 
-  it('should update merchant and recompile prompt', async () => {
-    const mockMerchant: any = { id: '1', save: jest.fn(), set: jest.fn() };
-    repo.update.mockResolvedValue(mockMerchant);
+      const result = await service.findOne('1');
 
-    const result = await service.update('1', { name: 'New Name' } as any);
-    expect(repo.update.bind(repo)).toHaveBeenCalledWith('1', {
-      name: 'New Name',
+      expect(result).toEqual(mockMerchant);
+      expect(repository.findOne.bind(repository)).toHaveBeenCalledWith('1');
     });
-    expect(result).toEqual(mockMerchant);
+
+    it('should return null when merchant not found', async () => {
+      repository.findOne.mockResolvedValue(null as any);
+
+      const result = await service.findOne('nonexistent-id');
+
+      expect(result).toBeNull();
+    });
   });
 
-  it('should remove merchant', async () => {
-    repo.remove.mockResolvedValue({ message: 'Merchant deleted successfully' });
+  describe('create', () => {
+    it('should create and return new merchant', async () => {
+      const createMerchantDto = {
+        name: 'New Merchant',
+        email: 'new@example.com',
+        phone: '+1234567890',
+        subscription: {
+          tier: 'free',
+          startDate: new Date(),
+          features: ['Basic features'],
+        },
+        userId: 'user1',
+      };
 
-    const result = await service.remove('1');
-    expect(repo.remove.bind(repo)).toHaveBeenCalledWith('1');
-    expect(result).toEqual({ message: 'Merchant deleted successfully' });
+      const mockCreatedMerchant = {
+        id: '2',
+        ...createMerchantDto,
+        status: 'active',
+        createdAt: new Date(),
+      };
+
+      repository.create.mockResolvedValue(mockCreatedMerchant as any);
+
+      const result = await service.create(createMerchantDto as any);
+
+      expect(result).toEqual(mockCreatedMerchant);
+      expect(repository.create.bind(repository)).toHaveBeenCalledWith(
+        createMerchantDto,
+      );
+    });
+  });
+
+  describe('update', () => {
+    it('should update and return merchant', async () => {
+      const updateMerchantDto = {
+        name: 'Updated Merchant',
+        phone: '+0987654321',
+      };
+
+      const mockUpdatedMerchant = {
+        id: '1',
+        name: 'Updated Merchant',
+        email: 'merchant@example.com',
+        phone: '+0987654321',
+        status: 'active',
+      };
+
+      repository.update.mockResolvedValue(mockUpdatedMerchant as any);
+
+      const result = await service.update('1', updateMerchantDto);
+
+      expect(result).toEqual(mockUpdatedMerchant);
+      expect(repository.update.bind(repository)).toHaveBeenCalledWith(
+        '1',
+        updateMerchantDto,
+      );
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return paginated merchants', async () => {
+      const mockMerchants = [
+        { id: '1', name: 'Merchant 1', email: 'm1@example.com' },
+        { id: '2', name: 'Merchant 2', email: 'm2@example.com' },
+      ];
+
+      const mockPaginatedResult = {
+        data: mockMerchants,
+        total: 2,
+        page: 1,
+        limit: 10,
+      };
+
+      repository.findAll.mockResolvedValue(mockPaginatedResult as any);
+
+      const result = await service.findAll();
+
+      expect(result).toEqual(mockPaginatedResult);
+      expect(repository.findAll.bind(repository)).toHaveBeenCalledWith({
+        page: 1,
+        limit: 10,
+      });
+    });
   });
 });

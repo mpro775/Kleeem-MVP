@@ -32,7 +32,8 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { LoadingButton } from "@mui/lab";
 import { useSnackbar } from "notistack";
 import { useLinks } from "../hooks";
-import axios from "@/shared/api/axios";
+import axiosInstance from "@/shared/api/axios";
+import { useErrorHandler } from "@/shared/errors";
 
 type LinkItem = {
   _id: string;
@@ -61,6 +62,7 @@ function isValidUrl(u: string) {
 
 export default function LinksTab({ merchantId }: { merchantId: string }) {
   const { enqueueSnackbar } = useSnackbar();
+  const { handleError } = useErrorHandler();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -106,10 +108,11 @@ export default function LinksTab({ merchantId }: { merchantId: string }) {
   const fetchStatus = async () => {
     try {
       setStatusLoading(true);
-      const { data } = await axios.get<StatusResp>(`/merchants/${merchantId}/knowledge/urls/status`);
+      const { data } = await axiosInstance.get<StatusResp>(`/merchants/${merchantId}/knowledge/urls/status`);
       setStatus(data);
-    } catch (e: any) {
+    } catch (e: unknown) {
       // صامت؛ لا نزعج المستخدم كثيراً
+      handleError(e);
     } finally {
       setStatusLoading(false);
     }

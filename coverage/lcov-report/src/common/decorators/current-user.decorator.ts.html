@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">20% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>5/25</span>
+                <span class='fraction'>0/25</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">23.8% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>5/21</span>
+                <span class='fraction'>0/21</span>
             </div>
         
             
@@ -120,8 +120,14 @@
 <a name='L55'></a><a href='#L55'>55</a>
 <a name='L56'></a><a href='#L56'>56</a>
 <a name='L57'></a><a href='#L57'>57</a>
-<a name='L58'></a><a href='#L58'>58</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -135,7 +141,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -149,7 +159,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -159,7 +169,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -169,7 +179,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -178,13 +188,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// src/common/decorators/current-user.decorator.ts
-import {
+&nbsp;
+<span class="cstat-no" title="statement not covered" >import {</span>
   createParamDecorator,
-  ExecutionContext,
   UnauthorizedException,
+  type ExecutionContext,
 } from '@nestjs/common';
 &nbsp;
 export type Role = 'ADMIN' | 'MERCHANT' | 'MEMBER';
+&nbsp;
 export interface JwtPayload {
   userId: string;
   role: Role;
@@ -192,13 +204,16 @@ export interface JwtPayload {
 }
 &nbsp;
 /** يعيد الحمولة كاملة أو مفتاحًا منها */
-export const CurrentUser = createParamDecorator(
+export const <span class="cstat-no" title="statement not covered" >CurrentUser = createParamDecorator&lt;</span>
+  keyof JwtPayload | undefined,
+  JwtPayload[keyof JwtPayload] | JwtPayload
+&gt;(
 <span class="fstat-no" title="function not covered" >  (</span>
     key: keyof JwtPayload | undefined,
     ctx: ExecutionContext,
   ): JwtPayload[keyof JwtPayload] | JwtPayload =&gt; {
-    const req = <span class="cstat-no" title="statement not covered" >ctx.switchToHttp().getRequest();</span>
-    const user = <span class="cstat-no" title="statement not covered" >req.user as JwtPayload | undefined;</span>
+    const req = <span class="cstat-no" title="statement not covered" >ctx.switchToHttp().getRequest&lt;{ user?: JwtPayload }&gt;();</span>
+    const user = <span class="cstat-no" title="statement not covered" >req.user;</span>
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!user) <span class="cstat-no" title="statement not covered" >throw new UnauthorizedException('Unauthorized');</span></span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    return key ? user[key] : user;</span>
@@ -206,30 +221,30 @@ export const CurrentUser = createParamDecorator(
 );
 &nbsp;
 /** معرف المستخدم من الـ JWT (اسم الحقل الصحيح userId) */
-export const CurrentUserId = createParamDecorator(
-<span class="fstat-no" title="function not covered" >  (_</span>: unknown, ctx: ExecutionContext): string =&gt; {
-    const req = <span class="cstat-no" title="statement not covered" >ctx.switchToHttp().getRequest();</span>
-    const user = <span class="cstat-no" title="statement not covered" >req.user as JwtPayload | undefined;</span>
+export const <span class="cstat-no" title="statement not covered" >CurrentUserId = createParamDecorator&lt;void, string&gt;(</span>
+<span class="fstat-no" title="function not covered" >  (_</span>: void, ctx: ExecutionContext): string =&gt; {
+    const req = <span class="cstat-no" title="statement not covered" >ctx.switchToHttp().getRequest&lt;{ user?: JwtPayload }&gt;();</span>
+    const user = <span class="cstat-no" title="statement not covered" >req.user;</span>
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!user?.userId) <span class="cstat-no" title="statement not covered" >throw new UnauthorizedException('Unauthorized');</span></span>
 <span class="cstat-no" title="statement not covered" >    return user.userId;</span>
   },
 );
 &nbsp;
 /** معرف التاجر من الـ JWT */
-export const CurrentMerchantId = createParamDecorator(
-<span class="fstat-no" title="function not covered" >  (_</span>: unknown, ctx: ExecutionContext): string | null =&gt; {
-    const req = <span class="cstat-no" title="statement not covered" >ctx.switchToHttp().getRequest();</span>
-    const user = <span class="cstat-no" title="statement not covered" >req.user as JwtPayload | undefined;</span>
+export const <span class="cstat-no" title="statement not covered" >CurrentMerchantId = createParamDecorator&lt;void, string | null&gt;(</span>
+<span class="fstat-no" title="function not covered" >  (_</span>: void, ctx: ExecutionContext): string | null =&gt; {
+    const req = <span class="cstat-no" title="statement not covered" >ctx.switchToHttp().getRequest&lt;{ user?: JwtPayload }&gt;();</span>
+    const user = <span class="cstat-no" title="statement not covered" >req.user;</span>
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!user) <span class="cstat-no" title="statement not covered" >throw new UnauthorizedException('Unauthorized');</span></span>
 <span class="cstat-no" title="statement not covered" >    return user.merchantId ?? null;</span>
   },
 );
 &nbsp;
 /** دور المستخدم من الـ JWT (اختياري) */
-export const CurrentRole = createParamDecorator(
-<span class="fstat-no" title="function not covered" >  (_</span>: unknown, ctx: ExecutionContext): Role =&gt; {
-    const req = <span class="cstat-no" title="statement not covered" >ctx.switchToHttp().getRequest();</span>
-    const user = <span class="cstat-no" title="statement not covered" >req.user as JwtPayload | undefined;</span>
+export const <span class="cstat-no" title="statement not covered" >CurrentRole = createParamDecorator&lt;void, Role&gt;(</span>
+<span class="fstat-no" title="function not covered" >  (_</span>: void, ctx: ExecutionContext): Role =&gt; {
+    const req = <span class="cstat-no" title="statement not covered" >ctx.switchToHttp().getRequest&lt;{ user?: JwtPayload }&gt;();</span>
+    const user = <span class="cstat-no" title="statement not covered" >req.user;</span>
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!user?.role) <span class="cstat-no" title="statement not covered" >throw new UnauthorizedException('Unauthorized');</span></span>
 <span class="cstat-no" title="statement not covered" >    return user.role;</span>
   },
@@ -241,7 +256,7 @@ export const CurrentRole = createParamDecorator(
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-08T02:46:06.445Z
+                at 2025-09-25T21:16:27.952Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

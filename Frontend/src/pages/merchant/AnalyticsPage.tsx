@@ -17,10 +17,8 @@ import { ChannelsTab } from "@/features/mechant/analytics/ui/tabs/ChannelsTab";
 import { StoreTab } from "@/features/mechant/analytics/ui/tabs/StoreTab";
 import { KnowledgeTab } from "@/features/mechant/analytics/ui/tabs/KnowledgeTab";
 import { AnalyticsFilters } from "@/features/mechant/analytics/ui/AnalyticsFilters";
-import type { Period, Channel, Faq } from "@/features/mechant/analytics/types";
+import type { Period, Channel, Faq, OverviewData, TopProduct } from "@/features/mechant/analytics/types";
 import type { MissingListData } from "@/features/mechant/analytics/types";
-import type { OverviewData } from "@/features/mechant/analytics/types";
-import type { TopProduct } from "@/features/mechant/analytics/types";
 import type { TimelinePoint as DashboardTimelinePoint } from "@/features/mechant/dashboard/type";
 
 // Helper to render the correct tab panel
@@ -32,7 +30,19 @@ const renderTabContent = (
     case 0:
       return (
         <ConversationsTab
-          overviewData={data.overviewData}
+          overviewData={{
+            sessions: data.overviewData?.sessions || { count: 0, changePercent: null },
+            productsCount: data.overviewData?.productsCount || 0,
+            messages: data.overviewData?.messages || 0,
+            topKeywords: data.overviewData?.topKeywords || [],
+            topProducts: data.overviewData?.topProducts || [],
+            channels: data.overviewData?.channels || { total: 0, breakdown: [] },
+            storeExtras: data.overviewData?.storeExtras || { paidOrders: 0, aov: 0 },
+            orders: data.overviewData?.orders || { count: 0, changePercent: null, byStatus: {}, totalSales: 0 },
+            csat: data.overviewData?.csat,
+            firstResponseTimeSec: data.overviewData?.firstResponseTimeSec,
+            missingOpen: data.overviewData?.missingOpen
+          }}
           timelineData={data.timelineData as DashboardTimelinePoint[]}
         />
       );
@@ -56,8 +66,8 @@ const renderTabContent = (
       return (
         <StoreTab
           hasStore={data.hasStore}
-          overviewData={data.overviewData as unknown as OverviewData}
-          topProductsData={data.topProductsData as unknown as TopProduct[]}
+          overviewData={data.overviewData as OverviewData}
+          topProductsData={data.topProductsData as TopProduct[]}
         />
       );
     case 4:

@@ -40,7 +40,7 @@ import { toast } from "react-toastify";
 
 // إشعارات حية
 import { useAdminNotifications } from "@/shared/hooks/useAdminNotifications";
-import type { AdminNotification, ChatNotification, SystemNotification } from "@/shared/types/notification";
+import type { AdminNotification, ChatNotification } from "@/shared/types/notification";
 
 const Topbar = ({
   onOpenSidebar,
@@ -76,7 +76,6 @@ const Topbar = ({
     return saved ? Number(saved) : 0;
   });
   const isChat = (n: AdminNotification): n is ChatNotification => n.kind === "chat";
-  const isSystem = (n: AdminNotification): n is SystemNotification => n.kind === "system";
   // 🔔 صوت تنبيه مع AudioContext واحد
   const audioCtxRef = useRef<AudioContext | null>(null);
   const playBeep = () => {
@@ -112,6 +111,7 @@ const Topbar = ({
   useAdminNotifications((n) => {
     setNotifications((prev) => [...prev, n]);
   
+    
     if (isChat(n)) {
       toast.info(
         <div>

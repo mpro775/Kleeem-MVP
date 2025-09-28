@@ -16,7 +16,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/features/mechant/settings-advanced/hooks/useSettings";
 import { useState } from "react";
-import axios from "@/shared/api/axios";
+import { ensureN8nWorkflow } from "@/features/mechant/settings-advanced/api";
 
 // Presentational Components
 import { ProfileSettings } from "@/features/mechant/settings-advanced/ui/ProfileSettings";
@@ -53,7 +53,7 @@ export default function SettingsAdvancedPage() {
   const handleEnsureN8n = async () => {
     setWfEnsuring(true);
     try {
-      const { data } = await axios.post("/n8n/workflows/me/ensure", {
+      const data = await ensureN8nWorkflow({
         forceRecreate: wfForceRecreate,
         activate: wfActivate,
       });

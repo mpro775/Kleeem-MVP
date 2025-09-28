@@ -20,7 +20,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import { useLocation, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
-import type { User } from "@/context/AuthContext";
+import type { User } from "@/context/types";
 
 let useAuthSafe:
   | undefined

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/22</span>
+                <span class='fraction'>0/25</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>0/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/19</span>
+                <span class='fraction'>0/22</span>
             </div>
         
             
@@ -113,7 +113,37 @@
 <a name='L48'></a><a href='#L48'>48</a>
 <a name='L49'></a><a href='#L49'>49</a>
 <a name='L50'></a><a href='#L50'>50</a>
-<a name='L51'></a><a href='#L51'>51</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -133,28 +163,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -163,52 +171,56 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// src/modules/outbox/outbox.dispatcher.ts
-<span class="cstat-no" title="statement not covered" >import { Injectable, Logger } from '@nestjs/common';</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { Injectable, Logger } from '@nestjs/common';</span>
 <span class="cstat-no" title="statement not covered" >import { Cron, CronExpression } from '@nestjs/schedule';</span>
-<span class="cstat-no" title="statement not covered" >import { OutboxService } from './outbox.service';</span>
-<span class="cstat-no" title="statement not covered" >import { RabbitService } from '../../infra/rabbit/rabbit.service';</span>
-import { Types } from 'mongoose';
 &nbsp;
-type OutboxEvt = {
-  _id: Types.ObjectId | string;
-  exchange: string;
-  routingKey: string;
-  eventType: string;
-  occurredAt?: string;
-  aggregateId: string;
-  aggregateType: string;
-  payload: Record&lt;string, unknown&gt;;
-};
+<span class="cstat-no" title="statement not covered" >import { RabbitService } from '../../infra/rabbit/rabbit.service';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >import { OutboxService } from './outbox.service';</span>
 &nbsp;
 @Injectable()
 export class <span class="cstat-no" title="statement not covered" ><span class="cstat-no" title="statement not covered" >OutboxDispatcher<span class="cstat-no" title="statement not covered" > </span>{</span></span>
   private <span class="cstat-no" title="statement not covered" >logger = new Logger(OutboxDispatcher.name);</span>
+  private <span class="cstat-no" title="statement not covered" >workerId = `dispatcher@${process.pid}`;</span>
 &nbsp;
 <span class="fstat-no" title="function not covered" >  constructor(</span>
     private readonly <span class="cstat-no" title="statement not covered" >outbox: O</span>utboxService,
     private readonly <span class="cstat-no" title="statement not covered" >rabbit: R</span>abbitService,
   ) {}
 &nbsp;
+  @Cron(CronExpression.EVERY_MINUTE)
+<span class="fstat-no" title="function not covered" >  async <span class="cstat-no" title="statement not covered" ></span>reap(): Promise&lt;void&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    await this.outbox.recoverStuckPublishing();</span>
+  }
+&nbsp;
   @Cron(CronExpression.EVERY_10_SECONDS)
 <span class="fstat-no" title="function not covered" >  async <span class="cstat-no" title="statement not covered" ></span>tick(): Promise&lt;void&gt; {</span>
-    const batch = (<span class="cstat-no" title="statement not covered" >await this.outbox.pullBatch(200))</span> as OutboxEvt[];
+    const batch = <span class="cstat-no" title="statement not covered" >await this.outbox.claimBatch(200, this.workerId);</span>
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (batch.length === 0) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    for (const ev of batch) {</span>
       const idStr = <span class="cstat-no" title="statement not covered" >typeof ev._id === 'string' ? ev._id : ev._id.toString();</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
-<span class="cstat-no" title="statement not covered" >        await this.rabbit.publish(ev.exchange, ev.routingKey, {</span>
-          type: ev.eventType,
-          occurredAt: ev.occurredAt,
-          aggregate: { id: ev.aggregateId, type: ev.aggregateType },
-          payload: ev.payload,
-        });
+<span class="cstat-no" title="statement not covered" >        await this.rabbit.publish(</span>
+          ev.exchange,
+          ev.routingKey,
+          {
+            type: ev.eventType,
+            occurredAt: ev.occurredAt,
+            aggregate: { id: ev.aggregateId, type: ev.aggregateType },
+            payload: ev.payload,
+          },
+          {
+            messageId: idStr,
+            persistent: true,
+            contentType: 'application/json',
+          },
+        );
 <span class="cstat-no" title="statement not covered" >        await this.outbox.markPublished(idStr);</span>
       } catch (err) {
         const msg = <span class="cstat-no" title="statement not covered" >err instanceof Error ? err.message : String(err);</span>
-<span class="cstat-no" title="statement not covered" >        await this.outbox.markFailed(idStr, msg);</span>
 <span class="cstat-no" title="statement not covered" >        this.logger.error(`Publish failed (${idStr}): ${msg}`);</span>
+<span class="cstat-no" title="statement not covered" >        await this.outbox.reschedule(idStr, msg, ev.attempts);</span>
       }
     }
   }
@@ -220,7 +232,7 @@ export class <span class="cstat-no" title="statement not covered" ><span class="
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-08T02:46:06.445Z
+                at 2025-09-25T21:16:27.952Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

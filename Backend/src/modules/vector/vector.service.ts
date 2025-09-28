@@ -331,10 +331,8 @@ export class VectorService implements OnModuleInit {
     p: EmbeddableProduct,
   ): Pick<ProductPayload, 'specsBlock' | 'keywords' | 'images'> {
     return {
-      specsBlock: Array.isArray(p.specsBlock)
-        ? (p.specsBlock as unknown[])
-        : [],
-      keywords: Array.isArray(p.keywords) ? (p.keywords as unknown[]) : [],
+      specsBlock: Array.isArray(p.specsBlock) ? p.specsBlock : [],
+      keywords: Array.isArray(p.keywords) ? p.keywords : [],
       images: Array.isArray(p.images)
         ? p.images.filter((img): img is string => typeof img === 'string')
         : [],

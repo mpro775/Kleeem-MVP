@@ -2,53 +2,14 @@ import axios, { type AxiosResponse } from "axios";
 import { API_BASE } from "../../context/config";
 import { AppError, errorLogger } from "../errors";
 
-/** مفاتيح شائعة للبيانات */
-const DATA_KEYS = [
-  "data",
-  "result",
-  "payload",
-  "value",
-  "item",
-  "entry",
-] as const;
-const LIST_KEYS = ["items", "results", "rows", "list"] as const;
-const META_KEYS = ["meta", "pagination", "pageInfo"] as const;
-
-/** يلتقط معلومات ميتا شائعة (total / page / size ...) إن وُجدت */
-function extractMeta(obj: any): Record<string, any> | undefined {
-  if (!obj || typeof obj !== "object") return undefined;
-
-  // 1) حقول ميتا مباشرة
-  for (const k of META_KEYS) {
-    if (
-      obj &&
-      typeof obj === "object" &&
-      k in obj &&
-      typeof obj[k] === "object"
-    ) {
-      return obj[k];
-    }
-  }
-
-  // 2) مجاميع شائعة مرافقة للقوائم
-  const totalKeys = ["total", "count", "totalCount", "recordsTotal"];
-  const pageKeys = ["page", "currentPage"];
-  const sizeKeys = ["size", "pageSize", "limit", "perPage"];
-
-  const meta: Record<string, any> = {};
-  for (const tk of totalKeys) if (tk in obj) meta.total = obj[tk];
-  for (const pk of pageKeys) if (pk in obj) meta.page = obj[pk];
-  for (const sk of sizeKeys) if (sk in obj) meta.size = obj[sk];
-
-  return Object.keys(meta).length ? meta : undefined;
-}
-
-/** يطبّع أي شكل رد إلى "payload" موحّد + "meta" إن وُجد */
+/** يطبّع الاستجابة من الباك إند - الاستجابة دائماً بالصيغة { success, data, requestId, timestamp } */
 function normalizePayload(raw: any): { payload: any; meta?: any } {
-  // 204 أو لا شيء
+  // الباك إند يرسل دائماً { success: true, data: T, requestId, timestamp }
+  // لا نحتاج للتطبيع المعقد
+
   if (raw === undefined || raw === null) return { payload: raw };
 
-  // إذا كانت مصفوفة أصلاً
+  // إذا كانت مصفوفة أصلاً (نادر لكن ممكن)
   if (Array.isArray(raw)) return { payload: raw };
 
   // إذا كان Blob/Stream أو ملف، لا نلمسه
@@ -59,31 +20,20 @@ function normalizePayload(raw: any): { payload: any; meta?: any } {
 
   // إذا كان كائن:
   if (typeof raw === "object") {
-    // كثير من الـ APIs: { success, data, message }
-    if ("data" in raw && raw.data !== undefined) {
-      const meta = extractMeta(raw);
-      return { payload: raw.data, meta };
+    // الباك إند يرسل دائماً الصيغة الصحيحة
+    if ("success" in raw && "data" in raw) {
+      return {
+        payload: raw.data,
+        meta: {
+          success: raw.success,
+          requestId: raw.requestId,
+          timestamp: raw.timestamp
+        }
+      };
     }
 
-    // { items: [...], total, page, ... }
-    for (const key of LIST_KEYS) {
-      if (key in raw && Array.isArray((raw as any)[key])) {
-        const meta = extractMeta(raw);
-        return { payload: (raw as any)[key], meta };
-      }
-    }
-
-    // { result } / { payload } / { value } / { item } ...
-    for (const key of DATA_KEYS) {
-      if (key in raw) {
-        const meta = extractMeta(raw);
-        return { payload: (raw as any)[key], meta };
-      }
-    }
-
-    // لا توجد مفاتيح معروفة: نعيد الكائن كما هو
-    const meta = extractMeta(raw);
-    return { payload: raw, meta };
+    // fallback للحالات النادرة
+    return { payload: raw };
   }
 
   // بدائيات (string/number/bool) — نعيدها كما هي
@@ -103,57 +53,56 @@ function attachNormalizedToResponse(
   // نكتب payload داخل data حتى كل الصفحات التي تستعمل res.data تعمل مباشرة
   (res as any).data = normalized.payload;
 }
-function collectConstraints(err: any, path = "") {
-  const lines: string[] = [];
-  const fields: Record<string, string[]> = {};
-  const arr = Array.isArray(err) ? err : [err];
-
-  const walk = (node: any, basePath: string) => {
-    const prop = node?.property
-      ? basePath
-        ? `${basePath}.${node.property}`
-        : node.property
-      : basePath;
-    if (node?.constraints && typeof node.constraints === "object") {
-      const msgs = Object.values(node.constraints).filter(Boolean) as string[];
-      if (msgs.length) {
-        if (prop) fields[prop] = (fields[prop] || []).concat(msgs);
-        lines.push(...msgs);
-      }
-    }
-    if (Array.isArray(node?.children) && node.children.length) {
-      node.children.forEach((ch: any) => walk(ch, prop));
-    }
-  };
-
-  for (const item of arr) {
-    if (typeof item === "string") lines.push(item);
-    else if (item && typeof item === "object") {
-      if (typeof item.message === "string") lines.push(item.message);
-      walk(item, path);
-    }
-  }
-  return { lines, fields };
-}
-
 function normalizeServerError(data: any, fallback = "حدث خطأ غير متوقع") {
-  if (typeof data?.message === "string") {
+  // الباك إند يرسل أخطاء موحدة بالصيغة: { status, code, message, requestId, timestamp, details? }
+
+  if (!data || typeof data !== "object") {
     return {
-      message: data.message as string,
+      message: fallback,
       fields: undefined as Record<string, string[]> | undefined,
     };
   }
-  if (Array.isArray(data?.message)) {
-    const { lines, fields } = collectConstraints(data.message);
-    const message = lines.length
-      ? lines.join(" • ")
-      : "بيانات غير صحيحة - يرجى مراجعة المدخلات";
-    return { message, fields: Object.keys(fields).length ? fields : undefined };
+
+  // إذا كان هناك message مباشرة (fallback للحالات القديمة)
+  if (typeof data.message === "string") {
+    return {
+      message: data.message,
+      fields: data.details as Record<string, string[]> | undefined,
+    };
   }
-  if (typeof data?.error === "string")
-    return { message: data.error, fields: undefined };
-  if (typeof data === "string") return { message: data, fields: undefined };
-  return { message: fallback, fields: undefined };
+
+  // إذا كان هناك error (fallback للحالات القديمة)
+  if (typeof data.error === "string") {
+    return {
+      message: data.error,
+      fields: undefined
+    };
+  }
+
+  // إذا كان هناك details مع validation errors
+  if (data.details && typeof data.details === "object") {
+    const fields: Record<string, string[]> = {};
+
+    // معالجة أخطاء MongoDB validation
+    if (typeof data.details === "object") {
+      for (const [field, error] of Object.entries(data.details)) {
+        if (typeof error === "object" && error && "message" in error) {
+          fields[field] = [(error as { message: string }).message];
+        }
+      }
+    }
+
+    return {
+      message: data.message || "بيانات غير صحيحة - يرجى مراجعة المدخلات",
+      fields: Object.keys(fields).length ? fields : undefined,
+    };
+  }
+
+  // fallback
+  return {
+    message: fallback,
+    fields: undefined
+  };
 }
 
 const axiosInstance = axios.create({
@@ -225,6 +174,9 @@ axiosInstance.interceptors.response.use(
 
     const status = err.response?.status as number | undefined;
     const data = err.response?.data;
+
+    // الباك إند يرسل الأخطاء موحدة: { status, code, message, requestId, timestamp, details? }
+    // نحن نحصل على requestId من header أو من body
     const headRequestId = err.response?.headers?.["X-Request-Id"];
     const bodyRequestId = data?.requestId;
     const requestId = bodyRequestId || headRequestId;
@@ -234,16 +186,17 @@ axiosInstance.interceptors.response.use(
       err.message || "خطأ في الاتصال بالخادم"
     );
 
+    // code تأتي مباشرة من الباك إند، أو نستخدم API_{status} كfallback
     const code =
       (typeof data?.code === "string" && data.code) ||
       (status ? `API_${status}` : "NETWORK_ERROR");
 
     const appError = new AppError({
-      message, // دائماً string الآن
+      message,
       status,
       code,
       requestId,
-      fields, // Record<string, string[]> | undefined
+      fields,
     });
 
     errorLogger.log(appError, {

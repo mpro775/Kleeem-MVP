@@ -42,6 +42,7 @@ import AddToKnowledgeDialog from "@/features/mechant/MissingResponses/ui/AddToKn
 export default function MissingResponsesPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { handleError } = useErrorHandler();
 
   const [rows, setRows] = useState<MissingResponse[]>([]);
   const [total, setTotal] = useState(0);
@@ -89,6 +90,7 @@ export default function MissingResponsesPage() {
         setTotal(0);
       }
     } catch (error) {
+      handleError(error);
       console.error("Error fetching missing responses:", error);
       setRows([]);
       setTotal(0);
@@ -119,8 +121,12 @@ export default function MissingResponsesPage() {
   };
 
   const handleResolveOne = async (id: string) => {
-    await resolveMissingResponse(id);
-    fetchData();
+    try {
+      await resolveMissingResponse(id);
+      fetchData();
+    } catch (error) {
+      handleError(error);
+    }
   };
 
   const openKnowledge = (row: MissingResponse) => {
@@ -133,17 +139,25 @@ export default function MissingResponsesPage() {
     answer: string;
   }) => {
     if (!currentRow) return;
-    await addMissingToKnowledge(currentRow._id, payload);
-    setKnowledgeOpen(false);
-    setCurrentRow(null);
-    await fetchData();
+    try {
+      await addMissingToKnowledge(currentRow._id, payload);
+      setKnowledgeOpen(false);
+      setCurrentRow(null);
+      await fetchData();
+    } catch (error) {
+      handleError(error);
+    }
   };
 
   const handleResolveBulk = async () => {
     if (selected.size === 0) return;
-    await bulkResolve(Array.from(selected));
-    setSelected(new Set());
-    fetchData();
+    try {
+      await bulkResolve(Array.from(selected));
+      setSelected(new Set());
+      fetchData();
+    } catch (error) {
+      handleError(error);
+    }
   };
 
   return (

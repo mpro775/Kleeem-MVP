@@ -1,10 +1,12 @@
 // src/features/leads/hooks.ts
 import { useCallback, useEffect,  useState } from "react";
+import { useErrorHandler } from "@/shared/errors";
 import { v4 as uuidv4 } from "uuid";
 import type { Lead, LeadField, LeadsSettings } from "./types";
 import { fetchLeads, fetchLeadsSettings, saveLeadsSettings } from "./api";
 
 export function useLeadsManager(merchantId: string) {
+  const { handleError } = useErrorHandler();
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +27,8 @@ export function useLeadsManager(merchantId: string) {
       setEnabled(settings.enabled);
       setFields(settings.fields);
       setLeads(leadsList);
-    } catch {
+    } catch (e) {
+      handleError(e);
       setError("فشل تحميل بيانات الـ Leads");
     } finally {
       setLoading(false);
@@ -58,7 +61,8 @@ export function useLeadsManager(merchantId: string) {
       const payload: LeadsSettings = { enabled, fields };
       await saveLeadsSettings(merchantId, payload);
       return true;
-    } catch {
+    } catch (e) {
+      handleError(e);
       return false;
     } finally {
       setSaving(false);

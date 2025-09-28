@@ -11,6 +11,7 @@ import {
   UseGuards,
   UsePipes,
   ValidationPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Throttle } from '@nestjs/throttler';
@@ -30,6 +31,7 @@ import {
 import { mapEvoStatus } from '../channels/utils/evo-status.util';
 
 import { WhatsAppQrDto } from './dto/whatsapp-qr.dto';
+import { WebhookLoggingInterceptor } from './interceptors/webhook-logging.interceptor';
 import { WebhooksController } from './webhooks.controller';
 interface RequestWithWebhookData extends RequestWithUser {
   merchantId: string;
@@ -37,6 +39,7 @@ interface RequestWithWebhookData extends RequestWithUser {
 }
 
 @Public()
+@UseInterceptors(WebhookLoggingInterceptor)
 @Controller('webhooks/whatsapp_qr')
 export class WhatsappQrWebhookController {
   constructor(

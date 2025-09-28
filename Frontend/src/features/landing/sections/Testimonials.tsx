@@ -7,7 +7,7 @@ import {
   IconButton,
   useMediaQuery,
 } from "@mui/material";
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 

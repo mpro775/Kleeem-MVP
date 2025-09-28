@@ -39,14 +39,14 @@ class ChatService {
 
   async fetchInitialMessages() {
     try {
-      const session = await fetchKleemSession();
+      await fetchKleemSession();
       // منطق تحويل الرسائل يمكن أن يبقى هنا أو في الخطاف
     } catch (e) {
       console.error("Failed to fetch initial session", e);
     }
   }
 
-  sendMessage(text: string) {
+  sendMessage(_text: string) {
     // يمكن إرسال الرسالة عبر السوكيت هنا إذا كان الـ API يدعم ذلك
     // حاليًا الكود يستخدم HTTP POST، وهذا جيد
   }

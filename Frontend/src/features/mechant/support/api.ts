@@ -1,5 +1,5 @@
 // src/features/support/api.ts
-import axios from "@/shared/api/axios";
+import axiosInstanceInstance from "@/shared/api/axiosInstance";
 import type { AdminContactPayload, ContactResponse } from "./types";
 
 /**
@@ -39,8 +39,8 @@ export async function submitSupportTicket(
   files?: FileList | null
 ): Promise<ContactResponse> {
   const formData = buildFormData(payload, files);
-  const response = await axios.post<ContactResponse>(
-    "/support/contact",
+  const response = await axiosInstance.post<ContactResponse>(
+    "/support/contact/merchant",
     formData,
     {
       headers: { "Content-Type": "multipart/form-data" },

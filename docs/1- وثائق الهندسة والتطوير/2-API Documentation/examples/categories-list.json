@@ -1,0 +1,65 @@
+{
+  "success": true,
+  "message": null,
+  "requestId": "req_categories_001",
+  "timestamp": "2025-09-26T10:30:00.000Z",
+  "data": {
+    "items": [
+      {
+        "id": "cat_001",
+        "name": "الإضاءة",
+        "merchantId": "68a3addee395b1a94f9fcf87",
+        "parent": null,
+        "description": "جميع أنواع الإضاءة الداخلية والخارجية",
+        "image": "https://cdn.kaleem-ai.com/categories/lighting.jpg",
+        "keywords": ["إضاءة", "أنوار", "لمبات"],
+        "slug": "lighting",
+        "path": "الإضاءة",
+        "depth": 0,
+        "order": 1,
+        "ancestors": [],
+        "createdAt": "2025-09-20T08:00:00Z",
+        "updatedAt": "2025-09-20T08:00:00Z"
+      },
+      {
+        "id": "cat_002",
+        "name": "إضاءة الشوارع",
+        "merchantId": "68a3addee395b1a94f9fcf87",
+        "parent": "cat_001",
+        "description": "إضاءة الشوارع والطرق السريعة",
+        "image": "https://cdn.kaleem-ai.com/categories/street-lighting.jpg",
+        "keywords": ["إضاءة شوارع", "أعمدة إنارة"],
+        "slug": "street-lighting",
+        "path": "الإضاءة/إضاءة الشوارع",
+        "depth": 1,
+        "order": 1,
+        "ancestors": ["cat_001"],
+        "createdAt": "2025-09-20T08:15:00Z",
+        "updatedAt": "2025-09-20T08:15:00Z"
+      },
+      {
+        "id": "cat_003",
+        "name": "إضاءة الحدائق",
+        "merchantId": "68a3addee395b1a94f9fcf87",
+        "parent": "cat_001",
+        "description": "إضاءة الحدائق والمساحات الخضراء",
+        "image": "https://cdn.kaleem-ai.com/categories/garden-lighting.jpg",
+        "keywords": ["إضاءة حدائق", "أنوار خارجية"],
+        "slug": "garden-lighting",
+        "path": "الإضاءة/إضاءة الحدائق",
+        "depth": 1,
+        "order": 2,
+        "ancestors": ["cat_001"],
+        "createdAt": "2025-09-20T08:30:00Z",
+        "updatedAt": "2025-09-20T08:30:00Z"
+      }
+    ],
+    "pageInfo": {
+      "nextCursor": null,
+      "previousCursor": null,
+      "hasNext": false,
+      "hasPrev": false,
+      "limit": 20
+    }
+  }
+}

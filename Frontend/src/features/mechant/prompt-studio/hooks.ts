@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { UseFormReset, UseFormWatch } from "react-hook-form";
+import { useErrorHandler } from "@/shared/errors";
 import { promptApi } from "./api";
 import { areEqualQuickConfigs, type QuickConfig } from "./types";
 
@@ -29,6 +30,7 @@ export function usePromptStudio({
 }: Args) {
   const safeToken = token ?? "";
   const safeMerchant = merchantId ?? "";
+  const { handleError } = useErrorHandler();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -94,6 +96,7 @@ export function usePromptStudio({
         setLastUpdated(new Date());
       } catch (error) {
         console.error("Error loading prompt studio data:", error);
+        handleError(error);
         setPreviewContent("خطأ في تحميل البيانات");
       } finally {
         if (mounted) setIsLoading(false);
@@ -133,6 +136,7 @@ export function usePromptStudio({
           setLastUpdated(new Date());
         } catch (error) {
           console.error("Error in live preview:", error);
+          handleError(error);
           setPreviewContent("خطأ في المعاينة الحية");
         }
       }, 500);
@@ -169,7 +173,8 @@ export function usePromptStudio({
 
       setPreviewContent(preview);
       setLastUpdated(new Date());
-    } catch {
+    } catch (error) {
+      handleError(error);
       setPreviewContent("خطأ في جلب المعاينة من الخادم");
     }
   }, [safeToken, safeMerchant, activeTab, watch]);
@@ -206,6 +211,8 @@ export function usePromptStudio({
           customerServiceWhatsapp: updated.customerServiceWhatsapp ?? "",
         });
         setLastUpdated(new Date());
+      } catch (error) {
+        handleError(error);
       } finally {
         setIsSaving(false);
       }
@@ -226,6 +233,8 @@ export function usePromptStudio({
       );
       setLastUpdated(new Date());
       await handleManualPreview();
+    } catch (error) {
+      handleError(error);
     } finally {
       setIsSaving(false);
     }

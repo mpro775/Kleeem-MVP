@@ -1,0 +1,55 @@
+{
+  "success": true,
+  "message": null,
+  "requestId": "req_123456789",
+  "timestamp": "2025-09-26T10:30:00.000Z",
+  "data": {
+    "items": [
+      {
+        "id": "p_1001",
+        "merchantId": "68a3addee395b1a94f9fcf87",
+        "sku": "LP-LED-50W",
+        "name": "LED Street Light 50W",
+        "description": "High-efficiency LED street light suitable for modern and traditional roads.",
+        "brand": "Liper",
+        "categories": ["Lights", "Street"],
+        "images": ["https://cdn.kaleem-ai.com/p/1001.jpg"],
+        "price": 80,
+        "currency": "USD",
+        "inStock": true,
+        "stockQty": 120,
+        "attributes": {
+          "watt": "50W",
+          "colorTemp": "6500K",
+          "ipRating": "IP66"
+        }
+      },
+      {
+        "id": "p_1002",
+        "merchantId": "68a3addee395b1a94f9fcf87",
+        "sku": "LP-LED-100W",
+        "name": "LED Street Light 100W",
+        "description": "High-power LED street light for highways and main roads.",
+        "brand": "Liper",
+        "categories": ["Lights", "Street"],
+        "images": ["https://cdn.kaleem-ai.com/p/1002.jpg"],
+        "price": 120,
+        "currency": "USD",
+        "inStock": true,
+        "stockQty": 85,
+        "attributes": {
+          "watt": "100W",
+          "colorTemp": "6500K",
+          "ipRating": "IP66"
+        }
+      }
+    ],
+    "pageInfo": {
+      "nextCursor": "eyJpZCI6InBfMTAwMiJ9",
+      "previousCursor": null,
+      "hasNext": true,
+      "hasPrev": false,
+      "limit": 20
+    }
+  }
+}

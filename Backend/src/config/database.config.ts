@@ -3,8 +3,8 @@ import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { makeHistogramProvider } from '@willsoto/nestjs-prometheus';
-import { HISTOGRAM_BUCKETS } from 'src/common/cache/constant';
 
+import { HISTOGRAM_BUCKETS } from '../common/cache/constant';
 import { MetricsModule } from '../metrics/metrics.module';
 import { MongooseMetricsPlugin } from '../metrics/mongoose-metrics.plugin';
 

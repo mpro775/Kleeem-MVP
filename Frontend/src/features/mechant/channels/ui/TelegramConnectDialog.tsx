@@ -16,7 +16,7 @@ import {
   Chip,
 } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import axios from "@/shared/api/axios";
+import axiosInstance from "@/shared/api/axios";
 
 type Props = {
   open: boolean;
@@ -49,7 +49,7 @@ export default function TelegramConnectDialog({
     setBusy(true);
     setError(null);
     try {
-      const { data } = await axios.get<{ status: string; details?: any }>(
+      const { data } = await axiosInstance.get<{ status: string; details?: any }>(
         `/channels/${channelId}/status`
       );
       setStatus(data?.status || "");
@@ -77,7 +77,7 @@ export default function TelegramConnectDialog({
     setError(null);
     try {
       const payload = token ? { botToken: token } : undefined;
-      await axios.post(`/channels/${channelId}/actions/connect`, payload);
+      await axiosInstance.post(`/channels/${channelId}/actions/connect`, payload);
       await fetchStatus();
       onClose(true);
     } catch (e: any) {

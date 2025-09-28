@@ -1,0 +1,156 @@
+# قواعد تنبيه Kaleem API
+groups:
+  - name: kaleem-api-alerts
+    rules:
+      # ===== تنبيهات الأداء =====
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, route)) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          service: kaleem-api
+        annotations:
+          summary: 'زمن استجابة عالي'
+          description: 'زمن الاستجابة P95 للمسار {{ $labels.route }} هو {{ $value }}s'
+          runbook_url: 'https://kb.kaleem-ai.com/runbooks/high-latency'
+
+      - alert: VeryHighLatency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, route)) > 2
+        for: 1m
+        labels:
+          severity: critical
+          service: kaleem-api
+        annotations:
+          summary: 'زمن استجابة مرتفع جداً'
+          description: 'زمن الاستجابة P95 للمسار {{ $labels.route }} هو {{ $value }}s'
+          runbook_url: 'https://kb.kaleem-ai.com/runbooks/high-latency'
+
+      # ===== تنبيهات الأخطاء =====
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{job="kaleem-api",status_code=~"5.."}[5m])) by (route) / sum(rate(http_requests_total{job="kaleem-api"}[5m])) by (route) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: kaleem-api
+        annotations:
+          summary: 'معدل أخطاء عالي'
+          description: 'معدل الأخطاء 5xx للمسار {{ $labels.route }} هو {{ $value | humanizePercentage }}'
+          runbook_url: 'https://kb.kaleem-ai.com/runbooks/api-high-error-rate'
+
+      - alert: CriticalErrorRate
+        expr: sum(rate(http_requests_total{job="kaleem-api",status_code=~"5.."}[5m])) by (route) / sum(rate(http_requests_total{job="kaleem-api"}[5m])) by (route) > 0.1
+        for: 1m
+        labels:
+          severity: critical
+          service: kaleem-api
+        annotations:
+          summary: 'معدل أخطاء حرج'
+          description: 'معدل الأخطاء 5xx للمسار {{ $labels.route }} هو {{ $value | humanizePercentage }}'
+          runbook_url: 'https://kb.kaleem-ai.com/runbooks/api-high-error-rate'
+
+      # ===== تنبيهات قاعدة البيانات =====
+      - alert: DatabaseConnectionsHigh
+        expr: mongodb_connections{state="current"} > 80
+        for: 2m
+        labels:
+          severity: warning
+          service: mongodb
+        annotations:
+          summary: 'اتصالات قاعدة البيانات عالية'
+          description: 'عدد الاتصالات الحالية {{ $value }} تجاوز الحد المسموح'
+          runbook_url: 'https://kb.kaleem-ai.com/runbooks/database-high-connections'
+
+      - alert: DatabaseSlowQueries
+        expr: rate(mongodb_mongod_op_counters_total[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: mongodb
+        annotations:
+          summary: 'استعلامات قاعدة البيانات بطيئة'
+          description: 'معدل العمليات {{ $value }} عملية/ثانية'
+
+      # ===== تنبيهات الكاش =====
+      - alert: LowCacheHitRate
+        expr: sum(rate(cache_hit_total[5m])) / (sum(rate(cache_hit_total[5m])) + sum(rate(cache_miss_total[5m]))) < 0.7
+        for: 5m
+        labels:
+          severity: warning
+          service: kaleem-api
+        annotations:
+          summary: 'معدل إصابة الكاش منخفض'
+          description: 'معدل إصابة الكاش {{ $value | humanizePercentage }} أقل من 70%'
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: 'Redis متوقف'
+          description: 'خدمة Redis غير متاحة'
+          runbook_url: 'https://kb.kaleem-ai.com/runbooks/redis-down'
+
+      # ===== تنبيهات النظام =====
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 2m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: 'استخدام ذاكرة عالي'
+          description: 'استخدام الذاكرة {{ $value | humanizePercentage }}'
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: 'استخدام CPU عالي'
+          description: 'استخدام CPU {{ $value }}%'
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: 'مساحة القرص منخفضة'
+          description: 'مساحة القرص المتاحة {{ $value | humanizePercentage }}'
+
+      # ===== تنبيهات التطبيق =====
+      - alert: APIDown
+        expr: up{job="kaleem-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: kaleem-api
+        annotations:
+          summary: 'Kaleem API متوقف'
+          description: 'التطبيق الرئيسي غير متاح'
+          runbook_url: 'https://kb.kaleem-ai.com/runbooks/api-down'
+
+      - alert: WorkerDown
+        expr: up{job="kaleem-workers"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: kaleem-workers
+        annotations:
+          summary: 'عامل متوقف'
+          description: 'أحد العمال غير متاح: {{ $labels.instance }}'
+
+      - alert: QueueBacklog
+        expr: rabbitmq_queue_messages > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: rabbitmq
+        annotations:
+          summary: 'تراكم في الطوابير'
+          description: 'الطابور {{ $labels.queue }} يحتوي على {{ $value }} رسالة'

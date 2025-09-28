@@ -10,6 +10,7 @@ import {
   Chip,
 } from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
+import { useErrorHandler } from "@/shared/errors";
 import BannersEditor from "@/features/store/ui/BannersEditor";
 import type {
   Banner,
@@ -24,6 +25,7 @@ const MAX_BANNERS = 5;
 
 export default function BannersManagementPage() {
   const { user } = useAuth();
+  const { handleError } = useErrorHandler();
   const merchantId = user?.merchantId ?? "";
 
   const [storefront, setStorefront] = useState<Storefront | null>(null);
@@ -47,6 +49,7 @@ export default function BannersManagementPage() {
         }
       })
       .catch((error) => {
+        handleError(error);
         console.error("Error loading storefront data:", error);
       });
   }, [merchantId]);
@@ -85,6 +88,7 @@ export default function BannersManagementPage() {
         severity: "success",
       });
     } catch (e: any) {
+      handleError(e);
       console.error("Error saving banners:", e);
       setSnackbar({
         open: true,

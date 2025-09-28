@@ -9,10 +9,10 @@ import { Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Job } from 'bull';
+import ExcelJS from 'exceljs';
 import mammoth from 'mammoth';
 import { Model, Types } from 'mongoose';
 import pdfParse from 'pdf-parse';
-import * as XLSX from 'xlsx';
 
 import { VectorService } from '../../vector/vector.service';
 import { DocumentsService } from '../documents.service';
@@ -100,6 +100,47 @@ async function downloadFromMinioToTemp(
   await fs.writeFile(tempFile, Buffer.concat(buffers));
   return tempFile;
 }
+async function extractTextFromXlsxWithExceljs(
+  filePath: string,
+): Promise<string> {
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.readFile(filePath);
+
+  const lines: string[] = [];
+  wb.worksheets.forEach((sheet) => {
+    // اسم الشيت (اختياري)
+    lines.push(`# Sheet: ${sheet.name}`);
+    sheet.eachRow((row) => {
+      // حوّل كل خلية لنص (افتراضيًا ExcelJS يرجع أنواع مختلفة)
+      const values = row.values;
+      if (!values || !Array.isArray(values)) return;
+
+      const cells = values
+        .filter(
+          (v): v is NonNullable<typeof v> => v !== undefined && v !== null,
+        )
+        .map((v) => {
+          if (typeof v === 'string') return v.trim();
+          if (typeof v === 'number') return String(v);
+          if (typeof v === 'boolean') return v ? 'true' : 'false';
+          if (v && typeof v === 'object' && v !== null && 'text' in v) {
+            // RichText / Formula result
+            const obj = v as { text?: unknown };
+            const textValue = obj.text;
+            return typeof textValue === 'string'
+              ? textValue.trim()
+              : JSON.stringify(textValue);
+          }
+          if (typeof v === 'object' && v !== null) return JSON.stringify(v);
+          return String(v);
+        });
+      lines.push(cells.join(','));
+    });
+    lines.push(''); // فاصل بين الشيتات
+  });
+
+  return lines.join('\n');
+}
 
 async function extractTextFromFile(
   filePath: string,
@@ -116,13 +157,16 @@ async function extractTextFromFile(
     return parsed.text ?? '';
   }
 
-  if (fileType === CT_XLSX || fileType === CT_XLS) {
-    const workbook = XLSX.readFile(filePath);
-    let out = '';
-    for (const sheetName of workbook.SheetNames) {
-      out += `${XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName])}\n`;
-    }
-    return out;
+  if (fileType === CT_XLSX) {
+    return extractTextFromXlsxWithExceljs(filePath);
+  }
+
+  if (fileType === CT_XLS) {
+    // خيار 1: ارفضه برسالة واضحة
+    throw new Error(
+      'Unsupported file type: .xls (legacy). Please upload .xlsx instead.',
+    );
+    // خيار 2 لاحقًا: نفّذ تحويل خارجي ثم اقرأ الناتج .xlsx
   }
 
   throw new Error(`Unsupported file type: ${fileType}`);

@@ -11,6 +11,7 @@ import {
   UsePipes,
   ValidationPipe,
   NotFoundException,
+  UseInterceptors,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Throttle } from '@nestjs/throttler';
@@ -25,6 +26,7 @@ import { ChannelSecretsLean } from '../channels/repositories/channels.repository
 import { Channel, ChannelDocument } from '../channels/schemas/channel.schema';
 
 import { TelegramUpdateDto } from './dto/telegram-update.dto';
+import { WebhookLoggingInterceptor } from './interceptors/webhook-logging.interceptor';
 import { WebhooksController } from './webhooks.controller';
 
 interface RequestWithWebhookData extends RequestWithUser {
@@ -32,6 +34,7 @@ interface RequestWithWebhookData extends RequestWithUser {
   channel: ChannelSecretsLean;
 }
 @Public()
+@UseInterceptors(WebhookLoggingInterceptor)
 @Controller('webhooks/telegram')
 export class TelegramWebhookController {
   constructor(

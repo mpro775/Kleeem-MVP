@@ -1,0 +1,60 @@
+{
+  "success": true,
+  "message": null,
+  "requestId": "req_channels_001",
+  "timestamp": "2025-09-26T10:30:00.000Z",
+  "data": {
+    "items": [
+      {
+        "id": "chn_123",
+        "merchantId": "68a3addee395b1a94f9fcf87",
+        "provider": "whatsapp",
+        "name": "الدعم الفني الرئيسي",
+        "enabled": true,
+        "isDefault": true,
+        "config": {
+          "phoneNumber": "+966501234567",
+          "businessAccountId": "wa_business_123",
+          "apiToken": "encrypted_token_123"
+        },
+        "createdAt": "2025-09-20T08:00:00Z",
+        "updatedAt": "2025-09-25T15:30:00Z"
+      },
+      {
+        "id": "chn_124",
+        "merchantId": "68a3addee395b1a94f9fcf87",
+        "provider": "telegram",
+        "name": "قناة تليجرام",
+        "enabled": true,
+        "isDefault": false,
+        "config": {
+          "botToken": "encrypted_bot_token_456",
+          "username": "kaleem_support_bot"
+        },
+        "createdAt": "2025-09-21T10:00:00Z",
+        "updatedAt": "2025-09-24T12:00:00Z"
+      },
+      {
+        "id": "chn_125",
+        "merchantId": "68a3addee395b1a94f9fcf87",
+        "provider": "web",
+        "name": "الدردشة على الموقع",
+        "enabled": true,
+        "isDefault": false,
+        "config": {
+          "widgetId": "widget_789",
+          "embedCode": "<script src='https://widget.kaleem-ai.com'></script>"
+        },
+        "createdAt": "2025-09-22T14:00:00Z",
+        "updatedAt": "2025-09-23T09:15:00Z"
+      }
+    ],
+    "pageInfo": {
+      "nextCursor": null,
+      "previousCursor": null,
+      "hasNext": false,
+      "hasPrev": false,
+      "limit": 20
+    }
+  }
+}

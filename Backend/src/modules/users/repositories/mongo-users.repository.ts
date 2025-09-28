@@ -3,11 +3,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
+import { PaginationService } from '../../../common/services/pagination.service';
 import { GetUsersDto, SortOrder } from '../dto/get-users.dto'; // ← SortOrder كقيمة
 import { User } from '../schemas/user.schema';
 
 import type { PaginationResult } from '../../../common/dto/pagination.dto';
-import { PaginationService } from '../../../common/services/pagination.service';
 import type { CreateUserDto } from '../dto/create-user.dto';
 import type { NotificationsPrefsDto } from '../dto/notifications-prefs.dto';
 import type { UpdateUserDto } from '../dto/update-user.dto';

@@ -5,7 +5,6 @@ import { ConfigModule } from '@nestjs/config';
 import { ErrorMonitoringController } from './controllers/error-monitoring.controller';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { ErrorLoggingInterceptor } from './interceptors/error-logging.interceptor';
-import { PerformanceTrackingInterceptor } from './interceptors/performance-tracking.interceptor';
 import { ErrorManagementService } from './services/error-management.service';
 import { SentryService } from './services/sentry.service';
 

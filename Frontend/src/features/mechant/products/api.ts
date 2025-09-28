@@ -1,4 +1,4 @@
-import axios from "@/shared/api/axios";
+import axiosInstanceInstance from "@/shared/api/axiosInstance";
 import type {
   CreateProductDto,
   UpdateProductDto,
@@ -14,7 +14,7 @@ export async function createProduct(
     ...payload,
     category: payload.category ? ensureIdString(payload.category) : undefined,
   };
-  const { data } = await axios.post<ProductResponse>("/products", casted);
+  const { data } = await axiosInstance.post<ProductResponse>("/products", casted);
   return data;
 }
 
@@ -30,7 +30,7 @@ export async function updateProduct(
         ? ensureIdString(payload.category)
         : undefined,
   };
-  const { data } = await axios.put<ProductResponse>(
+  const { data } = await axiosInstance.put<ProductResponse>(
     `/products/${encodeURIComponent(ensureIdString(id))}`,
     casted
   );
@@ -39,7 +39,7 @@ export async function updateProduct(
 
 // حذف منتج
 export async function deleteProduct(id: string): Promise<{ message: string }> {
-  const { data } = await axios.delete<{ message: string }>(
+  const { data } = await axiosInstance.delete<{ message: string }>(
     `/products/${encodeURIComponent(ensureIdString(id))}`
   );
   return data;
@@ -49,7 +49,7 @@ export async function deleteProduct(id: string): Promise<{ message: string }> {
 export async function getMerchantProducts(
   merchantId: string
 ): Promise<ProductResponse[]> {
-  const { data } = await axios.get<
+  const { data } = await axiosInstance.get<
     { success?: boolean; data?: ProductResponse[] } | ProductResponse[]
   >("/products", { params: { merchantId: ensureIdString(merchantId) } });
   if (Array.isArray(data)) return data;
@@ -74,7 +74,7 @@ export async function uploadProductImages(
   const form = new FormData();
   files.forEach((f) => form.append("files", f, f.name)); // متوافق مع FilesInterceptor('files', 6)
 
-  const { data } = await axios.post(
+  const { data } = await axiosInstance.post(
     `/products/${encodeURIComponent(productId)}/images`,
     form,
     {

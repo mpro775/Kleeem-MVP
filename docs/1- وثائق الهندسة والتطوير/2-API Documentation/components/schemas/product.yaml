@@ -1,0 +1,53 @@
+Product:
+  type: object
+  required: [id, name, price, currency, merchantId]
+  properties:
+    id:
+      type: string
+      example: "p_1001"
+    merchantId:
+      type: string
+      example: "68a3addee395b1a94f9fcf87"
+    sku:
+      type: string
+      example: "LP-LED-50W"
+    name:
+      type: string
+      example: "LED Street Light 50W"
+    description:
+      type: string
+      example: "High-efficiency LED street light suitable for modern and traditional roads."
+    brand:
+      type: string
+      example: "Liper"
+    categories:
+      type: array
+      items:
+        type: string
+      example: ["Lights", "Street"]
+    images:
+      type: array
+      items:
+        type: string
+        format: uri
+      example: ["https://cdn.kaleem-ai.com/p/1001.jpg"]
+    price:
+      type: number
+      format: float
+      example: 80
+    currency:
+      type: string
+      example: "USD"
+    inStock:
+      type: boolean
+      example: true
+    stockQty:
+      type: integer
+      example: 120
+    attributes:
+      type: object
+      additionalProperties: true
+      example:
+        watt: "50W"
+        colorTemp: "6500K"
+        ipRating: "IP66"

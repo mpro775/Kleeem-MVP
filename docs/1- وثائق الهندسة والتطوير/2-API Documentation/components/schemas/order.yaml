@@ -1,0 +1,56 @@
+Order:
+  type: object
+  required: [id, merchantId, items, total, currency, status, createdAt]
+  properties:
+    id:
+      type: string
+      example: "ord_9012"
+    merchantId:
+      type: string
+      example: "68a3addee395b1a94f9fcf87"
+    items:
+      type: array
+      items:
+        type: object
+        required: [productId, name, qty, price]
+        properties:
+          productId: { type: string, example: "p_1001" }
+          name:      { type: string, example: "LED Street Light 50W" }
+          qty:       { type: integer, example: 2 }
+          price:     { type: number, format: float, example: 80 }
+    subtotal:
+      type: number
+      format: float
+      example: 160
+    shipping:
+      type: number
+      format: float
+      example: 10
+    total:
+      type: number
+      format: float
+      example: 170
+    currency:
+      type: string
+      example: "USD"
+    status:
+      type: string
+      enum: [pending, paid, shipped, delivered, cancelled, refunded]
+      example: "paid"
+    createdAt:
+      type: string
+      format: date-time
+      example: "2025-09-25T10:21:00Z"
+    customer:
+      type: object
+      properties:
+        id:    { type: string, example: "cus_1234" }
+        name:  { type: string, example: "Mohamed" }
+        phone: { type: string, example: "+966..." }
+    shippingAddress:
+      type: object
+      properties:
+        country: { type: string, example: "SA" }
+        city:    { type: string, example: "Riyadh" }
+        line1:   { type: string, example: "Street 10" }
+        postal:  { type: string, example: "12222" }

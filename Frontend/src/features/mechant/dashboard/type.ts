@@ -19,11 +19,11 @@ export type ChecklistItem = {
   export type Overview = {
     sessions: {
       count: number;
-      changePercent: number;
+      changePercent: number | null;
     };
     productsCount: number;
     messages: number;
-    topKeywords: { keyword: string; count: number }[];
+    topKeywords: { keyword: string; count: number; percentage?: number }[];
     topProducts: { productId: string; name: string; count: number }[];
     channels: {
       total: number;
@@ -34,11 +34,14 @@ export type ChecklistItem = {
       aov: number;
     };
     orders: {
+      count: number;
+      changePercent: number | null;
+      byStatus: Record<string, number>;
       totalSales: number;
     };
-    csat: number;
-    firstResponseTimeSec: number;
-    missingOpen: number;
+    csat?: number;
+    firstResponseTimeSec?: number | null;
+    missingOpen?: number;
   };
   
   // مخطط الزمن للرسائل

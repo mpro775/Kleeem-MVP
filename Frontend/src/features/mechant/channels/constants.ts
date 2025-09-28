@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 export type ChannelKey =
   | "telegram"
   | "whatsappQr"
-  | "webchat"
   | "whatsappApi"
+  | "webchat"
   | "instagram"
   | "messenger";
 

@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">73.33% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>11/15</span>
+                <span class='fraction'>0/14</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">69.23% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>9/13</span>
+                <span class='fraction'>0/12</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -106,17 +106,15 @@
 <a name='L41'></a><a href='#L41'>41</a>
 <a name='L42'></a><a href='#L42'>42</a>
 <a name='L43'></a><a href='#L43'>43</a>
-<a name='L44'></a><a href='#L44'>44</a>
-<a name='L45'></a><a href='#L45'>45</a>
-<a name='L46'></a><a href='#L46'>46</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
+<a name='L44'></a><a href='#L44'>44</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -135,9 +133,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -154,14 +150,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// src/common/error-management.module.ts
-import { Module, Global, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { ErrorManagementService } from './services/error-management.service';
-import { SentryService } from './services/sentry.service';
-import { ErrorLoggingInterceptor } from './interceptors/error-logging.interceptor';
-import { PerformanceTrackingInterceptor } from './interceptors/performance-tracking.interceptor';
-import { AllExceptionsFilter } from './filters/all-exceptions.filter';
-import { ErrorMonitoringController } from './controllers/error-monitoring.controller';
+<span class="cstat-no" title="statement not covered" >import { Module, Global, OnModuleInit, OnModuleDestroy } from '@nestjs/common';</span>
+<span class="cstat-no" title="statement not covered" >import { ConfigModule } from '@nestjs/config';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >import { ErrorMonitoringController } from './controllers/error-monitoring.controller';</span>
+<span class="cstat-no" title="statement not covered" >import { AllExceptionsFilter } from './filters/all-exceptions.filter';</span>
+<span class="cstat-no" title="statement not covered" >import { ErrorLoggingInterceptor } from './interceptors/error-logging.interceptor';</span>
+<span class="cstat-no" title="statement not covered" >import { ErrorManagementService } from './services/error-management.service';</span>
+<span class="cstat-no" title="statement not covered" >import { SentryService } from './services/sentry.service';</span>
 &nbsp;
 @Global()
 @Module({
@@ -170,7 +166,6 @@ import { ErrorMonitoringController } from './controllers/error-monitoring.contro
     SentryService,
     ErrorManagementService,
     ErrorLoggingInterceptor,
-    PerformanceTrackingInterceptor,
     AllExceptionsFilter,
   ],
   controllers: [ErrorMonitoringController],
@@ -178,24 +173,23 @@ import { ErrorMonitoringController } from './controllers/error-monitoring.contro
     SentryService,
     ErrorManagementService,
     ErrorLoggingInterceptor,
-    PerformanceTrackingInterceptor,
     AllExceptionsFilter,
   ],
 })
-export class ErrorManagementModule implements OnModuleInit, OnModuleDestroy {
+export <span class="cstat-no" title="statement not covered" >class <span class="cstat-no" title="statement not covered" ><span class="cstat-no" title="statement not covered" >ErrorManagementModule </span>implements OnModuleInit, OnModuleDestroy {</span></span>
 <span class="fstat-no" title="function not covered" >  constructor(</span>
     private readonly <span class="cstat-no" title="statement not covered" >sentryService: S</span>entryService,
     private readonly <span class="cstat-no" title="statement not covered" >errorManagementService: E</span>rrorManagementService,
   ) {}
 &nbsp;
-<span class="fstat-no" title="function not covered" >  onModuleInit(</span>) {
+<span class="fstat-no" title="function not covered" >  onModuleInit(</span>): void {
     // تهيئة Sentry عند بدء التطبيق
 <span class="cstat-no" title="statement not covered" >    this.sentryService.initialize();</span>
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>onModuleDestroy() {
+<span class="fstat-no" title="function not covered" >  onModuleDestroy(</span>): void {
     // إغلاق Sentry عند إيقاف التطبيق
-<span class="cstat-no" title="statement not covered" >    await this.errorManagementService.shutdown();</span>
+<span class="cstat-no" title="statement not covered" >    this.errorManagementService.shutdown();</span>
   }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -205,7 +199,7 @@ export class ErrorManagementModule implements OnModuleInit, OnModuleDestroy {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-08T02:46:06.445Z
+                at 2025-09-25T21:16:27.952Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

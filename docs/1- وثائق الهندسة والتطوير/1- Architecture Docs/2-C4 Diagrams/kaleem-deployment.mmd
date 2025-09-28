@@ -1,0 +1,222 @@
+%% Kaleem AI — C4 Level 4: Deployment Diagram (Mermaid)
+%% Last updated: 2025-09-27 19:15
+%% Professional C4 Deployment diagram showing environment topology and infrastructure boundaries
+%% Generated: Auto-rendered via CI/CD pipeline
+
+flowchart TD
+  %% ========== STYLING DEFINITIONS ==========
+  classDef environment fill:#f8fafc,color:#334155,stroke:#475569,stroke-width:3px,rx:12px
+  classDef network fill:#fff3e0,color:#f57c00,stroke:#f57c00,stroke-width:2px,rx:8px
+  classDef service fill:#f0fdf4,color:#166534,stroke:#166534,stroke-width:2px,rx:6px
+  classDef datastore fill:#fef2f2,color:#dc2626,stroke:#dc2626,stroke-width:2px,rx:8px
+  classDef monitoring fill:#f8fafc,color:#334155,stroke:#475569,stroke-width:2px,rx:6px
+  classDef security fill:#fef7f0,color:#ea580c,stroke:#ea580c,stroke-width:2px,rx:8px
+  classDef external fill:#f9fafb,color:#374151,stroke:#6b7280,stroke-width:1px,stroke-dasharray:3 3,rx:4px
+
+  %% ========== PRODUCTION ENVIRONMENT ==========
+  subgraph Production["🏭 Production Environment<br/>High Availability & Security"]
+    %% ========== NETWORK ZONES ==========
+    subgraph DMZ["🌐 DMZ / Edge Layer<br/>Network Perimeter"]
+      LoadBalancer["Nginx Load Balancer<br/>TLS Termination / Routing"]:::network
+      ReverseProxy["Nginx Reverse Proxy<br/>Request Forwarding"]:::network
+      WhatsAppGateway["WhatsApp Evolution API<br/>Self-hosted Gateway"]:::network
+    end
+
+    %% ========== CORE APPLICATION ==========
+    subgraph CoreServices["⚙️ Core Application Services<br/>Business Logic Layer"]
+      subgraph FrontendServices["🖥️ Frontend Services"]
+        MerchantDashboard["Merchant Dashboard<br/>React/Vite SPA<br/>Port: 5173 → 80"]:::service
+        WebchatWidget["Webchat Widget<br/>Embedded Interface<br/>Real-time Communication"]:::service
+      end
+
+      subgraph BackendServices["🔧 Backend Services"]
+        APIServer["API Server<br/>NestJS / REST & GraphQL<br/>Port: 3000"]:::service
+        BackgroundWorkers["Background Workers<br/>Node.js / Async Jobs<br/>Queue Processing"]:::service
+        N8nOrchestrator["n8n Workflow Engine<br/>Business Process Automation<br/>Port: 5678"]:::service
+        EmbeddingService["Embedding Service<br/>Python/FastAPI<br/>Text Embeddings<br/>Port: 8000"]:::service
+        ExtractorService["Document Extractor<br/>Python / OCR & Parsing<br/>Port: 8001"]:::service
+      end
+    end
+
+    %% ========== DATA PERSISTENCE ==========
+    subgraph DataLayer["💾 Data Persistence Layer<br/>Multi-tenant Storage"]
+      MongoDBCluster[("MongoDB Cluster<br/>Primary Document Store<br/>Replica Set: 3 nodes<br/>Port: 27017")]:::datastore
+      RedisCluster[("Redis Cluster<br/>Cache & Sessions<br/>Cluster Mode: 6 nodes<br/>Port: 6379")]:::datastore
+      QdrantCluster[("Qdrant Cluster<br/>Vector Database<br/>Sharded: 3 nodes<br/>Port: 6333")]:::datastore
+      MinIOCluster[("MinIO Cluster<br/>Object Storage<br/>Distributed: 4 nodes<br/>Port: 9000")]:::datastore
+      RabbitMQCluster[["RabbitMQ Cluster<br/>Message Broker<br/>High Availability<br/>Port: 5672"]]:::datastore
+    end
+
+    %% ========== OBSERVABILITY STACK ==========
+    subgraph ObservabilityStack["📊 Observability & Monitoring<br/>System Insights"]
+      subgraph MetricsCollection["📈 Metrics Collection"]
+        PrometheusServer["Prometheus Server<br/>Metrics Collection<br/>Retention: 15 days"]:::monitoring
+        AlertmanagerServer["Alertmanager<br/>Alert Routing<br/>Telegram Notifications"]:::monitoring
+      end
+
+      subgraph Visualization["📊 Visualization & Alerting"]
+        GrafanaDashboard["Grafana<br/>Dashboards & Alerting<br/>Port: 3000"]:::monitoring
+      end
+
+      subgraph LoggingPipeline["📝 Logging Pipeline"]
+        LokiServer["Loki<br/>Log Aggregation<br/>Query Interface"]:::monitoring
+        PromtailAgent["Promtail<br/>Log Shipping Agent<br/>Multi-container"]:::monitoring
+      end
+
+      subgraph TracingSystem["🔍 Distributed Tracing"]
+        TempoServer["Tempo<br/>Trace Storage<br/>Jaeger Compatible"]:::monitoring
+        OpenTelemetryCollector["OTel Collector<br/>Trace Ingestion<br/>Port: 4318"]:::monitoring
+      end
+
+      subgraph SystemMonitoring["🖥️ System Monitoring"]
+        CAdvisor["cAdvisor<br/>Container Metrics<br/>Resource Usage"]:::monitoring
+        NodeExporter["Node Exporter<br/>System Metrics<br/>CPU/Memory/Disk"]:::monitoring
+        RedisExporter["Redis Exporter<br/>Redis Metrics"]:::monitoring
+        MongoDBExporter["MongoDB Exporter<br/>Database Metrics"]:::monitoring
+      end
+
+      subgraph ErrorTracking["🚨 Error Tracking"]
+        GlitchtipServer["Glitchtip<br/>Error Monitoring<br/>APM Integration"]:::monitoring
+        GlitchtipDatabase[("Postgres<br/>Glitchtip Data<br/>Port: 5432")]:::datastore
+      end
+    end
+  end
+
+  %% ========== STAGING ENVIRONMENT ==========
+  subgraph Staging["🧪 Staging Environment<br/>Pre-production Testing"]
+    subgraph StagingServices["🔧 Staging Services"]
+      StagingAPI["API Server<br/>Staging Environment<br/>Port: 3001"]:::service
+      StagingWorkers["Background Workers<br/>Staging Queue"]:::service
+      StagingN8n["n8n Workflow Engine<br/>Staging Workflows<br/>Port: 5679"]:::service
+    end
+
+    subgraph StagingData["💾 Staging Data"]
+      StagingDatabases[("Shared Databases<br/>MongoDB / Redis / Qdrant<br/>Isolated Collections")]:::datastore
+    end
+  end
+
+  %% ========== DEVELOPMENT ENVIRONMENT ==========
+  subgraph Development["💻 Development Environment<br/>Local Development"]
+    subgraph DevServices["🔧 Development Services"]
+      DevAPI["API Server<br/>Local Development<br/>Port: 3000<br/>Hot Reload"]:::service
+      DevN8n["n8n Workflow Engine<br/>Local Development<br/>Port: 5678<br/>Debug Mode"]:::service
+    end
+
+    subgraph DevTools["🛠️ Development Tools"]
+      MongoExpress["mongo-express<br/>Database Admin<br/>Port: 8081"]:::service
+      RedisCommander["redis-commander<br/>Cache Admin<br/>Port: 8082"]:::service
+    end
+  end
+
+  %% ========== EXTERNAL SYSTEMS ==========
+  subgraph ExternalSystems["🌐 External Systems & APIs"]
+    TelegramAPI["Telegram Bot API<br/>Messaging Platform"]:::external
+    WhatsAppCloudAPI["WhatsApp Cloud API<br/>Business Messaging"]:::external
+    InstagramAPI["Instagram Basic Display API<br/>Social Commerce"]:::external
+    MessengerAPI["Facebook Messenger Platform<br/>Direct Messaging"]:::external
+    SallaAPI["Salla API<br/>Saudi E-commerce"]:::external
+    ZidAPI["Zid API<br/>MENA E-commerce"]:::external
+    ShopifyAPI["Shopify API<br/>Global Platform"]:::external
+    WooCommerceAPI["WooCommerce API<br/>WordPress Stores"]:::external
+    GeminiAI["Google Gemini API<br/>LLM & Embeddings"]:::external
+    OpenAIAPI["OpenAI API<br/>GPT Models"]:::external
+  end
+
+  %% ========== NETWORK INFRASTRUCTURE ==========
+  subgraph Infrastructure["🏗️ Infrastructure & Network"]
+    subgraph SecurityLayer["🔒 Security & Access"]
+      Firewall["Firewall / WAF<br/>DDoS Protection<br/>Rate Limiting"]:::security
+      VPNGateway["VPN Gateway<br/>Secure Access<br/>IP Whitelisting"]:::security
+      SecretsManager["Secrets Manager<br/>Environment Variables<br/>KMS Integration"]:::security
+    end
+
+    subgraph LoadBalancing["⚖️ Load Balancing"]
+      GlobalLoadBalancer["Global Load Balancer<br/>Geo-routing<br/>CDN Integration"]:::network
+    end
+  end
+
+  %% ========== RELATIONSHIPS ==========
+
+  %% ========== PRODUCTION TRAFFIC FLOW ==========
+  subgraph ProductionFlow["🔄 Production Traffic Flow"]
+    %% External traffic → Load Balancer
+    ExternalUsers -->|HTTPS / WebSocket| LoadBalancer
+    LoadBalancer -->|Load Balancing| ReverseProxy
+    ReverseProxy -->|Request Routing| APIServer
+    ReverseProxy -->|Static Assets| MerchantDashboard
+
+    %% Webhook integrations
+    ExternalSystems -.->|Webhook Events| WhatsAppGateway
+    WhatsAppGateway -->|Message Processing| APIServer
+
+    %% Internal service communication
+    APIServer -->|HTTP API Calls| EmbeddingService
+    APIServer -->|HTTP API Calls| ExtractorService
+    APIServer -->|Workflow Triggers| N8nOrchestrator
+
+    %% Background processing
+    APIServer -->|Job Enqueue| RabbitMQCluster
+    BackgroundWorkers -->|Job Processing| RabbitMQCluster
+
+    %% Data access patterns
+    APIServer -->|CRUD Operations| MongoDBCluster
+    APIServer -->|Cache Operations| RedisCluster
+    APIServer -->|Vector Search| QdrantCluster
+    APIServer -->|File Storage| MinIOCluster
+
+    BackgroundWorkers -->|Data Operations| MongoDBCluster
+    BackgroundWorkers -->|Vector Operations| QdrantCluster
+    BackgroundWorkers -->|File Operations| MinIOCluster
+  end
+
+  %% ========== OBSERVABILITY DATA FLOW ==========
+  subgraph ObservabilityFlow["📊 Observability Data Flow"]
+    %% Metrics collection
+    APIServer -->|/metrics| PrometheusServer
+    BackgroundWorkers -->|/metrics| PrometheusServer
+    RedisExporter -->|Redis Metrics| PrometheusServer
+    MongoDBExporter -->|MongoDB Metrics| PrometheusServer
+    CAdvisor -->|Container Metrics| PrometheusServer
+    NodeExporter -->|System Metrics| PrometheusServer
+
+    %% Logging pipeline
+    APIServer -->|Application Logs| PromtailAgent
+    BackgroundWorkers -->|Application Logs| PromtailAgent
+    PromtailAgent -->|Log Aggregation| LokiServer
+
+    %% Distributed tracing
+    APIServer -->|Trace Data| OpenTelemetryCollector
+    BackgroundWorkers -->|Trace Data| OpenTelemetryCollector
+    OpenTelemetryCollector -->|Trace Storage| TempoServer
+
+    %% Alerting and visualization
+    PrometheusServer -->|Metrics Query| GrafanaDashboard
+    AlertmanagerServer -->|Alert Management| GrafanaDashboard
+    LokiServer -->|Log Query| GrafanaDashboard
+    TempoServer -->|Trace Query| GrafanaDashboard
+  end
+
+  %% ========== STAGING ENVIRONMENT ==========
+  subgraph StagingFlow["🧪 Staging Environment Flow"]
+    StagingAPI -->|Testing| StagingDatabases
+    StagingWorkers -->|Testing| StagingDatabases
+    StagingN8n -->|Workflow Testing| StagingDatabases
+  end
+
+  %% ========== DEVELOPMENT ENVIRONMENT ==========
+  subgraph DevelopmentFlow["💻 Development Environment Flow"]
+    DevAPI -->|Local Development| DevServices
+    DevN8n -->|Local Development| DevServices
+    MongoExpress -->|Database Admin| MongoDBCluster
+    RedisCommander -->|Cache Admin| RedisCluster
+  end
+
+  %% ========== SECURITY BOUNDARIES ==========
+  subgraph SecurityBoundaries["🔒 Security Boundaries"]
+    Firewall -->|Traffic Filtering| LoadBalancer
+    VPNGateway -->|Secure Access| Development
+    SecretsManager -->|Secret Injection| Production
+  end
+
+  %% ========== LAYOUT STYLING ==========
+  class Production,Staging,Development,ExternalSystems,Infrastructure flow

@@ -83,11 +83,14 @@ export const corsOptions: CorsOptions = {
   allowedHeaders: parseList(process.env.CORS_ALLOWED_HEADERS, [
     'Authorization',
     'Content-Type',
-    'x-request-id',
-    'x-request-id',
+    'X-Request-Id',
     'X-Idempotency-Key',
     'X-Signature',
     'X-Timestamp',
+    'Idempotency-Key',
+    'X-Kaleem-Timestamp',
+    'X-Kaleem-Nonce',
+    'X-Kaleem-Signature',
   ]),
 
   exposedHeaders: parseList(process.env.CORS_EXPOSED_HEADERS, [

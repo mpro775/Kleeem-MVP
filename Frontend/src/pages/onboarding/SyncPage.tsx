@@ -9,6 +9,8 @@ import OnboardingLayout from "@/app/layout/OnboardingLayout";
 import { getIntegrationsStatus } from "@/features/integtarions/api/integrationsApi";
 import { syncCatalog } from "@/features/integtarions/api/catalogApi";
 
+// هذه الدوال تستخدم axiosInstance بالفعل
+
 export default function SyncPage() {
   const navigate = useNavigate();
   const { user, token } = useAuth();

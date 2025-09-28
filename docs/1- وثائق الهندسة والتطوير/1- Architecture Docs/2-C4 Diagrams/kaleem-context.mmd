@@ -1,0 +1,87 @@
+%% Kaleem AI — C4 Level 1: Context Diagram (Mermaid)
+%% Last updated: 2025-09-27 18:45
+%% Professional C4 Context diagram showing system context and external dependencies
+%% Generated: Auto-rendered via CI/CD pipeline
+
+flowchart TD
+  %% ========== PERSONAS ==========
+  subgraph Persons[" System Actors"]
+    Merchant[" Merchant / Store Owner<br/>Configure, Monitor, Manage"]:::persona
+    Customer[" End Customer<br/>Chat, Browse, Purchase"]:::persona
+    Ops[" Ops / SRE / Security<br/>Operate, Monitor, Secure"]:::persona
+  end
+
+  %% ========== CORE SYSTEM ==========
+  Kaleem[" Kaleem AI Platform<br/>Multi-tenant SaaS for E-commerce"]:::system
+
+  %% ========== MESSAGING CHANNELS ==========
+  subgraph Channels[" Messaging Channels"]
+    Telegram[" Telegram<br/>Bot Integration"]:::channel
+    WhatsApp[" WhatsApp Business<br/>(Cloud + Evolution API)"]:::channel
+    Instagram[" Instagram<br/>IG Business API"]:::channel
+    Messenger[" Facebook Messenger<br/>Messenger Platform"]:::channel
+  end
+
+  %% ========== E-COMMERCE PLATFORMS ==========
+  subgraph Commerce[" E-commerce Platforms"]
+    Salla[" Salla<br/>Saudi Market Focus"]:::ecommerce
+    Zid[" Zid<br/>MENA E-commerce"]:::ecommerce
+    Shopify[" Shopify<br/>Global Platform"]:::ecommerce
+    WooCommerce[" WooCommerce<br/>WordPress Plugin"]:::ecommerce
+  end
+
+  %% ========== AI & ML SERVICES ==========
+  subgraph AIProviders[" AI & ML Services"]
+    Gemini[" Google Gemini<br/>LLM & Embeddings"]:::ai
+    OpenAI[" OpenAI<br/>GPT Models"]:::ai
+  end
+
+  %% ========== DATA & STORAGE ==========
+  subgraph Datastores[" Data & Storage"]
+    MongoDB[" MongoDB<br/>Primary Document Store"]:::database
+    Qdrant[" Qdrant<br/>Vector Database"]:::database
+    Redis[" Redis<br/>Cache & Sessions"]:::database
+    MinIO[" MinIO<br/>Object Storage"]:::database
+  end
+
+  %% ========== OBSERVABILITY ==========
+  subgraph Observability[" Observability Stack"]
+    Prometheus[" Prometheus<br/>Metrics Collection"]:::monitoring
+    Grafana[" Grafana<br/>Dashboards & Alerting"]:::monitoring
+    Loki[" Loki<br/>Log Aggregation"]:::monitoring
+    Tempo[" Tempo<br/>Distributed Tracing"]:::monitoring
+  end
+
+  %% ========== SECURITY & CONFIG ==========
+  subgraph Security[" Security & Configuration"]
+    Secrets[" Secrets Manager<br/>Environment Variables"]:::security
+    Vault[" HashiCorp Vault<br/>Secret Management"]:::security
+  end
+
+  %% ========== RELATIONSHIPS ==========
+  %% Person interactions
+  Merchant -->| Configure & Monitor| Kaleem
+  Customer -->| Chat & Shop| Kaleem
+  Ops -->| Operate & Secure| Kaleem
+
+  %% External system integrations
+  Kaleem <-.->| Message APIs| Channels
+  Kaleem <-.->| Catalog Sync| Commerce
+  Kaleem <-.->| AI Processing| AIProviders
+  Kaleem <-.->| Data Storage| Datastores
+  Kaleem -->| Telemetry| Observability
+  Kaleem -->| Secret Access| Security
+
+  %% ========== STYLING ==========
+  classDef persona fill:#e8f4fd,color:#1976d2,stroke:#1976d2,stroke-width:2px,rx:10px
+  classDef system fill:#fff3e0,color:#f57c00,stroke:#f57c00,stroke-width:2px,rx:10px
+  classDef channel fill:#f3e5f5,color:#7b1fa2,stroke:#7b1fa2,stroke-width:1px,stroke-dasharray:2 2,rx:5px
+  classDef ecommerce fill:#e8f5e8,color:#388e3c,stroke:#388e3c,stroke-width:1px,stroke-dasharray:2 2,rx:5px
+  classDef ai fill:#fff8e1,color:#fbc02d,stroke:#fbc02d,stroke-width:1px,stroke-dasharray:2 2,rx:5px
+  classDef database fill:#fce4ec,color:#c2185b,stroke:#c2185b,stroke-width:1px,stroke-dasharray:2 2,rx:5px
+  classDef monitoring fill:#e3f2fd,color:#2196f3,stroke:#2196f3,stroke-width:1px,stroke-dasharray:2 2,rx:5px
+  classDef security fill:#ffebee,color:#d32f2f,stroke:#d32f2f,stroke-width:1px,stroke-dasharray:2 2,rx:5px
+
+  %% ========== LAYOUT STYLING ==========
+  class Persons flow
+  class Channels,Commerce,AIProviders,Datastore,Observability,Security flow

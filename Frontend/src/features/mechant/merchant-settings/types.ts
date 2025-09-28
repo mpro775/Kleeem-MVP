@@ -26,17 +26,15 @@ export interface SocialLinks {
     name: string;
     logoUrl?: string;
     phone?: string;
-  
+
     // كان عندك slug اختياري؛ نستبدله/نكمله بـ publicSlug على مستوى التاجر
     publicSlug?: string;              // ✅ السلاج الموحّد
     publicSlugEnabled?: boolean;      // (اختياري) لإخفاء/تعطيل الروابط العامة
-  
-    storefrontUrl?: string;
+
     businessDescription?: string;
     addresses: Address[];
     workingHours: WorkingHour[];
     returnPolicy?: string;
-    email?: string;
     exchangePolicy?: string;
     shippingPolicy?: string;
     categories: string[];

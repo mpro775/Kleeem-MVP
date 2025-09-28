@@ -13,7 +13,6 @@ import { CacheWarmerOrchestrator } from './cache-warmer.orchestrator';
 import { CacheController } from './cache.controller';
 import { CacheMetrics } from './cache.metrics';
 import { CacheService } from './cache.service';
-import { CacheWarmer } from './warmers/cache-warmer.interface';
 import {
   CACHE_TTL_5_MINUTES,
   CACHE_MAX_ITEMS,
@@ -21,6 +20,7 @@ import {
   REDIS_RETRY_DELAY_ON_FAILOVER,
   REDIS_DEFAULT_PORT,
 } from './constant';
+import { CacheWarmer } from './warmers/cache-warmer.interface';
 import { CategoriesWarmer } from './warmers/categories.warmer';
 import { MerchantsWarmer } from './warmers/merchants.warmer';
 import { PlansWarmer } from './warmers/plans.warmer';

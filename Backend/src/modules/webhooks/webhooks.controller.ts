@@ -10,6 +10,7 @@ import {
   Req,
   Res,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -24,11 +25,14 @@ import * as bcrypt from 'bcrypt';
 import { Response, Request } from 'express';
 import { Public } from 'src/common/decorators/public.decorator';
 
+import { IdempotencyGuard } from '../../common/guards/idempotency.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { ServiceTokenGuard } from '../../common/guards/service-token.guard';
 
 import { AgentReplyDto } from './dto/agent-reply.dto';
 import { BotReplyDto } from './dto/bot-reply.dto';
 import { TestBotReplyDto } from './dto/test-bot-reply.dto';
+import { WebhookLoggingInterceptor } from './interceptors/webhook-logging.interceptor';
 import { WebhooksService } from './webhooks.service';
 
 import type { ChannelRepository } from './repositories/channel.repository';
@@ -37,6 +41,7 @@ import type { PublicChannel } from './types/channels';
 @ApiTags('webhooks')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@UseInterceptors(WebhookLoggingInterceptor)
 @Controller('webhooks')
 export class WebhooksController {
   constructor(
@@ -103,6 +108,7 @@ export class WebhooksController {
     );
   }
 
+  @UseGuards(ServiceTokenGuard, IdempotencyGuard)
   @Public()
   @Post('bot-reply/:merchantId')
   @Throttle({

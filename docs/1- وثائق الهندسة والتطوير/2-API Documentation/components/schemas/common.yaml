@@ -1,0 +1,85 @@
+Address:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3c111"
+    street:
+      type: string
+      example: "King Fahd Road"
+    city:
+      type: string
+      example: "Riyadh"
+    state:
+      type: string
+      example: "Riyadh Province"
+    postalCode:
+      type: string
+      example: "12345"
+    country:
+      type: string
+      example: "Saudi Arabia"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, street, city, state, postalCode, country, createdAt, updatedAt]
+
+WorkingHours:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3c222"
+    day:
+      type: string
+      enum: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+      example: "monday"
+    openTime:
+      type: string
+      format: time
+      example: "09:00"
+    closeTime:
+      type: string
+      format: time
+      example: "17:00"
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, day, openTime, closeTime, createdAt, updatedAt]
+
+SourceUrl:
+  type: object
+  properties:
+    _id:
+      type: string
+      example: "66fa1f5f9a8e6f0012d3c333"
+    merchantId:
+      type: string
+      example: "mrc_123"
+    url:
+      type: string
+      format: uri
+      example: "https://example.com"
+    status:
+      type: string
+      enum: [pending, processing, completed, failed]
+      example: "completed"
+    errorMessage:
+      type: string
+      nullable: true
+    textExtracted:
+      type: string
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required: [_id, merchantId, url, status, createdAt, updatedAt]

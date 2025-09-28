@@ -1,9 +1,11 @@
 // src/features/widget-config/hooks.ts
 import { useEffect, useState } from "react";
+import { useErrorHandler } from "@/shared/errors";
 import type { ChatWidgetSettings } from "./types";
 import { fetchWidgetSettings } from "./api";
 
 export function useWidgetSettings(merchantId: string) {
+  const { handleError } = useErrorHandler();
   const [data, setData] = useState<ChatWidgetSettings | null>(null);
   const [loading, setLoading] = useState<boolean>(!!merchantId);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +20,12 @@ export function useWidgetSettings(merchantId: string) {
     setError(null);
     fetchWidgetSettings(merchantId)
       .then(d => { if (mounted) setData(d); })
-      .catch(() => { if (mounted) setError("FAILED"); })
+      .catch((e) => {
+        if (mounted) {
+          handleError(e);
+          setError("فشل تحميل إعدادات الودجة");
+        }
+      })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, [merchantId]);

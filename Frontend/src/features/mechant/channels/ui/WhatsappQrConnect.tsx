@@ -10,7 +10,7 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
-import axios from "@/shared/api/axios";
+import axiosInstance from "@/shared/api/axios";
 
 type Props = {
   open: boolean;
@@ -45,7 +45,8 @@ export default function WhatsappQrConnect({
   };
 
   const normalizeQr = (data: any): string | null => {
-    // يدعم جميع الأشكال: {qr} أو {qrcode:{base64}} أو {qrcode:"data:image/..."}
+    // الباك إند يرسل الآن: { success, data: {qr}, requestId, timestamp }
+    // البيانات تأتي في data.qr أو data.qrcode
     if (data?.qr)
       return data.qr.startsWith("data:image/")
         ? data.qr
@@ -67,7 +68,7 @@ export default function WhatsappQrConnect({
     setHint("");
     firedSuccessRef.current = false;
     try {
-      const { data } = await axios.post(
+      const { data } = await axiosInstance.post(
         `/channels/${channelId}/actions/connect`,
         {}
       );
@@ -90,7 +91,7 @@ export default function WhatsappQrConnect({
   const fetchStatus = async () => {
     if (!channelId) return;
     try {
-      const { data } = await axios.get(`/channels/${channelId}/status`);
+      const { data } = await axiosInstance.get(`/channels/${channelId}/status`);
       const raw = String(
         data?.status || data?.details?.status || ""
       ).toUpperCase();

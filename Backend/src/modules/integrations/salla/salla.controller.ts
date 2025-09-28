@@ -13,6 +13,7 @@ import {
   Headers,
   HttpCode,
   Logger,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
@@ -37,11 +38,13 @@ import {
   Merchant,
   MerchantDocument,
 } from '../../merchants/schemas/merchant.schema';
+import { WebhookLoggingInterceptor } from '../../webhooks/interceptors/webhook-logging.interceptor';
 
 import { SallaService } from './salla.service';
 
 @ApiTags('تكامل سلة')
 @ApiBearerAuth()
+@UseInterceptors(WebhookLoggingInterceptor)
 @Controller('integrations/salla')
 export class SallaController {
   private readonly logger = new Logger(SallaController.name);

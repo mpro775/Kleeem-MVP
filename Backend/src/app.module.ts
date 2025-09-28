@@ -34,9 +34,14 @@ import {
 } from './common';
 import { CacheModule } from './common/cache/cache.module';
 import varsConfig from './common/config/vars.config';
+import { NonceController } from './common/controllers/nonce.controller';
+import { IdempotencyGuard } from './common/guards/idempotency.guard';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { ServiceTokenGuard } from './common/guards/service-token.guard';
 import { ThrottlerTenantGuard } from './common/guards/throttler-tenant.guard';
+import { HttpMetricsInterceptor } from './common/interceptors/http-metrics.interceptor';
+import { PerformanceTrackingInterceptor } from './common/interceptors/performance-tracking.interceptor';
 import { OutboxDispatcher } from './common/outbox/outbox.dispatcher';
 import { OutboxModule } from './common/outbox/outbox.module';
 import { DatabaseConfigModule } from './config/database.config';
@@ -47,8 +52,6 @@ import { DispatchersModule } from './infra/dispatchers/dispatchers.module';
 import { RabbitModule } from './infra/rabbit/rabbit.module';
 import { AmqpMetrics, AmqpMetricsProviders } from './metrics/amqp.metrics';
 import { MetricsModule } from './metrics/metrics.module';
-import { HttpMetricsInterceptor } from './common/interceptors/http-metrics.interceptor';
-import { PerformanceTrackingInterceptor } from './common/interceptors/performance-tracking.interceptor';
 import { AiModule } from './modules/ai/ai.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -350,12 +353,14 @@ const getHeader = (req: IncomingMessage, name: string): string | undefined => {
     ...AmqpMetricsProviders,
     AmqpMetrics,
     { provide: APP_GUARD, useClass: RolesGuard },
+    ServiceTokenGuard,
+    IdempotencyGuard,
     RedisConfig,
     OutboxDispatcher,
     HttpMetricsInterceptor,
     PerformanceTrackingInterceptor,
   ],
   exports: [AmqpMetrics],
-  controllers: [AppController],
+  controllers: [AppController, NonceController],
 })
 export class AppModule extends AppConfig {}

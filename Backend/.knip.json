@@ -1,0 +1,7 @@
+{
+  "$schema": "https://unpkg.com/knip/schema.json",
+  "entry": ["src/main.ts", "src/**/*.module.ts"],
+  "project": ["src/**/*.ts"],
+  "tsConfigFile": "tsconfig.json",
+  "ignore": ["src/**/*.spec.ts", "src/**/__mocks__/**"]
+}

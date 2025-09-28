@@ -1,0 +1,81 @@
+# Prometheus configuration for Kaleem API
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'kaleem-production'
+    region: 'middle-east'
+
+# قواعد التنبيه
+rule_files:
+  - 'alerts/*.yml'
+
+# إعدادات التنبيه
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# أهداف المراقبة
+scrape_configs:
+  # ===== التطبيق الرئيسي =====
+  - job_name: 'kaleem-api'
+    static_configs:
+      - targets: ['api:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      format: ['prometheus']
+
+  # ===== العمال =====
+  - job_name: 'kaleem-workers'
+    static_configs:
+      - targets:
+          - 'ai-reply-worker:9101'
+          - 'webhook-dispatcher:9102'
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # ===== قواعد البيانات =====
+  - job_name: 'mongodb'
+    static_configs:
+      - targets: ['mongodb-exporter:9216']
+    scrape_interval: 30s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
+
+  # ===== RabbitMQ =====
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['rabbitmq:15692']
+    scrape_interval: 30s
+
+  # ===== النظام =====
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+
+  # ===== Prometheus نفسه =====
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 60s
+
+  # ===== OpenTelemetry Collector =====
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8889']
+    scrape_interval: 30s
+# إعدادات التخزين (handled via command line args in docker-compose)

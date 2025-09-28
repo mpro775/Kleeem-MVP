@@ -88,7 +88,7 @@ export default function WorkingHoursForm({
     return time.replace(":", " : ");
   };
 
-  const handleAccordionChange = (day: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
+  const handleAccordionChange = (day: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
     setExpandedDay(isExpanded ? day : false);
   };
 

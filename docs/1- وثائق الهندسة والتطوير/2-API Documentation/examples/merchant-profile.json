@@ -1,0 +1,108 @@
+{
+  "success": true,
+  "message": null,
+  "requestId": "req_merchant_001",
+  "timestamp": "2025-09-26T10:30:00.000Z",
+  "data": {
+    "id": "68a3addee395b1a94f9fcf87",
+    "ownerUserId": "user_123",
+    "name": "متجر كليم التجريبي",
+    "slug": "kaleem-demo",
+    "deleted": false,
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-09-26T10:30:00.000Z",
+    "contact": {
+      "email": "support@kaleem-demo.com",
+      "phone": "+966501234567",
+      "whatsapp": "+966501234567"
+    },
+    "policies": {
+      "shipping": "نقوم بالشحن خلال 2-4 أيام عمل داخل المملكة. التكلفة حسب الوزن والوجهة.",
+      "returns": "استرجاع خلال 14 يوماً للمنتجات غير المستعملة في حالتها الأصلية.",
+      "warranty": "ضمان سنتين على عيوب الصناعة لجميع المنتجات."
+    },
+    "subscription": {
+      "tier": "professional",
+      "planId": "plan_professional",
+      "startDate": "2025-01-01T00:00:00.000Z",
+      "endDate": "2025-12-31T23:59:59.000Z",
+      "features": [
+        "AI Assistant",
+        "Analytics",
+        "Multi-channel",
+        "Advanced Integrations"
+      ]
+    },
+    "businessType": "retail",
+    "businessDescription": "متجر متخصص في حلول الإضاءة والطاقة المتجددة",
+    "logoUrl": "https://cdn.kaleem-ai.com/merchants/kaleem-demo-logo.png",
+    "productSource": "manual",
+    "productSourceConfig": {},
+    "addresses": [
+      {
+        "_id": "addr_001",
+        "street": "شارع الملك فهد",
+        "city": "الرياض",
+        "state": "منطقة الرياض",
+        "postalCode": "12345",
+        "country": "السعودية",
+        "createdAt": "2025-01-01T00:00:00.000Z",
+        "updatedAt": "2025-01-01T00:00:00.000Z"
+      }
+    ],
+    "socialLinks": {
+      "website": "https://kaleem-demo.com",
+      "instagram": "https://instagram.com/kaleem_demo",
+      "twitter": "https://twitter.com/kaleem_demo"
+    },
+    "categories": [
+      {
+        "id": "cat_001",
+        "name": "الإضاءة",
+        "slug": "lighting"
+      },
+      {
+        "id": "cat_002",
+        "name": "الطاقة المتجددة",
+        "slug": "renewable-energy"
+      }
+    ],
+    "workingHours": [
+      {
+        "_id": "wh_001",
+        "day": "monday",
+        "openTime": "09:00",
+        "closeTime": "17:00"
+      },
+      {
+        "_id": "wh_002",
+        "day": "tuesday",
+        "openTime": "09:00",
+        "closeTime": "17:00"
+      },
+      {
+        "_id": "wh_003",
+        "day": "wednesday",
+        "openTime": "09:00",
+        "closeTime": "17:00"
+      },
+      {
+        "_id": "wh_004",
+        "day": "thursday",
+        "openTime": "09:00",
+        "closeTime": "17:00"
+      },
+      {
+        "_id": "wh_005",
+        "day": "friday",
+        "openTime": "14:00",
+        "closeTime": "18:00"
+      }
+    ],
+    "publicSlug": "kaleem-demo-store",
+    "publicSlugEnabled": true,
+    "status": "active",
+    "phone": "+966501234567",
+    "lastActivity": "2025-09-26T10:30:00.000Z"
+  }
+}

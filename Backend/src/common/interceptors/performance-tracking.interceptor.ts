@@ -15,11 +15,12 @@ import { type Observable } from 'rxjs';
 import { finalize, tap } from 'rxjs/operators';
 
 // internal
+import { SentryService } from '../services/sentry.service';
+
 import { shouldBypass } from './bypass.util';
 
 // type-only
 import type { RequestWithUser } from '../interfaces/request-with-user.interface';
-import { SentryService } from '../services/sentry.service';
 import type { Response } from 'express';
 
 // -----------------------------------------------------------------------------

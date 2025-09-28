@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "message": "تم إنشاء المنتج بنجاح",
+  "requestId": "req_create_product_001",
+  "timestamp": "2025-09-26T10:30:00.000Z",
+  "data": {
+    "id": "p_1003",
+    "merchantId": "68a3addee395b1a94f9fcf87",
+    "sku": "SP-300W",
+    "name": "Solar Panel 300W",
+    "description": "لوحة شمسية عالية الكفاءة 300 واط، مثالية للمنازل والمشاريع الصغيرة",
+    "brand": "SunPower",
+    "categories": ["طاقة متجددة", "ألواح شمسية"],
+    "images": ["https://cdn.kaleem-ai.com/p/1003-1.jpg", "https://cdn.kaleem-ai.com/p/1003-2.jpg"],
+    "price": 300,
+    "currency": "USD",
+    "inStock": true,
+    "stockQty": 50,
+    "attributes": {
+      "power": "300W",
+      "efficiency": "22.5%",
+      "warranty": "25 years",
+      "dimensions": "1640x992x35mm",
+      "weight": "18.5kg"
+    }
+  }
+}

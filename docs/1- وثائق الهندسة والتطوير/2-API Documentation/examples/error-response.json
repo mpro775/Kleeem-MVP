@@ -1,0 +1,13 @@
+{
+  "success": false,
+  "code": "VALIDATION_ERROR",
+  "message": "بيانات المدخلات غير صحيحة",
+  "details": [
+    "حقل 'email' مطلوب",
+    "حقل 'password' يجب أن يكون 8 أحرف على الأقل",
+    "تنسيق البريد الإلكتروني غير صحيح"
+  ],
+  "timestamp": "2025-09-26T10:30:00.000Z",
+  "requestId": "req_error_001",
+  "docsUrl": "https://docs.kaleem-ai.com/errors#VALIDATION_ERROR"
+}

@@ -11,6 +11,7 @@ import {
   Headers,
   HttpCode,
   Logger,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
@@ -33,6 +34,7 @@ import {
   Merchant,
   MerchantDocument,
 } from '../../merchants/schemas/merchant.schema';
+import { WebhookLoggingInterceptor } from '../../webhooks/interceptors/webhook-logging.interceptor';
 
 import { ZidService } from './zid.service';
 
@@ -44,6 +46,7 @@ interface ZidWebhookPayload {
 }
 @ApiTags('تكامل زد')
 @ApiBearerAuth()
+@UseInterceptors(WebhookLoggingInterceptor)
 @Controller('integrations/zid')
 export class ZidController {
   private readonly logger = new Logger(ZidController.name);

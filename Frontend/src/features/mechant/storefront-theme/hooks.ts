@@ -1,5 +1,6 @@
 // src/features/mechant/storefront-theme/hooks.ts
 import { useEffect, useMemo, useState } from "react";
+import { useErrorHandler } from "@/shared/errors";
 import { getStorefrontInfo, updateStorefrontInfo } from "./api"; // لا نحتاج checkSlug
 import type { Storefront } from "./type";
 import { getMerchantInfo } from "@/features/mechant/merchant-settings/api"; // لجلب publicSlug
@@ -7,6 +8,7 @@ import { DEFAULT_BRAND_DARK } from "@/features/shared/allowedBrandPalette";
 import { setBrandVars } from "@/features/shared/brandCss";
 
 export function useStorefrontTheme(merchantId: string) {
+  const { handleError } = useErrorHandler();
   const [loading, setLoading] = useState(true);
   const [saveLoading, setSaveLoading] = useState(false);
   const [snackbar, setSnackbar] = useState<{
@@ -41,6 +43,7 @@ export function useStorefrontTheme(merchantId: string) {
         setPublicSlug(merchant.publicSlug);
       })
       .catch((e) => {
+        handleError(e);
         setSnackbar({
           open: true,
           message: e?.message || "فشل تحميل إعدادات الواجهة",
@@ -84,6 +87,7 @@ export function useStorefrontTheme(merchantId: string) {
       setInitial(updated);
       setSnackbar({ open: true, message: "تم حفظ الإعدادات", severity: "success" });
     } catch (e: unknown) {
+      handleError(e);
       setSnackbar({
         open: true,
         message: e instanceof Error ? e.message : "فشل حفظ الإعدادات",

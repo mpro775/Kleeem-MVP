@@ -1,17 +1,27 @@
 // src/modules/webhooks/chat-webhooks-unified.controller.ts
-import { Body, Controller, HttpCode, Param, Post, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Param,
+  Post,
+  Req,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiBody } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from 'src/common/decorators/public.decorator';
 
 import { SlugResolverService } from '../public/slug-resolver.service';
 
+import { WebhookLoggingInterceptor } from './interceptors/webhook-logging.interceptor';
 import { WebhooksController } from './webhooks.controller';
 
 import type { Request } from 'express';
 
 @ApiTags('Webhooks (Unified Slug)')
 @Public()
+@UseInterceptors(WebhookLoggingInterceptor)
 @Controller('webhooks/chat')
 export class ChatWebhooksUnifiedController {
   constructor(

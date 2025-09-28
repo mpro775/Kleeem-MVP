@@ -30,7 +30,7 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { useSnackbar } from "notistack";
-import axios from "@/shared/api/axios";
+import axiosInstance from "@/shared/api/axios";
 import { useFaqs } from "../hooks";
 
 type FaqItem = {
@@ -107,7 +107,7 @@ export default function FaqsTab({ merchantId }: { merchantId: string }) {
   const fetchStatus = useCallback(async () => {
     try {
       setStatusLoading(true);
-      const { data } = await axios.get<StatusResp>(`/merchants/${merchantId}/faqs/status`);
+      const { data } = await axiosInstance.get<StatusResp>(`/merchants/${merchantId}/faqs/status`);
       setStatus(data);
     } catch {
       // صامت

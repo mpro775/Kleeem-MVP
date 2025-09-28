@@ -22,21 +22,12 @@ interface Settings {
 }
 
 function unwrap(x: Raw) {
-  // يدعم أشكال: res.data.data أو res.data أو الكائن مباشرة
+  // الباك إند يرسل الآن: { success, data, requestId, timestamp }
+  // البيانات تأتي في data مباشرة
   if (x && typeof x === "object") {
-    // إذا كان فيه خاصية data
     const obj = x as Record<string, unknown>;
-    if ("data" in obj) {
-      const d1 = obj.data;
-      if (
-        d1 &&
-        typeof d1 === "object" &&
-        d1 !== null &&
-        "data" in (d1 as Record<string, unknown>)
-      ) {
-        return (d1 as Record<string, unknown>).data;
-      }
-      return d1;
+    if ("data" in obj && obj.data !== undefined) {
+      return obj.data;
     }
   }
   return x;

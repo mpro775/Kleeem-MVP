@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/22</span>
+                <span class='fraction'>0/28</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/20</span>
+                <span class='fraction'>0/26</span>
             </div>
         
             
@@ -118,13 +118,34 @@
 <a name='L53'></a><a href='#L53'>53</a>
 <a name='L54'></a><a href='#L54'>54</a>
 <a name='L55'></a><a href='#L55'>55</a>
-<a name='L56'></a><a href='#L56'>56</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -136,10 +157,11 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -176,25 +198,31 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// src/modules/webhooks/webhooks.module.ts
 <span class="cstat-no" title="statement not covered" >import { Module } from '@nestjs/common';</span>
 <span class="cstat-no" title="statement not covered" >import { MongooseModule } from '@nestjs/mongoose';</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >import { WebhooksService } from './webhooks.service';</span>
-<span class="cstat-no" title="statement not covered" >import { WebhooksController } from './webhooks.controller';</span>
-<span class="cstat-no" title="statement not covered" >import { Webhook, WebhookSchema } from './schemas/webhook.schema';</span>
-&nbsp;
-<span class="cstat-no" title="statement not covered" >import { MessagingModule } from '../messaging/message.module';</span>
-<span class="cstat-no" title="statement not covered" >import { OrdersModule } from '../orders/orders.module';</span>
-<span class="cstat-no" title="statement not covered" >import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';</span>
-<span class="cstat-no" title="statement not covered" >import { ChatMediaModule } from '../media/chat-media.module';</span>
-<span class="cstat-no" title="statement not covered" >import { IntegrationsModule } from '../integrations/integrations.module';</span>
-<span class="cstat-no" title="statement not covered" >import { ChatModule } from '../chat/chat.module';</span>
+<span class="cstat-no" title="statement not covered" >import { WebhookSignatureGuard } from 'src/common/guards/webhook-signature.guard';</span>
 <span class="cstat-no" title="statement not covered" >import { OutboxModule } from 'src/common/outbox/outbox.module';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >import { CommonModule } from '../../common/config/common.module';</span>
 <span class="cstat-no" title="statement not covered" >import { ChannelsModule } from '../channels/channels.module';</span>
-<span class="cstat-no" title="statement not covered" >import { TelegramWebhookController } from './telegram.webhook.controller';</span>
-<span class="cstat-no" title="statement not covered" >import { NotificationsModule } from '../notifications/notifications.module';</span>
 <span class="cstat-no" title="statement not covered" >import { Channel, ChannelSchema } from '../channels/schemas/channel.schema';</span>
-<span class="cstat-no" title="statement not covered" >import { WhatsappQrWebhookController } from './whatsapp-qr.webhook.controller';</span>
-<span class="cstat-no" title="statement not covered" >import { ChatWebhooksUnifiedController } from './chat-webhooks-unified.controller';</span>
+<span class="cstat-no" title="statement not covered" >import { ChatModule } from '../chat/chat.module';</span>
+<span class="cstat-no" title="statement not covered" >import { IntegrationsModule } from '../integrations/integrations.module';</span>
+<span class="cstat-no" title="statement not covered" >import { ChatMediaModule } from '../media/chat-media.module';</span>
 <span class="cstat-no" title="statement not covered" >import { MerchantsModule } from '../merchants/merchants.module';</span>
+<span class="cstat-no" title="statement not covered" >import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';</span>
+<span class="cstat-no" title="statement not covered" >import { MessagingModule } from '../messaging/message.module';</span>
+<span class="cstat-no" title="statement not covered" >import { NotificationsModule } from '../notifications/notifications.module';</span>
+<span class="cstat-no" title="statement not covered" >import { OrdersModule } from '../orders/orders.module';</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >import { ChatWebhooksUnifiedController } from './chat-webhooks-unified.controller';</span>
+<span class="cstat-no" title="statement not covered" >import { ChannelMongoRepository } from './repositories/channel.mongo.repository';</span>
+<span class="cstat-no" title="statement not covered" >import { WebhookMongoRepository } from './repositories/webhook.mongo.repository';</span>
+<span class="cstat-no" title="statement not covered" >import { Webhook, WebhookSchema } from './schemas/webhook.schema';</span>
+<span class="cstat-no" title="statement not covered" >import { TelegramWebhookController } from './telegram.webhook.controller';</span>
+<span class="cstat-no" title="statement not covered" >import { WEBHOOK_REPOSITORY } from './tokens';</span>
+<span class="cstat-no" title="statement not covered" >import { WebhooksController } from './webhooks.controller';</span>
+<span class="cstat-no" title="statement not covered" >import { WebhooksService } from './webhooks.service';</span>
+<span class="cstat-no" title="statement not covered" >import { WhatsAppCloudWebhookController } from './whatsapp-cloud.webhook.controller';</span>
+<span class="cstat-no" title="statement not covered" >import { WhatsappQrWebhookController } from './whatsapp-qr.webhook.controller';</span>
 &nbsp;
 @Module({
   imports: [
@@ -214,16 +242,21 @@
     MessagingModule, // لحفظ الرسائل (MessageService)
     ChannelsModule,
     MerchantsModule, // للوصول إلى SlugResolverService
+    CommonModule, // للوصول إلى TranslationService
   ],
   providers: [
     WebhooksService, // خدمة معالجة الـ webhook العامة
     WebhooksController, // لإعادة استخدامه في TelegramWebhookController
+    { provide: WEBHOOK_REPOSITORY, useClass: WebhookMongoRepository },
+    WebhookSignatureGuard,
+    { provide: 'ChannelsRepository', useClass: ChannelMongoRepository },
   ],
   controllers: [
     WebhooksController,
     TelegramWebhookController,
     WhatsappQrWebhookController,
     ChatWebhooksUnifiedController,
+    WhatsAppCloudWebhookController,
   ],
   exports: [WebhooksService],
 })
@@ -235,7 +268,7 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-08T02:46:06.445Z
+                at 2025-09-25T21:16:27.952Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

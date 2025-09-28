@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import { useState, useRef, useEffect } from "react";
+import axiosInstance from "@/shared/api/axios";
 
 interface Message {
   from: "user" | "bot";
@@ -71,14 +72,17 @@ export function ChatSimulator({
       });
   
       // (B) جيب ردّ الذكاء من مسار التستنج (اختياري للمحاكاة)
-      const res = await fetch(promptTestUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ merchantId, text: userText, sessionId, channel }),
+      const res = await axiosInstance.post(promptTestUrl, {
+        merchantId: merchantId,
+        useAdvanced: false,
+        testVars: {
+          customerMessage: userText,
+          customerName: "مستخدم تجريبي",
+          productName: "منتج تجريبي"
+        },
+        audience: "agent"
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: { botReply?: string } = await res.json();
-      const reply = data.botReply ?? "—";
+      const reply = res.data ?? "—";
   
       // (C) اعرض الرد محليًا
       setMessages((m) => [...m, { from: "bot", text: reply }]);

@@ -1,22 +1,15 @@
 // src/widgets/chat/ChatWorkspace.tsx
 import { useEffect, useMemo, useState } from "react";
 import {
-  AppBar,
-  Toolbar,
-  IconButton,
-  Typography,
+
   Box,
   CircularProgress,
   useMediaQuery,
   useTheme,
   Tabs,
   Tab,
-  Chip,
-  Tooltip,
+
 } from "@mui/material";
-import ArrowBackIosNewRoundedIcon from "@mui/icons-material/ArrowBackIosNewRounded";
-import SignalCellularAltRoundedIcon from "@mui/icons-material/SignalCellularAltRounded";
-import SignalCellularConnectedNoInternet0BarRoundedIcon from "@mui/icons-material/SignalCellularConnectedNoInternet0BarRounded";
 import { useErrorHandler } from "@/shared/errors";
 import { useLocalStorage } from "@/shared/hooks/useLocalStorage";
 
@@ -66,18 +59,7 @@ export default function ChatWorkspace({ merchantId }: { merchantId: string }) {
   >("conv_selected_session", undefined);
   const [mobileView, setMobileView] = useState<MobileView>("list");
 
-  // حالة الشبكة
-  const [online, setOnline] = useState<boolean>(navigator.onLine);
-  useEffect(() => {
-    const on = () => setOnline(true);
-    const off = () => setOnline(false);
-    window.addEventListener("online", on);
-    window.addEventListener("offline", off);
-    return () => {
-      window.removeEventListener("online", on);
-      window.removeEventListener("offline", off);
-    };
-  }, []);
+  
 
   const { mutateAsync: rate, isPending: ratingLoading } = useRate();
   const { data: sessions, isLoading: loadingSessions } = useConversations(
@@ -208,51 +190,6 @@ export default function ChatWorkspace({ merchantId }: { merchantId: string }) {
 
   const loading = loadingSessions || loadingMessages;
 
-  // شريط علوي للجوال
-  const MobileAppBar = (
-    <AppBar
-      position="sticky"
-      elevation={0}
-      sx={{
-        bgcolor: theme.palette.background.paper,
-        color: theme.palette.text.primary,
-        borderBottom: `1px solid ${theme.palette.divider}`,
-      }}
-    >
-      <Toolbar sx={{ minHeight: "56px !important", gap: 1 }}>
-        {mobileView === "chat" ? (
-          <IconButton
-            edge="start"
-            onClick={() => setMobileView("list")}
-            aria-label="رجوع"
-          >
-            <ArrowBackIosNewRoundedIcon />
-          </IconButton>
-        ) : (
-          <Box sx={{ width: 40 }} />
-        )}
-        <Typography variant="h6" sx={{ fontWeight: 800 }} noWrap>
-          {mobileView === "chat" ? "محادثة" : "المحادثات"}
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        <Tooltip title={online ? "متصل" : "غير متصل"}>
-          <Chip
-            size="small"
-            variant="outlined"
-            color={online ? "success" : "warning"}
-            icon={
-              online ? (
-                <SignalCellularAltRoundedIcon />
-              ) : (
-                <SignalCellularConnectedNoInternet0BarRoundedIcon />
-              )
-            }
-            label={online ? "متصل" : "غير متصل"}
-          />
-        </Tooltip>
-      </Toolbar>
-    </AppBar>
-  );
 
   // ===== الجوال: شاشتان =====
   if (isMobile) {

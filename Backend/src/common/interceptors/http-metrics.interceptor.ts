@@ -12,11 +12,12 @@ import {
 } from '@nestjs/common';
 import { type Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
+
 // internal
 import {
   HTTP_ERRORS_TOTAL,
   HTTP_REQUEST_DURATION_SECONDS,
-} from 'src/metrics/metrics.module';
+} from '../../metrics/metrics.module';
 
 import { shouldBypass } from './bypass.util';
 

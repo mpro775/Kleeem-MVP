@@ -2,7 +2,7 @@
 
 import type { PreviewPromptDto, PreviewResponse, QuickConfig } from "./types";
 import { API_BASE } from "@/context/config";
-import axios from "@/shared/api/axios";
+import axiosInstance from "@/shared/api/axios";
 
 
 const authHeader = (token: string) => ({
@@ -12,7 +12,7 @@ export async function getAdvancedTemplate(
   token: string,
   merchantId: string
 ): Promise<string> {
-  const res = await axios.get<{ template: string; note?: string }>(
+  const res = await axiosInstance.get<{ template: string; note?: string }>(
     `${API_BASE}/merchants/${merchantId}/prompt/advanced-template`,
     authHeader(token)
   );
@@ -26,7 +26,7 @@ export async function saveAdvancedTemplate(
   template: string,
   note?: string
 ): Promise<void> {
-  await axios.post(
+  await axiosInstance.post(
     `${API_BASE}/merchants/${merchantId}/prompt/advanced-template`,
     { template, note }, // ← تصحيح
     authHeader(token)
@@ -36,7 +36,7 @@ export async function getQuickConfig(
   token: string,
   merchantId: string
 ): Promise<QuickConfig> {
-  const res = await axios.get<QuickConfig>(
+  const res = await axiosInstance.get<QuickConfig>(
     `${API_BASE}/merchants/${merchantId}/prompt/quick-config`,
     authHeader(token)
   );
@@ -48,7 +48,7 @@ export async function previewPrompt(
   dto: PreviewPromptDto
 ): Promise<string> {
   try {
-    const res = await axios.post<PreviewResponse>(
+    const res = await axiosInstance.post<PreviewResponse>(
       `${API_BASE}/merchants/${merchantId}/prompt/preview`,
       {
         quickConfig: {
@@ -75,7 +75,8 @@ export async function previewPrompt(
       }
     );
     console.log("API response:", res.data); // للتشخيص
-    return typeof res.data === 'string' ? res.data : (res.data.preview || "");
+    // الباك إند يرسل الآن: { success, data: string, requestId, timestamp }
+    return typeof res.data === 'string' ? res.data : "";
   } catch (error) {
     console.error("Error in previewPrompt:", error);
     throw error;
@@ -88,7 +89,7 @@ export async function getFinalPrompt(
   token: string,
   merchantId: string,
 ): Promise<string> {
-  const res = await axios.get<{ prompt: string }>(
+  const res = await axiosInstance.get<{ prompt: string }>(
     `${API_BASE}/merchants/${merchantId}/prompt/final-prompt`,
     authHeader(token),
   );
@@ -100,7 +101,7 @@ export async function updateQuickConfig(
   merchantId: string,
   config: QuickConfig
 ): Promise<QuickConfig> {
-  const res = await axios.patch<QuickConfig>(
+  const res = await axiosInstance.patch<QuickConfig>(
     `${API_BASE}/merchants/${merchantId}/prompt/quick-config`,
     config,
     authHeader(token)
@@ -156,17 +157,8 @@ async function postPreview(
     merchantId,
     body as unknown as PreviewPromptDto
   );
-  // بعض الـ APIs تعيد { preview }, وبعضها تعيد string مباشرة
-  if (typeof res === "string") return res;
-  if (
-    typeof res === "object" &&
-    res !== null &&
-    "preview" in res &&
-    typeof (res as { preview?: unknown }).preview === "string"
-  ) {
-    return (res as { preview: string }).preview;
-  }
-  return "";
+  // الباك إند يرسل الآن: { success, data: string, requestId, timestamp }
+  return typeof res === "string" ? res : "";
 }
 
 // اقتراح قالب متقدم عند عدم وجوده في الخادم

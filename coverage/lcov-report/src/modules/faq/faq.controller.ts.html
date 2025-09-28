@@ -177,7 +177,13 @@
 <a name='L112'></a><a href='#L112'>112</a>
 <a name='L113'></a><a href='#L113'>113</a>
 <a name='L114'></a><a href='#L114'>114</a>
-<a name='L115'></a><a href='#L115'>115</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -196,29 +202,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -228,6 +213,33 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -310,6 +322,7 @@
   ApiResponse,
   ApiQuery,
 } from '@nestjs/swagger';
+&nbsp;
 <span class="cstat-no" title="statement not covered" >import { FaqService } from './faq.service';</span>
 &nbsp;
 @ApiTags('الأسئلة الشائعة')
@@ -344,7 +357,12 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
 <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  uploadFaqs(</span></span>
     @Param('merchantId') merchantId: string,
     @Body() faqs: { question: string; answer: string }[],
-  ) {
+  ): Promise&lt;{
+    success: boolean;
+    queued: number;
+    message: string;
+    ids: string[];
+  }&gt; {
 <span class="cstat-no" title="statement not covered" >    return this.svc.createMany(merchantId, faqs);</span>
   }
 &nbsp;
@@ -354,13 +372,13 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
 <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  list(</span></span>
     @Param('merchantId') merchantId: string,
     @Query('includeDeleted') includeDeleted?: string,
-  ) {
+  ): Promise&lt;unknown&gt; {
 <span class="cstat-no" title="statement not covered" >    return this.svc.list(merchantId, includeDeleted === 'true');</span>
   }
 &nbsp;
   @Get('status')
   @ApiOperation({ summary: 'حالة التدريب/الفهرسة للأسئلة الشائعة' })
-<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  status(</span>@Param('merchantId') merchantId: string) {</span>
+<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >  status(</span>@Param('merchantId') merchantId: string): Promise&lt;unknown&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    return this.svc.getStatus(merchantId);</span>
   }
 &nbsp;
@@ -370,7 +388,7 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
     @Param('merchantId') merchantId: string,
     @Param('faqId') faqId: string,
     @Body() body: { question?: string; answer?: string },
-  ) {
+  ): Promise&lt;unknown&gt; {
 <span class="cstat-no" title="statement not covered" >    return this.svc.updateOne(merchantId, faqId, body);</span>
   }
 &nbsp;
@@ -386,7 +404,7 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
     @Param('merchantId') merchantId: string,
     @Param('faqId') faqId: string,
     @Query('hard') hard?: string,
-  ) {
+  ): Promise&lt;unknown&gt; {
 <span class="cstat-no" title="statement not covered" >    return hard === 'true'</span>
       ? this.svc.hardDelete(merchantId, faqId)
       : this.svc.softDelete(merchantId, faqId);
@@ -400,7 +418,7 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
     @Param('merchantId') merchantId: string,
     @Query('all') all: string,
     @Query('hard') hard?: string,
-  ) {
+  ): Promise&lt;unknown&gt; | { success: boolean; message: string } {
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (all !== 'true') <span class="cstat-no" title="statement not covered" >return { success: false, message: 'حدد all=true' };</span></span>
 <span class="cstat-no" title="statement not covered" >    return this.svc.deleteAll(merchantId, hard === 'true');</span>
   }
@@ -412,7 +430,7 @@ export <span class="cstat-no" title="statement not covered" >class <span class="
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-08T02:46:06.445Z
+                at 2025-09-25T21:16:27.952Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

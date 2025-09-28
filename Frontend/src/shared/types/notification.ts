@@ -1,11 +1,11 @@
 export type SystemNotification = {
   kind: 'system';
-  id: string;
   type: string;                      // embeddings.completed | catalog.sync.completed | ...
   title: string;
   body?: string;
   severity?: 'info' | 'success' | 'warning' | 'error';
-  data?: any;
+  userId?: string;
+  merchantId?: string;
   ts: number;                        // Date.now()
 };
 

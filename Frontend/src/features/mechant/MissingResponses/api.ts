@@ -1,4 +1,4 @@
-import axios from '@/shared/api/axios';
+import axiosInstanceInstance from '@/shared/api/axiosInstance';
 import type { MissingResponse } from './type';
 
 
@@ -13,7 +13,7 @@ export async function getMissingResponses(params: {
   from?: string;
   to?: string;
 }) {
-  const { data } = await axios.get('/analytics/missing-responses', { params });
+  const { data } = await axiosInstance.get('/analytics/missing-responses', { params });
   
   // Handle different response structures
   if (data && Array.isArray(data.items) && typeof data.total === 'number') {
@@ -28,19 +28,19 @@ export async function getMissingResponses(params: {
 }
 
 export async function resolveMissingResponse(id: string) {
-  const { data } = await axios.patch(`/analytics/missing-responses/${id}/resolve`);
+  const { data } = await axiosInstance.patch(`/analytics/missing-responses/${id}/resolve`);
   return data;
 }
 export async function addMissingToKnowledge(id: string, payload: { question: string; answer: string }) {
-    const { data } = await axios.post(`/analytics/missing-responses/${id}/add-to-knowledge`, payload);
+    const { data } = await axiosInstance.post(`/analytics/missing-responses/${id}/add-to-knowledge`, payload);
     return data as { success: boolean; faqId: string; missingResponseId: string; resolved: boolean };
   }
 export async function bulkResolve(ids: string[]) {
-  const { data } = await axios.patch(`/analytics/missing-responses/resolve`, { ids });
+  const { data } = await axiosInstance.patch(`/analytics/missing-responses/resolve`, { ids });
   return data;
 }
 
 export async function getMissingStats(days = 7) {
-  const { data } = await axios.get(`/analytics/missing-responses/stats`, { params: { days } });
+  const { data } = await axiosInstance.get(`/analytics/missing-responses/stats`, { params: { days } });
   return data;
 }

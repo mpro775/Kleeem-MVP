@@ -25,6 +25,7 @@ import {
   STORE_CATEGORIES,
 } from "@/features/onboarding/constants";
 import { ensureMerchant } from "@/auth/api";
+import { backendUserToUser } from "@/shared/utils/auth";
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -59,7 +60,8 @@ export default function OnboardingPage() {
         const res = await ensureMerchant(token);
         if (!mounted) return;
         if (res?.user?.merchantId) {
-          setAuth(res.user, res.accessToken, { silent: true });
+          const user = backendUserToUser(res.user);
+          setAuth(user, res.accessToken, { silent: true });
           setMerchantEnsured(true);
         } else {
           // مجرد إشعار، لا تمنع المتابعة
@@ -107,8 +109,9 @@ export default function OnboardingPage() {
           // 👇 خذ الـ merchantId مباشرة من الاستجابة
           if (res?.user?.merchantId) {
             effectiveMerchantId = res.user.merchantId;
-            // حدّث الكونتكست “بهدوء” لكن لا تعتمد عليه في هذه الدالة
-            setAuth(res.user, res.accessToken, { silent: true });
+            // حدّث الكونتكست "بهدوء" لكن لا تعتمد عليه في هذه الدالة
+            const user = backendUserToUser(res.user);
+            setAuth(user, res.accessToken, { silent: true });
           }
         } catch (e) {
           setError(getAxiosMessage(e, "تعذر تهيئة المتجر الآن"));

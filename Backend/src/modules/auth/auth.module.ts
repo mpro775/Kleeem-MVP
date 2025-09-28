@@ -5,9 +5,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PassportModule } from '@nestjs/passport';
-import { MetricsModule } from 'src/metrics/metrics.module';
 
 import { CommonServicesModule } from '../../common/services/common-services.module';
+import { MetricsModule } from '../../metrics/metrics.module';
 import { MailModule } from '../mail/mail.module';
 import { MerchantsModule } from '../merchants/merchants.module';
 import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema'; // ← استيراد الـ schema
@@ -61,6 +61,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     CommonServicesModule,
   ],
   controllers: [AuthController],
+
   providers: [
     AuthService,
     JwtStrategy,

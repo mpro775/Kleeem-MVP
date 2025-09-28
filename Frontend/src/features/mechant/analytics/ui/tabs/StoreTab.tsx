@@ -48,7 +48,7 @@ export const StoreTab = ({ hasStore, overviewData, topProductsData = [] }: Store
           <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>أفضل المنتجات</Typography>
           <Box sx={{ width: "100%", height: { xs: 220, md: 300 } }}>
             <Suspense fallback={<Box sx={{ display: 'grid', placeItems: 'center', height: '100%' }}><CircularProgress /></Box>}>
-              <ProductsChart products={topProductsData.map(p => ({ name: p.name, value: p.sales }))} />
+              <ProductsChart products={topProductsData.map(p => ({ name: p.name, value: p.count }))} />
             </Suspense>
           </Box>
         </Paper>

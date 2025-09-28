@@ -88,11 +88,8 @@ export default function GeneralInfoForm({
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // الرد ممكن يكون { url } أو { data: { url } }
-      const url =
-        (res.data as any)?.url ??
-        (res.data as any)?.data?.url ??
-        (res as any)._raw?.data?.url;
+      // الباك إند يرسل الآن: { success, data: { url }, requestId, timestamp }
+      const url = (res.data as any)?.url;
 
       if (!url) throw new Error("لم يتم استلام رابط الشعار");
       handleChange("logoUrl", url);

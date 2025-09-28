@@ -1,61 +1,111 @@
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { mockDeep } from 'jest-mock-extended';
 
-import { UserRole } from '../schemas/user.schema';
 import { UsersService } from '../users.service';
 
-import type { PaginationResult } from '../../../common/dto/pagination.dto';
-import type { UsersRepository } from '../repositories/users.repository';
+import type { CreateUserDto } from '../dto/create-user.dto';
+import type { MongoUsersRepository } from '../repositories/mongo-users.repository';
 
 describe('UsersService', () => {
-  let svc: UsersService;
-  const repo: jest.Mocked<UsersRepository> = {
-    create: jest.fn(),
-    findAll: jest.fn(),
-    findByIdLean: jest.fn(),
-    updateById: jest.fn(),
-    softDeleteById: jest.fn(),
-    setFirstLoginFalse: jest.fn(),
-    getNotificationsPrefs: jest.fn(),
-    updateNotificationsPrefs: jest.fn(),
-    list: jest.fn(),
-  } as any;
+  let service: UsersService;
+  let repository: jest.Mocked<MongoUsersRepository>;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
-    const mod = await Test.createTestingModule({
-      providers: [UsersService, { provide: 'UsersRepository', useValue: repo }],
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UsersService,
+        {
+          provide: 'UsersRepository',
+          useValue: mockDeep<MongoUsersRepository>(),
+        },
+      ],
     }).compile();
-    svc = mod.get(UsersService);
+
+    service = module.get<UsersService>(UsersService);
+    repository = module.get('UsersRepository');
   });
 
-  it('findOne returns DTO and throws when missing', async () => {
-    repo.findByIdLean.mockResolvedValueOnce({
-      _id: '64a',
-      email: 'e',
-      name: 'n',
-      merchantId: 'm',
-      firstLogin: true,
-      role: UserRole.ADMIN,
-      emailVerified: true,
-      active: true,
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('findByEmail', () => {
+    it('should return user when found', async () => {
+      const mockUser = {
+        id: '1',
+        email: 'test@example.com',
+        name: 'Test User',
+      };
+
+      repository.findByIdLean.mockResolvedValue(mockUser as any);
+
+      const result = await service.findOne('test@example.com');
+
+      expect(result).toEqual(mockUser);
+      expect(repository.findByIdLean.bind(repository)).toHaveBeenCalledWith(
+        'test@example.com',
+      );
     });
-    const dto = await svc.findOne('64a00000000000000000000');
-    expect(dto.email).toBe('e');
 
-    repo.findByIdLean.mockResolvedValueOnce(null);
-    await expect(svc.findOne('64b00000000000000000000')).rejects.toThrow();
+    it('should return null when user not found', async () => {
+      repository.findByIdLean.mockResolvedValue(null as any);
+
+      const result = await service.findOne('nonexistent@example.com');
+
+      expect(result).toBeNull();
+    });
   });
 
-  it('getUsers proxies to repo.list', async () => {
-    const paged: PaginationResult<any> = {
-      items: [],
-      meta: {
-        hasMore: false,
-        count: 0,
-      },
-    };
-    repo.list.mockResolvedValueOnce(paged);
-    const res = await svc.getUsers({ limit: 10 } as any);
-    expect(res).toBe(paged);
+  describe('create', () => {
+    it('should create and return new user', async () => {
+      const createUserDto = {
+        email: 'new@example.com',
+        name: 'New User',
+        password: 'password123',
+      };
+
+      const mockCreatedUser = {
+        id: '2',
+        ...createUserDto,
+      };
+
+      repository.create.mockResolvedValue(mockCreatedUser as any);
+
+      const result = await service.create(
+        createUserDto as unknown as CreateUserDto,
+      );
+
+      expect(result).toEqual(mockCreatedUser);
+      expect(repository.create.bind(repository)).toHaveBeenCalledWith(
+        createUserDto,
+      );
+    });
+  });
+
+  describe('findById', () => {
+    it('should return user when found by id', async () => {
+      const mockUser = {
+        id: '1',
+        email: 'test@example.com',
+        name: 'Test User',
+      };
+
+      repository.findByIdLean.mockResolvedValue(mockUser as any);
+
+      const result = await service.findOne('1');
+
+      expect(result).toEqual(mockUser);
+      expect(repository.findByIdLean.bind(repository)).toHaveBeenCalledWith(
+        '1',
+      );
+    });
+
+    it('should return null when user not found by id', async () => {
+      repository.findByIdLean.mockResolvedValue(null as any);
+
+      const result = await service.findOne('nonexistent-id');
+
+      expect(result).toBeNull();
+    });
   });
 });

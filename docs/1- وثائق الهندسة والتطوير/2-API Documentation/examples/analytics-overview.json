@@ -1,0 +1,94 @@
+{
+  "success": true,
+  "message": null,
+  "requestId": "req_analytics_001",
+  "timestamp": "2025-09-26T10:30:00.000Z",
+  "data": {
+    "totalMessages": 1247,
+    "totalOrders": 89,
+    "totalProducts": 156,
+    "totalCategories": 12,
+    "totalChannels": 3,
+    "conversionRate": 7.14,
+    "averageResponseTime": "45ms",
+    "customerSatisfaction": 4.2,
+    "period": {
+      "start": "2025-09-01T00:00:00Z",
+      "end": "2025-09-26T23:59:59Z"
+    },
+    "topProducts": [
+      {
+        "productId": "p_1001",
+        "name": "LED Street Light 50W",
+        "orders": 23,
+        "revenue": 1840
+      },
+      {
+        "productId": "p_1002",
+        "name": "LED Street Light 100W",
+        "orders": 18,
+        "revenue": 2160
+      },
+      {
+        "productId": "p_1003",
+        "name": "Solar Panel 300W",
+        "orders": 15,
+        "revenue": 4500
+      }
+    ],
+    "channelStats": {
+      "whatsapp": {
+        "messages": 892,
+        "orders": 67,
+        "conversion": 7.51
+      },
+      "telegram": {
+        "messages": 234,
+        "orders": 15,
+        "conversion": 6.41
+      },
+      "web": {
+        "messages": 121,
+        "orders": 7,
+        "conversion": 5.79
+      }
+    },
+    "dailyTrends": [
+      {
+        "date": "2025-09-20",
+        "messages": 45,
+        "orders": 3
+      },
+      {
+        "date": "2025-09-21",
+        "messages": 52,
+        "orders": 4
+      },
+      {
+        "date": "2025-09-22",
+        "messages": 38,
+        "orders": 2
+      },
+      {
+        "date": "2025-09-23",
+        "messages": 67,
+        "orders": 5
+      },
+      {
+        "date": "2025-09-24",
+        "messages": 71,
+        "orders": 6
+      },
+      {
+        "date": "2025-09-25",
+        "messages": 89,
+        "orders": 8
+      },
+      {
+        "date": "2025-09-26",
+        "messages": 94,
+        "orders": 7
+      }
+    ]
+  }
+}

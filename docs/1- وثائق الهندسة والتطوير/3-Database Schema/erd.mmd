@@ -1,0 +1,526 @@
+erDiagram
+  %% ========================================
+  %% Main Entities (Core Business Logic)
+  %% ========================================
+
+  %% Users and Merchants
+  User {
+    email string PK
+    password string
+    firstLogin boolean
+    name string
+    phone string
+    role string
+    emailVerified boolean
+    emailVerificationCode string
+    emailVerificationExpiresAt date
+    merchantId objectid FK
+    passwordChangedAt date
+    notificationsPrefs json
+    active boolean
+    deletedAt date
+  }
+
+  Merchant {
+    name string
+    userId objectid FK
+    skippedChecklistItems string
+    logoUrl string
+    productSource string
+    productSourceConfig json
+    addresses json
+    socialLinks json
+    subscription json
+    categories string
+    customCategory string
+    businessType string
+    businessDescription string
+    workflowId string
+    publicSlug string
+    logoKey string
+    publicSlugEnabled boolean
+    quickConfig json
+    currentAdvancedConfig json
+    status string
+    phone string
+    lastActivity date
+    advancedConfigHistory json
+    finalPromptTemplate string
+    returnPolicy string
+    exchangePolicy string
+    shippingPolicy string
+    active boolean
+    deletedAt date
+    deletion json
+    storefront objectid FK
+    workingHours json
+  }
+  User }|--o{ Merchant : "userId"
+
+  %% Products and Categories
+  Product {
+    merchantId objectid FK
+    originalUrl string
+    platform string
+    name string
+    description string
+    price number
+    isAvailable boolean
+    images string
+    category objectid FK
+    lowQuantity string
+    specsBlock string
+    lastFetchedAt date
+    lastFullScrapedAt date
+    errorState string
+    source string
+    sourceUrl string
+    externalId string
+    status string
+    lastSync date
+    syncStatus string
+    offers objectid
+    keywords string
+    uniqueKey string
+    currency string
+    attributes json
+    offer json
+    publicUrlStored string
+    slug string
+    storefrontSlug string
+    storefrontDomain string
+  }
+  Product }|--|| Merchant : "merchantId"
+  Product }|--o{ Category : "category"
+
+  Category {
+    name string
+    merchantId objectid FK
+    parent objectid FK
+    description string
+    image string
+    keywords string
+    slug string
+    path string
+    ancestors objectid
+    depth number
+    order number
+  }
+  Category }|--|| Merchant : "merchantId"
+  Category }|--o{ Category : "parent"
+  Category }|--o{ Category : "ancestors"
+
+  %% Channels and Communication
+  Channel {
+    merchantId objectid FK
+    provider string
+    enabled boolean
+    status string
+    accountLabel string
+    webhookUrl string
+    secretHash string
+    accessTokenEnc string
+    refreshTokenEnc string
+    expiresAt date
+    scopes string
+    phoneNumberId string
+    wabaId string
+    appSecretEnc string
+    verifyTokenHash string
+    sessionId string
+    instanceId string
+    qr string
+    botTokenEnc string
+    username string
+    defaultChatId string
+    pageId string
+    igBusinessId string
+    widgetSettings json
+    isDefault boolean
+    deletedAt date
+  }
+  Channel }|--|| Merchant : "merchantId"
+
+  %% Messages and Chat
+  Message {
+    role string
+    text string
+    timestamp date
+    metadata string
+    keywords string
+    rating json
+    feedback string
+    ratedBy objectid FK
+    merchantId objectid FK
+    sessionId string
+    transport json
+    channel json
+    handoverToAgent boolean
+    messages json
+  }
+  Message }|--o{ User : "ratedBy"
+  Message }|--|| Merchant : "merchantId"
+
+  %% Orders and E-commerce
+  Order {
+    product objectid FK
+    name string
+    price number
+    quantity number
+    merchantId string
+    sessionId string
+    customer json
+    products json
+    status string
+    externalId string
+    source string
+  }
+  Order }|--o{ Product : "product"
+  Order }|--|| Merchant : "merchantId"
+
+  %% Leads and Analytics
+  Lead {
+    merchantId string
+    sessionId string
+    data json
+    source string
+    phoneNormalized string
+    name string
+  }
+  Lead }|--|| Merchant : "merchantId"
+
+  AnalyticsEvent {
+    merchantId objectid FK
+    type string
+    channel string
+    payload json
+  }
+  AnalyticsEvent }|--|| Merchant : "merchantId"
+
+  %% Integrations and External Services
+  Integration {
+    merchantId objectid FK
+    provider string
+    active boolean
+    accessToken string
+    refreshToken string
+    tokenType string
+    expiresIn number
+    expiresAt date
+    managerToken string
+    authorizationToken string
+    storeId string
+    storeUrl string
+    scopes string
+    lastSync date
+  }
+  Integration }|--|| Merchant : "merchantId"
+
+  %% Documents and Knowledge Base
+  Document {
+    merchantId string
+    filename string
+    fileType string
+    storageKey string
+    status string
+    errorMessage string
+  }
+  Document }|--|| Merchant : "merchantId"
+
+  Faq {
+    merchantId string
+    question string
+    answer string
+    status string
+    errorMessage string
+  }
+  Faq }|--|| Merchant : "merchantId"
+
+  Instruction {
+    merchantId objectid FK
+    instruction string
+    relatedReplies string
+    type string
+    active boolean
+  }
+  Instruction }|--|| Merchant : "merchantId"
+
+  SourceUrl {
+    merchantId string
+    url string
+    status string
+    errorMessage string
+    textExtracted string
+  }
+  SourceUrl }|--|| Merchant : "merchantId"
+
+  %% Support and Storefront
+  Storefront {
+    merchant objectid FK
+    primaryColor string
+    buttonStyle string
+    secondaryColor string
+    brandDark string
+    banners string
+    slug string
+    storefrontUrl string
+    domain string
+    featuredProductIds string
+  }
+  Storefront }|--|| Merchant : "merchant"
+
+  SupportTicket {
+    originalName string
+    filename string
+    mimeType string
+    size number
+    url string
+    storage json
+    name string
+    email string
+    phone string
+    topic json
+    subject string
+    message string
+    status json
+    source string
+    ip string
+    userAgent string
+    attachments json
+    ticketNumber string
+    merchantId objectid FK
+    createdBy objectid FK
+  }
+  SupportTicket }|--|| Merchant : "merchantId"
+  SupportTicket }|--|| User : "createdBy"
+
+  %% System and Workflow
+  WorkflowHistory {
+    merchantId string
+    workflowId string
+    version number
+    workflowJson json
+    updatedBy string
+    updatedAt date
+    isRollback boolean
+  }
+  WorkflowHistory }|--|| Merchant : "merchantId"
+
+  %% ========================================
+  %% Subdocuments (Embedded Documents)
+  %% ========================================
+
+  %% Merchant Subdocuments
+  Address {
+    street string
+    city string
+    state string
+    postalCode string
+    country string
+  }
+
+  AdvancedConfig {
+    template string
+    updatedAt date
+    note string
+  }
+
+  QuickConfig {
+    dialect string
+    tone string
+    customInstructions string
+    includeClosingPhrase boolean
+    customerServicePhone string
+    customerServiceWhatsapp string
+    closingText string
+  }
+
+  SubscriptionPlan {
+    tier string
+    planId objectid FK
+    startDate date
+    endDate date
+    features string
+  }
+
+  WorkingHours {
+    day string
+    openTime string
+    closeTime string
+  }
+
+  %% Product Subdocuments
+  Offer {
+    enabled boolean
+    oldPrice number
+    newPrice number
+    startAt date
+    endAt date
+  }
+
+  %% Order Subdocuments
+  OrderProduct {
+    product objectid FK
+    name string
+    price number
+    quantity number
+  }
+
+  %% ========================================
+  %% System Tables (Authentication & Security)
+  %% ========================================
+
+  %% Authentication
+  EmailVerificationToken {
+    userId objectid FK
+    codeHash string
+    expiresAt date
+  }
+  EmailVerificationToken }|--|| User : "userId"
+
+  PasswordResetToken {
+    userId objectid FK
+    tokenHash string
+    expiresAt date
+    used boolean
+  }
+  PasswordResetToken }|--|| User : "userId"
+
+  %% Plans and Billing
+  Plan {
+    name string
+    priceCents number
+    currency string
+    durationDays number
+    messageLimit number
+    llmEnabled boolean
+    isTrial boolean
+    isActive boolean
+    description string
+    features string
+    billingPeriod json
+    trialPeriodDays number
+    archived boolean
+  }
+  SubscriptionPlan }|--|| Plan : "planId"
+
+  %% Usage and Limits
+  UsageCounter {
+    merchantId objectid FK
+    monthKey string
+    messagesUsed number
+  }
+  UsageCounter }|--|| Merchant : "merchantId"
+
+  %% ========================================
+  %% Event Sourcing and Audit
+  %% ========================================
+
+  IncomingEvent {
+    merchantId string
+    channel string
+    platformMessageId string
+    sessionId string
+  }
+  IncomingEvent }|--|| Merchant : "merchantId"
+
+  OutboxEvent {
+    aggregateType string
+    aggregateId string
+    eventType string
+    payload json
+    exchange string
+    routingKey string
+    status string
+    attempts number
+    nextAttemptAt date
+    lockedBy string
+    lockedAt date
+    occurredAt date
+    error string
+    publishedAt date
+    dedupeKey string
+  }
+
+  %% ========================================
+  %% Vector Database Collections
+  %% ========================================
+
+  %% Qdrant Collections (Vector DB)
+  ProductsVectors {
+    merchantId string
+    productId string
+    categoryId string
+    status string
+    isAvailable boolean
+    price number
+    source string
+    vector float768
+  }
+
+  OffersVectors {
+    merchantId string
+    offerId string
+    productId string
+    discountType string
+    discountValue number
+    vector float768
+  }
+
+  FAQsVectors {
+    merchantId string
+    faqId string
+    question string
+    category string
+    vector float768
+  }
+
+  DocumentsVectors {
+    merchantId string
+    documentId string
+    filename string
+    content string
+    vector float768
+  }
+
+  %% ========================================
+  %% Additional Relationships
+  %% ========================================
+
+  %% Offers relationship with Products
+  Product }|--o{ Offer : "offers"
+
+  %% ProductSetupConfig relationship
+  ProductSetupConfig }|--|| Merchant : "merchantId"
+
+  %% Notifications relationship
+  Notification }|--|| User : "userId"
+  Notification }|--|| Merchant : "merchantId"
+
+  %% MissingResponse relationship
+  MissingResponse }|--|| Merchant : "merchant"
+
+  %% Stats relationship
+  Stats }|--|| Merchant : "merchantId"
+
+  %% UnavailableProducts relationship
+  UnavailableProducts }|--|| Merchant : "merchant"
+
+  %% BotChats relationship
+  BotChats }|--|| Message : "sessionId"
+
+  %% BotPrompt relationship
+  BotPrompt }|--|| Channel : "channel"
+
+  %% BotFaq relationship
+  BotFaq }|--|| Merchant : "merchantId"
+
+  %% ========================================
+  %% Webhook Events
+  %% ========================================
+
+  Webhook {
+    eventType string
+    payload string
+    receivedAt date
+  }

@@ -1,0 +1,82 @@
+{
+  "success": true,
+  "message": null,
+  "requestId": "req_plans_001",
+  "timestamp": "2025-09-26T10:30:00.000Z",
+  "data": {
+    "items": [
+      {
+        "_id": "66fa1f5f9a8e6f0012d3c444",
+        "name": "الخطة المجانية",
+        "priceCents": 0,
+        "currency": "USD",
+        "durationDays": 30,
+        "messageLimit": 100,
+        "llmEnabled": false,
+        "isTrial": true,
+        "isActive": true,
+        "description": "ابدأ رحلتك مع كليم مجاناً",
+        "features": ["دعم أساسي", "100 رسالة شهرياً"],
+        "billingPeriod": "monthly",
+        "trialPeriodDays": 14,
+        "archived": false,
+        "createdAt": "2025-01-01T00:00:00.000Z",
+        "updatedAt": "2025-01-01T00:00:00.000Z"
+      },
+      {
+        "_id": "66fa1f5f9a8e6f0012d3c445",
+        "name": "الخطة المهنية",
+        "priceCents": 2999,
+        "currency": "USD",
+        "durationDays": 30,
+        "messageLimit": 10000,
+        "llmEnabled": true,
+        "isTrial": false,
+        "isActive": true,
+        "description": "مثالية للشركات النامية",
+        "features": [
+          "دعم الذكاء الاصطناعي",
+          "10,000 رسالة شهرياً",
+          "تحليلات متقدمة",
+          "دعم متعدد القنوات"
+        ],
+        "billingPeriod": "monthly",
+        "trialPeriodDays": 14,
+        "archived": false,
+        "createdAt": "2025-01-01T00:00:00.000Z",
+        "updatedAt": "2025-01-01T00:00:00.000Z"
+      },
+      {
+        "_id": "66fa1f5f9a8e6f0012d3c446",
+        "name": "الخطة المؤسسية",
+        "priceCents": 9999,
+        "currency": "USD",
+        "durationDays": 30,
+        "messageLimit": 100000,
+        "llmEnabled": true,
+        "isTrial": false,
+        "isActive": true,
+        "description": "لحلول المؤسسات الكبيرة",
+        "features": [
+          "جميع الميزات المتقدمة",
+          "100,000 رسالة شهرياً",
+          "دعم فني مخصص",
+          "تكاملات مخصصة",
+          "SLA مضمون"
+        ],
+        "billingPeriod": "monthly",
+        "trialPeriodDays": 30,
+        "archived": false,
+        "createdAt": "2025-01-01T00:00:00.000Z",
+        "updatedAt": "2025-01-01T00:00:00.000Z"
+      }
+    ],
+    "pageInfo": {
+      "nextCursor": null,
+      "previousCursor": null,
+      "hasNext": false,
+      "hasPrev": false,
+      "limit": 20
+    }
+  }
+}

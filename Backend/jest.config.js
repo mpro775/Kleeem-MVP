@@ -36,8 +36,9 @@ const config = {
     '^@common/(.*)$': '<rootDir>/src/common/$1',
     '^@modules/(.*)$': '<rootDir>/src/modules/$1',
     '^@config/(.*)$': '<rootDir>/src/config/$1',
-    '^ioredis$': '<rootDir>/test/mocks/ioredis.mock.ts',
-
+    '^src/(.*)$': '<rootDir>/src/$1',
+    '^ioredis$': '<rootDir>/test/mocks/ioredis.mock.js',
+    '^file-type$': '<rootDir>/test/mocks/file-type.mock.ts',
   },
   setupFilesAfterEnv: ['<rootDir>/test/jest.setup.ts'],
   testTimeout: 30000,
@@ -47,6 +48,29 @@ const config = {
   clearMocks: true,
   restoreMocks: true,
   resetMocks: true,
+  projects: [
+    {
+      displayName: 'unit',
+      testMatch: ['<rootDir>/src/**/*.spec.ts'],
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      setupFilesAfterEnv: ['<rootDir>/test/jest.setup.ts'],
+    },
+    {
+      displayName: 'integration',
+      testMatch: ['<rootDir>/test/integration/**/*.integration.spec.ts'],
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      setupFilesAfterEnv: ['<rootDir>/test/integration-setup.ts'],
+    },
+    {
+      displayName: 'e2e',
+      testMatch: ['<rootDir>/test/e2e/**/*.e2e-spec.ts'],
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      setupFilesAfterEnv: ['<rootDir>/test/e2e-setup.ts'],
+    },
+  ],
 };
 
 module.exports = config;

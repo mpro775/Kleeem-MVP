@@ -1,9 +1,8 @@
 // src/features/auth/api.ts
 import axiosInstance from "@/shared/api/axios";
-import { API_BASE } from "../context/config";
-import type { User } from "@/context/types";
+import { API_BASE } from "@/context/config";
+import type { AuthPayload } from "@/context/types";
 
-export type AuthPayload = { accessToken: string; user: User };
 
 export const loginAPI = async (
   email: string,
@@ -57,7 +56,7 @@ export const resendVerificationAPI = async (email: string): Promise<void> => {
   await axiosInstance.post(`${API_BASE}/auth/resend-verification`, { email });
 };
 export async function requestPasswordResetAPI(email: string): Promise<void> {
-  await axiosInstance.post(`${API_BASE}/auth/password-reset/request`, {
+  await axiosInstance.post(`${API_BASE}/auth/forgot-password`, {
     email,
   });
 }
@@ -66,12 +65,12 @@ export async function validatePasswordResetTokenAPI(
   email: string,
   token: string
 ): Promise<boolean> {
-  const res = await axiosInstance.post(
-    `${API_BASE}/auth/password-reset/validate`,
-    { email, token }
+  const res = await axiosInstance.get(
+    `${API_BASE}/auth/reset-password/validate`,
+    { params: { email, token } }
   );
-  // اقترح أن يرجع { ok: boolean } من الباك-إند
-  return !!res.data?.ok;
+  // الباك إند يرجع { valid: boolean }
+  return !!res.data?.valid;
 }
 
 export async function resetPasswordAPI(
@@ -80,7 +79,7 @@ export async function resetPasswordAPI(
   newPassword: string,
   confirmPassword: string
 ): Promise<void> {
-  await axiosInstance.post(`${API_BASE}/auth/password-reset/reset`, {
+  await axiosInstance.post(`${API_BASE}/auth/reset-password`, {
     email,
     token,
     newPassword,

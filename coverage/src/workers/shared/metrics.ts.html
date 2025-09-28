@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>0/18</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>0/17</span>
             </div>
         
             
@@ -82,12 +82,26 @@
 <a name='L17'></a><a href='#L17'>17</a>
 <a name='L18'></a><a href='#L18'>18</a>
 <a name='L19'></a><a href='#L19'>19</a>
-<a name='L20'></a><a href='#L20'>20</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -95,30 +109,43 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import http from 'http';</span>
+&nbsp;
 <span class="cstat-no" title="statement not covered" >import * as client from 'prom-client';</span>
 &nbsp;
 const register = <span class="cstat-no" title="statement not covered" >new client.Registry();</span>
-<span class="cstat-no" title="statement not covered" >client.collectDefaultMetrics({ register });</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export function <span class="fstat-no" title="function not covered" >s</span>tartMetricsServer(</span>port: number) {
-<span class="cstat-no" title="statement not covered" >  http</span>
-    .createServer(<span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; {
-<span class="cstat-no" title="statement not covered" >      if (req.url === '/metrics') {</span>
+<span class="cstat-no" title="statement not covered" >export a</span>sync function <span class="fstat-no" title="function not covered" >startMetricsServer(</span>port: number): Promise&lt;void&gt; {
+  const server = <span class="cstat-no" title="statement not covered" >http.createServer(<span class="fstat-no" title="function not covered" >async </span>(req, res) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    if (req.url === '/metrics') {</span>
+<span class="cstat-no" title="statement not covered" >      try {</span>
 <span class="cstat-no" title="statement not covered" >        res.writeHead(200, { 'Content-Type': register.contentType });</span>
-<span class="cstat-no" title="statement not covered" >        register.metrics().then(<span class="fstat-no" title="function not covered" >(m</span>etrics) =&gt; <span class="cstat-no" title="statement not covered" >res.end(metrics))</span>;</span>
-      } else {
-<span class="cstat-no" title="statement not covered" >        res.writeHead(404);</span>
-<span class="cstat-no" title="statement not covered" >        res.end();</span>
+        const metrics = <span class="cstat-no" title="statement not covered" >await register.metrics();</span>
+<span class="cstat-no" title="statement not covered" >        res.end(metrics);</span>
+      } catch (error) {
+<span class="cstat-no" title="statement not covered" >        console.error('Metrics error:', error);</span>
+<span class="cstat-no" title="statement not covered" >        res.writeHead(500);</span>
+<span class="cstat-no" title="statement not covered" >        res.end('Internal Server Error');</span>
       }
-    })
-    .listen(port, <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >console.log(`📈 metrics on :${port}`))</span>;
+    } else {
+<span class="cstat-no" title="statement not covered" >      res.writeHead(404);</span>
+<span class="cstat-no" title="statement not covered" >      res.end();</span>
+    }
+  });
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  return new Promise(<span class="fstat-no" title="function not covered" >(r</span>esolve) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    server.listen(port, <span class="fstat-no" title="function not covered" >() =</span>&gt; <span class="cstat-no" title="statement not covered" >resolve())</span>;</span>
+  });
 }
 &nbsp;</pre></td></tr></table></pre>
 
@@ -127,7 +154,7 @@ const register = <span class="cstat-no" title="statement not covered" >new clien
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-08T02:46:06.917Z
+                at 2025-09-25T21:16:28.534Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

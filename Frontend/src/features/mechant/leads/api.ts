@@ -3,17 +3,17 @@ import axiosInstance from "@/shared/api/axios";
 import type { Lead, LeadsSettings } from "./types";
 
 export async function fetchLeadsSettings(merchantId: string): Promise<LeadsSettings> {
-  const { data } = await axiosInstance.get(`/merchants/${merchantId}`);
+  const { data } = await axiosInstance.get(`/merchants/${merchantId}/leads-settings`);
   return {
-    enabled: Boolean(data?.leadsEnabled ?? true),
-    fields: Array.isArray(data?.leadsSettings) ? data.leadsSettings : [],
+    enabled: Boolean(data?.enabled ?? true),
+    fields: Array.isArray(data?.fields) ? data.fields : [],
   };
 }
 
 export async function saveLeadsSettings(merchantId: string, payload: LeadsSettings): Promise<void> {
   await axiosInstance.patch(`/merchants/${merchantId}/leads-settings`, {
-    settings: payload.fields,
     enabled: payload.enabled,
+    fields: payload.fields,
   });
 }
 

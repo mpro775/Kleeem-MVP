@@ -78,8 +78,8 @@ services:
     image: mongo:5
     container_name: kaleem-mongo
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: strongpassword
+      MONGO_INITDB_ROOT_USERNAME: kaleem
+      MONGO_INITDB_ROOT_PASSWORD: kaleem@123
     ports:
       - '27017:27017'
     volumes:
@@ -120,8 +120,8 @@ services:
       - REDIS_HOSTS=local:redis:6379 # ✅ الصيغة القديمة الواضحة
       - PORT=8081 # ✅ يتوافق مع المابنج
       - ADDRESS=0.0.0.0 # ✅ استماع على كل الواجهات داخل الحاوية
-      - HTTP_USER=admin
-      - HTTP_PASSWORD=<STRONG_UI_PASS>
+      - HTTP_USER=kaleem
+      - HTTP_PASSWORD=kaleem@123
     depends_on:
       - redis
     ports:
@@ -526,6 +526,12 @@ services:
       - WEBHOOK_URL=https://n8n.kaleem-ai.com
       - VUE_APP_URL_BASE_API=https://n8n.kaleem-ai.com
       - N8N_RUNNERS_ENABLED=false
+      - EXECUTIONS_MODE=queue
+      - N8N_METRICS=true
+      - N8N_LOG_LEVEL=warn
+      - BACKEND_BASE_URL=https://api.kaleem-ai.com/api
+      - N8N_SERVICE_TOKEN=long-and-random
+      - N8N_WEBHOOK_SECRET=long-and-random
       - N8N_CORS_ALLOW_ORIGIN=https://localhost:5173
       - N8N_CORS_ALLOW_CREDENTIALS=true
     ports:

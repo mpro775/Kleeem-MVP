@@ -1,4 +1,4 @@
-import axios from "@/shared/api/axios";
+import axiosInstance from "@/shared/api/axios";
 import type { ChannelType } from "@/features/mechant/Conversations/type";
 
 export async function sendAgentMessage(payload: {
@@ -9,7 +9,7 @@ export async function sendAgentMessage(payload: {
   agentId?: string; // لو تريد حفظ رقم معرف الموظف
 }) {
   // استبدل URL بباك اندك وليس n8n
-  return axios.post(
+  return axiosInstance.post(
     `https://api.kaleem-ai.com/api/webhooks/agent-reply/${payload.merchantId}`,
     {
       sessionId: payload.sessionId,

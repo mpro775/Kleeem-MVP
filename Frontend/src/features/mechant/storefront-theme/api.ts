@@ -1,16 +1,16 @@
 // src/features/mechant/storefront-theme/api.ts (أو api/storefrontApi.ts حسب مسارك)
-import axios from "@/shared/api/axios";
+import axiosInstanceInstance from "@/shared/api/axiosInstance";
 import type { Storefront } from "@/features/mechant/storefront-theme/type";
 
 export async function getStorefrontInfo(merchantId?: string, slug?: string) {
   if (merchantId && merchantId.trim()) {
-    const res = await axios.get<Storefront>(
+    const res = await axiosInstance.get<Storefront>(
       `/storefront/merchant/${merchantId}`
     );
     return res.data; // ✅ حمولة مباشرة
   }
   if (slug && slug.trim()) {
-    const res = await axios.get<Storefront>(`/public/${slug}/storefront`);
+    const res = await axiosInstance.get<Storefront>(`/storefront/${slug}`);
     return res.data; // ✅ حمولة مباشرة
   }
   throw new Error("merchantId or slug is required");
@@ -20,7 +20,7 @@ export async function updateStorefrontInfo(
   merchantId: string,
   payload: Partial<Storefront>
 ): Promise<Storefront> {
-  const res = await axios.patch<Storefront>(
+  const res = await axiosInstance.patch<Storefront>(
     `/storefront/by-merchant/${merchantId}`,
     payload
   );
@@ -39,7 +39,7 @@ export async function uploadBannerImages(
   const form = new FormData();
   files.forEach((f) => form.append("files", f));
 
-  const res = await axios.post<{
+  const res = await axiosInstance.post<{
     urls: string[];
     accepted: number;
     remaining: number;
@@ -51,13 +51,13 @@ export async function uploadBannerImages(
 }
 
 export async function checkSlug(slug: string): Promise<{ available: boolean }> {
-  const res = await axios.get<{ available: boolean }>(
+  const res = await axiosInstance.get<{ available: boolean }>(
     `/storefront/slug/check`,
     { params: { slug } }
   );
   return res.data; // ✅ لا .data.data
 }
 export async function getPublicStorefrontBundle(slug: string) {
-  const res = await axios.get(`/public/${slug}/bundle`);
-  return res.data?.data ?? res.data; // يدعم كلا الشكلين
+  const res = await axiosInstance.get(`/public/${slug}/bundle`);
+  return res.data; // الباك إند يرسل: { success, data, requestId, timestamp }
 }

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/9</span>
+                <span class='fraction'>0/11</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>0/9</span>
             </div>
         
             
@@ -108,14 +108,7 @@
 <a name='L43'></a><a href='#L43'>43</a>
 <a name='L44'></a><a href='#L44'>44</a>
 <a name='L45'></a><a href='#L45'>45</a>
-<a name='L46'></a><a href='#L46'>46</a>
-<a name='L47'></a><a href='#L47'>47</a>
-<a name='L48'></a><a href='#L48'>48</a>
-<a name='L49'></a><a href='#L49'>49</a>
-<a name='L50'></a><a href='#L50'>50</a>
-<a name='L51'></a><a href='#L51'>51</a>
-<a name='L52'></a><a href='#L52'>52</a>
-<a name='L53'></a><a href='#L53'>53</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L46'></a><a href='#L46'>46</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -126,11 +119,15 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -148,17 +145,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -174,19 +160,10 @@
 export class <span class="cstat-no" title="statement not covered" ><span class="cstat-no" title="statement not covered" >CleanupCoordinatorService<span class="cstat-no" title="statement not covered" > </span>{</span></span>
   private readonly <span class="cstat-no" title="statement not covered" >logger = new Logger(CleanupCoordinatorService.name);</span>
 &nbsp;
-<span class="fstat-no" title="function not covered" >  constructor() // @InjectModel(Product.name) private productModel: Model&lt;ProductDocument&gt;, // Inject ما تحتاجه من خدمات/مستودعات:</span>
-  // @InjectModel(Category.name) private categoryModel: Model&lt;CategoryDocument&gt;,
-  // @InjectModel(Lead.name) private leadModel: Model&lt;LeadDocument&gt;,
-  // @InjectModel(Order.name) private orderModel: Model&lt;OrderDocument&gt;,
-  // @InjectModel(Conversation.name) private convModel: Model&lt;ConversationDocument&gt;,
-  // private readonly qdrant: QdrantService,
-  // private readonly minio: MinioService,
-  // private readonly webhooks: WebhooksService, // (Salla/Zid/Shopify...)
-  // private readonly n8n: N8nService,
-  {}
+<span class="fstat-no" title="function not covered" >  constructor() {}</span> // private readonly n8n: N8nService, // private readonly webhooks: WebhooksService, // (Salla/Zid/Shopify...) // private readonly minio: MinioService, // private readonly qdrant: QdrantService, // @InjectModel(Conversation.name) private convModel: Model&lt;ConversationDocument&gt;, // @InjectModel(Order.name) private orderModel: Model&lt;OrderDocument&gt;, // @InjectModel(Lead.name) private leadModel: Model&lt;LeadDocument&gt;, // @InjectModel(Category.name) private categoryModel: Model&lt;CategoryDocument&gt;, // @InjectModel(Product.name) private productModel: Model&lt;ProductDocument&gt;, // Inject ما تحتاجه من خدمات/مستودعات:
 &nbsp;
   /** تنظيف داخلي للـ DB (حذف/تعطيل كل ما يخص التاجر) */
-<span class="fstat-no" title="function not covered" >  async </span>cleanupInternal(merchantId: string) {
+<span class="fstat-no" title="function not covered" >  async </span>cleanupInternal(merchantId: string): Promise&lt;void&gt; {
 <span class="cstat-no" title="statement not covered" >    this.logger.log(`Internal cleanup for merchant ${merchantId}`);</span>
     // مثال حذف/تعطيل مجموعات مرتبطة:
     // await this.productModel.deleteMany({ merchantId });
@@ -195,10 +172,11 @@ export class <span class="cstat-no" title="statement not covered" ><span class="
     // await this.leadModel.deleteMany({ merchantId });
     // await this.convModel.deleteMany({ merchantId });
     // ... أي Collections أخرى
+<span class="cstat-no" title="statement not covered" >    await Promise.resolve(); </span>// Placeholder for future async implementation
   }
 &nbsp;
   /** تنظيف خارجي للخدمات المتكاملة */
-<span class="fstat-no" title="function not covered" >  async </span>cleanupExternal(merchantId: string) {
+<span class="fstat-no" title="function not covered" >  async </span>cleanupExternal(merchantId: string): Promise&lt;void&gt; {
 <span class="cstat-no" title="statement not covered" >    this.logger.log(`External cleanup for merchant ${merchantId}`);</span>
     // Qdrant: حذف النقاط الخاصة بالتاجر
     // await this.qdrant.deleteByFilter({ must: [{ key: "merchantId", match: { value: merchantId } }] });
@@ -211,10 +189,11 @@ export class <span class="cstat-no" title="statement not covered" ><span class="
 &nbsp;
     // n8n: إزالة Credentials/Workflows لهذا التاجر
     // await this.n8n.purgeMerchantAssets(merchantId);
+<span class="cstat-no" title="statement not covered" >    await Promise.resolve(); </span>// Placeholder for future async implementation
   }
 &nbsp;
   /** استدعاء شامل */
-<span class="fstat-no" title="function not covered" >  async </span>purgeAll(merchantId: string) {
+<span class="fstat-no" title="function not covered" >  async </span>purgeAll(merchantId: string): Promise&lt;void&gt; {
 <span class="cstat-no" title="statement not covered" >    await this.cleanupExternal(merchantId);</span>
 <span class="cstat-no" title="statement not covered" >    await this.cleanupInternal(merchantId);</span>
   }
@@ -226,7 +205,7 @@ export class <span class="cstat-no" title="statement not covered" ><span class="
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-09-08T02:46:06.917Z
+                at 2025-09-25T21:16:28.534Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

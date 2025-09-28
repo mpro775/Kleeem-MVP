@@ -1,10 +1,12 @@
 // src/pages/MerchantSupportCenterPage.tsx
 import { Box, Container, Grid, Snackbar, Alert } from "@mui/material";
+import { useErrorHandler } from "@/shared/errors";
 import { useSupportForm } from "@/features/mechant/support/hooks/useSupportForm";
 import { SupportForm } from "@/features/mechant/support/ui/SupportForm";
 import { SupportSidebar } from "@/features/mechant/support/ui/SupportSidebar";
 
 export default function MerchantSupportCenterPage() {
+  const { handleError } = useErrorHandler();
   const {
     form,
     files,
