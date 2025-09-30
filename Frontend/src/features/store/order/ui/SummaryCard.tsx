@@ -1,6 +1,7 @@
 import { Box, Divider, Paper, Typography, useTheme } from "@mui/material";
 import { sumItems, formatMoney } from "@/features/store/order/utils";
 import type { OrderProduct } from "@/features/store/type";
+import type { Currency } from "../../product/utils";
 
 export default function SummaryCard({
   products,
@@ -11,7 +12,7 @@ export default function SummaryCard({
   products: OrderProduct[];
   shipping?: number;
   discount?: number;
-  currency?: any;
+  currency?: string;
 }) {
   const theme = useTheme();
   const sub = sumItems(products);
@@ -28,15 +29,15 @@ export default function SummaryCard({
       <Box sx={{ mb: 2 }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
           <Typography>المجموع الفرعي:</Typography>
-          <Typography>{formatMoney(sub, currency)}</Typography>
+          <Typography>{formatMoney(sub, currency as Currency)}</Typography>
         </Box>
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
           <Typography>رسوم الشحن:</Typography>
-          <Typography>{formatMoney(shipping, currency)}</Typography>
+          <Typography>{formatMoney(shipping, currency as Currency)}</Typography>
         </Box>
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
           <Typography>الخصم:</Typography>
-          <Typography>{formatMoney(discount, currency)}</Typography>
+          <Typography>{formatMoney(discount, currency as Currency)}</Typography>
         </Box>
         <Divider sx={{ my: 2 }} />
         <Box
@@ -54,7 +55,7 @@ export default function SummaryCard({
             fontWeight="bold"
             sx={{ color: "var(--brand)" }}
           >
-            {formatMoney(total, currency)}
+            {formatMoney(total, currency as Currency)}
           </Typography>
         </Box>
       </Box>

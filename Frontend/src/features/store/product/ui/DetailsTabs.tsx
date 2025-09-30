@@ -5,37 +5,10 @@ import {
   Tab,
   Typography,
   useTheme,
-  Avatar,
   Badge,
 } from "@mui/material";
 import { useState } from "react";
 
-function Stars({ rating }: { rating: number }) {
-  // عرض النجوم فقط للـ demo — يمكن استبدالها لاحقًا ببيانات فعلية
-  const theme = useTheme();
-  const Star = (props: any) => (
-    <span style={{ color: theme.palette.warning.main, marginInlineStart: 2 }}>
-      ★
-    </span>
-  );
-  const Empty = () => (
-    <span style={{ color: theme.palette.grey[400], marginInlineStart: 2 }}>
-      ☆
-    </span>
-  );
-  const full = Math.floor(rating),
-    half = rating % 1 >= 0.5;
-  const arr = Array.from({ length: 5 }, (_, i) =>
-    i < full ? "full" : i === full && half ? "half" : "empty"
-  );
-  return (
-    <>
-      {arr.map((t, i) =>
-        t === "empty" ? <Empty key={i} /> : <Star key={i} />
-      )}
-    </>
-  );
-}
 
 export default function DetailsTabs({ specs = [] }: { specs?: string[] }) {
   const theme = useTheme();

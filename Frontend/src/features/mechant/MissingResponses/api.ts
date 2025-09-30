@@ -1,4 +1,4 @@
-import axiosInstanceInstance from '@/shared/api/axiosInstance';
+import axiosInstance from '@/shared/api/axios';
 import type { MissingResponse } from './type';
 
 

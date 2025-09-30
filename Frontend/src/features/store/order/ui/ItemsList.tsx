@@ -10,13 +10,14 @@ import {
 import { Storefront as StorefrontIcon } from "@mui/icons-material";
 import type { OrderProduct } from "@/features/store/type";
 import { formatMoney } from "@/features/store/order/utils";
+import type { Currency } from "@/features/mechant/products/type";
 
 export default function ItemsList({
   products,
   currency = "SAR",
 }: {
   products: OrderProduct[];
-  currency?: any;
+  currency?: string;
 }) {
   const theme = useTheme();
   return (
@@ -56,10 +57,10 @@ export default function ItemsList({
             secondary={
               <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                 <Typography variant="body2" color="text.secondary">
-                  {item.quantity} × {formatMoney(item.price, currency)}
+                  {item.quantity} × {formatMoney(item.price, currency as Currency)}
                 </Typography>
                 <Typography fontWeight="bold">
-                  {formatMoney(item.price * item.quantity, currency)}
+                  {formatMoney(item.price * item.quantity, currency as Currency)}
                 </Typography>
               </Box>
             }

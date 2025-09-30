@@ -239,15 +239,40 @@ datasources:
     description: "Service has been restarted"
 ```
 
-## 🔗 الروابط والوصول
+## 🔗 الروابط والوصول (مُطبق فعلياً)
 
-| الخدمة       | الرابط                          | الوصف                  |
-| ------------ | ------------------------------- | ---------------------- |
-| Grafana      | `https://grafana.kaleem-ai.com` | لوحة المراقبة الرئيسية |
-| Prometheus   | `http://localhost:9090`         | واجهة Prometheus       |
-| Loki         | `http://localhost:3100`         | واجهة Loki             |
-| Tempo        | `http://localhost:3200`         | واجهة Tempo            |
-| AlertManager | `http://localhost:9093`         | إدارة التنبيهات        |
+| الخدمة       | الرابط الفعلي                 | الوصف                  | الحالة |
+| ------------ | ------------------------------ | ---------------------- | ------ |
+| Grafana      | `https://grafana.kaleem-ai.com` | لوحة المراقبة الرئيسية | ✅ مُفعل |
+| Prometheus   | `http://localhost:9090`         | واجهة Prometheus       | ✅ مُفعل |
+| Loki         | `http://localhost:3100`         | واجهة Loki             | ✅ مُفعل |
+| Tempo        | `http://localhost:3200`         | واجهة Tempo            | ✅ مُفعل |
+| AlertManager | `http://localhost:9093`         | إدارة التنبيهات        | ✅ مُفعل |
+| N8N         | `https://n8n.kaleem-ai.com`     | سير عمل AI             | ✅ مُفعل |
+| Redis Commander | `http://localhost:8082`       | إدارة Redis             | ✅ مُفعل |
+| Mongo Express | `http://localhost:8081`        | إدارة MongoDB           | ✅ مُفعل |
+
+### اللوحات المُطبقة فعلياً
+
+#### 1. API Health Dashboard
+**الموقع**: Grafana → Dashboards → API Health
+**المقاييس**:
+- Request Rate (RPS) حسب المسار والطريقة
+- Error Rate (5xx %) مع فلترة
+- Latency p95 (s) حسب المسار
+- DB Query p95 (s) حسب العملية
+- Cache Hit Rate (%)
+- WS Active Connections
+
+#### 2. Business KPIs Dashboard
+**الموقع**: Grafana → Dashboards → Business KPIs
+**المقاييس**:
+- Merchants Created (معدل/5دقائق)
+- n8n Workflows Created (معدل/5دقائق)
+- Products Created/Updated/Deleted
+- Active Merchants
+- Email Verification Success/Failure
+- Password Changes
 
 ## 📈 مقاييس الأداء
 

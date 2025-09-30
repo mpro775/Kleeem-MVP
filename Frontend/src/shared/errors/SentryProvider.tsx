@@ -1,19 +1,21 @@
 // src/shared/errors/SentryProvider.tsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useEffect, useState } from 'react';
+import { useSentry } from './sentryHooks';
 import { sentryIntegration, type SentryConfig } from './SentryIntegration';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/hooks';
+import type { SeverityLevel } from '@sentry/react';
 
 interface SentryContextType {
   isReady: boolean;
-  setUser: (user: any) => void;
+  setUser: (user: { [key: string]: unknown; id?: string | undefined; email?: string | undefined; username?: string | undefined; }) => void;
   setTag: (key: string, value: string) => void;
-  setContext: (name: string, context: Record<string, any>) => void;
-  addBreadcrumb: (breadcrumb: any) => void;
-  captureException: (error: Error | string, context?: Record<string, any>) => void;
-  captureMessage: (message: string, level?: any, context?: Record<string, any>) => void;
+  setContext: (name: string, context: Record<string, unknown>) => void;
+  addBreadcrumb: (breadcrumb: unknown) => void;
+  captureException: (error: Error | string, context?: Record<string, unknown>) => void;
+  captureMessage: (message: string, level?: unknown, context?: Record<string, unknown>) => void;
 }
 
-const SentryContext = createContext<SentryContextType | null>(null);
+export const SentryContext = createContext<SentryContextType | null>(null);
 
 interface SentryProviderProps {
   children: React.ReactNode;
@@ -115,9 +117,9 @@ export function SentryProvider({
     setUser: (user) => sentryIntegration.setUser(user),
     setTag: (key, value) => sentryIntegration.setTag(key, value),
     setContext: (name, context) => sentryIntegration.setContext(name, context),
-    addBreadcrumb: (breadcrumb) => sentryIntegration.addBreadcrumb(breadcrumb),
+    addBreadcrumb: (breadcrumb) => sentryIntegration.addBreadcrumb(breadcrumb as { message: string; category?: string | undefined; level?: SeverityLevel | undefined; data?: Record<string, unknown> | undefined; }),
     captureException: (error, context) => sentryIntegration.captureException(error, context),
-    captureMessage: (message, level, context) => sentryIntegration.captureMessage(message, level, context),
+    captureMessage: (message, level, context) => sentryIntegration.captureMessage(message, level as SeverityLevel, context),
   };
 
   return (
@@ -127,14 +129,6 @@ export function SentryProvider({
   );
 }
 
-// Hook لاستخدام Sentry
-export function useSentry() {
-  const context = useContext(SentryContext);
-  if (!context) {
-    throw new Error('useSentry must be used within a SentryProvider');
-  }
-  return context;
-}
 
 // مكون لمراقبة الأداء
 export function SentryPerformanceMonitor({ children }: { children: React.ReactNode }) {

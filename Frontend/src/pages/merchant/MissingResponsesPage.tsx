@@ -1,5 +1,5 @@
 // src/pages/dashboard/MissingResponsesPage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Typography,
@@ -21,6 +21,7 @@ import {
   useMediaQuery,
   Card,
   CardContent,
+  CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import CheckIcon from "@mui/icons-material/Check";
@@ -38,6 +39,7 @@ import {
   addMissingToKnowledge,
 } from "@/features/mechant/MissingResponses/api";
 import AddToKnowledgeDialog from "@/features/mechant/MissingResponses/ui/AddToKnowledgeDialog";
+import { useErrorHandler } from "@/shared/errors";
 
 export default function MissingResponsesPage() {
   const theme = useTheme();
@@ -75,7 +77,7 @@ export default function MissingResponsesPage() {
     [page, limit, resolved, channel, type, search]
   );
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getMissingResponses(params);
@@ -97,12 +99,13 @@ export default function MissingResponsesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params, handleError]);
 
   useEffect(() => {
     fetchData();
-  }, [params]);
+  }, [params, fetchData]);
 
+  if (loading) return <CircularProgress />;
   const resetFilters = () => {
     setResolved("all");
     setChannel("all");
@@ -215,7 +218,7 @@ export default function MissingResponsesPage() {
             select
             label="الحالة"
             value={resolved}
-            onChange={(e) => setResolved(e.target.value as any)}
+            onChange={(e) => setResolved(e.target.value as "all" | "true" | "false")}
           >
             <MenuItem value="all">الكل</MenuItem>
             <MenuItem value="false">غير مُعالج</MenuItem>
@@ -226,7 +229,7 @@ export default function MissingResponsesPage() {
             select
             label="القناة"
             value={channel}
-            onChange={(e) => setChannel(e.target.value as any)}
+            onChange={(e) => setChannel(e.target.value as "all" | "telegram" | "whatsapp" | "webchat")}
           >
             <MenuItem value="all">الكل</MenuItem>
             <MenuItem value="whatsapp">WhatsApp</MenuItem>
@@ -238,7 +241,7 @@ export default function MissingResponsesPage() {
             select
             label="النوع"
             value={type}
-            onChange={(e) => setType(e.target.value as any)}
+            onChange={(e) => setType(e.target.value as "all" | "missing_response" | "unavailable_product")}
           >
             <MenuItem value="all">الكل</MenuItem>
             <MenuItem value="missing_response">Missing Response</MenuItem>

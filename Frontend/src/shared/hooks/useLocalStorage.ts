@@ -13,7 +13,9 @@ export function useLocalStorage<T>(key: string, initial: T) {
   useEffect(() => {
     try {
       localStorage.setItem(key, JSON.stringify(value));
-    } catch {}
+    } catch {
+      console.error(`Failed to save ${key} to localStorage`);
+    }
   }, [key, value]);
   return [value, setValue] as const;
 }

@@ -179,8 +179,8 @@ export default function BannersEditor({
         console.log("Banners after upload:", result);
         return result;
       });
-    } catch (e: any) {
-      setError(e?.response?.data?.message || "فشل رفع الصور.");
+    } catch (e: unknown) {
+      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message || "فشل رفع الصور.");
     } finally {
       setBusy(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

@@ -22,7 +22,7 @@ import GradientIcon from "@/shared/ui/GradientIcon";
 import { signUpAPI } from "@/auth/api";
 import { useErrorHandler, applyServerFieldErrors } from "@/shared/errors";
 import { useLocation, useNavigate, Link as RouterLink } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import type { BackendUser, User } from "@/context/types";
 import { backendUserToUser } from "@/shared/utils/auth";
 

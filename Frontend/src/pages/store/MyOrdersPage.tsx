@@ -37,6 +37,7 @@ import { StoreNavbar } from "@/features/store/ui/StoreNavbar";
 import { Footer } from "@/features/store/ui/Footer";
 import type { MerchantInfo } from "@/features/mechant/merchant-settings/types";
 import type { Category } from "@/features/mechant/categories/type";
+import type { Storefront } from "@/features/mechant/storefront-theme/type";
 
 const STATUS_LABEL: Record<string, string> = {
   all: "الكل",
@@ -67,9 +68,8 @@ export default function MyOrdersPage() {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [merchantId, setMerchantId] = useState<string>("");
   const [merchant, setMerchant] = useState<MerchantInfo | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories] = useState<Category[]>([]);
   const [activeStatus, setActiveStatus] = useState<StatusKey>("all");
   const [query, setQuery] = useState("");
 
@@ -79,17 +79,18 @@ export default function MyOrdersPage() {
     axiosInstance
       .get(`/storefront/${slug}`)
       .then(async (res) => {
+        // res.data هو الـ payload بعد التطبيع
         const mid = res.data.merchant._id as string;
-        setMerchantId(mid);
+  
         setMerchant(res.data.merchant);
-
+  
         try {
           const sf = await getStorefrontInfo(mid);
           setBrandVars(sf.brandDark || "#111827");
         } catch {
           setBrandVars("#111827");
         }
-
+  
         const phone = getLocalCustomer()?.phone;
         return axiosInstance.get(`/storefront/merchant/${mid}/my-orders`, {
           params: { sessionId: sid, phone },
@@ -108,6 +109,7 @@ export default function MyOrdersPage() {
       })
       .finally(() => setLoading(false));
   }, [slug]);
+  
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -137,7 +139,7 @@ export default function MyOrdersPage() {
   return (
     <Box sx={{ bgcolor: "#fff" }}>
       {/* هيرو نحيف أنيق */}
-      <StoreNavbar merchant={merchant} storefront={{} as any} />
+      <StoreNavbar merchant={merchant} storefront={{} as Storefront} />
       <Box
         sx={{
           position: "relative",

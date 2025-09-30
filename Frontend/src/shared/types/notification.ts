@@ -1,12 +1,15 @@
+// shared/types/notification.ts
 export type SystemNotification = {
   kind: 'system';
-  type: string;                      // embeddings.completed | catalog.sync.completed | ...
+  type: string;                    // ex: embeddings.completed | catalog.sync.completed | ...
+  id: string;
   title: string;
   body?: string;
+  data?: Record<string, unknown>;
   severity?: 'info' | 'success' | 'warning' | 'error';
   userId?: string;
   merchantId?: string;
-  ts: number;                        // Date.now()
+  ts: number;                      // Date.now()
 };
 
 export type ChatNotification = {

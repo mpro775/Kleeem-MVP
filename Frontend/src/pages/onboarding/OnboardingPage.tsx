@@ -15,7 +15,7 @@ import {
 import { MuiTelInput, matchIsValidTel } from "mui-tel-input";
 import { LuStore } from "react-icons/lu";
 import { MdOutlineBusiness } from "react-icons/md";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { useNavigate } from "react-router-dom";
 import { saveBasicInfo } from "@/features/onboarding/api";
 import { getAxiosMessage } from "@/shared/lib/errors"; // أو من utils/error
@@ -74,6 +74,7 @@ export default function OnboardingPage() {
           setError("رجاءً فعِّل بريدك أولاً.");
           navigate("/verify-email", { replace: true });
         } else {
+          setError(msg);
         }
       } finally {
         if (mounted) setEnsuring(false);

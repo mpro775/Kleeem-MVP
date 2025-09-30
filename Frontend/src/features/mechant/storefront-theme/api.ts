@@ -1,5 +1,5 @@
 // src/features/mechant/storefront-theme/api.ts (أو api/storefrontApi.ts حسب مسارك)
-import axiosInstanceInstance from "@/shared/api/axiosInstance";
+import axiosInstance from "@/shared/api/axios";
 import type { Storefront } from "@/features/mechant/storefront-theme/type";
 
 export async function getStorefrontInfo(merchantId?: string, slug?: string) {

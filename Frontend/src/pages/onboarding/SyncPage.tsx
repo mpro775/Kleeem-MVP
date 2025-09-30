@@ -1,7 +1,7 @@
 // src/pages/onboarding/SyncPage.tsx
 import { useEffect, useState } from "react";
 import { Button, Typography, CircularProgress, Alert } from "@mui/material";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { useNavigate } from "react-router-dom";
 
 import { getAxiosMessage } from "@/shared/lib/errors";

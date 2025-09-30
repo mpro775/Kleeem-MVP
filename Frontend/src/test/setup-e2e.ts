@@ -1,3 +1,4 @@
+// test/e2e.setup.ts (مثال لمسار الملف)
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
@@ -11,123 +12,85 @@ beforeAll(() => {
   // إيقاف console.error و console.warn في اختبارات E2E
   console.error = vi.fn();
   console.warn = vi.fn();
-  
+
   // إعداد JSDOM لاختبارات E2E
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: vi.fn().mockImplementation(query => ({
+    value: vi.fn().mockImplementation((query: string) => ({
       matches: false,
       media: query,
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
+      onchange: null as unknown,
+      addListener: vi.fn(), // deprecated
+      removeListener: vi.fn(), // deprecated
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       dispatchEvent: vi.fn(),
     })),
   });
-  
+
   // Mock للـ IntersectionObserver
-  global.IntersectionObserver = vi.fn().mockImplementation(() => ({
-    observe: vi.fn(),
-    unobserve: vi.fn(),
-    disconnect: vi.fn(),
-  }));
-  
+  class IOStub implements IntersectionObserver {
+    readonly root: Element | Document | null = null;
+    readonly rootMargin = '';
+    readonly thresholds: ReadonlyArray<number> = [];
+    constructor(_: IntersectionObserverCallback) {}
+    disconnect(): void {}
+    observe(_: Element): void {}
+    takeRecords(): IntersectionObserverEntry[] { return []; }
+    unobserve(_: Element): void {}
+  }
+  // @ts-expect-error: jsdom lacks IntersectionObserver
+  global.IntersectionObserver = IOStub;
+
   // Mock للـ ResizeObserver
-  global.ResizeObserver = vi.fn().mockImplementation(() => ({
-    observe: vi.fn(),
-    unobserve: vi.fn(),
-    disconnect: vi.fn(),
-  }));
-  
+  class ROStub implements ResizeObserver {
+    observe(_: Element): void {}
+    unobserve(_: Element): void {}
+    disconnect(): void {}
+  }
+  // @ts-expect-error: jsdom lacks ResizeObserver
+  global.ResizeObserver = vi.fn().mockImplementation(() => new ROStub());
+
   // Mock للـ window.scrollTo
-  Object.defineProperty(window, 'scrollTo', {
-    writable: true,
-    value: vi.fn(),
-  });
-  
+  Object.defineProperty(window, 'scrollTo', { writable: true, value: vi.fn() });
+
   // Mock للـ window.scrollY
-  Object.defineProperty(window, 'scrollY', {
-    writable: true,
-    value: 0,
-  });
-  
-  // Mock للـ window.innerHeight
-  Object.defineProperty(window, 'innerHeight', {
-    writable: true,
-    value: 768,
-  });
-  
-  // Mock للـ window.innerWidth
-  Object.defineProperty(window, 'innerWidth', {
-    writable: true,
-    value: 1024,
-  });
-  
-  // Mock للـ HTMLElement.prototype.clientWidth
-  Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
-    configurable: true,
-    value: 800,
-  });
-  
-  // Mock للـ HTMLElement.prototype.clientHeight
-  Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
-    configurable: true,
-    value: 600,
-  });
-  
-  // Mock للـ Element.prototype.scrollTo
+  Object.defineProperty(window, 'scrollY', { writable: true, value: 0 });
+
+  // Mock للـ window.innerHeight/innerWidth
+  Object.defineProperty(window, 'innerHeight', { writable: true, value: 768 });
+  Object.defineProperty(window, 'innerWidth', { writable: true, value: 1024 });
+
+  // Mock للـ HTMLElement.prototype.clientWidth/Height
+  Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, value: 800 });
+  Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 600 });
+
+  // Mock للـ Element.prototype.scrollTo/scrollIntoView/getBoundingClientRect
   Element.prototype.scrollTo = vi.fn();
-  
-  // Mock للـ Element.prototype.scrollIntoView
   Element.prototype.scrollIntoView = vi.fn();
-  
-  // Mock للـ Element.prototype.getBoundingClientRect
   Element.prototype.getBoundingClientRect = vi.fn(() => ({
-    width: 100,
-    height: 100,
-    top: 0,
-    left: 0,
-    bottom: 100,
-    right: 100,
-    x: 0,
-    y: 0,
-    toJSON: () => {},
-  }));
-  
+    width: 100, height: 100, top: 0, left: 0, bottom: 100, right: 100, x: 0, y: 0,
+    toJSON: () => undefined,
+  } as DOMRect));
+
   // Mock للـ fetch API
-  global.fetch = vi.fn();
-  
-  // Mock للـ localStorage
-  const localStorageMock = {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-    clear: vi.fn(),
-    length: 0,
-    key: vi.fn(),
+  type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+  global.fetch = vi.fn<Parameters<FetchFn>, ReturnType<FetchFn>>();
+
+  // Mock للـ localStorage/sessionStorage
+  const localStorageMock: Storage = {
+    getItem: vi.fn(), setItem: vi.fn(), removeItem: vi.fn(), clear: vi.fn(),
+    key: vi.fn(), length: 0,
   };
-  Object.defineProperty(window, 'localStorage', {
-    value: localStorageMock,
-    writable: true,
-  });
-  
-  // Mock للـ sessionStorage
-  const sessionStorageMock = {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-    clear: vi.fn(),
-    length: 0,
-    key: vi.fn(),
+  Object.defineProperty(window, 'localStorage', { value: localStorageMock, writable: true });
+
+  const sessionStorageMock: Storage = {
+    getItem: vi.fn(), setItem: vi.fn(), removeItem: vi.fn(), clear: vi.fn(),
+    key: vi.fn(), length: 0,
   };
-  Object.defineProperty(window, 'sessionStorage', {
-    value: sessionStorageMock,
-    writable: true,
-  });
-  
-  // Mock للـ URL API
+  Object.defineProperty(window, 'sessionStorage', { value: sessionStorageMock, writable: true });
+
+  // Mock للـ URL API (الجزء المستخدم لدينا فقط)
   Object.defineProperty(window, 'URL', {
     value: {
       createObjectURL: vi.fn(() => 'blob:mock-url'),
@@ -135,50 +98,33 @@ beforeAll(() => {
     },
     writable: true,
   });
-  
+
   // Mock للـ FileReader
+  // @ts-expect-error: تخصيص بسيط لمُنشئ FileReader داخل بيئة الاختبار
   global.FileReader = vi.fn().mockImplementation(() => ({
-    readAsText: vi.fn(),
-    readAsDataURL: vi.fn(),
-    readAsArrayBuffer: vi.fn(),
-    onload: null,
-    onerror: null,
-    result: null,
-  })) as any;
-  
-  // Add static properties to FileReader
-  (global.FileReader as any).EMPTY = 0;
-  (global.FileReader as any).LOADING = 1;
-  (global.FileReader as any).DONE = 2;
-  
-  // Mock للـ FormData
+    readAsText: vi.fn(), readAsDataURL: vi.fn(), readAsArrayBuffer: vi.fn(),
+    onload: null, onerror: null, result: null,
+  })) as unknown as { new(): FileReader };
+
+  // إضافة ثوابت ساكنة بدون استخدام any
+  Object.assign(global.FileReader, { EMPTY: 0, LOADING: 1, DONE: 2 });
+
+  // Mock للـ FormData / Headers
+  // @ts-expect-error: jsdom يتيح التخصيص
   global.FormData = vi.fn().mockImplementation(() => ({
-    append: vi.fn(),
-    delete: vi.fn(),
-    get: vi.fn(),
-    getAll: vi.fn(),
-    has: vi.fn(),
-    set: vi.fn(),
-    forEach: vi.fn(),
-    entries: vi.fn(),
-    keys: vi.fn(),
-    values: vi.fn(),
+    append: vi.fn(), delete: vi.fn(), get: vi.fn(), getAll: vi.fn(),
+    has: vi.fn(), set: vi.fn(), forEach: vi.fn(), entries: vi.fn(),
+    keys: vi.fn(), values: vi.fn(),
   }));
-  
-  // Mock للـ Headers
+
+  // @ts-expect-error: jsdom يتيح التخصيص
   global.Headers = vi.fn().mockImplementation(() => ({
-    append: vi.fn(),
-    delete: vi.fn(),
-    get: vi.fn(),
-    has: vi.fn(),
-    set: vi.fn(),
-    forEach: vi.fn(),
-    entries: vi.fn(),
-    keys: vi.fn(),
-    values: vi.fn(),
+    append: vi.fn(), delete: vi.fn(), get: vi.fn(), has: vi.fn(), set: vi.fn(),
+    forEach: vi.fn(), entries: vi.fn(), keys: vi.fn(), values: vi.fn(),
   }));
-  
+
   // Mock للـ Request
+  // @ts-expect-error: تخصيص للبيئة الاختبارية
   global.Request = vi.fn().mockImplementation(() => ({
     url: 'http://localhost:3000',
     method: 'GET',
@@ -191,10 +137,10 @@ beforeAll(() => {
     formData: vi.fn(),
     json: vi.fn(),
     text: vi.fn(),
-  }));
-  
-  // Mock للـ Response
-  global.Response = vi.fn().mockImplementation(() => ({
+  })) as unknown as typeof Request;
+
+  // Mock للـ Response (instance + static methods) بدون any
+  const responseInstance: Partial<Response> = {
     ok: true,
     status: 200,
     statusText: 'OK',
@@ -205,14 +151,19 @@ beforeAll(() => {
     arrayBuffer: vi.fn(),
     blob: vi.fn(),
     formData: vi.fn(),
-    json: vi.fn(),
-    text: vi.fn(),
-  })) as any;
-  
-  // Add static methods to Response
-  (global.Response as any).error = vi.fn(() => new Response());
-  (global.Response as any).json = vi.fn((data: any) => new Response(JSON.stringify(data)));
-  (global.Response as any).redirect = vi.fn((url: string) => new Response(null, { status: 302, headers: { Location: url } }));
+    json: vi.fn(async () => ({})),
+    text: vi.fn(async () => '{}'),
+  };
+
+  const ResponseCtor = vi.fn(() => responseInstance as Response) as unknown as typeof Response;
+  // @ts-expect-error: jsdom يتيح استبدال الـ Response
+  global.Response = ResponseCtor;
+
+  Object.defineProperties(global.Response, {
+    error:   { value: vi.fn(() => new (global.Response as unknown as { new(): Response })()) },
+    json:    { value: vi.fn((data: unknown) => new (global.Response as unknown as { new(): Response })()) },
+    redirect:{ value: vi.fn((url: string) => new (global.Response as unknown as { new(): Response })()) },
+  });
 });
 
 afterAll(() => {
@@ -224,26 +175,25 @@ afterAll(() => {
 beforeEach(() => {
   // مسح الـ mocks قبل كل اختبار
   vi.clearAllMocks();
-  
+
   // إعادة تعيين DOM
   document.body.innerHTML = '';
   document.head.innerHTML = '';
-  
-  // إعادة تعيين localStorage
+
+  // إعادة تعيين التخزين
   localStorage.clear();
   sessionStorage.clear();
-  
+
   // إعادة تعيين URL
   window.history.pushState({}, '', '/');
-  
-  // إعادة تعيين RTL
+
+  // RTL افتراضي
   document.documentElement.setAttribute('dir', 'rtl');
   document.documentElement.setAttribute('lang', 'ar');
-  
+
   // إعادة تعيين fetch mock
-  if (global.fetch) {
-    (global.fetch as any).mockClear();
-  }
+  const f = global.fetch as unknown as vi.Mock;
+  if (typeof f?.mockClear === 'function') f.mockClear();
 });
 
 afterEach(() => {
@@ -253,134 +203,106 @@ afterEach(() => {
 });
 
 // 🔧 Utilities مساعدة لاختبارات E2E
-export const mockFetchResponse = (data: any, status: number = 200) => {
-  if (global.fetch) {
-    (global.fetch as any).mockResolvedValue({
-      ok: status >= 200 && status < 300,
-      status,
-      json: async () => data,
-      text: async () => JSON.stringify(data),
-      headers: new Headers(),
-    });
-  }
-};
 
-export const mockFetchError = (error: string, status: number = 500) => {
-  if (global.fetch) {
-    (global.fetch as any).mockRejectedValue(new Error(error));
-  }
-};
+export function mockFetchResponse<T = unknown>(data: T, status = 200): void {
+  const f = global.fetch as unknown as vi.Mock;
+  f.mockResolvedValue({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => data,
+    text: async () => JSON.stringify(data),
+    headers: new Headers(),
+  } as Response);
+}
 
-export const mockLocalStorage = (data: Record<string, string>) => {
-  Object.entries(data).forEach(([key, value]) => {
-    localStorage.setItem(key, value);
-  });
-};
+export function mockFetchError(errorMessage: string, status = 500): void {
+  const f = global.fetch as unknown as vi.Mock;
+  // نعيد رفض الوعد بخطأ، ويمكنك الاستفادة من status داخل اختباراتك حسب الحاجة
+  f.mockRejectedValue(Object.assign(new Error(errorMessage), { status }));
+}
 
-export const mockSessionStorage = (data: Record<string, string>) => {
-  Object.entries(data).forEach(([key, value]) => {
-    sessionStorage.setItem(key, value);
-  });
-};
+export function mockLocalStorage(data: Record<string, string>): void {
+  Object.entries(data).forEach(([key, value]) => localStorage.setItem(key, value));
+}
 
-export const mockMatchMedia = (matches: boolean = false) => {
+export function mockSessionStorage(data: Record<string, string>): void {
+  Object.entries(data).forEach(([key, value]) => sessionStorage.setItem(key, value));
+}
+
+export function mockMatchMedia(matches = false): void {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: vi.fn().mockImplementation(query => ({
+    value: vi.fn().mockImplementation((query: string) => ({
       matches,
       media: query,
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
+      onchange: null as unknown,
+      addListener: vi.fn(), // deprecated
+      removeListener: vi.fn(), // deprecated
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       dispatchEvent: vi.fn(),
     })),
   });
-};
+}
 
-export const mockResizeObserver = () => {
-  global.ResizeObserver = vi.fn().mockImplementation(() => ({
-    observe: vi.fn(),
-    unobserve: vi.fn(),
-    disconnect: vi.fn(),
-  }));
-};
-
-export const mockIntersectionObserver = (isIntersecting: boolean = false) => {
-  global.IntersectionObserver = vi.fn().mockImplementation((callback) => ({
-    observe: vi.fn(),
-    unobserve: vi.fn(),
-    disconnect: vi.fn(),
-    root: null,
-    rootMargin: '',
-    thresholds: [],
-  }));
-  
-  // تشغيل callback فوراً إذا كان مطلوباً
-  if (isIntersecting) {
-    setTimeout(() => {
-      const observer = (global.IntersectionObserver as any).mock.results[0].value;
-      if (observer.callback) {
-        observer.callback([{
-          isIntersecting: true,
-          target: document.createElement('div'),
-          intersectionRatio: 1,
-          boundingClientRect: {},
-          rootBounds: {},
-          time: Date.now(),
-        }], observer);
-      }
-    }, 0);
+export function mockResizeObserver(): void {
+  class ROStub implements ResizeObserver {
+    observe(_: Element): void {}
+    unobserve(_: Element): void {}
+    disconnect(): void {}
   }
-};
+  global.ResizeObserver = vi.fn().mockImplementation(() => new ROStub());
+}
 
-export const mockScrollPosition = (scrollY: number = 0) => {
-  Object.defineProperty(window, 'scrollY', {
-    writable: true,
-    value: scrollY,
-  });
-};
+export function mockIntersectionObserver(): void {
+  class IOStub implements IntersectionObserver {
+    readonly root: Element | Document | null = null;
+    readonly rootMargin = '';
+    readonly thresholds: ReadonlyArray<number> = [];
+    constructor(_: IntersectionObserverCallback) {}
+    disconnect(): void {}
+    observe(_: Element): void {}
+    takeRecords(): IntersectionObserverEntry[] { return []; }
+    unobserve(_: Element): void {}
+  }
+  global.IntersectionObserver = IOStub;
+}
 
-export const mockViewportSize = (width: number = 1024, height: number = 768) => {
-  Object.defineProperty(window, 'innerWidth', {
-    writable: true,
-    value: width,
-  });
-  Object.defineProperty(window, 'innerHeight', {
-    writable: true,
-    value: height,
-  });
-};
+export function mockScrollPosition(scrollY = 0): void {
+  Object.defineProperty(window, 'scrollY', { writable: true, value: scrollY });
+}
+
+export function mockViewportSize(width = 1024, height = 768): void {
+  Object.defineProperty(window, 'innerWidth', { writable: true, value: width });
+  Object.defineProperty(window, 'innerHeight', { writable: true, value: height });
+}
 
 // 🎯 إعدادات إضافية لاختبارات E2E
-export const setupE2ETestEnvironment = () => {
-  // إعداد بيئة اختبارات E2E
+export function setupE2ETestEnvironment(): void {
   mockMatchMedia();
   mockResizeObserver();
   mockIntersectionObserver();
   mockViewportSize();
   mockFetchResponse({});
-};
+}
 
 // 📊 إعدادات الأداء لاختبارات E2E
 export const e2ePerformanceConfig = {
-  // إعدادات للأداء الأفضل في اختبارات E2E
   maxConcurrency: 1,
-  pool: 'forks',
+  pool: 'forks' as const,
   isolate: true,
   restoreMocks: true,
   clearMocks: true,
   mockReset: true,
-  testTimeout: 60000,
-  hookTimeout: 30000,
-  teardownTimeout: 20000,
+  testTimeout: 60_000,
+  hookTimeout: 30_000,
+  teardownTimeout: 20_000,
 };
 
 // 🔍 إعدادات التغطية لاختبارات E2E
 export const e2eCoverageConfig = {
   provider: 'v8',
-  reporter: ['text', 'json', 'html'],
+  reporter: ['text', 'json', 'html'] as const,
   exclude: [
     'node_modules/',
     'src/test/',
@@ -392,11 +314,6 @@ export const e2eCoverageConfig = {
     '**/*.e2e.*',
   ],
   thresholds: {
-    global: {
-      branches: 60,
-      functions: 60,
-      lines: 60,
-      statements: 60
-    }
-  }
+    global: { branches: 60, functions: 60, lines: 60, statements: 60 },
+  },
 };

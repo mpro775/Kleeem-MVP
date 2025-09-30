@@ -41,7 +41,7 @@ export class ErrorBoundary extends React.Component<
     
     // تحديث الحالة
     this.setState({ 
-      requestId: (error as any).requestId || undefined 
+      requestId: (error as { requestId?: string }).requestId || undefined 
     });
 
     // استدعاء callback مخصص إذا كان متوفراً

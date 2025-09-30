@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import axiosInstance from "@/shared/api/axios";
+import { AxiosError } from "axios";
 
 type Props = {
   open: boolean;
@@ -41,7 +42,9 @@ export default function TelegramConnectDialog({
   const copy = async (v: string) => {
     try {
       await navigator.clipboard.writeText(v);
-    } catch {}
+    } catch {
+      // Do nothing
+    }
   };
 
   const fetchStatus = useCallback(async () => {
@@ -49,16 +52,17 @@ export default function TelegramConnectDialog({
     setBusy(true);
     setError(null);
     try {
-      const { data } = await axiosInstance.get<{ status: string; details?: any }>(
-        `/channels/${channelId}/status`
-      );
+      const { data } = await axiosInstance.get<{
+        status: string;
+        details?: { webhookUrl?: string; webhook_url?: string }
+      }>(`/channels/${channelId}/status`);
       setStatus(data?.status || "");
       const hook =
         data?.details?.webhookUrl || data?.details?.webhook_url || "";
       if (hook) setWebhookUrl(hook);
       setConnected(data?.status === "connected");
     } catch {
-      // ignore
+      // Do nothing
     } finally {
       setBusy(false);
     }
@@ -80,8 +84,12 @@ export default function TelegramConnectDialog({
       await axiosInstance.post(`/channels/${channelId}/actions/connect`, payload);
       await fetchStatus();
       onClose(true);
-    } catch (e: any) {
-      setError(e?.response?.data?.message || "فشل الربط، تأكد من صحة التوكن");
+    } catch (e: unknown) {
+      setError(
+        ((e as AxiosError)?.response?.data as { message?: string })?.message ||
+        (e as Error)?.message ||
+        "فشل الربط، تأكد من صحة التوكن"
+      );
     } finally {
       setLoading(false);
     }

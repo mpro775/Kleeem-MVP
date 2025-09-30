@@ -7,10 +7,10 @@ export function autoLineBreaks(input: string): string {
       .trim();
   
     // سطر جديد بعد نهاية الجملة (عربي/إنجليزي)
-    t = t.replace(/([\.!؟…]+)(\s)(?=\S)/g, '$1\n');
+    t = t.replace(/([.!؟…]+)(\s)(?=\S)/g, '$1\n');
   
     // سطر جديد قبل عناصر مرقمة مثل: 1. 2) ...
-    t = t.replace(/(^|\s)(\d+[\.\)]\s+)/g, '\n$2');
+    t = t.replace(/(^|\s)(\d+[.)]\s+)/g, '\n$2');
   
     // إزالة تكرار الأسطر
     t = t.replace(/\n{2,}/g, '\n');

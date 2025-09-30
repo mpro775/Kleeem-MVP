@@ -9,7 +9,7 @@ import {
   Alert,
   Chip,
 } from "@mui/material";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { useErrorHandler } from "@/shared/errors";
 import BannersEditor from "@/features/store/ui/BannersEditor";
 import type {
@@ -52,7 +52,7 @@ export default function BannersManagementPage() {
         handleError(error);
         console.error("Error loading storefront data:", error);
       });
-  }, [merchantId]);
+  }, [merchantId, handleError]);
 
   const handleSaveBanners = async (banners: Banner[]) => {
     if (!merchantId) return;
@@ -87,12 +87,12 @@ export default function BannersManagementPage() {
         message: "تم حفظ البنرات بنجاح",
         severity: "success",
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       handleError(e);
       console.error("Error saving banners:", e);
       setSnackbar({
         open: true,
-        message: e?.response?.data?.message || "فشل حفظ البنرات",
+        message: (e as { response?: { data?: { message?: string } } })?.response?.data?.message || "فشل حفظ البنرات",
         severity: "error",
       });
     } finally {

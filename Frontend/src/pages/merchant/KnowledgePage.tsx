@@ -1,13 +1,11 @@
-import { Box, Paper, Typography, Tabs, Tab, Chip } from "@mui/material";
-import { useAuth } from "../../context/AuthContext";
-import { useErrorHandler } from "@/shared/errors";
+import { Box, Paper, Typography, Tabs, Tab, Chip, } from "@mui/material";
+import { useAuth } from "@/context/hooks";
 import LinksTab from "@/features/mechant/knowledge/ui/LinksTab";
 import FaqsTab from "@/features/mechant/knowledge/ui/FaqsTab";
 import { useState } from "react";
 
 export default function KnowledgePage() {
   const { user } = useAuth();
-  const { handleError } = useErrorHandler();
   const merchantId = user?.merchantId;
   const [tab, setTab] = useState(0);
 
@@ -17,10 +15,12 @@ export default function KnowledgePage() {
     <Box
       sx={{ p: { xs: 1.5, md: 3 }, bgcolor: "#f9fafb", minHeight: "100dvh" }}
     >
-      <Typography
-        variant={{ xs: "h5", md: "h4" } as any}
+        <Typography
+        sx={{ 
+          typography: { xs: "h5", md: "h4" },
+          fontWeight: 800 
+        }}
         gutterBottom
-        fontWeight={800}
       >
         إدارة مصادر المعرفة
       </Typography>

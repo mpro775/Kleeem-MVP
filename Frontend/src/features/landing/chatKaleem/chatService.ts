@@ -21,13 +21,13 @@ class ChatService {
       this.fetchInitialMessages();
     });
 
-    this.socket.on("bot_reply", (msg: any) => {
+    this.socket.on("bot_reply", (msg: ChatMessage) => {
       this.onTypingCallback?.(false);
       const newMessage: ChatMessage = {
         id: crypto.randomUUID?.() ?? Date.now().toString(),
         from: "bot",
         text: msg?.text ?? "",
-        rateIdx: msg?.msgIdx,
+        rateIdx: msg?.rateIdx,
       };
       this.onMessageCallback?.(newMessage);
     });
@@ -46,9 +46,10 @@ class ChatService {
     }
   }
 
-  sendMessage(_text: string) {
+  sendMessage(text: string) {
     // يمكن إرسال الرسالة عبر السوكيت هنا إذا كان الـ API يدعم ذلك
     // حاليًا الكود يستخدم HTTP POST، وهذا جيد
+    this.socket?.emit("message", { text });
   }
 
   onMessage(callback: (msg: ChatMessage) => void) {

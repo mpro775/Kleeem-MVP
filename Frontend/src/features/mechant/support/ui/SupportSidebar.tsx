@@ -1,6 +1,6 @@
 // src/features/support/components/SupportSidebar.tsx
 import { Paper, Stack, Typography } from '@mui/material';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/hooks';
 import { ContactMethodCard } from './ContactMethodCard';
 import { RecentTickets } from './RecentTickets';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';

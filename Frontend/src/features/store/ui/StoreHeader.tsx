@@ -385,7 +385,7 @@ export function StoreHeader({
                 اتصل بنا
               </Button>
 
-              {merchant.storefrontUrl && (
+              {merchant.publicSlug && (
                 <Button
                   variant="outlined"
                   size={isMobile ? "medium" : "large"}
@@ -404,7 +404,7 @@ export function StoreHeader({
                       background: "rgba(255,255,255,0.14)",
                     },
                   }}
-                  href={merchant.storefrontUrl}
+                  href={merchant.publicSlug}
                   target="_blank"
                   rel="noopener"
                 >

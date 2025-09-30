@@ -163,7 +163,7 @@ export function ErrorDebugPanel({ isOpen, onClose }: ErrorDebugPanelProps) {
                     <Stack direction="row" alignItems="center" spacing={2} sx={{ width: '100%' }}>
                       <Chip 
                         label={error.status || 'N/A'} 
-                        color={getErrorSeverity(error) as any}
+                        color={getErrorSeverity(error) as "error" | "warning" | "info"}
                         size="small"
                       />
                       <Typography sx={{ flexGrow: 1 }}>

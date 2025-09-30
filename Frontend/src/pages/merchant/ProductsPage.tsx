@@ -18,7 +18,7 @@ import ProductsActions from "@/features/mechant/products/ui/ProductsActions";
 import ProductsTable from "@/features/mechant/products/ui/ProductsTable";
 import AddProductDialog from "@/features/mechant/products/ui/AddProductDialog";
 import EditProductDialog from "@/features/mechant/products/ui/EditProductDialog";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { useErrorHandler } from "@/shared/errors";
 import type { ProductResponse } from "@/features/mechant/products/type";
 
@@ -49,12 +49,12 @@ export default function ProductsPage() {
         setCatError(null);
         const ok = await hasAnyCategory(merchantId);
         if (!cancelled) setHasCategories(ok);
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!cancelled) {
           handleError(e);
           setHasCategories(false);
           setCatError(
-            e?.response?.data?.message || e?.message || "تعذر التحقق من الفئات"
+            (e as { response?: { data?: { message?: string } } })?.response?.data?.message || (e as { message?: string })?.message || "تعذر التحقق من الفئات"
           );
         }
       }
@@ -62,7 +62,7 @@ export default function ProductsPage() {
     return () => {
       cancelled = true;
     };
-  }, [merchantId, refresh]);
+  }, [merchantId, refresh, handleError]);
 
   const handleRequestAdd = () => {
     if (!hasCategories) {

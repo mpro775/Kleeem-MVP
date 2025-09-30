@@ -35,7 +35,7 @@ import StorefrontIcon from "@mui/icons-material/Storefront";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { toast } from "react-toastify";
 
 // إشعارات حية
@@ -82,7 +82,7 @@ const Topbar = ({
     try {
       if (!audioCtxRef.current) {
         audioCtxRef.current = new (window.AudioContext ||
-          (window as any).webkitAudioContext)();
+          (window as typeof window & {webkitAudioContext: typeof AudioContext}).webkitAudioContext)();
       }
       const ctx = audioCtxRef.current;
       // بعض المتصفحات توقف الـ context حتى تفاعل المستخدم
@@ -414,7 +414,7 @@ const Topbar = ({
                                   <Chip
                                     label={n.severity ?? "info"}
                                     size="small"
-                                    color={severityToColor(n.severity) as any}
+                                    color={severityToColor(n.severity)}
                                   />
                                 </Box>
                               }
@@ -525,7 +525,7 @@ const Topbar = ({
                                 <Chip
                                   label={n.severity ?? "info"}
                                   size="small"
-                                  color={severityToColor(n.severity) as any}
+                                  color={severityToColor(n.severity)}
                                 />
                               </Box>
                             }

@@ -7,9 +7,9 @@ import { Pagination, Autoplay, Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
-import { getAssetUrl } from "@/shared/utils/assets";
+import type { Banner } from "@/features/mechant/storefront-theme/type";
 
-export function BannerCarousel({ banners }: { banners: Array<any> }) {
+export function BannerCarousel({ banners }: { banners: Array<Banner> }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   

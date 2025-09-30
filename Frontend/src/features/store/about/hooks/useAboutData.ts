@@ -3,7 +3,7 @@ import type { MerchantInfo } from "../type";
 import { fetchStorefront, fetchStorefrontInfo } from "../api";
 import { setBrandVars } from "@/features/shared/brandCss";
 
-const unwrap = (x: any) => x?.data?.data ?? x?.data ?? x;
+const unwrap = (x: unknown) => (x as { data?: { data?: unknown } }).data?.data ?? (x as { data?: unknown }).data ?? x;
 
 export function useAboutData(slugOrId: string) {
   const [merchant, setMerchant] = useState<MerchantInfo | null>(null);
@@ -21,7 +21,7 @@ export function useAboutData(slugOrId: string) {
 
         const data = await fetchStorefront(slugOrId);
         const m: MerchantInfo | null =
-          data?.merchant ?? data?.data?.merchant ?? null;
+          (data as { merchant?: MerchantInfo; data?: { merchant?: MerchantInfo } })?.merchant ?? (data as { data?: { merchant?: MerchantInfo } })?.data?.merchant ?? null;
         if (!m?._id) throw new Error("تعذر استخراج بيانات التاجر.");
 
         if (!mounted) return;
@@ -30,14 +30,14 @@ export function useAboutData(slugOrId: string) {
         // ألوان البراند
         try {
           const info = await fetchStorefrontInfo(m._id);
-          const brandDark = unwrap(info)?.brandDark || "#111827";
+          const brandDark = (unwrap(info) as { brandDark?: string })?.brandDark || "#111827";
           setBrandVars(brandDark);
         } catch {
           setBrandVars("#111827");
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!mounted) return;
-        setErr(e?.message || "تعذر تحميل معلومات المتجر");
+        setErr((e as Error)?.message || "تعذر تحميل معلومات المتجر");
       } finally {
         if (mounted) setLoading(false);
       }

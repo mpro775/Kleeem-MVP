@@ -17,6 +17,7 @@ import {
   updateCategory,
   uploadCategoryImage,
 } from "../api";
+import { AxiosError } from "axios";
 
 interface EditCategoryDialogProps {
   open: boolean;
@@ -46,7 +47,7 @@ export default function EditCategoryDialog({
 
   useEffect(() => {
     setName(category.name);
-    setParent((category.parent as any) || "");
+    setParent((category.parent as string) || "");
     setNewImage(null);
   }, [category, open]);
 
@@ -94,9 +95,11 @@ export default function EditCategoryDialog({
         await uploadCategoryImage(category._id, merchantId, newImage);
       }
       onSaved();
-    } catch (e: any) {
+    } catch (e: unknown) {
       setError(
-        e?.response?.data?.message || e?.message || "حدث خطأ أثناء الحفظ"
+        ((e as AxiosError)?.response?.data as { message?: string })?.message ||
+        (e as Error)?.message ||
+        "حدث خطأ أثناء الحفظ"
       );
     } finally {
       setSaving(false);

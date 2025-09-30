@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getStorefrontInfo } from "@/features/mechant/storefront-theme/api";
 import { getMerchantInfo } from "@/features/mechant/merchant-settings/api";
 import { setBrandVars } from "@/features/shared/brandCss";
-import type { Category, MerchantInfo, ProductResponse, Storefront, OfferItem } from "../types";
+import { type Category, type MerchantInfo, type ProductResponse, type Storefront, type OfferItem, type StorefrontEnvelope,  isObj, pickId } from "../types";
 import { fetchStore, fetchPublicResolver, fetchProducts, fetchCategories, fetchOffers } from "../api";
 
 export function resolveTargetSlug(slugOrId: string | undefined, isDemo: boolean) {
@@ -14,19 +14,28 @@ export function resolveTargetSlug(slugOrId: string | undefined, isDemo: boolean)
   return slugOrId ?? "demo";
 }
 
-export function extractMerchantId(data: any): string | null {
-  if (!data) return null;
-  if (data?.merchant?._id) return String(data.merchant._id);
-  if (data?.merchantId) return String(data.merchantId);
-  if (typeof data?.merchant === "string") return data.merchant;
-  if (typeof data?.merchant === "object" && data?.merchant?._id) return String(data.merchant._id);
-  const sf = data?.store || data?.storefront;
-  if (sf?.merchant?._id) return String(sf.merchant._id);
-  if (typeof sf?.merchant === "string") return sf.merchant;
+export function extractMerchantId(data: unknown): string | null {
+  if (!isObj(data)) return null;
+  const env = data as Partial<StorefrontEnvelope>;
+
+  // 1) merchantId في الجذر
+  if (typeof env.merchantId === "string") return env.merchantId;
+
+  // 2) merchant (string أو object)
+  const m1 = pickId(env.merchant);
+  if (m1) return m1;
+
+  // 3) تحت store / storefront
+  const m2 = pickId(env.store?.merchant);
+  if (m2) return m2;
+
+  const m3 = pickId(env.storefront?.merchant);
+  if (m3) return m3;
+
   return null;
 }
 
-export function useStoreData(slug: string | undefined, isDemo: boolean, onError?: (e: any) => void) {
+export function useStoreData(slug: string | undefined, isDemo: boolean, onError?: (e: unknown) => void) {
   const [merchant, setMerchant] = useState<MerchantInfo | null>(null);
   const [storefront, setStorefront] = useState<Storefront | null>(null);
   const [products, setProducts] = useState<ProductResponse[]>([]);
@@ -49,7 +58,7 @@ export function useStoreData(slug: string | undefined, isDemo: boolean, onError?
         let mid = extractMerchantId(data);
         if (!mid) {
           const pub = await fetchPublicResolver(target);
-          mid = pub?.merchant?.id || pub?.merchant?._id || pub?.merchantId || null;
+          mid = pickId(pub?.merchant) || (typeof pub?.merchantId === "string" ? pub.merchantId : null) || null;
         }
         if (!mid) throw new Error("تعذر تحديد هوية التاجر من هذا السلاج.");
 
@@ -61,7 +70,7 @@ export function useStoreData(slug: string | undefined, isDemo: boolean, onError?
         setMerchant(miRes);
         const sf = { ...sfRes, banners: Array.isArray(sfRes?.banners) ? sfRes.banners : [] } as Storefront;
         setStorefront(sf);
-        setBrandVars((sf as any)?.brandDark || "#111827");
+        setBrandVars((sf)?.brandDark || "#111827");
 
         if (Array.isArray(data?.products) && Array.isArray(data?.categories)) {
           setProducts(data.products);
@@ -80,12 +89,12 @@ export function useStoreData(slug: string | undefined, isDemo: boolean, onError?
           setOffersLoading(true);
           const off = await fetchOffers(mid);
           if (!mounted) return;
-          setOffers(off as any);
+          setOffers(off);
         } finally {
           if (mounted) setOffersLoading(false);
         }
-      } catch (e: any) {
-        setError(e?.message || "فشل تحميل بيانات المتجر");
+      } catch (e: unknown) {  
+        setError((e as Error)?.message || "فشل تحميل بيانات المتجر");
         onError?.(e);
       } finally {
         if (mounted) setIsLoading(false);

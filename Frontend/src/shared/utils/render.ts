@@ -6,7 +6,7 @@ export function toDisplayString(x: unknown): string {
   if (Array.isArray(x)) return x.map(toDisplayString).join(" · ");
 
   // ObjectId أو كائنات أخرى
-  const anyObj = x as any;
+  const anyObj = x as { buffer?: { data?: unknown[] }; name?: string; title?: string; _id?: string; toString?: () => string };
 
   // Handle Buffer objects (MongoDB ObjectId)
   if (anyObj?.buffer && Array.isArray(anyObj.buffer?.data)) {
@@ -23,10 +23,10 @@ export function toDisplayString(x: unknown): string {
 
   // لا نطبع الخاصية buffer أبدًا
   try {
-    const clone: Record<string, any> = {};
+    const clone: Record<string, unknown> = {};
     for (const k of Object.keys(anyObj)) {
       if (k.toLowerCase() === "buffer") continue;
-      clone[k] = anyObj[k];
+      clone[k as keyof typeof anyObj] = anyObj[k as keyof typeof anyObj];
     }
     const s = JSON.stringify(clone);
     return s === "{}" ? "" : s;

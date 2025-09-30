@@ -25,7 +25,7 @@ import ProductsChart from "@/features/mechant/dashboard/ui/ProductsChart";
 import KeywordsChart from "@/features/mechant/dashboard/ui/KeywordsChart";
 import ChannelsPieChart from "@/features/mechant/dashboard/ui/ChannelsPieChart";
 import MessagesTimelineChart from "@/features/mechant/dashboard/ui/MessagesTimelineChart";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import {
   useChecklist,
   useMessagesTimeline,

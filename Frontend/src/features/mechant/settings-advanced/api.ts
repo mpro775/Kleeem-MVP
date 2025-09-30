@@ -1,4 +1,4 @@
-import axiosInstanceInstance from '@/shared/api/axiosInstance';
+import axiosInstance from '@/shared/api/axios';
 import type { UserProfile, UpdateProfilePayload, NotificationsPrefs, ChangePasswordPayload, ProductSource, ConfirmPasswordPayload } from './types';
 
 export async function getMyProfile(userId: string) {
@@ -33,7 +33,7 @@ export async function updateMyNotifications(userId: string, payload: Notificatio
 
 // Product source (requires password confirm)
 export async function setProductSource(merchantId: string, source: ProductSource, confirmPassword: string) {
-  const response = await axiosInstance.patch<{ success: boolean; data: any }>(`/merchants/${merchantId}/product-source`, { source, confirmPassword });
+  const response = await axiosInstance.patch<{ success: boolean; data: unknown }>(`/merchants/${merchantId}/product-source`, { source, confirmPassword });
   return response.data.data;
 }
 

@@ -1,7 +1,7 @@
 // src/features/mechant/analytics/hooks/useAnalyticsPage.ts
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { useStoreServicesFlag } from "@/shared/hooks/useStoreServicesFlag";
 import type { Period, Channel } from "../api";
 import {

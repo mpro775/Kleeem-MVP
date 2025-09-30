@@ -4,14 +4,14 @@ export function toMessageString(x: unknown): string {
     if (x == null) return '';
     if (Array.isArray(x)) return x.map(toMessageString).join(' · ');
     if (typeof x === 'object') {
-      const anyObj = x as any;
+      const anyObj = x as { message?: string };
       if (typeof anyObj.message === 'string') return anyObj.message;
       try {
         // لا تطبع buffer
-        const clone: Record<string, any> = {};
+        const clone: Record<string, unknown> = {};
         Object.keys(anyObj).forEach(k => {
           if (k.toLowerCase() === 'buffer') return;
-          clone[k] = anyObj[k];
+          clone[k as keyof typeof anyObj] = anyObj[k as keyof typeof anyObj];
         });
         return JSON.stringify(clone);
       } catch {

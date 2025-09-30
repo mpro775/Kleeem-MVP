@@ -11,7 +11,6 @@ export function OffersSection({
   onOpenAll,
   onOpenProduct,
   onAddToCart,
-  slug,
 }: {
   offers: ProductResponse[];
   onOpenAll: () => void;

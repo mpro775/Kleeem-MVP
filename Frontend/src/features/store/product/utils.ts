@@ -35,14 +35,43 @@ export function discountPct(oldP?: number, newP?: number) {
   return Math.round((1 - newP / oldP) * 100);
 }
 
-export function renderCategoryTrail(product: any): string | null {
+type CategoryLike = {
+  name?: string;
+  trail?: string[];
+  parentName?: string;
+  parent?: { name?: string } | null;
+  ancestors?: unknown[];
+  ancestorsNames?: string[];
+};
+
+type ProductWithCategory =
+  | { category?: string | CategoryLike | null }
+  | null
+  | undefined;
+
+export function renderCategoryTrail(product: ProductWithCategory): string | null {
   const c = product?.category;
-  if (!c || typeof c !== "object") return null;
-  if (Array.isArray(c.trail) && c.trail.length) return c.trail.join(" › ");
-  const child = c.name;
+  if (!c) return null;
+
+  // إذا كانت كـ string مباشرة (كما في ProductResponse الحالي)
+  if (typeof c === "string") {
+    const s = c.trim();
+    return s.length ? s : null;
+  }
+
+  // من هنا نتعامل مع الكائن
+  if (Array.isArray(c.trail) && c.trail.length > 0) {
+    return c.trail.join(" › ");
+  }
+
+  const child = c.name ?? "";
   const parent =
     c.parentName ||
     c.parent?.name ||
-    (Array.isArray(c.ancestors) && c.ancestorsNames?.at?.(-1));
-  return child ? (parent ? `${child} — ${parent}` : child) : null;
+    (Array.isArray(c.ancestorsNames) && c.ancestorsNames.length > 0
+      ? c.ancestorsNames[c.ancestorsNames.length - 1]
+      : undefined);
+
+  if (!child && !parent) return null;
+  return child ? (parent ? `${child} — ${parent}` : child) : parent ?? null;
 }

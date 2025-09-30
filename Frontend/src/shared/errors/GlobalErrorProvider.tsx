@@ -1,19 +1,19 @@
 // src/shared/errors/GlobalErrorProvider.tsx
-import { createContext, useContext, useCallback, type ReactNode } from 'react';
+import { createContext,  useCallback, type ReactNode } from 'react';
 import { toast } from 'react-toastify';
 import { AppError, ERROR_MESSAGES } from './AppError';
-import { errorLogger } from './ErrorLogger';
+import { errorLogger, type ErrorLogData } from './ErrorLogger';
 import { NetworkErrorHandler } from './NetworkErrorHandler';
 
 interface ErrorContextType {
   handleError: (error: unknown) => AppError;
-  logError: (error: Error | AppError, additionalData?: Record<string, any>) => void;
+  logError: (error: Error | AppError, additionalData?: Record<string, unknown>) => void;
   clearLogs: () => void;
-  getLogs: () => any[];
+  getLogs: () => ErrorLogData[];
   exportLogs: () => string;
 }
 
-const ErrorContext = createContext<ErrorContextType | undefined>(undefined);
+export const ErrorContext = createContext<ErrorContextType | undefined>(undefined);
 
 interface GlobalErrorProviderProps {
   children: ReactNode;
@@ -54,7 +54,7 @@ export function GlobalErrorProvider({
     return err;
   }, [defaultErrorMessage]);
 
-  const logError = useCallback((error: Error | AppError, additionalData?: Record<string, any>) => {
+  const logError = useCallback((error: Error | AppError, additionalData?: Record<string, unknown>) => {
     errorLogger.log(error, additionalData);
   }, []);
 
@@ -86,10 +86,3 @@ export function GlobalErrorProvider({
   );
 }
 
-export function useGlobalError() {
-  const context = useContext(ErrorContext);
-  if (!context) {
-    throw new Error('useGlobalError must be used within a GlobalErrorProvider');
-  }
-  return context;
-}

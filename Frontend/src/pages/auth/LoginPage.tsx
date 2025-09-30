@@ -14,7 +14,7 @@ import { useTheme } from "@mui/material/styles";
 import { FaEnvelope, FaLock } from "react-icons/fa";
 import { RiEyeCloseLine } from "react-icons/ri";
 import { TfiEye } from "react-icons/tfi";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { loginAPI } from "@/auth/api";
 import { backendUserToUser } from "@/shared/utils/auth";
 import AuthLayout from "@/auth/AuthLayout";

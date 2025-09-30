@@ -27,6 +27,7 @@ import { getSessionId } from "@/shared/utils/session";
 import type { CustomerInfo } from "@/features/store/type";
 import { useStoreData } from "@/features/store/home/hooks/useStoreData";
 import { useErrorHandler } from "@/shared/errors";
+import type { Storefront } from "@/features/mechant/storefront-theme/type";
 
 function ProductSkeleton() {
   return (
@@ -83,7 +84,7 @@ export function ProductDetailsPage() {
     slug: string;
   }>();
   const navigate = useNavigate();
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<ProductResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -109,7 +110,7 @@ export function ProductDetailsPage() {
           p = await getPublicProductBySlug(slug, idOrSlug);
         }
         if (!cancelled) setProduct(p);
-      } catch (e) {
+      } catch{
         if (!cancelled) setProduct(null);
       } finally {
         if (!cancelled) setLoading(false);
@@ -145,7 +146,7 @@ export function ProductDetailsPage() {
   useEffect(() => {
     if (!product) return;
     const init: Record<string, string> = {};
-    const attrs = (product as any).attributes as
+    const attrs = (product as ProductResponse).attributes as
       | Record<string, string[]>
       | undefined;
     if (attrs) {
@@ -160,17 +161,15 @@ export function ProductDetailsPage() {
   if (!product) return null;
 
   const trail = renderCategoryTrail(product);
-  const currency = (product as any).currency || "SAR";
+  const currency = (product as ProductResponse).currency || "SAR";
   const canBuy = product.status === "active";
 
   const handleAddToCart = () => {
-    addItem(
-      {
-        ...(product as ProductResponse),
-        selectedAttributes: selectedAttrs,
-      } as any,
-      quantity
-    );
+    const productWithAttributes = {
+      ...product,
+      selectedAttributes: selectedAttrs,
+    } as ProductResponse;
+    addItem(productWithAttributes, quantity);
   };
 
   return (
@@ -178,7 +177,7 @@ export function ProductDetailsPage() {
       {merchant && (
         <StoreNavbar
           merchant={merchant}
-          storefront={storefront ?? ({} as any)}
+          storefront={storefront ?? ({} as Storefront)}
         />
       )}
 

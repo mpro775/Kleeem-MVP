@@ -28,6 +28,7 @@ import { StoreNavbar } from "@/features/store/ui/StoreNavbar";
 import { Footer } from "@/features/store/ui/Footer";
 import { useStoreData } from "@/features/store/home/hooks/useStoreData";
 import { useErrorHandler } from "@/shared/errors";
+import type { Storefront } from "@/features/mechant/storefront-theme/type";
 
 export default function AboutPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -86,8 +87,8 @@ export default function AboutPage() {
   return (
     <Box sx={{ bgcolor: "#fff" }}>
       <StoreNavbar
-        merchant={merchantWithCategories as any}
-        storefront={storefront as any} // ← صار فعلي
+        merchant={merchantWithCategories}
+        storefront={storefront as Storefront} // ← صار فعلي
       />
       {/* هيرو أنيق بخلفية متدرجة وفق ألوان البراند */}
       <Box
@@ -275,7 +276,7 @@ export default function AboutPage() {
           </Button>
         </Stack>
       </Container>
-      <Footer merchant={merchantWithCategories as any} categories={[]} />
+      <Footer merchant={merchantWithCategories} categories={[]} />
     </Box>
   );
 }

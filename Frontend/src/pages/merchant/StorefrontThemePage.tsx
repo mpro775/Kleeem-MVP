@@ -12,7 +12,7 @@ import {
   useTheme,
   CircularProgress,
 } from "@mui/material";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { ButtonStyleSelect } from "@/features/mechant/storefront-theme/ui/ButtonStyleSelect";
 import { SlugLinkField } from "@/features/mechant/storefront-theme/ui/SlugLinkField";
 import { BrandSwatches } from "@/features/mechant/storefront-theme/ui/BrandSwatches";

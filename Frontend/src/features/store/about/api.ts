@@ -1,6 +1,6 @@
 import axiosInstance from "@/shared/api/axios";
 
-const unwrap = (x: any) => x?.data?.data ?? x?.data ?? x;
+const unwrap = (x: unknown) => (x as { data?: { data?: unknown } })?.data?.data ?? (x as { data?: unknown })?.data ?? x;
 
 /** إحضار بيانات الواجهة الأمامية للمتجر عبر slug أو id */
 export async function fetchStorefront(slugOrId: string) {

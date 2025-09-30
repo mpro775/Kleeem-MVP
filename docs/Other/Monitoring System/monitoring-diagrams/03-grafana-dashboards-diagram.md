@@ -76,13 +76,35 @@ graph TB
 - **AI Engineer**: مراقبة الذكاء الاصطناعي
 - **Security Team**: مراقبة الأمان
 
-## 🔗 روابط اللوحات
+## 🔗 اللوحات الفعلية المُطبقة
 
-| اللوحة              | الرابط                                                | المستخدم          |
-| ------------------- | ----------------------------------------------------- | ----------------- |
-| System Overview     | `https://grafana.kaleem-ai.com/d/system-overview`     | DevOps Engineer   |
-| Application Metrics | `https://grafana.kaleem-ai.com/d/application-metrics` | Backend Developer |
-| RAG & AI            | `https://grafana.kaleem-ai.com/d/rag-ai-metrics`      | AI Engineer       |
-| Database            | `https://grafana.kaleem-ai.com/d/database-metrics`    | Backend Developer |
-| Security            | `https://grafana.kaleem-ai.com/d/security-metrics`    | Security Team     |
-| Performance         | `https://grafana.kaleem-ai.com/d/performance-metrics` | DevOps Engineer   |
+| اللوحة              | الملف الفعلي                                    | المستخدم          | الحالة |
+| ------------------- | ---------------------------------------------- | ----------------- | ------ |
+| API Health          | `api-health.json`                             | Backend Developer | ✅ مُطبق |
+| Business KPIs       | `business-kpis.json`                          | Product Manager   | ✅ مُطبق |
+| System Overview     | `system-overview.json` (مستقبلاً)             | DevOps Engineer   | 🔄 مخطط |
+| RAG & AI            | `ai-metrics.json` (مستقبلاً)                  | AI Engineer       | 🔄 مخطط |
+| Database            | `database-metrics.json` (مستقبلاً)            | Backend Developer | 🔄 مخطط |
+| Security            | `security-metrics.json` (مستقبلاً)            | Security Team     | 🔄 مخطط |
+
+### اللوحات المُطبقة فعلياً
+
+#### 1. API Health Dashboard
+**الملف**: `api-health.json`
+**المقاييس**:
+- Request Rate (RPS) حسب المسار والطريقة
+- Error Rate (5xx %) مع فلترة
+- Latency p95 (s) حسب المسار
+- DB Query p95 (s) حسب العملية والمجموعة
+- Cache Hit Rate (%)
+- WS Active Connections
+
+#### 2. Business KPIs Dashboard
+**الملف**: `business-kpis.json`
+**المقاييس**:
+- Merchants Created (معدل/5دقائق)
+- n8n Workflows Created (معدل/5دقائق)
+- Products Created/Updated/Deleted
+- Active Merchants
+- Email Verification Success/Failure
+- Password Changes

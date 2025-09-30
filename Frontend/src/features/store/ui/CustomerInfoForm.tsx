@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box, TextField, Button, Stack } from "@mui/material";
 import axios from "@/shared/api/axios";
 import type { CustomerInfo } from "../type";
-import { getLocalCustomer, saveLocalCustomer } from "@/shared/utils/customer";
+import { getLocalCustomer, saveLocalCustomer, type LiteCustomer } from "@/shared/utils/customer";
 import { getSessionId } from "@/shared/utils/session";
 
 export default function CustomerInfoForm({
@@ -40,7 +40,7 @@ export default function CustomerInfoForm({
       source: "storefront",
     });
 
-    saveLocalCustomer(form);
+    saveLocalCustomer(form as LiteCustomer);
     setLoading(false);
     onComplete(form);
   };

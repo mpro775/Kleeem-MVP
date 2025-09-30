@@ -17,6 +17,7 @@ import {
   getCategoriesFlat,
   uploadCategoryImage,
 } from "../api";
+import { AxiosError } from "axios";
 
 interface AddCategoryDialogProps {
   open: boolean;
@@ -91,9 +92,11 @@ export default function AddCategoryDialog({
       setParent("");
       setImage(null);
       onAdd();
-    } catch (e: any) {
+    } catch (e: unknown) {
       setError(
-        e?.response?.data?.message || e?.message || "حدث خطأ أثناء الإضافة"
+        ((e as AxiosError)?.response?.data as { message?: string })?.message ||
+        (e as Error)?.message ||
+        "حدث خطأ أثناء الإضافة"
       );
     } finally {
       setSaving(false);

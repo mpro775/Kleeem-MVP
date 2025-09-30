@@ -61,7 +61,7 @@ function NodeLabel({
 
 function renderNodes(
   nodes: CategoryNode[],
-  handlers: { onAdd: any; onEdit: any; onDelete: any }
+  handlers: { onAdd: (n: CategoryNode) => void; onEdit: (n: CategoryNode) => void; onDelete: (n: CategoryNode) => void }
 ): JSX.Element[] {
   return nodes.map((n) => (
     <TreeItem

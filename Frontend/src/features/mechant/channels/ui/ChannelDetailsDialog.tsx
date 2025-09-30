@@ -75,7 +75,9 @@ const copy = async (v?: string) => {
   if (!v) return;
   try {
     await navigator.clipboard.writeText(v);
-  } catch {}
+  } catch {
+    // Do nothing
+  }
 };
 
 const statusChip = (status?: string, enabled?: boolean) => {

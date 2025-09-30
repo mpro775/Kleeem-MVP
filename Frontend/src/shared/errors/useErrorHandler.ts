@@ -13,7 +13,7 @@ interface ErrorHandlerOptions {
 
 /** حارس نوع بسيط */
 function isAppError(e: unknown): e is AppError {
-  return !!e && typeof e === 'object' && 'message' in (e as any);
+  return !!e && typeof e === 'object' && 'message' in (e as { message?: string });
 }
 
 /** تطبيع أي unknown إلى AppError آمن */
@@ -25,7 +25,7 @@ function normalizeError(e: unknown, fallbackMessage: string): AppError {
   try {
     const msg =
       (typeof e === 'string' && e) ||
-      (e && typeof (e as any).message === 'string' && (e as any).message) ||
+      (e && typeof (e as { message?: string }).message === 'string' && (e as { message?: string }).message) ||
       fallbackMessage;
     return new AppError({ message: String(msg || fallbackMessage) });
   } catch {
@@ -50,15 +50,15 @@ export function useErrorHandler(options: ErrorHandlerOptions = {}) {
       if (logError) {
         // يمكنك تمرير meta إضافية هنا لو أحببت
         errorLogger.log(err, {
-          status: (err as any).status,
-          code: (err as any).code,
-          requestId: (err as any).requestId,
+          status: (err as { status?: number }).status,
+          code: (err as { code?: string }).code,
+          requestId: (err as { requestId?: string }).requestId,
         });
       }
 
       // عرض رسالة للمستخدم إذا كان مطلوباً
       if (showSnackbar) {
-        const code = (err as any).code as string | undefined;
+        const code = (err as { code?: string }).code as string | undefined;
         const msg =
           (code && ERROR_MESSAGES[code]) ||
           err.message ||
@@ -96,7 +96,7 @@ export function useErrorHandler(options: ErrorHandlerOptions = {}) {
   const errorUtils = useMemo(
     () => ({
       handleError,
-      logError: (error: Error | AppError, additionalData?: Record<string, any>) => {
+        logError: (error: Error | AppError, additionalData?: Record<string, unknown>) => {
         errorLogger.log(
           normalizeError(error, fallbackMessage),
           additionalData

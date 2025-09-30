@@ -9,7 +9,7 @@ import ItemsList from "@/features/store/order/ui/ItemsList";
 import SummaryCard from "@/features/store/order/ui/SummaryCard";
 import StatusTimeline from "@/features/store/order/ui/StatusTimeline";
 import OrderDetailsSkeleton from "@/features/store/order/ui/OrderDetailsSkeleton";
-import { useErrorHandler } from "@/shared/errors";
+import type { Order } from "@/features/store/type";
 
 export default function OrderDetailsPage() {
   const { orderId = "", slug = "" } = useParams<{
@@ -17,7 +17,6 @@ export default function OrderDetailsPage() {
     slug: string;
   }>();
   const navigate = useNavigate();
-  const { handleError } = useErrorHandler();
 
   const { order, merchant, loading } = useOrderDetails(orderId, slug);
 
@@ -50,7 +49,7 @@ export default function OrderDetailsPage() {
     );
   }
 
-  const currency = (order as any).currency || "SAR";
+  const currency = (order as Order).currency || "SAR";
 
   const steps = [
     { label: "تم الطلب", date: "١٠ مارس ٢٠٢٣", time: "١٠:٣٠ ص", active: true },
@@ -64,7 +63,7 @@ export default function OrderDetailsPage() {
       label: "تم التوصيل",
       date: "١٢ مارس ٢٠٢٣",
       time: "٠٢:٣٠ م",
-      active: ["delivered", "paid"].includes(order.status as any),
+      active: ["delivered", "paid"].includes(order.status as "delivered" | "paid"),
     },
   ];
 

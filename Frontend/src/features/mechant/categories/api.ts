@@ -1,4 +1,4 @@
-import axiosInstanceInstance from "@/shared/api/axiosInstance";
+  import axiosInstance from "@/shared/api/axios";
 import type {
   Category,
   CategoryNode,
@@ -6,7 +6,7 @@ import type {
 
 // الباك إند يرسل الآن صيغة موحدة دائماً: { success, data, requestId, timestamp }
 // لا نحتاج للـ unwrap
-function unwrap<T>(data: any): T {
+function unwrap<T>(data: unknown): T {
   return data as T;
 }
 

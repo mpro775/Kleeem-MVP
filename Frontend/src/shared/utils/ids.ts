@@ -3,7 +3,7 @@ export function getIdString(x: unknown): string {
   if (!x) throw new Error("id مطلوب");
   if (typeof x === "string") return x;
   if (typeof x === "object") {
-    const any = x as any;
+    const any = x as { _id?: string; id?: string; value?: string; toString?: () => string };
     const candidate =
       any._id?.toString?.() ??
       any.id?.toString?.() ??

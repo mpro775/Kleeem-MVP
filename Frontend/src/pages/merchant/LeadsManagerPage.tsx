@@ -13,7 +13,7 @@ import {
   useTheme,
   useMediaQuery,
 } from "@mui/material";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { useErrorHandler } from "@/shared/errors";
 import { useLeadsManager } from "@/features/mechant/leads/hooks";
 import EnabledToggleCard from "@/features/mechant/leads/ui/EnabledToggleCard";

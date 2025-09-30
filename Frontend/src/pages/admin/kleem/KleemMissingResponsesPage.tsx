@@ -1,5 +1,5 @@
 // src/pages/admin/kleem/KleemMissingResponsesPage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   
   Paper,
@@ -105,7 +105,7 @@ export default function KleemMissingResponsesPage() {
     []
   );
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const res = await fetchKleemList({
       page: page + 1,
@@ -119,11 +119,11 @@ export default function KleemMissingResponsesPage() {
     setRows(res.items);
     setRowCount(res.total);
     setLoading(false);
-  }
+  }, [page, pageSize, q, channel, resolved, from, to]);
 
   useEffect(() => {
     void load();
-  }, [page, pageSize]);
+  }, [load]);
 
   return (
     <Stack gap={2}>

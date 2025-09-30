@@ -47,7 +47,7 @@ export const useLiveChat = (containerRef: RefObject<HTMLDivElement>) => {
       // إرسال الرسالة عبر HTTP كما في الكود الأصلي
       await sendKleemMessage(text, { sessionId: getKleemSessionId() });
       // السيرفر سيرسل الرد عبر WebSocket وسيتم التقاطه بواسطة onMessage
-    } catch (e) {
+    } catch  {
       const errorMsg: ChatMessage = { id: crypto.randomUUID(), from: 'bot', text: 'عفوًا، حدث خطأ. يرجى المحاولة لاحقًا.' };
       setMessages(prev => [...prev, errorMsg]);
     } finally {

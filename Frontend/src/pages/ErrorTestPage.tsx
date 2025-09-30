@@ -14,7 +14,8 @@ import {
   AppError, 
   applyServerFieldErrors,
   errorLogger,
-  ErrorDebugPanel 
+  ErrorDebugPanel, 
+  type FieldErrors
 } from '@/shared/errors';
 import { useForm } from 'react-hook-form';
 
@@ -83,9 +84,9 @@ export default function ErrorTestPage() {
         }
       });
       throw mockError;
-    } catch (error: any) {
-      if (error.fields) {
-        applyServerFieldErrors(error.fields, setError);
+    } catch (error: unknown) {
+      if ((error as { fields?: FieldErrors }).fields) {
+        applyServerFieldErrors((error as { fields?: FieldErrors }).fields, setError);
       } else {
         handleError(error);
       }
@@ -146,9 +147,9 @@ export default function ErrorTestPage() {
           name: ['الاسم مطلوب']
         }
       });
-    } catch (error: any) {
-      if (error.fields) {
-        applyServerFieldErrors(error.fields, setError);
+      } catch (error: unknown) {
+      if ((error as { fields?: FieldErrors }).fields) {
+        applyServerFieldErrors((error as { fields?: FieldErrors }).fields, setError);
       } else {
         handleError(error);
       }

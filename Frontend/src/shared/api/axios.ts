@@ -1,108 +1,109 @@
-import axios, { type AxiosResponse } from "axios";
+// =========================
+// File: src/shared/api/axios.ts
+// =========================
+import axios, { type AxiosResponse, type InternalAxiosRequestConfig } from "axios";
 import { API_BASE } from "../../context/config";
 import { AppError, errorLogger } from "../errors";
+import { isObj, type ApiEnvelope } from "@/shared/types/api";
 
-/** يطبّع الاستجابة من الباك إند - الاستجابة دائماً بالصيغة { success, data, requestId, timestamp } */
-function normalizePayload(raw: any): { payload: any; meta?: any } {
-  // الباك إند يرسل دائماً { success: true, data: T, requestId, timestamp }
-  // لا نحتاج للتطبيع المعقد
+// Meta لرد السيرفر (اختيارية)
+type Meta = {
+  success?: boolean;
+  requestId?: string;
+  timestamp?: string;
+};
 
-  if (raw === undefined || raw === null) return { payload: raw };
+/** يطبّع الاستجابة من الباك إند - { success, data, requestId, timestamp } */
+function normalizePayload<T>(raw: unknown): { payload: T; meta?: Meta } {
+  // بدائي/null/undefined → نعيد كما هو
+  if (raw === undefined || raw === null) return { payload: raw as T };
 
-  // إذا كانت مصفوفة أصلاً (نادر لكن ممكن)
-  if (Array.isArray(raw)) return { payload: raw };
+  // Array
+  if (Array.isArray(raw)) return { payload: raw as unknown as T };
 
-  // إذا كان Blob/Stream أو ملف، لا نلمسه
-  if (typeof Blob !== "undefined" && raw instanceof Blob)
-    return { payload: raw };
-  if (typeof raw === "object" && ("arrayBuffer" in raw || "stream" in raw))
-    return { payload: raw };
-
-  // إذا كان كائن:
-  if (typeof raw === "object") {
-    // الباك إند يرسل دائماً الصيغة الصحيحة
-    if ("success" in raw && "data" in raw) {
-      return {
-        payload: raw.data,
-        meta: {
-          success: raw.success,
-          requestId: raw.requestId,
-          timestamp: raw.timestamp
-        }
-      };
-    }
-
-    // fallback للحالات النادرة
-    return { payload: raw };
+  // Blob/Stream
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore - Blob قد لا يكون معرّفًا بيئيًا (SSR)
+  if (typeof Blob !== "undefined" && raw instanceof Blob) return { payload: raw as T };
+  if (typeof raw === "object" && ("arrayBuffer" in (raw as object) || "stream" in (raw as object))) {
+    return { payload: raw as T };
   }
 
-  // بدائيات (string/number/bool) — نعيدها كما هي
-  return { payload: raw };
+  // Object يحوي الشكل الموحّد
+  if (typeof raw === "object" && raw !== null) {
+    const obj = raw as Partial<ApiEnvelope<T>> & Record<string, unknown>;
+    if ("success" in obj && "data" in obj) {
+      return {
+        payload: obj.data as T,
+        meta: {
+          success: typeof obj.success === "boolean" ? obj.success : undefined,
+          requestId: typeof obj.requestId === "string" ? obj.requestId : undefined,
+          timestamp: typeof obj.timestamp === "string" ? obj.timestamp : undefined,
+        },
+      };
+    }
+    // fallback: أعِد الكائن كما هو
+    return { payload: raw as T };
+  }
+
+  // string/number/boolean
+  return { payload: raw as T };
 }
 
 /** يضيف حقول مساعدة بدون كسر شكل Axios الأصلي */
-function attachNormalizedToResponse(
-  res: AxiosResponse,
-  normalized: { payload: any; meta?: any },
-  rawData: any
-) {
-  // نحفظ الخام للوصول عند الحاجة
-  (res as any)._raw = rawData;
-  // نضيف الميتا إن وجدت
-  if (normalized.meta !== undefined) (res as any)._meta = normalized.meta;
-  // نكتب payload داخل data حتى كل الصفحات التي تستعمل res.data تعمل مباشرة
-  (res as any).data = normalized.payload;
+function attachNormalizedToResponse<T>(
+  res: AxiosResponse<T>,
+  normalized: { payload: T; meta?: Meta },
+  rawData: unknown
+): AxiosResponse<T> {
+  // “حقول داخلية” غير نمطية — نضيفها برفق
+  (res as AxiosResponse<T> & { _raw?: unknown; _meta?: Meta })._raw = rawData;
+  if (normalized.meta !== undefined) {
+    (res as AxiosResponse<T> & { _meta?: Meta })._meta = normalized.meta;
+  }
+  // نكتب payload داخل data
+  Object.defineProperty(res, "data", { value: normalized.payload, writable: true });
+  return res;
 }
-function normalizeServerError(data: any, fallback = "حدث خطأ غير متوقع") {
-  // الباك إند يرسل أخطاء موحدة بالصيغة: { status, code, message, requestId, timestamp, details? }
 
+function normalizeServerError(
+  data: unknown,
+  fallback = "حدث خطأ غير متوقع"
+): { message: string; fields?: Record<string, string[]> } {
   if (!data || typeof data !== "object") {
+    return { message: fallback, fields: undefined };
+  }
+  const d = data as Record<string, unknown>;
+
+  // message مباشرة
+  if (typeof d.message === "string") {
     return {
-      message: fallback,
-      fields: undefined as Record<string, string[]> | undefined,
+      message: d.message,
+      fields: (d.details as Record<string, string[]>) || undefined,
     };
   }
 
-  // إذا كان هناك message مباشرة (fallback للحالات القديمة)
-  if (typeof data.message === "string") {
-    return {
-      message: data.message,
-      fields: data.details as Record<string, string[]> | undefined,
-    };
+  // error fallback قديم
+  if (typeof d.error === "string") {
+    return { message: d.error, fields: undefined };
   }
 
-  // إذا كان هناك error (fallback للحالات القديمة)
-  if (typeof data.error === "string") {
-    return {
-      message: data.error,
-      fields: undefined
-    };
-  }
-
-  // إذا كان هناك details مع validation errors
-  if (data.details && typeof data.details === "object") {
+  // details (validation)
+  if (d.details && typeof d.details === "object") {
     const fields: Record<string, string[]> = {};
-
-    // معالجة أخطاء MongoDB validation
-    if (typeof data.details === "object") {
-      for (const [field, error] of Object.entries(data.details)) {
-        if (typeof error === "object" && error && "message" in error) {
-          fields[field] = [(error as { message: string }).message];
-        }
+    for (const [field, err] of Object.entries(d.details as Record<string, unknown>)) {
+      if (err && typeof err === "object" && "message" in (err as object)) {
+        const msg = (err as { message?: string }).message;
+        if (typeof msg === "string") fields[field] = [msg];
       }
     }
-
     return {
-      message: data.message || "بيانات غير صحيحة - يرجى مراجعة المدخلات",
+      message: typeof d.message === "string" ? d.message : "بيانات غير صحيحة - يرجى مراجعة المدخلات",
       fields: Object.keys(fields).length ? fields : undefined,
     };
   }
 
-  // fallback
-  return {
-    message: fallback,
-    fields: undefined
-  };
+  return { message: fallback, fields: undefined };
 }
 
 const axiosInstance = axios.create({
@@ -111,9 +112,8 @@ const axiosInstance = axios.create({
   headers: { Accept: "application/json, text/plain, */*" },
 });
 
-// قبل كل طلب: أضف التوكن لو وجد
-axiosInstance.interceptors.request.use((config) => {
-  // Request ID موحّد (لو الفرونت يرسل واحد، الباك إما يقبله أو ينشئ بديل)
+// قبل كل طلب
+axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const rid =
     (globalThis.crypto?.randomUUID?.() as string | undefined) ||
     `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -122,44 +122,42 @@ axiosInstance.interceptors.request.use((config) => {
   config.headers.set("Accept-Language", navigator.language || "ar");
   config.headers.set("X-Client", "kaleem-web");
 
-  // ⛔️ لا تضع withCredentials هنا؛ نحن على Bearer
+  // Bearer
   const token = localStorage.getItem("token");
   if (token) config.headers.set("Authorization", `Bearer ${token}`);
 
-  // ☂️ Idempotency للمسارات المعدِّلة
+  // Idempotency للمسارات المعدِّلة
   const m = (config.method || "get").toLowerCase();
-  if (["post", "put", "patch", "delete"].includes(m)) {
-    if (!config.headers.has("X-Idempotency-Key")) {
-      config.headers.set("X-Idempotency-Key", rid);
-    }
+  if (["post", "put", "patch", "delete"].includes(m) && !config.headers.has("X-Idempotency-Key")) {
+    config.headers.set("X-Idempotency-Key", rid);
   }
 
   return config;
 });
 
-// عند الاستجابة: طبّع كل الأشكال إلى res.data موحّدة + _meta/_raw
+// عند الاستجابة: res.data ← payload دائمًا
 axiosInstance.interceptors.response.use(
   (res) => {
     try {
-      // لا نطبع/نطبع blobs/files
       const isBlob =
-        res.request?.responseType === "blob" || res.data instanceof Blob;
+        (res.request?.responseType === "blob") ||
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        (typeof Blob !== "undefined" && res.data instanceof Blob);
       if (isBlob) return res;
 
-      // 204 No Content → data تبقى undefined
       if (res.status === 204) {
-        (res as any)._raw = undefined;
-        (res as any)._meta = undefined;
-        (res as any).data = undefined;
+        (res as AxiosResponse<unknown> & { _raw?: unknown; _meta?: Meta })._raw = undefined;
+        (res as AxiosResponse<unknown> & { _meta?: Meta })._meta = undefined;
+        Object.defineProperty(res, "data", { value: undefined, writable: true });
         return res;
       }
 
-      const raw = res.data;
-      const normalized = normalizePayload(raw);
-      attachNormalizedToResponse(res, normalized, raw);
-      return res;
+      const raw = res.data as unknown;
+      // نستخدم النوع العام T إن تم تحديده في get<T>
+      const normalized = normalizePayload<typeof res.data>(raw);
+      return attachNormalizedToResponse(res, normalized, raw);
     } catch {
-      // أي خطأ في التطبيع: لا تكسر الاستجابة
       return res;
     }
   },
@@ -173,12 +171,18 @@ axiosInstance.interceptors.response.use(
     }
 
     const status = err.response?.status as number | undefined;
-    const data = err.response?.data;
+    const data = err.response?.data as unknown;
 
-    // الباك إند يرسل الأخطاء موحدة: { status, code, message, requestId, timestamp, details? }
-    // نحن نحصل على requestId من header أو من body
-    const headRequestId = err.response?.headers?.["X-Request-Id"];
-    const bodyRequestId = data?.requestId;
+    // رؤوس Axios تكون lower-case عادةً
+    const headRequestId: string | undefined =
+      (err.response?.headers?.["x-request-id"] as string | undefined) ||
+      (err.response?.headers?.["X-Request-Id"] as string | undefined);
+
+    const bodyRequestId: string | undefined =
+      (isObj(data) && typeof (data as Record<string, unknown>).requestId === "string")
+        ? ((data as Record<string, string>).requestId)
+        : undefined;
+
     const requestId = bodyRequestId || headRequestId;
 
     const { message, fields } = normalizeServerError(
@@ -186,9 +190,10 @@ axiosInstance.interceptors.response.use(
       err.message || "خطأ في الاتصال بالخادم"
     );
 
-    // code تأتي مباشرة من الباك إند، أو نستخدم API_{status} كfallback
     const code =
-      (typeof data?.code === "string" && data.code) ||
+      (isObj(data) && typeof (data as Record<string, unknown>).code === "string"
+        ? ((data as Record<string, string>).code)
+        : undefined) ||
       (status ? `API_${status}` : "NETWORK_ERROR");
 
     const appError = new AppError({

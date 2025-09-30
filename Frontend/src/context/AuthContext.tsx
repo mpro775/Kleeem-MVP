@@ -1,43 +1,14 @@
 // src/context/AuthContext.tsx
 import {
-  createContext,
-  useContext,
   useState,
   type ReactNode,
   useEffect,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import type { User, Role } from "./types";
+import type { Role, User } from "./types";
+import { AuthContext, type AuthContextType } from "./context";
 // ⚠️ عدّل المسار حسب مشروعك
 import axiosInstance from "@/shared/api/axios"; // أو import axiosInstance from "@/shared/lib/axios"
-
-interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  login: (user: User, token: string) => void;
-  setAuth: (user: User, token: string, opts?: { silent?: boolean }) => void;
-  updateUser: (patch: Partial<User>) => void;
-  logout: () => void;
-  isAuthenticated: boolean;
-  hasRole: (...roles: Role[]) => boolean;
-  isAdmin: boolean;
-  isLoading: boolean;
-  hydrated: boolean; // 👈 لمنع التحويل قبل قراءة التخزين المحلي
-}
-
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  token: null,
-  login: () => {},
-  setAuth: () => {},
-  updateUser: () => {},
-  logout: () => {},
-  isAuthenticated: false,
-  hasRole: () => false,
-  isAdmin: false,
-  isLoading: true,
-  hydrated: false,
-});
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
@@ -115,7 +86,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       localStorage.setItem("token", tokenValue);
       localStorage.setItem("user", JSON.stringify(userData));
-    } catch {}
+    } catch {
+      // Do nothing
+    }
 
     // حقن الهيدر دائمًا حتى في الوضع الصامت
     if (tokenValue) {
@@ -193,7 +166,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const next = { ...base, ...patch } as User;
       try {
         localStorage.setItem("user", JSON.stringify(next));
-      } catch {}
+      } catch {
+        // Do nothing
+      }
       return next;
     });
   };
@@ -205,7 +180,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-    } catch {}
+    } catch {
+      // Do nothing
+    }
     delete axiosInstance.defaults.headers.common["Authorization"];
     navigate("/login", { replace: true });
   };
@@ -231,4 +208,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);

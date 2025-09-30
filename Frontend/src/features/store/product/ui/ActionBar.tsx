@@ -8,6 +8,7 @@ export default function ActionBar({
   onAddToCart: () => void;
   canBuy?: boolean;
 }) {
+  const canAddToCart = canBuy;
   const theme = useTheme();
   return (
     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 4 }}>
@@ -16,6 +17,7 @@ export default function ActionBar({
         size="large"
         startIcon={<ShoppingCart />}
         onClick={onAddToCart}
+        disabled={!canAddToCart}
         sx={{
           flex: 1,
           minWidth: 200,

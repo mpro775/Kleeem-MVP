@@ -9,7 +9,7 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { useErrorHandler } from "@/shared/errors";
 import type { MerchantInfo } from "@/features/mechant/merchant-settings/types";
 import {

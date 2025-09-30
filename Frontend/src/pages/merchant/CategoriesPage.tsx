@@ -1,8 +1,7 @@
 // src/pages/Categories/CategoriesPage.tsx
 import { useState } from "react";
 import { Box, Typography, Button, Stack } from "@mui/material";
-import { useAuth } from "../../context/AuthContext";
-import { useErrorHandler } from "@/shared/errors";
+import { useAuth } from "@/context/hooks";
 import CategoryTree from "@/features/mechant/categories/ui/CategoryTree";
 import AddCategoryDialog from "@/features/mechant/categories/ui/AddCategoryDialog";
 import EditCategoryDialog from "@/features/mechant/categories/ui/EditCategoryDialog";
@@ -11,7 +10,6 @@ import type { CategoryNode } from "@/features/mechant/categories/type";
 
 export default function CategoriesPage() {
   const { user } = useAuth();
-  const { handleError } = useErrorHandler();
   const merchantId = user?.merchantId ?? "";
 
   const [refresh, setRefresh] = useState(0);
@@ -93,7 +91,7 @@ export default function CategoriesPage() {
             bump();
           }}
           merchantId={merchantId}
-          category={editCat as any}
+          category={editCat as CategoryNode}
         />
       )}
 

@@ -13,7 +13,7 @@ import {
   Switch,
   Checkbox,
 } from "@mui/material";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { useSettings } from "@/features/mechant/settings-advanced/hooks/useSettings";
 import { useState } from "react";
 import { ensureN8nWorkflow } from "@/features/mechant/settings-advanced/api";
@@ -66,11 +66,11 @@ export default function SettingsAdvancedPage() {
           data.recreated ? "إعادة إنشاء" : "تأكيد"
         } ورِك-فلو n8n بنجاح (ID: ${data.workflowId})`,
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       setSnack({
         open: true,
         type: "error",
-        msg: `فشل إصلاح ورِك-فلو n8n: ${e?.message || "خطأ غير معروف"}`,
+        msg: `فشل إصلاح ورِك-فلو n8n: ${(e as { message?: string })?.message || "خطأ غير معروف"}`,
       });
     } finally {
       setWfEnsuring(false);

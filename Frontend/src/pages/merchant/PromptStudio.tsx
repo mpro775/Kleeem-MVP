@@ -19,7 +19,7 @@ import ChatIcon from "@mui/icons-material/Chat";
 import { styled } from "@mui/system";
 import { FormProvider, useForm } from "react-hook-form";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { usePromptStudio } from "@/features/mechant/prompt-studio/hooks";
 import type { QuickConfig } from "@/features/mechant/prompt-studio/types";
 
@@ -71,7 +71,7 @@ const ContentGrid = styled(Box, {
 }));
 
 // حركة للدايلوج
-const Transition = Slide as any;
+const Transition = Slide;
 
 export default function PromptStudioPage() {
   const { token, user } = useAuth();

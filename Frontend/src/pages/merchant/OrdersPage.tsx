@@ -39,7 +39,7 @@ export default function OrdersPage() {
 
   // Pagination State
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
   const [totalOrders, setTotalOrders] = useState(0);
 
   // Filter State (مثال مبسط، يمكن فصله في مكون خاص)

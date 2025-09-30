@@ -1,5 +1,5 @@
 // src/shared/utils/auth.ts
-import type { User, BackendUser } from "@/context/types";
+import type { User, BackendUser, Role } from "@/context/types";
 
 /**
  * تحويل BackendUser إلى User
@@ -10,7 +10,7 @@ export function backendUserToUser(backendUser: BackendUser): User {
     id: backendUser.id,
     name: backendUser.name,
     email: backendUser.email,
-    role: backendUser.role as any, // تحويل string إلى Role enum
+    role: backendUser.role as Role, // تحويل string إلى Role enum
     merchantId: backendUser.merchantId,
     firstLogin: backendUser.firstLogin,
     emailVerified: backendUser.emailVerified,

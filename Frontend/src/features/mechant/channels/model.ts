@@ -73,7 +73,7 @@ export function useDeleteChannelById() {
 export function useConnectChannelById() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload?: any }) => {
+    mutationFn: async ({ id, payload }: { id: string; payload?: Record<string, unknown> }) => {
       const { data } = await axiosInstance.post(`/channels/${id}/actions/connect`, payload ?? {});
       return data; // {mode:'webhook'|...}
     },
@@ -89,7 +89,7 @@ export function useChannelStatus(id?: string) {
     queryKey: ["channel", id, "status"],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await axiosInstance.get<{ status: string; details?: any }>(`/channels/${id}/status`);
+      const { data } = await axiosInstance.get<{ status: string; details?: Record<string, unknown> }>(`/channels/${id}/status`);
       return data;
     },
     enabled: !!id,

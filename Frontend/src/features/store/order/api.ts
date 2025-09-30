@@ -1,13 +1,14 @@
+
 import axiosInstance from "@/shared/api/axios";
+import type { Order } from "@/features/store/type";
+import type { MerchantInfo } from "@/features/mechant/merchant-settings/types";
 
-const unwrap = (x: any) => x?.data?.data ?? x?.data ?? x;
-
-export async function fetchOrderById(orderId: string) {
-  const res = await axiosInstance.get(`/orders/${orderId}`);
-  return unwrap(res);
+export async function fetchOrderById(orderId: string): Promise<Order> {
+  const { data } = await axiosInstance.get<Order>(`/orders/${encodeURIComponent(orderId)}`);
+  return data;
 }
 
-export async function fetchMerchantById(merchantId: string) {
-  const res = await axiosInstance.get(`/merchants/${merchantId}`);
-  return unwrap(res);
+export async function fetchMerchantById(merchantId: string): Promise<MerchantInfo> {
+  const { data } = await axiosInstance.get<MerchantInfo>(`/merchants/${encodeURIComponent(merchantId)}`);
+  return data;
 }

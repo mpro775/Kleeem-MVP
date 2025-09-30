@@ -5,7 +5,7 @@ import { sentryIntegration } from './SentryIntegration';
 // Type declaration for Google Analytics gtag
 declare global {
   interface Window {
-    gtag?: (command: string, action: string, params?: any) => void;
+    gtag?: (command: string, action: string, params?: unknown) => void;
   }
 }
 
@@ -20,7 +20,7 @@ export interface ErrorLogData {
   timestamp: string;
   userId?: string;
   sessionId?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 class ErrorLogger {
@@ -31,7 +31,7 @@ class ErrorLogger {
   /**
    * تسجيل خطأ جديد
    */
-  log(error: Error | AppError, additionalData?: Record<string, any>): void {
+  log(error: Error | AppError, additionalData?: Record<string, unknown>): void {
     const errorData: ErrorLogData = {
       message: error.message,
       stack: error.stack,
@@ -194,7 +194,7 @@ class ErrorLogger {
   /**
    * تسجيل خطأ من API
    */
-  logApiError(response: Response, data?: any): void {
+  logApiError(response: Response, data?: unknown): void {
     const error = new AppError({
       message: `خطأ في API: ${response.status} ${response.statusText}`,
       status: response.status,

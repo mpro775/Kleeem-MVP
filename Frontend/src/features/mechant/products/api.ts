@@ -1,4 +1,4 @@
-import axiosInstanceInstance from "@/shared/api/axiosInstance";
+import axiosInstance from "@/shared/api/axios";
 import type {
   CreateProductDto,
   UpdateProductDto,
@@ -59,7 +59,7 @@ export async function getMerchantProducts(
 
 // رفع صور متعددة
 export async function uploadProductImages(
-  id: string | { _id?: any } | any,
+  id: string | { _id?: string },
   files: File[],
   replace = false
 ): Promise<{

@@ -1,7 +1,7 @@
 // src/components/PrivateRoute.tsx
 import { Navigate, useLocation } from "react-router-dom";
 import type { JSX } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 
 export const PrivateRoute = ({ children }: { children: JSX.Element }) => {
   const { isAuthenticated, isLoading } = useAuth();

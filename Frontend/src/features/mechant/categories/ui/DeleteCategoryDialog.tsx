@@ -5,6 +5,7 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { deleteCategory } from "../api";
+import { AxiosError } from "axios";
 
 export default function DeleteCategoryDialog({
   open, onClose, onDeleted,
@@ -27,8 +28,12 @@ export default function DeleteCategoryDialog({
     try {
       await deleteCategory(categoryId, merchantId, cascade);
       onDeleted();
-    } catch (e: any) {
-      setError(e?.response?.data?.message || "تعذّر الحذف. قد تكون الفئة مرتبطة بمنتجات.");
+    } catch (e: unknown) {
+      setError(
+        ((e as AxiosError)?.response?.data as { message?: string })?.message ||
+        (e as Error)?.message ||
+        "تعذّر الحذف. قد تكون الفئة مرتبطة بمنتجات."
+      );
     } finally {
       setDeleting(false);
     }

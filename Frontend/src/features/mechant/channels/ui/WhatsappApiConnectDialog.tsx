@@ -57,7 +57,9 @@ export default function WhatsappApiConnectDialog({
   const copy = async (txt: string) => {
     try {
       await navigator.clipboard.writeText(txt);
-    } catch {}
+    } catch {
+      // Do nothing
+    }
   };
 
   const ensureChannel = async (): Promise<string> => {

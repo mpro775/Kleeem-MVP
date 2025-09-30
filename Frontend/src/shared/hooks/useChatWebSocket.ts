@@ -27,7 +27,7 @@ export function useChatSocket(
     const onMsg = (m: ChatMessage) => handlerRef.current?.(m);
 
     socket.on("connect", () =>
-      console.log("socket.io: Connected!", (socket as any).id)
+      console.log("socket.io: Connected!", (socket as { id?: string }).id)
     );
     socket.on("disconnect", () => console.log("socket.io: Disconnected!"));
     socket.on("connect_error", (e) =>

@@ -1,5 +1,5 @@
 // src/pages/admin/kleem/KleemRatingsPage.tsx
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   Box, Paper, Stack, TextField, MenuItem, Button, Chip, Typography, IconButton,
 } from '@mui/material';
@@ -51,7 +51,7 @@ export default function KleemRatingsPage() {
     },
   ], [nav]);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const res = await fetchRatings({
       page: page + 1,
@@ -65,15 +65,15 @@ export default function KleemRatingsPage() {
     setRows(res.items);
     setRowCount(res.total);
     setLoading(false);
-  }
+  }, [page, pageSize, rating, q, sessionId, from, to]);
 
-  async function loadStats() {
+  const loadStats = useCallback(async () => {
     const res = await fetchRatingsStats({ from: from || undefined, to: to || undefined });
     setStats(res);
-  }
+  }, [from, to]);
 
-  useEffect(() => { void load(); }, [page, pageSize]);
-  useEffect(() => { void loadStats(); }, [from, to]);
+  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void loadStats(); }, [loadStats]);
 
   return (
     <Stack gap={2}>

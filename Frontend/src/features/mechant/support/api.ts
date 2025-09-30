@@ -1,5 +1,5 @@
 // src/features/support/api.ts
-import axiosInstanceInstance from "@/shared/api/axiosInstance";
+import axiosInstance from "@/shared/api/axios";
 import type { AdminContactPayload, ContactResponse } from "./types";
 
 /**

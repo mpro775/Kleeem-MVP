@@ -22,7 +22,7 @@ export const StoreTab = ({ hasStore, overviewData, topProductsData = [] }: Store
     );
   }
 
-  const ordersByStatus = (overviewData?.orders as any)?.byStatus ?? {};
+  const ordersByStatus = (overviewData?.orders)?.byStatus ?? {};
 
   return (
     <Grid container spacing={2}>

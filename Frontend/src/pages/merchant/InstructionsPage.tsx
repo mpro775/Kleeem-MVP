@@ -15,7 +15,6 @@
   import BoltIcon from "@mui/icons-material/Bolt";
 
   import { useInstructions } from "@/features/mechant/instructions/hooks/useInstructions";
-  import { useErrorHandler } from "@/shared/errors";
   import { InstructionsTable } from "@/features/mechant/instructions/ui/InstructionsTable";
   import { InstructionEditDialog } from "@/features/mechant/instructions/ui/InstructionEditDialog";
   // Import InstructionsList and SuggestionDialog when you create them
@@ -23,7 +22,6 @@
   export default function InstructionsPage() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-    const { handleError } = useErrorHandler();
 
     // استدعاء الخطاف الذي يحتوي على كل المنطق والحالة
     const {
@@ -83,7 +81,7 @@
             select
             label="الحالة"
             value={activeFilter}
-            onChange={(e) => setActiveFilter(e.target.value as any)}
+            onChange={(e) => setActiveFilter(e.target.value as "all" | "true" | "false")}
             sx={{ minWidth: 120 }}
           >
             <MenuItem value="all">الكل</MenuItem>

@@ -10,7 +10,7 @@ import {
   Chip,
   useTheme,
 } from "@mui/material";
-import type { ProductResponse } from "@/features/mechant/products/type";
+import type { Offer, ProductResponse } from "@/features/mechant/products/type";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
@@ -29,7 +29,7 @@ type Props = {
 function getDiscountPct(p: ProductResponse): number {
   const oldP = p.offer?.oldPrice;
   const newP = p.offer?.newPrice;
-  const enabled = (p.offer as any)?.enabled ?? true; // إن وُجد علم التفعيل
+  const enabled = (p.offer as Offer)?.enabled ?? true; // إن وُجد علم التفعيل
   if (!enabled || !oldP || !newP || newP >= oldP) return 0;
   return Math.round((1 - newP / oldP) * 100);
 }

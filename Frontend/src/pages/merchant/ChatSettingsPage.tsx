@@ -29,7 +29,7 @@ import {
   Save,
   Cancel,
 } from "@mui/icons-material";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { useErrorHandler } from "@/shared/errors";
 
 import SectionCard from "@/features/mechant/widget-config/ui/SectionCard";
@@ -85,8 +85,8 @@ export default function ChatWidgetConfigSinglePage() {
     brandColor: ALLOWED_BRAND_DARK[0],
     widgetSlug: "",
     fontFamily: "Tajawal",
-    headerBgColor: undefined as any,
-    bodyBgColor: undefined as any,
+    headerBgColor: undefined as unknown as string,
+    bodyBgColor: undefined as unknown as string,
     embedMode: "bubble",
     shareUrl: `${ORIGIN}/chat/`,
   });
@@ -103,8 +103,8 @@ export default function ChatWidgetConfigSinglePage() {
       ...prev,
       ...serverSettings,
       brandColor: serverSettings.brandColor || prev.brandColor,
-      headerBgColor: undefined as any,
-      bodyBgColor: undefined as any,
+      headerBgColor: undefined as unknown as string,
+      bodyBgColor: undefined as unknown as string,
     }));
   }, [serverSettings]);
 
@@ -117,7 +117,7 @@ export default function ChatWidgetConfigSinglePage() {
         handleError(e);
         setPublicSlug(undefined);
       });
-  }, [merchantId]);
+  }, [merchantId, handleError]);
 
   const effective = draft ?? settings;
 
@@ -148,6 +148,7 @@ export default function ChatWidgetConfigSinglePage() {
       effective.fontFamily,
       publicSlug,
       WIDGET_HOST,
+      safeBrand,
     ]
   );
 
@@ -181,7 +182,7 @@ export default function ChatWidgetConfigSinglePage() {
       setSettings({ ...draft, brandColor: safeBrand });
       setDraft(null);
       setShowSuccess(true);
-    } catch (e) {
+    } catch (e: unknown) {
       handleError(e);
       setApiError("فشل حفظ الإعدادات. حاول مجددًا.");
     }

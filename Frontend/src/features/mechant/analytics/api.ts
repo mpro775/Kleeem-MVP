@@ -15,7 +15,7 @@ export async function getOverview(period: Period) {
 
 export async function getProductsCount() {
   const res = await axiosInstance.get<{ total: number } | number>(`/analytics/products-count`);
-  const payload: any = res.data;
+  const payload = res.data;
   return typeof payload === "number" ? payload : (payload?.total ?? 0); // ✅ رقم دائمًا
 }
 

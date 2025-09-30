@@ -26,7 +26,7 @@ import TelegramConnectDialog from "@/features/mechant/channels/ui/TelegramConnec
 import WebchatConnectDialog from "@/features/mechant/channels/ui/WebchatConnectDialog";
 import ChannelDetailsDialog from "@/features/mechant/channels/ui/ChannelDetailsDialog";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import {
   CHANNELS,
   type ChannelKey,
@@ -115,8 +115,6 @@ export default function ChannelsIntegrationPage() {
         const key = KEY_BY_PROVIDER[c.provider];
         if (key) map[key] = c;
         else if (process.env.NODE_ENV === "development") {
-          // provider غير معروف – تجاهله بأمان
-          // eslint-disable-next-line no-console
           console.warn("Unknown channel provider:", c.provider, c);
         }
       });
@@ -125,7 +123,7 @@ export default function ChannelsIntegrationPage() {
   }, [channelsList]);
 
   const detailData = selectedChannel
-    ? (byKey[selectedChannel] as any)
+    ? (byKey[selectedChannel] as ChannelDoc)
     : undefined;
   const selectedDoc = selectedChannel ? byKey[selectedChannel] : undefined;
 
@@ -149,16 +147,16 @@ export default function ChannelsIntegrationPage() {
         });
         await refetch();
         return data?._id as string;
-      } catch (e: any) {
+      } catch (e: unknown) {
         handleError(e);
         setToast({
-          msg: e?.response?.data?.message || "تعذر إنشاء القناة. حاول مجددًا.",
+          msg: (e as { response?: { data?: { message?: string } } })?.response?.data?.message || "تعذر إنشاء القناة. حاول مجددًا.",
           type: "error",
         });
         throw e;
       }
     },
-    [byKey, merchantId, refetch]
+    [byKey, merchantId, refetch, handleError]
   );
 
   const handleToggle = async (key: ChannelKey, wantEnabled: boolean) => {
@@ -348,7 +346,7 @@ export default function ChannelsIntegrationPage() {
         open={!!selectedChannel}
         onClose={() => setSelectedChannel(null)}
         title={CHANNELS.find((c) => c.key === selectedChannel)?.title ?? ""}
-        data={detailData as any}
+        data={detailData as ChannelDoc}
         dangerNote={selectedChannel ? dangerNote(selectedChannel) : undefined}
         onDisable={
           selectedDoc

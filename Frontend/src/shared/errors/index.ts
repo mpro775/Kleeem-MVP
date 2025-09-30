@@ -6,7 +6,8 @@ export { useErrorHandler } from './useErrorHandler';
 export { NetworkErrorHandler } from './NetworkErrorHandler';
 export { ErrorFallback } from './ErrorFallback';
 export { errorLogger, type ErrorLogData } from './ErrorLogger';
-export { GlobalErrorProvider, useGlobalError } from './GlobalErrorProvider';
+export { GlobalErrorProvider } from './GlobalErrorProvider';
+export { useGlobalError } from './hooks';
 export { ErrorDebugPanel } from './ErrorDebugPanel';
 export { ErrorToast } from './ErrorToast';
 
@@ -17,12 +18,12 @@ export {
   SentryProfiler,
   type SentryConfig 
 } from './SentryIntegration';
-export { 
-  SentryProvider, 
-  SentryPerformanceMonitor, 
-  SentryComponentMonitor,
-  useSentry 
+export {
+  SentryProvider,
+  SentryPerformanceMonitor,
+  SentryComponentMonitor
 } from './SentryProvider';
+export { useSentry } from './sentryHooks';
 
 // التكوين
 export { 

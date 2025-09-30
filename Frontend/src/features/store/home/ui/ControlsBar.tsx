@@ -63,7 +63,7 @@ export function ControlsBar({
         InputProps={{
           startAdornment: (
             <SearchIcon sx={{ color: "action.active", mr: 1 }} />
-          ) as any,
+          ) as React.ReactNode,
         }}
       />
       <Stack direction="row" spacing={1} alignItems="center">

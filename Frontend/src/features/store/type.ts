@@ -28,6 +28,7 @@ export interface OrderProduct {
 export interface Order {
   _id: string;
   merchantId: string;
+  currency?: string;
   sessionId: string;
   customer: CustomerInfo;
   products: OrderProduct[];

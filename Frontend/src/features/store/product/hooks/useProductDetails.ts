@@ -4,8 +4,8 @@ import axiosInstance from "@/shared/api/axios";
 import { getStorefrontInfo } from "@/features/mechant/storefront-theme/api";
 import { setBrandVars } from "@/features/shared/brandCss";
 import type { ProductResponse } from "@/features/mechant/products/type";
+import type { Storefront } from "@/features/mechant/storefront-theme/type";
 
-const unwrap = (x: any) => x?.data?.data ?? x?.data ?? x;
 
 export function useProductDetails(productId?: string, slug?: string) {
   const [product, setProduct] = useState<ProductResponse | null>(null);
@@ -22,7 +22,7 @@ export function useProductDetails(productId?: string, slug?: string) {
             res?.data?.merchant?._id || res?.data?.data?.merchant?._id;
           if (merchantId) {
             const sf = await getStorefrontInfo(merchantId as string);
-            setBrandVars((sf as any)?.brandDark || "#111827");
+            setBrandVars((sf as Storefront)?.brandDark || "#111827");
           } else setBrandVars("#111827");
         } catch {
           setBrandVars("#111827");

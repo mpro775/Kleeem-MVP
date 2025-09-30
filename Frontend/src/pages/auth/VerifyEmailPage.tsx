@@ -7,7 +7,7 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { useTheme } from "@mui/material/styles";
 import AuthLayout from "@/auth/AuthLayout";
 import OtpInputBoxes from "@/shared/ui/OtpInputBoxes";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/hooks";
 import { resendVerificationAPI, verifyEmailAPI } from "@/auth/api";
 import { getAxiosMessage } from "@/shared/lib/errors";
 import { backendUserToUser } from "@/shared/utils/auth";

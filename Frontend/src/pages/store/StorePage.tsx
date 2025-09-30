@@ -76,7 +76,7 @@ export function StorePageInner() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const offerAsProducts: ProductResponse[] = useMemo(
-    () => mapOffersToProducts(offers as any, productById),
+    () => mapOffersToProducts(offers, productById),
     [offers, productById]
   );
 

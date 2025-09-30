@@ -1,5 +1,5 @@
 // src/api/instructions.ts
-import axiosInstanceInstance from '@/shared/api/axiosInstance';
+import axiosInstance from '@/shared/api/axios';
 import type { Instruction } from './type';
 
 

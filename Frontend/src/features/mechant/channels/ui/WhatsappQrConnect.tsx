@@ -11,6 +11,7 @@ import {
   Alert,
 } from "@mui/material";
 import axiosInstance from "@/shared/api/axios";
+import type { AxiosError } from "axios";
 
 type Props = {
   open: boolean;
@@ -44,19 +45,21 @@ export default function WhatsappQrConnect({
     }
   };
 
-  const normalizeQr = (data: any): string | null => {
+  const normalizeQr = (data: unknown): string | null => {
     // الباك إند يرسل الآن: { success, data: {qr}, requestId, timestamp }
     // البيانات تأتي في data.qr أو data.qrcode
-    if (data?.qr)
-      return data.qr.startsWith("data:image/")
-        ? data.qr
-        : `data:image/png;base64,${data.qr}`;
-    if (data?.qrcode?.base64) return data.qrcode.base64;
+    const qrData = data as { qr?: string; qrcode?: string | { base64?: string } };
+    if (qrData?.qr)
+      return qrData.qr.startsWith("data:image/")
+        ? qrData.qr
+        : `data:image/png;base64,${qrData.qr}`;
+    if (qrData?.qrcode && typeof qrData.qrcode === 'object' && qrData.qrcode?.base64) return qrData.qrcode.base64;
     if (
-      typeof data?.qrcode === "string" &&
-      data.qrcode.startsWith("data:image/")
+      qrData?.qrcode &&
+      typeof qrData.qrcode === "string" &&
+      qrData.qrcode.startsWith("data:image/")
     )
-      return data.qrcode;
+      return qrData.qrcode;
     return null;
   };
 
@@ -81,8 +84,12 @@ export default function WhatsappQrConnect({
           "لم نستلم صورة QR من الخادم. أعد المحاولة أو تحقق من سجل الخادم."
         );
       }
-    } catch (e: any) {
-      setHint("تعذر بدء الجلسة. تحقق من الاتصال بالخادم.");
+    } catch (e: unknown) {
+      setHint(
+        ((e as AxiosError)?.response?.data as { message?: string })?.message ||
+        (e as Error)?.message ||
+        "تعذر بدء الجلسة. تحقق من الاتصال بالخادم."
+      );
     } finally {
       setLoading(false);
     }
