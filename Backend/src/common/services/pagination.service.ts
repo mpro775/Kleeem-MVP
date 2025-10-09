@@ -85,59 +85,91 @@ export class PaginationService {
       lean?: boolean;
     } = {},
   ): Promise<PaginationResult<T>> {
-    const {
-      sortField = DEFAULT_SORT_FIELD,
-      sortOrder = DEFAULT_SORT_ORDER,
-      populate,
-      select,
-      lean = true,
-    } = options;
-
-    // إنشاء الـ filter مع الـ cursor
+    const { sortField, sortOrder, populate, select, lean } =
+      this.extractOptions(options);
     const filter = createCursorFilter(
       baseFilter,
       dto.cursor,
       sortField,
       sortOrder,
     );
-
-    // إنشاء الـ sort object (ترتيب مستقر بإضافة _id)
-    const sort: Record<string, 1 | -1> = {
-      [sortField]: sortOrder,
-      _id: sortOrder,
-    };
-
-    // حد أقصى للـ limit
+    const sort = this.createSortObject(sortField, sortOrder);
     const limit = Math.min(dto.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
 
-    // بناء الاستعلام مع limit + 1 للتحقق من وجود المزيد
-    const q = model
-      .find(filter)
-      .sort(sort)
-      .limit(limit + 1);
-    if (populate) q.populate(populate);
-    if (select) q.select(select);
+    const queryOptions: {
+      populate?: string | string[];
+      select?: string;
+      lean: boolean;
+    } = { lean };
 
-    // تنفيذ الاستعلام
-    const docs = lean ? await q.lean().exec() : await q.exec();
+    if (populate) queryOptions.populate = populate;
+    if (select) queryOptions.select = select;
 
-    // حساب hasMore وتقطيع النتيجة
+    const docs = await this.executeQuery(
+      model,
+      filter,
+      sort,
+      limit + 1,
+      queryOptions,
+    );
+    const { items, hasMore } = this.processResults(docs, limit);
+
+    const meta: { nextCursor?: string; hasMore: boolean; count: number } = {
+      hasMore,
+      count: items.length,
+    };
+
+    if (hasMore) {
+      const cursor = extractNextCursor(items, sortField);
+      if (cursor) meta.nextCursor = cursor;
+    }
+
+    return { items: items as unknown as T[], meta };
+  }
+
+  private extractOptions(options: {
+    sortField?: string;
+    sortOrder?: 1 | -1;
+    populate?: string | string[];
+    select?: string;
+    lean?: boolean;
+  }) {
+    return {
+      sortField: options.sortField ?? DEFAULT_SORT_FIELD,
+      sortOrder: options.sortOrder ?? DEFAULT_SORT_ORDER,
+      populate: options.populate,
+      select: options.select,
+      lean: options.lean ?? true,
+    };
+  }
+
+  private createSortObject(
+    sortField: string,
+    sortOrder: 1 | -1,
+  ): Record<string, 1 | -1> {
+    return { [sortField]: sortOrder, _id: sortOrder };
+  }
+
+  private async executeQuery<T extends Document>(
+    model: Model<T>,
+    filter: FilterQuery<T>,
+    sort: Record<string, 1 | -1>,
+    limit: number,
+    options: { populate?: string | string[]; select?: string; lean: boolean },
+  ): Promise<unknown[]> {
+    const q = model.find(filter).sort(sort).limit(limit);
+    if (options.populate) q.populate(options.populate);
+    if (options.select) q.select(options.select);
+    return options.lean ? await q.lean().exec() : await q.exec();
+  }
+
+  private processResults(
+    docs: unknown[],
+    limit: number,
+  ): { items: unknown[]; hasMore: boolean } {
     const hasMore = docs.length > limit;
     const items = hasMore ? docs.slice(0, limit) : docs;
-
-    // إنشاء الـ cursor للصفحة التالية (إن وُجدت)
-    const nextCursor = hasMore
-      ? extractNextCursor(items, sortField)
-      : undefined;
-
-    return {
-      items: items as unknown as T[],
-      meta: {
-        nextCursor,
-        hasMore,
-        count: items.length,
-      },
-    };
+    return { items, hasMore };
   }
 
   /**
@@ -155,10 +187,15 @@ export class PaginationService {
       _id: fields._id ?? -1,
     };
 
-    schema.index(indexFields, {
+    const indexOptions: Record<string, unknown> = {
       background: options.background !== false,
-      sparse: options.sparse,
-    });
+    };
+
+    if (options.sparse !== undefined) {
+      indexOptions.sparse = options.sparse;
+    }
+
+    schema.index(indexFields, indexOptions as IndexOptions);
   }
 
   /**

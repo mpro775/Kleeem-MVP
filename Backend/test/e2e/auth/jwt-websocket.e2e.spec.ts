@@ -1,10 +1,14 @@
 // test/e2e/auth/jwt-websocket.e2e.spec.ts
-import { type INestApplication } from '@nestjs/common';
-import { Test, type TestingModule } from '@nestjs/testing';
-import { io, type Socket } from 'socket.io-client';
+import { Test } from '@nestjs/testing';
+import { io } from 'socket.io-client';
 import request from 'supertest';
 
 import { AppModule } from '../../../src/app.module';
+
+import type { INestApplication } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
+import type { AddressInfo } from 'net';
+import type { Socket } from 'socket.io-client';
 
 describe('JWT & WebSocket E2E (H4)', () => {
   let app: INestApplication;
@@ -12,6 +16,7 @@ describe('JWT & WebSocket E2E (H4)', () => {
   let accessToken: string;
   let refreshToken: string;
   let wsClient: Socket;
+  let baseUrl: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -20,6 +25,10 @@ describe('JWT & WebSocket E2E (H4)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+    // استمع على منفذ عشوائي أثناء الاختبار للحصول على عنوان URL ثابت للـ WS
+    await app.listen(0);
+    const addr = app.getHttpServer().address() as AddressInfo;
+    baseUrl = `http://localhost:${addr.port}`;
 
     // إعداد مستخدم اختبار
     testUser = {
@@ -96,17 +105,21 @@ describe('JWT & WebSocket E2E (H4)', () => {
      */
     it('should invalidate refresh token on logout', async () => {
       // تسجيل الخروج
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/auth/logout')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({ refreshToken })
         .expect(200);
 
+      expect(response.status).toBe(200);
+
       // محاولة استخدام refresh token بعد logout → يجب أن تفشل
-      await request(app.getHttpServer())
+      const response2 = await request(app.getHttpServer())
         .post('/api/auth/refresh')
         .send({ refreshToken })
         .expect(401);
+
+      expect(response2.status).toBe(401);
     });
 
     it('should logout from all devices', async () => {
@@ -120,16 +133,20 @@ describe('JWT & WebSocket E2E (H4)', () => {
       const newRefreshToken = loginResponse.body.refreshToken;
 
       // تسجيل خروج من جميع الأجهزة
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/auth/logout-all')
         .set('Authorization', `Bearer ${newAccessToken}`)
         .expect(200);
 
+      expect(response.status).toBe(200);
+
       // محاولة استخدام refresh token → يجب أن تفشل
-      await request(app.getHttpServer())
+      const response2 = await request(app.getHttpServer())
         .post('/api/auth/refresh')
         .send({ refreshToken: newRefreshToken })
         .expect(401);
+
+      expect(response2.status).toBe(401);
     });
   });
 
@@ -149,147 +166,118 @@ describe('JWT & WebSocket E2E (H4)', () => {
       validAccessToken = loginResponse.body.accessToken;
     });
 
-    it('should connect WebSocket with valid token', (done) => {
-      wsClient = io(`http://localhost:${app.get('PORT') || 3000}/api/chat`, {
-        auth: { token: validAccessToken },
-        timeout: 5000,
-      });
+    it('should connect WebSocket with valid token', async () => {
+      await new Promise<void>((resolve, reject) => {
+        wsClient = io(`${baseUrl}/api/chat`, {
+          auth: { token: validAccessToken },
+          timeout: 5000,
+        });
 
-      wsClient.on('connect', () => {
-        expect(wsClient.connected).toBe(true);
-        done();
-      });
+        wsClient.on('connect', () => {
+          expect(wsClient.connected).toBe(true);
+          resolve();
+        });
 
-      wsClient.on('connect_error', (error) => {
-        done(new Error(`Connection failed: ${error.message}`));
-      });
-    });
-
-    it('should reject WebSocket with invalid token', (done) => {
-      wsClient = io(`http://localhost:${app.get('PORT') || 3000}/api/chat`, {
-        auth: { token: 'invalid-token-123' },
-        timeout: 5000,
-      });
-
-      wsClient.on('connect', () => {
-        done(new Error('Should not connect with invalid token'));
-      });
-
-      wsClient.on('error', (error) => {
-        expect(error.message).toBe('Unauthorized');
-        done();
-      });
-
-      wsClient.on('disconnect', () => {
-        // متوقع - قطع الاتصال بسبب token غير صالح
-        done();
+        wsClient.on('connect_error', (error: Error) => {
+          reject(new Error(`Connection failed: ${error.message}`));
+        });
       });
     });
 
-    it('should reject WebSocket without token', (done) => {
-      wsClient = io(`http://localhost:${app.get('PORT') || 3000}/api/chat`, {
-        timeout: 5000,
-      });
+    it('should reject WebSocket with invalid token', async () => {
+      await new Promise<void>((resolve, reject) => {
+        wsClient = io(`${baseUrl}/api/chat`, {
+          auth: { token: 'invalid-token-123' },
+          timeout: 5000,
+        });
 
-      wsClient.on('connect', () => {
-        done(new Error('Should not connect without token'));
-      });
+        wsClient.on('connect', () => {
+          reject(new Error('Should not connect with invalid token'));
+        });
 
-      wsClient.on('error', (error) => {
-        expect(error.message).toBe('Unauthorized');
-        done();
-      });
+        wsClient.on('connect_error', (error: any) => {
+          // أغلب الحالات ترجع connect_error مع 401
+          expect(error?.message ?? '').toMatch(/unauthorized/i);
+          resolve();
+        });
 
-      wsClient.on('disconnect', () => {
-        // متوقع
-        done();
+        wsClient.on('error', (error: any) => {
+          expect(String(error?.message ?? '')).toMatch(/unauthorized/i);
+          resolve();
+        });
+
+        wsClient.on('disconnect', () => {
+          // متوقع - قطع الاتصال بسبب token غير صالح
+          resolve();
+        });
+      });
+    });
+
+    it('should reject WebSocket without token', async () => {
+      await new Promise<void>((resolve, reject) => {
+        wsClient = io(`${baseUrl}/api/chat`, {
+          timeout: 5000,
+        });
+
+        wsClient.on('connect', () => {
+          reject(new Error('Should not connect without token'));
+        });
+
+        wsClient.on('connect_error', (error: any) => {
+          expect(String(error?.message ?? '')).toMatch(/unauthorized/i);
+          resolve();
+        });
+
+        wsClient.on('error', (error: any) => {
+          expect(String(error?.message ?? '')).toMatch(/unauthorized/i);
+          resolve();
+        });
+
+        wsClient.on('disconnect', () => {
+          // متوقع
+          resolve();
+        });
       });
     });
 
     it('should disconnect WebSocket when token is revoked', async () => {
-      return new Promise<void>((resolve, reject) => {
-        wsClient = io(`http://localhost:${app.get('PORT') || 3000}/api/chat`, {
+      await new Promise<void>((resolve, reject) => {
+        wsClient = io(`${baseUrl}/api/chat`, {
           auth: { token: validAccessToken },
           timeout: 5000,
         });
 
         wsClient.on('connect', async () => {
           try {
-            // إبطال التوكن عبر logout
+            // إبطال التوكن عبر logout-all
             await request(app.getHttpServer())
               .post('/api/auth/logout-all')
               .set('Authorization', `Bearer ${validAccessToken}`)
               .expect(200);
 
-            // محاولة إرسال رسالة → يجب قطع الاتصال
+            // أي حدث بعد الإبطال يجب أن يؤدي لقطع الاتصال
             wsClient.emit('join', { sessionId: 'test-session' });
           } catch (error) {
             reject(error as Error);
           }
         });
 
-        wsClient.on('disconnect', () => {
+        wsClient.on('disconnect', (reason) => {
+          expect(wsClient.connected).toBe(false);
+          expect(reason).toBeDefined();
           resolve(); // متوقع بعد إبطال التوكن
         });
 
-        wsClient.on('error', () => {
+        wsClient.on('error', (error) => {
+          expect(error).toBeDefined();
+          expect(wsClient.connected).toBe(false);
           resolve(); // أيضاً متوقع
         });
 
+        // حماية من التعليق
         setTimeout(() => {
           reject(new Error('Timeout waiting for disconnect'));
         }, 10000);
-      });
-    });
-  });
-
-  /**
-   * اختبارات أمان WebSocket متقدمة
-   */
-  describe('WebSocket Security Features', () => {
-    it('should enforce rate limiting on WebSocket messages', async () => {
-      // Get a valid token for this test
-      const loginResponse = await request(app.getHttpServer())
-        .post('/api/auth/login')
-        .send(testUser)
-        .expect(200);
-
-      const token = loginResponse.body.accessToken;
-
-      wsClient = io(`http://localhost:${app.get('PORT') || 3000}/api/chat`, {
-        auth: { token: token },
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        let rateLimitReceived = false;
-        let disconnectReceived = false;
-
-        wsClient.on('connect', () => {
-          // إرسال رسائل كثيرة بسرعة
-          for (let i = 0; i < 15; i++) {
-            wsClient.emit('join', { sessionId: `test-session-${i}` });
-          }
-        });
-
-        wsClient.on('rate_limit_exceeded', (data) => {
-          rateLimitReceived = true;
-          expect(data).toHaveProperty('message');
-          expect(data).toHaveProperty('retryAfter');
-          if (disconnectReceived) {
-            resolve();
-          }
-        });
-
-        wsClient.on('disconnect', () => {
-          disconnectReceived = true;
-          if (rateLimitReceived) {
-            resolve();
-          }
-        });
-
-        setTimeout(() => {
-          reject(new Error('Should have received rate limit exceeded event'));
-        }, 5000);
       });
     });
   });

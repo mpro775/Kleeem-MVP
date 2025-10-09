@@ -107,10 +107,12 @@ export class CacheMetrics {
    * إنشاء timer للعملية
    */
   startTimer(operation: string, cacheLevel: string): () => void {
-    return this.cacheOperationDuration.startTimer({
-      operation,
-      cache_level: cacheLevel,
-    });
+    return this.cacheOperationDuration
+      .startTimer({
+        operation,
+        cache_level: cacheLevel,
+      })
+      .bind(this);
   }
 
   /**

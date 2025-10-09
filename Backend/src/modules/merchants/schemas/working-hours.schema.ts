@@ -16,7 +16,7 @@ export enum WeekDay {
 export class WorkingHour {
   @Prop({ required: true, enum: Object.values(WeekDay) })
   @IsEnum(WeekDay)
-  day: WeekDay;
+  day!: WeekDay;
 
   // نستخدم تنسيق HH:mm (24h)؛ نتحقق من النمط عبر regex
   @Prop({ required: true })
@@ -24,14 +24,14 @@ export class WorkingHour {
   @Matches(/^\d{2}:\d{2}$/, {
     message: 'openTime must be in HH:mm format',
   })
-  openTime: string;
+  openTime!: string;
 
   @Prop({ required: true })
   @IsString()
   @Matches(/^\d{2}:\d{2}$/, {
     message: 'closeTime must be in HH:mm format',
   })
-  closeTime: string;
+  closeTime!: string;
 }
 
 export type WorkingHourDocument = WorkingHour & Document;

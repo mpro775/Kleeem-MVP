@@ -5,20 +5,20 @@ import { Document } from 'mongoose';
 @Schema({ timestamps: true })
 export class BotFaq extends Document {
   @Prop({ required: true, trim: true })
-  question: string;
+  question!: string;
 
   @Prop({ required: true, trim: true })
-  answer: string;
+  answer!: string;
 
   @Prop({ default: 'active', enum: ['active', 'deleted'] })
-  status: 'active' | 'deleted';
+  status!: 'active' | 'deleted';
 
   @Prop({
     default: 'manual',
     enum: ['manual', 'auto', 'imported'],
     index: true,
   })
-  source: 'manual' | 'auto' | 'imported';
+  source!: 'manual' | 'auto' | 'imported';
 
   @Prop({ type: [String], default: [], index: true })
   tags?: string[];

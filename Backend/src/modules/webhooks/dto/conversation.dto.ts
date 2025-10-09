@@ -10,7 +10,7 @@ export class MessageItem {
   })
   @IsString()
   @IsNotEmpty()
-  role: 'customer' | 'bot' | 'agent';
+  role!: 'customer' | 'bot' | 'agent';
 
   @ApiProperty({
     description: 'نص الرسالة',
@@ -18,14 +18,14 @@ export class MessageItem {
   })
   @IsString()
   @IsNotEmpty()
-  text: string;
+  text!: string;
 
   @ApiProperty({
     description: 'وقت إرسال الرسالة',
     example: '2025-08-16T04:00:00.000Z',
   })
   @IsNotEmpty()
-  timestamp: Date;
+  timestamp!: Date;
 
   @ApiPropertyOptional({
     description: 'بيانات إضافية للرسالة',
@@ -41,7 +41,7 @@ export class ConversationDto {
   })
   @IsString()
   @IsNotEmpty()
-  sessionId: string;
+  sessionId!: string;
 
   @ApiProperty({
     description: 'قناة المحادثة',
@@ -50,7 +50,7 @@ export class ConversationDto {
   })
   @IsString()
   @IsNotEmpty()
-  channel: string;
+  channel!: string;
 
   @ApiProperty({
     description: 'قائمة الرسائل المتبادلة في المحادثة',
@@ -71,5 +71,5 @@ export class ConversationDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => MessageItem)
-  messages: MessageItem[];
+  messages!: MessageItem[];
 }

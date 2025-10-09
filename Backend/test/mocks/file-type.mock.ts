@@ -19,7 +19,7 @@ export const fileTypeFromBlob = jest.fn().mockResolvedValue({
   mime: 'image/jpeg',
 });
 
-export default {
+export const fileType = {
   fileTypeFromBuffer,
   fileTypeFromFile,
   fileTypeFromStream,

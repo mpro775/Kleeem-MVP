@@ -23,6 +23,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
 import { CreateContactDto } from './dto/create-contact.dto';
+import { SupportTicketEntity } from './repositories/support.repository';
 import { SupportService } from './support.service';
 
 // عدّل المسار حسب مشروعك:
@@ -108,6 +109,21 @@ export class SupportController {
       },
     ),
   )
+  private buildContactOptions(
+    req: Request & {
+      ips?: string[];
+      ip?: string;
+      headers?: { 'user-agent'?: string };
+    },
+  ): { ip?: string; userAgent?: string } {
+    const options: { ip?: string; userAgent?: string } = {};
+    const ip = (Array.isArray(req.ips) && req.ips[0]) || req.ip;
+    if (ip) options.ip = ip;
+    if (req.headers?.['user-agent'])
+      options.userAgent = req.headers['user-agent'];
+    return options;
+  }
+
   async contact(
     @Body('payload') raw: string,
     @UploadedFiles() files: { files?: Express.Multer.File[] },
@@ -123,31 +139,11 @@ export class SupportController {
     status: unknown;
     createdAt: Date;
   }> {
-    if (!raw) throw new BadRequestException('payload required');
-
-    let dto: CreateContactDto;
-    try {
-      dto = plainToInstance(CreateContactDto, JSON.parse(raw));
-    } catch {
-      throw new BadRequestException('invalid JSON payload');
-    }
-
-    const errs = await validate(dto);
-    if (errs.length) throw new BadRequestException(errs);
-
+    const dto = await this.validateContactPayload(raw);
     const uploaded = files?.files ?? [];
-
-    const created = await this.service.create(dto, uploaded, {
-      ip: (Array.isArray(req.ips) && req.ips[0]) || req.ip,
-      userAgent: req.headers?.['user-agent'],
-    });
-
-    return {
-      id: created._id,
-      ticketNumber: (created as { ticketNumber?: unknown }).ticketNumber,
-      status: (created as { status?: unknown }).status,
-      createdAt: (created as { createdAt?: Date }).createdAt || new Date(),
-    };
+    const options = this.buildContactOptions(req);
+    const created = await this.service.create(dto, uploaded, options);
+    return this.formatTicketResponse(created);
   }
   @Post('contact/merchant')
   @HttpCode(HttpStatus.CREATED)
@@ -179,6 +175,67 @@ export class SupportController {
       },
     ),
   )
+  private async validateContactPayload(raw: string): Promise<CreateContactDto> {
+    if (!raw) throw new BadRequestException('payload required');
+    let dto: CreateContactDto;
+    try {
+      dto = plainToInstance(CreateContactDto, JSON.parse(raw));
+    } catch {
+      throw new BadRequestException('invalid JSON payload');
+    }
+    const errs = await validate(dto);
+    if (errs.length) throw new BadRequestException(errs);
+    return dto;
+  }
+
+  private buildMerchantOptions(
+    req: Request & { user?: { userId: string; merchantId: string } },
+  ): {
+    ip?: string;
+    userAgent?: string;
+    merchantId?: string;
+    userId?: string;
+    source: 'merchant';
+  } {
+    const reqAny = req as Request & {
+      ips?: unknown[];
+      ip?: unknown;
+      headers?: { 'user-agent'?: unknown };
+    };
+    const options: {
+      ip?: string;
+      userAgent?: string;
+      merchantId?: string;
+      userId?: string;
+      source: 'merchant';
+    } = { source: 'merchant' };
+
+    const ip =
+      (Array.isArray(reqAny.ips) && (reqAny.ips[0] as string)) ||
+      (reqAny.ip as string);
+    if (ip) options.ip = ip;
+    if (reqAny.headers?.['user-agent'])
+      options.userAgent = reqAny.headers['user-agent'] as string;
+    if (req.user?.merchantId) options.merchantId = req.user.merchantId;
+    if (req.user?.userId) options.userId = req.user.userId;
+
+    return options;
+  }
+
+  private formatTicketResponse(created: SupportTicketEntity): {
+    id: unknown;
+    ticketNumber: unknown;
+    status: unknown;
+    createdAt: Date;
+  } {
+    return {
+      id: created._id,
+      ticketNumber: (created as { ticketNumber?: unknown }).ticketNumber,
+      status: (created as { status?: unknown }).status,
+      createdAt: (created as { createdAt?: Date }).createdAt || new Date(),
+    };
+  }
+
   async contactFromMerchant(
     @Body('payload') raw: string,
     @UploadedFiles() files: { files?: Express.Multer.File[] },
@@ -189,37 +246,10 @@ export class SupportController {
     status: unknown;
     createdAt: Date;
   }> {
-    if (!raw) throw new BadRequestException('payload required');
-    let dto: CreateContactDto;
-    try {
-      dto = plainToInstance(CreateContactDto, JSON.parse(raw));
-    } catch {
-      throw new BadRequestException('invalid JSON payload');
-    }
-    const errs = await validate(dto);
-    if (errs.length) throw new BadRequestException(errs);
-
+    const dto = await this.validateContactPayload(raw);
     const uploaded = files?.files ?? [];
-    const reqAny = req as Request & {
-      ips?: unknown[];
-      ip?: unknown;
-      headers?: { 'user-agent'?: unknown };
-    };
-    const created = await this.service.create(dto, uploaded, {
-      ip:
-        (Array.isArray(reqAny.ips) && (reqAny.ips[0] as string)) ||
-        (reqAny.ip as string),
-      userAgent: reqAny.headers?.['user-agent'] as string,
-      merchantId: req.user?.merchantId,
-      userId: req.user?.userId,
-      source: 'merchant',
-    });
-
-    return {
-      id: created._id,
-      ticketNumber: (created as { ticketNumber?: unknown }).ticketNumber,
-      status: (created as { status?: unknown }).status,
-      createdAt: (created as { createdAt?: Date }).createdAt || new Date(),
-    };
+    const options = this.buildMerchantOptions(req);
+    const created = await this.service.create(dto, uploaded, options);
+    return this.formatTicketResponse(created);
   }
 }

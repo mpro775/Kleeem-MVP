@@ -5,10 +5,10 @@ import { PlanTier } from '../../schemas/subscription-plan.schema';
 
 export class MerchantStatusResponse {
   @ApiProperty({ enum: ['active', 'inactive', 'suspended'] })
-  status: string;
+  status!: string;
 
   @ApiProperty()
-  subscription: {
+  subscription!: {
     tier: PlanTier;
     status: string;
     startDate: Date;
@@ -19,7 +19,7 @@ export class MerchantStatusResponse {
   lastActivity?: Date;
 
   @ApiProperty()
-  promptStatus: {
+  promptStatus!: {
     configured: boolean;
     lastUpdated: Date;
   };

@@ -54,11 +54,12 @@ function getRequest(ctx: ExecutionContext): RequestWithMeta {
 }
 
 function getUrl(req: RequestWithMeta): string {
-  return (req.originalUrl ?? req.url ?? '').split('?')[0];
+  const url = (req.originalUrl ?? req.url ?? '').split('?')[0];
+  return url || '/';
 }
 
 function getRequestId(req: RequestWithMeta): string | undefined {
-  return req.requestId ?? firstHeader(req.headers['x-request-id']);
+  return req.requestId ?? firstHeader(req?.headers?.['x-request-id']);
 }
 
 function safeToString(v: unknown): string | undefined {
@@ -91,14 +92,21 @@ function buildMeta(req: RequestWithMeta): ErrorMeta {
   const url = getUrl(req);
   const method = req.method ?? 'UNKNOWN';
   const ip = req.ip ?? 'unknown';
-  const userAgent = req.headers['user-agent'];
+  const userAgent = req?.headers?.['user-agent'];
   const requestId = getRequestId(req);
 
   // نفضّل authUser ثم JWT لكل من userId و merchantId
   const userId = getUserIdFromAuth(req) ?? getUserIdFromJwt(req);
   const merchantId = getMerchantIdFromAuth(req) ?? getMerchantIdFromJwt(req);
 
-  return { userId, merchantId, requestId, url, method, ip, userAgent };
+  const meta: ErrorMeta = { url, method, ip };
+
+  if (userId) meta.userId = userId;
+  if (merchantId) meta.merchantId = merchantId;
+  if (requestId) meta.requestId = requestId;
+  if (userAgent !== undefined) meta.userAgent = userAgent;
+
+  return meta;
 }
 
 // -----------------------------------------------------------------------------

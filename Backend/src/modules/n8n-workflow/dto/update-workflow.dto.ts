@@ -31,7 +31,7 @@ export class UpdateWorkflowDto {
   })
   @IsObject({ message: 'يجب أن يكون jsonPatch كائنًا' })
   @IsNotEmpty({ message: 'لا يمكن أن يكون jsonPatch فارغًا' })
-  jsonPatch: Partial<WorkflowDefinition>;
+  jsonPatch!: Partial<WorkflowDefinition>;
 
   @ApiPropertyOptional({
     description: 'سبب التحديث (اختياري)',

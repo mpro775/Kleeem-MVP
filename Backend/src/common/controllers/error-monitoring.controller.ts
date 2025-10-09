@@ -37,13 +37,19 @@ export class ErrorMonitoringController {
     @Query('from') from?: string,
     @Query('to') to?: string,
   ): ReturnType<ErrorManagementService['getErrorStats']> {
-    const filters = {
-      merchantId,
-      severity,
-      category,
-      from: from ? new Date(from) : undefined,
-      to: to ? new Date(to) : undefined,
-    };
+    const filters: {
+      merchantId?: string;
+      severity?: string;
+      category?: string;
+      from?: Date;
+      to?: Date;
+    } = {};
+
+    if (merchantId) filters.merchantId = merchantId;
+    if (severity) filters.severity = severity;
+    if (category) filters.category = category;
+    if (from) filters.from = new Date(from);
+    if (to) filters.to = new Date(to);
 
     return this.errorManagementService.getErrorStats(filters);
   }

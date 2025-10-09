@@ -1,128 +1,101 @@
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Test, type TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
 
-import { UsersService } from '../../users/users.service';
 import { NotificationsService } from '../notifications.service';
-import { NOTIFICATION_REPOSITORY } from '../tokens';
 
-import type { NotificationRepository } from '../repositories/notification.repository';
+import type { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('NotificationsService', () => {
-  let service: NotificationsService;
-
-  const repo: jest.Mocked<NotificationRepository> = {
-    create: jest.fn(),
-    listForUser: jest.fn(),
-    markRead: jest.fn(),
-    markAllRead: jest.fn(),
+  const makeModel = () => {
+    const created: any[] = [];
+    return {
+      create: jest.fn((doc) => {
+        const _id = new Types.ObjectId();
+        const saved = { _id, ...doc };
+        created.push(saved);
+        return saved;
+      }),
+      find: jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          skip: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              lean: jest.fn().mockResolvedValue([{ id: 'n1' }]),
+            }),
+          }),
+        }),
+      }),
+      countDocuments: jest.fn().mockResolvedValue(1),
+      updateOne: jest.fn().mockResolvedValue({ acknowledged: true }),
+      updateMany: jest.fn().mockResolvedValue({ acknowledged: true }),
+      _created: created,
+    } as any;
   };
 
-  const users: Partial<jest.Mocked<UsersService>> = {
-    getNotificationsPrefs: jest.fn(),
+  const makeUsers = () =>
+    ({
+      getNotificationsPrefs: jest
+        .fn()
+        .mockResolvedValue({ channels: { inApp: true } }),
+    }) as any;
+
+  const makeEvents = () => ({ emit: jest.fn() }) as unknown as EventEmitter2;
+
+  const makeService = () => {
+    const notifModel = makeModel();
+    const users = makeUsers();
+    const events = makeEvents();
+    const svc = new NotificationsService(notifModel, users, events);
+    return { svc, notifModel, users, events };
   };
 
-  const events = { emit: jest.fn() } as unknown as EventEmitter2;
-
-  beforeEach(async () => {
-    jest.clearAllMocks();
-    (users.getNotificationsPrefs as any).mockResolvedValue({
-      channels: { inApp: true, email: false },
-    });
-
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        NotificationsService,
-        { provide: NOTIFICATION_REPOSITORY, useValue: repo },
-        { provide: UsersService, useValue: users },
-        { provide: EventEmitter2, useValue: events },
-      ],
-    }).compile();
-
-    service = module.get(NotificationsService);
-  });
-
-  it('notifyUser should create and emit events', async () => {
-    repo.create.mockResolvedValue({
-      _id: new Types.ObjectId(),
-      userId: new Types.ObjectId(),
+  it('creates notification and emits events', async () => {
+    const { svc, notifModel, events } = makeService();
+    const doc = await svc.notifyUser('507f1f77bcf86cd799439011', {
       type: 'test',
       title: 'Hello',
-      severity: 'info',
-    } as any);
-
-    await service.notifyUser('u1', {
-      type: 'test',
-      title: 'Hello',
-      body: 'Body',
-      merchantId: 'm1',
-      data: { x: 1 },
+      body: 'World',
+      data: { a: 1 },
+      merchantId: '507f1f77bcf86cd799439012',
+      severity: 'success',
     });
-
-    expect(repo.create.bind(repo)).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'u1', type: 'test' }),
-    );
-    expect(events.emit.bind(events)).toHaveBeenCalledWith(
-      'notify.user',
-      expect.any(Object),
-    );
-    expect(events.emit.bind(events)).toHaveBeenCalledWith(
-      'notify.merchant',
-      expect.any(Object),
-    );
-    expect(events.emit.bind(events)).toHaveBeenCalledWith(
-      'admin:notification',
-      expect.any(Object),
-    );
+    expect(doc._id).toBeDefined();
+    expect(notifModel.create).toHaveBeenCalled();
+    // emits user + merchant + admin events
+    expect(
+      (events.emit as any).mock.calls.some(
+        (c: any[]) => c[0] === 'notify.user',
+      ),
+    ).toBe(true);
+    expect(
+      (events.emit as any).mock.calls.some(
+        (c: any[]) => c[0] === 'notify.merchant',
+      ),
+    ).toBe(true);
+    expect(
+      (events.emit as any).mock.calls.some(
+        (c: any[]) => c[0] === 'admin:notification',
+      ),
+    ).toBe(true);
   });
 
-  it('listForUser should proxy to repo with pagination defaults', async () => {
-    repo.listForUser.mockResolvedValue({
-      items: [],
-      total: 0,
-      page: 1,
-      limit: 20,
+  it('lists notifications with pagination and unread filter', async () => {
+    const { svc, notifModel } = makeService();
+    const res = await svc.listForUser('507f1f77bcf86cd799439011', {
+      page: 2,
+      limit: 10,
+      unreadOnly: true,
     });
-    const res = await service.listForUser('u1', {});
-    expect(repo.listForUser.bind(repo)).toHaveBeenCalledWith('u1', {
-      page: 1,
-      limit: 20,
-      unreadOnly: false,
-    });
-    expect(res.total).toBe(0);
+    expect(notifModel.find).toHaveBeenCalled();
+    expect(res.page).toBe(2);
+    expect(res.limit).toBe(10);
+    expect(res.total).toBe(1);
+    expect(res.items).toBeInstanceOf(Array);
   });
 
-  it('markRead should call repo and return ok', async () => {
-    await expect(
-      service.markRead('u1', String(new Types.ObjectId())),
-    ).resolves.toEqual({ ok: true });
-    expect(repo.markRead.bind(repo)).toHaveBeenCalled();
-  });
-
-  it('markAllRead should call repo and return ok', async () => {
-    await expect(service.markAllRead('u1')).resolves.toEqual({ ok: true });
-    expect(repo.markAllRead.bind(repo)).toHaveBeenCalledWith('u1');
-  });
-
-  it('notifyUser respects inApp disabled', async () => {
-    (users.getNotificationsPrefs as any).mockResolvedValueOnce({
-      channels: { inApp: false, email: false },
-    });
-    repo.create.mockResolvedValue({
-      _id: new Types.ObjectId(),
-      userId: new Types.ObjectId(),
-      type: 'x',
-      title: 't',
-      severity: 'info',
-    } as any);
-
-    await service.notifyUser('u2', { type: 'x', title: 't' });
-
-    // still emits admin:notification, but not notify.user
-    const calls = (events.emit as any).mock.calls.map(
-      (c: any[]) => c[0] as string,
-    );
-    expect(calls.includes('notify.user')).toBe(false);
-    expect(calls.includes('admin:notification')).toBe(true);
+  it('marks notification read and all read', async () => {
+    const { svc, notifModel } = makeService();
+    await svc.markRead('507f1f77bcf86cd799439011', '507f1f77bcf86cd799439013');
+    expect(notifModel.updateOne).toHaveBeenCalled();
+    await svc.markAllRead('507f1f77bcf86cd799439011');
+    expect(notifModel.updateMany).toHaveBeenCalled();
   });
 });

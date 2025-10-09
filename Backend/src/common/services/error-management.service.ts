@@ -68,14 +68,14 @@ export class ErrorManagementService {
       timestamp,
       code: errorCode,
       message: errorMessage,
-      details:
-        typeof error === 'object'
-          ? { name: error.name, stack: error.stack }
-          : undefined,
       severity,
       category,
       ...context,
     };
+
+    if (typeof error === 'object') {
+      errorEntry.details = { name: error.name, stack: error.stack };
+    }
 
     this.logger.error(`Error logged: ${errorCode}`, { errorId, ...errorEntry });
 
@@ -471,15 +471,17 @@ export class ErrorManagementService {
   private baseSentryContext(
     context: ErrorContext,
   ): Omit<SentryContext, 'tags' | 'extra'> {
-    return {
-      userId: context.userId,
-      merchantId: context.merchantId,
-      requestId: context.requestId,
-      url: context.url,
-      method: context.method,
-      ip: context.ip,
-      userAgent: context.userAgent,
-    };
+    const result: Omit<SentryContext, 'tags' | 'extra'> = {};
+
+    if (context.userId) result.userId = context.userId;
+    if (context.merchantId) result.merchantId = context.merchantId;
+    if (context.requestId) result.requestId = context.requestId;
+    if (context.url) result.url = context.url;
+    if (context.method) result.method = context.method;
+    if (context.ip) result.ip = context.ip;
+    if (context.userAgent) result.userAgent = context.userAgent;
+
+    return result;
   }
 
   private buildSentryContext(

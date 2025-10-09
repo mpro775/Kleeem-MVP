@@ -6,6 +6,7 @@ import {
 } from '@nestjs/swagger';
 
 import type { Type } from '@nestjs/common';
+import type { ApiResponseOptions } from '@nestjs/swagger';
 
 /** Decorator لتوثيق الاستجابات في Swagger */
 export function ApiResponse<T extends Type<unknown>>(
@@ -16,7 +17,7 @@ export function ApiResponse<T extends Type<unknown>>(
   return applyDecorators(
     SwaggerApiResponse({
       status,
-      description,
+      ...(description && { description }),
       schema: {
         allOf: [
           {
@@ -29,7 +30,7 @@ export function ApiResponse<T extends Type<unknown>>(
           },
         ],
       },
-    }),
+    } as ApiResponseOptions),
   );
 }
 

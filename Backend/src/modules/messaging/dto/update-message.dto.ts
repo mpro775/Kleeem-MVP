@@ -21,7 +21,7 @@ export class MessageContentDto {
   @IsString()
   @IsNotEmpty()
   @IsEnum(['customer', 'bot', 'agent'])
-  role: 'customer' | 'bot' | 'agent';
+  role?: 'customer' | 'bot' | 'agent';
 
   @ApiProperty({
     description: 'نص الرسالة',
@@ -29,7 +29,7 @@ export class MessageContentDto {
   })
   @IsString()
   @IsNotEmpty()
-  text: string;
+  text?: string;
 
   @ApiPropertyOptional({
     description: 'بيانات إضافية للرسالة',

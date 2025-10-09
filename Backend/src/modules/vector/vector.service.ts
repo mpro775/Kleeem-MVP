@@ -53,6 +53,21 @@ type QdrantScoredPoint<TPayload> = {
   payload: TPayload;
 };
 
+type ProductResult = {
+  id: string;
+  name: string;
+  score: number;
+  price?: number;
+  url?: string;
+  currency?: string;
+  categoryName?: string;
+  images?: string[];
+  hasOffer?: boolean;
+  priceOld?: number | null;
+  priceNew?: number | null;
+  discountPct?: number | null;
+};
+
 /** ===== Payloads مبسّطة لما نخزّنه في Qdrant ===== */
 type ProductPayload = {
   mongoId: string;
@@ -412,7 +427,7 @@ export class VectorService implements OnModuleInit {
   ): Promise<number[]> {
     const text = this.buildTextForEmbedding({
       ...p,
-      discountPct: discountPct ?? undefined,
+      discountPct: discountPct ?? null,
     });
     return this.embed(text);
   }
@@ -524,6 +539,66 @@ export class VectorService implements OnModuleInit {
       ...this.buildPricingParts(product),
     ];
     return this.trimForEmbedding(parts.join('. '));
+  }
+
+  private resolveProductPrice(p: ProductPayload): number | null {
+    const priceEffective = p.priceEffective;
+    const priceFallback = p.price;
+
+    return typeof priceEffective === 'number'
+      ? priceEffective
+      : priceFallback != null && typeof priceFallback === 'number'
+        ? priceFallback
+        : null;
+  }
+
+  private buildBasicResult(
+    item: QdrantScoredPoint<ProductPayload>,
+    p: ProductPayload,
+  ) {
+    return {
+      id: String(p.mongoId),
+      name: p.name,
+      score: item.score ?? 0,
+    };
+  }
+
+  private assignPricingFields(
+    result: Partial<ProductResult>,
+    p: ProductPayload,
+  ) {
+    const price = this.resolveProductPrice(p);
+    if (price !== null) result.price = price;
+    if (p.priceOld != null) result.priceOld = p.priceOld;
+    if (p.priceNew != null) result.priceNew = p.priceNew;
+    if (p.discountPct != null) result.discountPct = p.discountPct;
+  }
+
+  private assignProductFields(
+    result: Partial<ProductResult>,
+    p: ProductPayload,
+  ) {
+    if (p.currency) result.currency = p.currency;
+    if (p.categoryName) result.categoryName = p.categoryName;
+    if (p.images?.length) result.images = p.images;
+    if (p.hasOffer != null && typeof p.hasOffer === 'boolean')
+      result.hasOffer = p.hasOffer;
+  }
+
+  private assignUrlField(result: Partial<ProductResult>, p: ProductPayload) {
+    const url = this.resolveProductUrl({ ...p, slug: p.slug ?? null });
+    if (url) result.url = url;
+  }
+
+  private buildProductResult(
+    item: QdrantScoredPoint<ProductPayload>,
+    p: ProductPayload,
+  ): ProductResult {
+    const result = this.buildBasicResult(item, p);
+    this.assignPricingFields(result, p);
+    this.assignProductFields(result, p);
+    this.assignUrlField(result, p);
+    return result;
   }
 
   private safeJoin(val: unknown, sep = '/'): string {
@@ -688,24 +763,7 @@ export class VectorService implements OnModuleInit {
     const pick = (i: number) => {
       const item = filtered[i];
       const p = item.payload;
-      const url = this.resolveProductUrl({ ...p, slug: p.slug ?? undefined });
-      return {
-        id: String(p.mongoId),
-        name: p.name,
-        price:
-          typeof p.priceEffective === 'number'
-            ? p.priceEffective
-            : (p.price ?? undefined),
-        url,
-        score: item.score ?? 0,
-        currency: p.currency ?? undefined,
-        categoryName: p.categoryName ?? undefined,
-        images: p.images ?? undefined,
-        hasOffer: p.hasOffer ?? undefined,
-        priceOld: p.priceOld ?? undefined,
-        priceNew: p.priceNew ?? undefined,
-        discountPct: p.discountPct ?? undefined,
-      };
+      return this.buildProductResult(item, p);
     };
 
     if (Array.isArray(rerankedIdx) && rerankedIdx.length) {

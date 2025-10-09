@@ -9,16 +9,16 @@ export type StorefrontDocument = Storefront & Document;
 @Schema({ timestamps: true })
 export class Storefront {
   @Prop({ type: Types.ObjectId, ref: 'Merchant', required: true })
-  merchant: Types.ObjectId;
+  merchant?: Types.ObjectId;
 
   // إعدادات الثيم
   @Prop({ default: '#FF8500' })
-  primaryColor: string;
+  primaryColor?: string;
 
   @Prop({ enum: ['rounded', 'square'], default: 'rounded' })
-  buttonStyle: string;
+  buttonStyle?: string;
   @Prop({ default: '#2575fc' })
-  secondaryColor: string;
+  secondaryColor?: string;
   // بانرات/سلايدر
   @Prop({ default: '#2575fc' })
   brandDark?: string;
@@ -36,7 +36,7 @@ export class Storefront {
     ],
     default: [],
   })
-  banners: {
+  banners?: {
     image?: string;
     text?: string;
     url?: string;
@@ -55,7 +55,7 @@ export class Storefront {
   domain?: string;
   // مثال لإعدادات إضافية مستقبلية (سلايدر منتجات، إعدادات عرض)
   @Prop({ type: [String], default: [] })
-  featuredProductIds: string[];
+  featuredProductIds?: string[];
 
   // ... أضف المزيد حسب الحاجة
 }

@@ -10,5 +10,5 @@ export class SetActiveKaleemDto {
     example: true,
     required: true,
   })
-  active: boolean;
+  active!: boolean;
 }

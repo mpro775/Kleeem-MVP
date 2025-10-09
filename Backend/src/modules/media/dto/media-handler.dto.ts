@@ -34,7 +34,7 @@ export class MediaHandlerDto {
     })),
   })
   @IsEnum(MediaType, { message: 'نوع الوسائط غير صالح' })
-  type: MediaType;
+  type?: MediaType;
 
   @ApiProperty({
     description: 'رابط الملف',
@@ -42,7 +42,7 @@ export class MediaHandlerDto {
   })
   @IsString({ message: 'يجب أن يكون رابط الملف نصيًا' })
   @IsNotEmpty({ message: 'رابط الملف مطلوب' })
-  fileUrl: string;
+  fileUrl?: string;
 
   @ApiPropertyOptional({
     description: 'معرف الجلسة (اختياري)',

@@ -44,7 +44,12 @@ export class MerchantStateGuard implements CanActivate {
       throw new ForbiddenException('بيانات التاجر غير متاحة');
     }
 
-    if (m.deletedAt || m.active === false) {
+    if (
+      m.deletedAt ||
+      m.active === false ||
+      m.active === null ||
+      m.active === undefined
+    ) {
       throw new ForbiddenException('تم إيقاف حساب التاجر مؤقتًا');
     }
 

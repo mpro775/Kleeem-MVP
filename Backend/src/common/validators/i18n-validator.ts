@@ -33,11 +33,10 @@ export function I18nMessageWithContext(
   validationOptions?: ValidationOptions,
 ): (object: object, propertyName: string) => void {
   return function (object: object, propertyName: string): void {
-    registerDecorator({
-      name: 'I18nMessageWithContext',
+    const baseOptions = {
+      name: 'I18nMessageWithContext' as const,
       target: object.constructor,
-      propertyName: propertyName,
-      options: validationOptions,
+      propertyName,
       validator: {
         validate() {
           return true;
@@ -59,7 +58,13 @@ export function I18nMessageWithContext(
           }
         },
       },
-    });
+    };
+
+    if (validationOptions) {
+      registerDecorator({ ...baseOptions, options: validationOptions });
+    } else {
+      registerDecorator(baseOptions);
+    }
   };
 }
 

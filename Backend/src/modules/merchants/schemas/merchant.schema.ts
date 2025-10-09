@@ -55,15 +55,15 @@ export class Merchant {
   @Prop({ trim: true })
   name?: string;
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  userId: Types.ObjectId;
+  userId!: Types.ObjectId;
 
   @Prop({ type: [String], default: [] })
-  skippedChecklistItems: string[];
+  skippedChecklistItems!: string[];
 
   @Prop({ required: false })
   logoUrl?: string;
   @Prop({ enum: ['internal', 'salla', 'zid'], default: 'internal' })
-  productSource: 'internal' | 'salla' | 'zid';
+  productSource!: 'internal' | 'salla' | 'zid';
   @Prop({
     type: {
       internal: { enabled: { type: Boolean, default: true } },
@@ -93,15 +93,15 @@ export class Merchant {
   };
 
   @Prop({ type: [AddressSchema], default: [] })
-  addresses: Address[];
+  addresses!: Address[];
   @Prop({ type: Map, of: String, default: {} })
   socialLinks?: { [key: string]: string };
 
   @Prop({ type: SubscriptionPlanSchema, required: true })
-  subscription: SubscriptionPlan;
+  subscription!: SubscriptionPlan;
 
   @Prop({ type: [String], default: [] })
-  categories: string[];
+  categories!: string[];
 
   @Prop({ required: false })
   customCategory?: string; // ← الفئة التي يضيفها التاجر بنفسه عند اختيار "أخرى"
@@ -121,52 +121,52 @@ export class Merchant {
     lowercase: true,
     match: /^[a-z](?:[a-z0-9-]{1,48}[a-z0-9])$/,
   })
-  publicSlug: string;
+  publicSlug!: string;
 
   @Prop({ type: String, trim: true })
   logoKey?: string;
   @Prop({ default: true })
-  publicSlugEnabled: boolean; // للتحكم لاحقًا في إيقاف روابط slug العامة من لوحة الأدمن
+  publicSlugEnabled!: boolean; // للتحكم لاحقًا في إيقاف روابط slug العامة من لوحة الأدمن
   // — Prompt settings —
   @Prop({ type: QuickConfigSchema, default: () => ({}) })
-  quickConfig: QuickConfig;
+  quickConfig!: QuickConfig;
 
   @Prop({ type: AdvancedConfigSchema, default: () => ({}) })
-  currentAdvancedConfig: AdvancedConfig;
+  currentAdvancedConfig!: AdvancedConfig;
   @Prop({
     enum: ['active', 'inactive', 'suspended'],
     default: 'active',
   })
-  status: string;
+  status!: string;
 
   @Prop({ default: '' })
-  phone: string;
+  phone!: string;
 
   @Prop()
   lastActivity?: Date;
   @Prop({ type: [AdvancedConfigSchema], default: [] })
-  advancedConfigHistory: AdvancedConfig[];
+  advancedConfigHistory!: AdvancedConfig[];
 
   @Prop({ default: '' })
-  finalPromptTemplate: string;
+  finalPromptTemplate!: string;
 
   // — Policy documents —
   @Prop({ default: '' })
-  returnPolicy: string;
+  returnPolicy!: string;
 
   @Prop({ default: '' })
-  exchangePolicy: string;
+  exchangePolicy!: string;
 
   @Prop({ default: '' })
-  shippingPolicy: string;
+  shippingPolicy!: string;
 
   // إيقاف الحساب والظهور
   @Prop({ default: true, index: true })
-  active: boolean;
+  active!: boolean;
 
   // ✅ تصريح صريح بالنوع مع default=null
   @Prop({ type: Date, default: null, index: true })
-  deletedAt: Date | null;
+  deletedAt!: Date | null;
 
   // ✅ Subdocument مُعرّف بسكيما
   @Prop({ type: MerchantDeletionMetaSchema, _id: false })
@@ -176,7 +176,7 @@ export class Merchant {
   storefront?: Types.ObjectId;
   // — Working hours —
   @Prop({ type: [WorkingHourSchema], default: [] })
-  workingHours: WorkingHour[];
+  workingHours!: WorkingHour[];
 }
 
 export const MerchantSchema = SchemaFactory.createForClass(Merchant);

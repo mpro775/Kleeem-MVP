@@ -34,5 +34,5 @@ export class BulkImportDto {
   })
   @ValidateNested({ each: true })
   @Type(() => CreateBotFaqDto)
-  items: CreateBotFaqDto[];
+  items!: CreateBotFaqDto[];
 }

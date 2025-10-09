@@ -4,13 +4,13 @@ import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Faq extends Document {
-  @Prop({ required: true }) merchantId: string;
-  @Prop({ required: true }) question: string;
-  @Prop({ required: true }) answer: string;
+  @Prop({ required: true }) merchantId!: string;
+  @Prop({ required: true }) question!: string;
+  @Prop({ required: true }) answer!: string;
 
   // pending أثناء التضمين، completed بعد نجاح الحفظ في Qdrant، failed عند الخطأ، deleted للحذف الناعم
   @Prop({ default: 'pending' })
-  status: 'pending' | 'completed' | 'failed' | 'deleted';
+  status!: 'pending' | 'completed' | 'failed' | 'deleted';
 
   @Prop() errorMessage?: string;
 }

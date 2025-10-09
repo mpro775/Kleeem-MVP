@@ -82,15 +82,20 @@ export class SallaService {
     const stock = this.extractProductStock(obj);
     const updatedAt = toDateOrNull(obj['updated_at'] ?? obj['updatedAt']);
 
-    return {
+    const result: ExternalProduct = {
       externalId: String(id),
       title,
       price,
-      currency,
       stock,
       updatedAt,
       raw: item,
     };
+
+    if (currency) {
+      result.currency = currency;
+    }
+
+    return result;
   }
 
   getOAuthUrl(state: string): string {
@@ -136,15 +141,28 @@ export class SallaService {
       Date.now() +
         (tokens.expires ?? this.DEFAULT_TOKEN_EXPIRY_SECONDS) * MS_PER_SECOND,
     );
-    await this.integrations.upsert(merchantId, {
+    const integrationData: {
+      provider: 'salla';
+      accessToken: string;
+      tokenType: string;
+      expiresIn: number;
+      expiresAt: Date;
+      lastSync: Date;
+      refreshToken?: string;
+    } = {
       provider: 'salla',
       accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
       tokenType: tokens.token_type,
       expiresIn: tokens.expires,
       expiresAt,
       lastSync: new Date(),
-    });
+    };
+
+    if (tokens.refresh_token) {
+      integrationData.refreshToken = tokens.refresh_token;
+    }
+
+    await this.integrations.upsert(merchantId, integrationData);
     await this.merchants.updateProductSourceSalla(merchantId, {
       lastSync: new Date(),
     });

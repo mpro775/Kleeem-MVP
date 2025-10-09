@@ -12,15 +12,15 @@ import {
 
 class TelegramUserDto {
   @IsNumber()
-  id: number;
+  id!: number;
 
   @IsBoolean()
   @IsOptional()
-  is_bot?: boolean;
+  is_bot?: boolean = false;
 
   @IsString()
   @IsOptional()
-  first_name?: string;
+  first_name?: string = '';
 
   @IsString()
   @IsOptional()
@@ -37,11 +37,11 @@ class TelegramUserDto {
 
 class TelegramChatDto {
   @IsNumber()
-  id: number;
+  id!: number;
 
   @IsString()
   @IsOptional()
-  first_name?: string;
+  first_name?: string = '';
 
   @IsString()
   @IsOptional()
@@ -56,18 +56,18 @@ class TelegramChatDto {
   title?: string;
 
   @IsString()
-  type: string;
+  type!: string;
 }
 
 class TelegramMessageEntityDto {
   @IsString()
-  type: string;
+  type!: string;
 
   @IsNumber()
-  offset: number;
+  offset!: number;
 
   @IsNumber()
-  length: number;
+  length!: number;
 
   @IsString()
   @IsOptional()
@@ -81,7 +81,7 @@ class TelegramMessageEntityDto {
 
 class TelegramMessageDto {
   @IsNumber()
-  message_id: number;
+  message_id!: number;
 
   @ValidateNested()
   @Type(() => TelegramUserDto)
@@ -94,11 +94,11 @@ class TelegramMessageDto {
   sender_chat?: TelegramChatDto;
 
   @IsNumber()
-  date: number;
+  date!: number;
 
   @ValidateNested()
   @Type(() => TelegramChatDto)
-  chat: TelegramChatDto;
+  chat!: TelegramChatDto;
 
   @ValidateNested()
   @Type(() => TelegramUserDto)
@@ -323,11 +323,11 @@ class TelegramMessageDto {
 
 class TelegramCallbackQueryDto {
   @IsString()
-  id: string;
+  id!: string;
 
   @ValidateNested()
   @Type(() => TelegramUserDto)
-  from: TelegramUserDto;
+  from!: TelegramUserDto;
 
   @ValidateNested()
   @Type(() => TelegramMessageDto)
@@ -339,7 +339,7 @@ class TelegramCallbackQueryDto {
   inline_message_id?: string;
 
   @IsString()
-  chat_instance: string;
+  chat_instance!: string;
 
   @IsString()
   @IsOptional()
@@ -352,30 +352,30 @@ class TelegramCallbackQueryDto {
 
 class TelegramInlineQueryDto {
   @IsString()
-  id: string;
+  id!: string;
 
   @ValidateNested()
   @Type(() => TelegramUserDto)
-  from: TelegramUserDto;
+  from!: TelegramUserDto;
 
   @IsString()
   @IsOptional()
   location?: Record<string, unknown>;
 
   @IsString()
-  query: string;
+  query!: string;
 
   @IsString()
-  offset: string;
+  offset!: string;
 }
 
 class TelegramChosenInlineResultDto {
   @IsString()
-  result_id: string;
+  result_id!: string;
 
   @ValidateNested()
   @Type(() => TelegramUserDto)
-  from: TelegramUserDto;
+  from!: TelegramUserDto;
 
   @IsString()
   @IsOptional()
@@ -386,40 +386,40 @@ class TelegramChosenInlineResultDto {
   inline_message_id?: string;
 
   @IsString()
-  query: string;
+  query!: string;
 }
 
 class TelegramShippingQueryDto {
   @IsString()
-  id: string;
+  id!: string;
 
   @ValidateNested()
   @Type(() => TelegramUserDto)
-  from: TelegramUserDto;
+  from!: TelegramUserDto;
 
   @IsString()
-  invoice_payload: string;
+  invoice_payload!: string;
 
   @IsObject()
-  shipping_address: Record<string, unknown>;
+  shipping_address!: Record<string, unknown>;
 }
 
 class TelegramPreCheckoutQueryDto {
   @IsString()
-  id: string;
+  id!: string;
 
   @ValidateNested()
   @Type(() => TelegramUserDto)
-  from: TelegramUserDto;
+  from!: TelegramUserDto;
 
   @IsString()
-  currency: string;
+  currency!: string;
 
   @IsString()
-  total_amount: number;
+  total_amount!: number;
 
   @IsString()
-  invoice_payload: string;
+  invoice_payload!: string;
 
   @IsString()
   @IsOptional()
@@ -432,34 +432,34 @@ class TelegramPreCheckoutQueryDto {
 
 class TelegramPollAnswerDto {
   @IsString()
-  poll_id: string;
+  poll_id!: string;
 
   @ValidateNested()
   @Type(() => TelegramUserDto)
-  user: TelegramUserDto;
+  user!: TelegramUserDto;
 
   @IsArray()
   @IsNumber({}, { each: true })
-  option_ids: number[];
+  option_ids!: number[];
 }
 
 class TelegramChatMemberUpdatedDto {
   @ValidateNested()
   @Type(() => TelegramChatDto)
-  chat: TelegramChatDto;
+  chat!: TelegramChatDto;
 
   @ValidateNested()
   @Type(() => TelegramUserDto)
-  from: TelegramUserDto;
+  from!: TelegramUserDto;
 
   @IsNumber()
-  date: number;
+  date!: number;
 
   @IsObject()
-  old_chat_member: Record<string, unknown>;
+  old_chat_member!: Record<string, unknown>;
 
   @IsObject()
-  new_chat_member: Record<string, unknown>;
+  new_chat_member!: Record<string, unknown>;
 
   @IsObject()
   @IsOptional()
@@ -469,14 +469,14 @@ class TelegramChatMemberUpdatedDto {
 class TelegramChatJoinRequestDto {
   @ValidateNested()
   @Type(() => TelegramChatDto)
-  chat: TelegramChatDto;
+  chat!: TelegramChatDto;
 
   @ValidateNested()
   @Type(() => TelegramUserDto)
-  from: TelegramUserDto;
+  from!: TelegramUserDto;
 
   @IsNumber()
-  date: number;
+  date!: number;
 
   @IsString()
   @IsOptional()
@@ -489,7 +489,7 @@ class TelegramChatJoinRequestDto {
 
 export class TelegramUpdateDto {
   @IsNumber()
-  update_id: number;
+  update_id!: number;
 
   @ValidateNested()
   @Type(() => TelegramMessageDto)

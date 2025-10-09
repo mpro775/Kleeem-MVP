@@ -13,7 +13,7 @@ import { HealthController } from './health.controller';
     RedisModule.forRootAsync({
       useFactory: () => ({
         type: 'single',
-        url: process.env.REDIS_URL,
+        url: process.env.REDIS_URL || 'redis://localhost:6379',
       }),
     }),
   ],

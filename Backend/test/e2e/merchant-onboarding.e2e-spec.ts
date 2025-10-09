@@ -415,11 +415,13 @@ describe('Merchant Onboarding E2E Tests', () => {
 
       const authToken = loginResponse.body.accessToken;
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/merchants')
         .set('Authorization', `Bearer ${authToken}`)
         .send(invalidMerchantDto)
         .expect(400);
+
+      expect(response.status).toBe(400);
 
       // Test missing required fields
       const incompleteMerchantDto = {

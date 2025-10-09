@@ -31,56 +31,71 @@ export class MessageService {
     private readonly geminiService: GeminiService,
   ) {}
 
+  private mapMessages(dto: CreateMessageDto): MessageItem[] {
+    return (
+      dto.messages?.map((m) => ({
+        _id: new Types.ObjectId(),
+        role: m.role as 'user' | 'bot' | 'agent',
+        text: m.text ?? '',
+        metadata: m.metadata || {},
+        timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
+        keywords: (m.text ?? '').split(/\s+/).filter((word) => word.length > 2),
+      })) ?? []
+    );
+  }
+
+  private async getOrCreateSession(
+    dto: CreateMessageDto,
+    toInsert: MessageItem[],
+    session?: ClientSession,
+  ): Promise<MessageSessionEntity> {
+    const existing = await this.messagesRepo.findByMerchantSessionChannel(
+      dto.merchantId ?? '',
+      dto.sessionId ?? '',
+      dto.channel ?? '',
+      session ? { session } : {},
+    );
+
+    if (existing) {
+      return this.messagesRepo.appendMessagesById(
+        String(existing._id),
+        toInsert,
+        session ? { session } : {},
+      );
+    }
+
+    return this.messagesRepo.createSessionWithMessages(
+      {
+        merchantId: dto.merchantId ?? '',
+        sessionId: dto.sessionId ?? '',
+        channel: dto.channel ?? '',
+        messages: toInsert,
+      },
+      session ? { session } : {},
+    );
+  }
+
   async createOrAppend(
     dto: CreateMessageDto,
     session?: ClientSession,
   ): Promise<MessageSessionEntity> {
-    const toInsert: MessageItem[] = dto.messages.map((m) => ({
-      _id: new Types.ObjectId(),
-      role: m.role as 'user' | 'bot' | 'agent',
-      text: m.text,
-      metadata: m.metadata || {},
-      timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
-      keywords: m.text.split(/\s+/).filter((word) => word.length > 2),
-    }));
+    const toInsert = this.mapMessages(dto);
+    const doc = await this.getOrCreateSession(dto, toInsert, session);
 
     const lastMsg = toInsert[toInsert.length - 1];
-
-    let doc =
-      (await this.messagesRepo.findByMerchantSessionChannel(
-        dto.merchantId,
-        dto.sessionId,
-        dto.channel,
-        { session },
-      )) || null;
-
-    if (doc) {
-      doc = await this.messagesRepo.appendMessagesById(
-        String(doc._id),
-        toInsert,
-        { session },
-      );
-    } else {
-      doc = await this.messagesRepo.createSessionWithMessages(
-        {
-          merchantId: dto.merchantId,
-          sessionId: dto.sessionId,
-          channel: dto.channel,
-          messages: toInsert,
-        },
-        { session },
-      );
-    }
-
     if (lastMsg) {
       const outgoingMessage = {
         id: String(lastMsg._id),
         text: lastMsg.text,
         role: lastMsg.role === 'bot' ? 'system' : lastMsg.role,
-        merchantId: dto.merchantId,
+        merchantId: dto.merchantId ?? '',
       } as const;
-      this.chatGateway.sendMessageToSession(dto.sessionId, outgoingMessage);
+      this.chatGateway.sendMessageToSession(
+        dto.sessionId ?? '',
+        outgoingMessage,
+      );
     }
+
     return doc;
   }
 
@@ -109,8 +124,8 @@ export class MessageService {
       messageId,
       userId,
       rating,
-      feedback,
-      merchantId,
+      ...(feedback && { feedback }),
+      ...(merchantId && { merchantId }),
     });
 
     if (!ok) {

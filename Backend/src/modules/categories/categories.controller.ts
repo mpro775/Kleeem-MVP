@@ -67,26 +67,24 @@ const storage = multer.diskStorage({
 const fileFilter = (
   _req: Request,
   file: Express.Multer.File,
-  cb: (error: BadRequestException | null, acceptFile: boolean) => void,
+  cb: (error: Error | null, acceptFile: boolean) => void,
 ): void => {
   const ok = ALLOWED_MIME.test(file.mimetype);
-  cb(
-    ok
-      ? null
-      : new BadRequestException({
-          code: 'UNSUPPORTED_FILE_FORMAT',
-          message: 'نوع الملف غير مدعوم. يرجى استخدام PNG, JPG, JPEG, أو WebP',
-          details: ['Supported formats: PNG, JPG, JPEG, WebP'],
-        }),
-    ok,
-  );
+  if (!ok) {
+    cb(
+      new Error('نوع الملف غير مدعوم. يرجى استخدام PNG, JPG, JPEG, أو WebP'),
+      false,
+    );
+  } else {
+    cb(null, true);
+  }
 };
 
-export const MULTER_IMAGE_OPTIONS: multer.Options = {
+export const MULTER_IMAGE_OPTIONS = {
   storage,
   limits: { fileSize: TWO_MB },
   fileFilter,
-};
+} as const;
 
 function ApiUploadCategoryImageDocs() {
   return applyDecorators(

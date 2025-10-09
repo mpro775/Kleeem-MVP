@@ -7,14 +7,14 @@ export type UsageCounterDocument = UsageCounter & Document;
 @Schema({ timestamps: true, versionKey: false })
 export class UsageCounter {
   @Prop({ type: Types.ObjectId, ref: 'Merchant', required: true, index: true })
-  merchantId: Types.ObjectId;
+  merchantId!: Types.ObjectId;
 
   // مفتاح الشهر بالصيغة YYYY-MM (حسب Asia/Aden)
   @Prop({ required: true, index: true })
-  monthKey: string;
+  monthKey!: string;
 
   @Prop({ default: 0, min: 0 })
-  messagesUsed: number;
+  messagesUsed!: number;
 }
 
 export const UsageCounterSchema = SchemaFactory.createForClass(UsageCounter);

@@ -22,7 +22,7 @@ export class SemanticRequestDto {
   })
   @IsString({ message: 'يجب أن يكون نص البحث نصيًا' })
   @IsNotEmpty({ message: 'نص البحث مطلوب' })
-  text: string;
+  text!: string;
 
   @ApiProperty({
     description: 'معرف التاجر',
@@ -31,7 +31,7 @@ export class SemanticRequestDto {
   })
   @IsString({ message: 'يجب أن يكون معرف التاجر نصيًا' })
   @IsNotEmpty({ message: 'معرف التاجر مطلوب' })
-  merchantId: string;
+  merchantId!: string;
 
   @ApiPropertyOptional({
     description: 'عدد النتائج المطلوب استرجاعها',

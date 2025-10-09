@@ -218,7 +218,9 @@ export class StorefrontService {
     id: string,
   ): Promise<{ slugChanged: boolean; patch: Partial<Storefront> }> {
     let slugChanged = false;
-    const patch: Partial<Storefront> = { ...dto } as Partial<Storefront>;
+    const patch: Partial<Storefront> = {
+      ...dto,
+    } as unknown as Partial<Storefront>;
 
     if ('merchant' in patch) {
       delete (patch as Json).merchant;
@@ -236,7 +238,7 @@ export class StorefrontService {
       );
       if (conflict) throw new BadRequestException('هذا الـ slug محجوز');
       if (n !== before.slug) slugChanged = true;
-      patch.slug = n as unknown as Storefront['slug'];
+      patch.slug = n;
     }
 
     return { slugChanged, patch };
@@ -255,7 +257,9 @@ export class StorefrontService {
       dto.domain !== beforeDomain
     ) {
       domainChanged = true;
-      patch.domain = (dto.domain ?? null) as unknown as Storefront['domain'];
+      if (dto.domain !== undefined) {
+        patch.domain = dto.domain;
+      }
     }
 
     return domainChanged;
@@ -524,7 +528,7 @@ export class StorefrontService {
     }
     const orders = await this.ordersRepo.findMyOrders(merchantId, {
       sessionId,
-      phone: resolvedPhone,
+      phone: resolvedPhone ?? '',
       limit,
     });
     return { orders: orders as unknown as unknown[] };

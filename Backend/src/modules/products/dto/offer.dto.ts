@@ -2,7 +2,7 @@ import { IsBoolean, IsNumber, IsOptional, IsISO8601 } from 'class-validator';
 
 export class OfferDto {
   @IsBoolean()
-  enabled: boolean;
+  enabled?: boolean;
 
   @IsOptional()
   @IsNumber({ allowNaN: false, allowInfinity: false })

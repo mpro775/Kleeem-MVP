@@ -90,17 +90,28 @@ function buildPayload(
   userId: Types.ObjectId,
   input: Omit<NotifyInput, 'userId'>,
 ): NotificationPayload {
-  return {
+  const payload: NotificationPayload = {
     id: doc._id.toString(),
     userId: userId.toString(),
-    merchantId: input.merchantId,
     type: input.type,
     title: input.title,
-    body: input.body,
-    data: input.data,
     severity: input.severity ?? DEFAULT_SEVERITY,
     ts: Date.now(),
   };
+
+  if (input.merchantId !== undefined) {
+    payload.merchantId = input.merchantId;
+  }
+
+  if (input.body !== undefined) {
+    payload.body = input.body;
+  }
+
+  if (input.data !== undefined) {
+    payload.data = input.data;
+  }
+
+  return payload;
 }
 
 @Injectable()

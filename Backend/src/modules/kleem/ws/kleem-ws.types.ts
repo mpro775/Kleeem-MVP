@@ -5,7 +5,7 @@ export type KleemAdminRole = 'admin' | 'agent' | 'guest';
 export interface KleemWsMessage {
   role: KleemRole;
   text: string;
-  msgIdx?: number;
+  msgIdx: number;
   metadata?: Record<string, unknown>;
   timestamp?: string;
 }

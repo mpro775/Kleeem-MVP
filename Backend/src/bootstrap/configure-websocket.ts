@@ -10,7 +10,7 @@ import {
 } from '../common/constants/common';
 
 import type { INestApplication } from '@nestjs/common';
-import type { Request } from 'express';
+import type { IncomingMessage } from 'http';
 import type { ServerOptions } from 'socket.io';
 import type { Server as SocketServer } from 'socket.io';
 
@@ -24,7 +24,7 @@ class WsAdapter extends IoAdapter {
   override createIOServer(port: number, options?: Partial<ServerOptions>) {
     // استخدم نفس نوع الخاصية cors من ServerOptions
     const ioCors: NonNullable<ServerOptions['cors']> = {
-      origin: corsOptions.origin,
+      origin: true, // Handle origin checking in allowRequest
       methods: corsOptions.methods ?? ['GET', 'POST'],
       allowedHeaders: corsOptions.allowedHeaders,
       credentials: corsOptions.credentials ?? true,
@@ -40,17 +40,16 @@ class WsAdapter extends IoAdapter {
       pingInterval: PING_INTERVAL,
       upgradeTimeout: UPGRADE_TIMEOUT,
       maxHttpBufferSize: MAX_HTTP_BUFFER_SIZE,
-      allowRequest: async (
-        req: Request,
-        callback: (err: string | undefined, ok: boolean) => void,
-      ): Promise<void> => {
+      allowRequest: (
+        req: IncomingMessage,
+        callback: (err: string | null | undefined, success: boolean) => void,
+      ): void => {
         // لو origin عبارة عن دالة، نتحقق منها بطريقة آمنة الأنواع
         if (typeof corsOptions.origin === 'function') {
-          const allowed = await this.isOriginFnAllowed(
-            req.headers.origin,
+          void this.isOriginFnAllowed(
+            (req as { headers?: { origin?: string } }).headers?.origin,
             corsOptions.origin as unknown as OriginFn,
-          );
-          callback(undefined, allowed);
+          ).then((allowed) => callback(undefined, allowed));
           return;
         }
         // غير كذا نسمح

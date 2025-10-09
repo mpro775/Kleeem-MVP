@@ -21,7 +21,7 @@ export class GeminiService {
 
     // احفظ التوجيه في قاعدة البيانات
     await this.instructionsService.create({
-      merchantId,
+      merchantId: merchantId ?? '',
       instruction,
       relatedReplies: [badReply],
       type: 'auto',

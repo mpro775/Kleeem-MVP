@@ -52,8 +52,7 @@ describe('PlansService', () => {
       isActive: 'true',
       sort: 'priceAsc',
     } as any);
-    const paginateCall = expect(repo.paginate.bind(repo));
-    paginateCall.toHaveBeenCalledWith(
+    expect(repo.paginate).toHaveBeenCalledWith(
       expect.objectContaining({ isActive: true, archivedNotTrue: true }),
       'priceAsc',
       1,

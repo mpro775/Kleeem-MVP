@@ -105,10 +105,14 @@ function buildUserIds(req: RequestWithMeta): {
   userId?: string;
   merchantId?: string;
 } {
-  return {
-    userId: getUserIdFromAuth(req) ?? getUserIdFromJwt(req),
-    merchantId: getMerchantIdFromAuth(req) ?? getMerchantIdFromJwt(req),
-  };
+  const userId = getUserIdFromAuth(req) ?? getUserIdFromJwt(req);
+  const merchantId = getMerchantIdFromAuth(req) ?? getMerchantIdFromJwt(req);
+
+  const result: { userId?: string; merchantId?: string } = {};
+  if (userId) result.userId = userId;
+  if (merchantId) result.merchantId = merchantId;
+
+  return result;
 }
 function performanceTag(ms: number): 'slow' | 'medium' | 'fast' {
   if (ms > PERF_SLOW_MS) return 'slow';

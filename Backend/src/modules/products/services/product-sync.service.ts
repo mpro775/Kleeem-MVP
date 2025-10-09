@@ -96,6 +96,10 @@ async function upsertAndIndex(
   const doc = await repo.upsertExternal(merchantId, provider, docData);
 
   try {
+    if (!doc.merchantId) {
+      throw new Error('Product merchantId is missing');
+    }
+
     const sf = (await storefronts.findByMerchant(
       oidToString(doc.merchantId),
     )) as Storefront | null;
@@ -160,7 +164,6 @@ export class ProductSyncService {
       isAvailable,
       images,
 
-      category: undefined, // تعيين لاحقًا إن لزم
       sourceUrl: permalink,
       originalUrl: permalink,
 

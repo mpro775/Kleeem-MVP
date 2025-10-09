@@ -6,9 +6,11 @@ type Config = {
   };
 };
 
-export default (): Config => ({
+export const configuration = (): Config => ({
   n8n: {
-    openaiWebhookUrl: process.env.N8N_OPENAI_WEBHOOK_URL,
+    ...(process.env.N8N_OPENAI_WEBHOOK_URL && {
+      openaiWebhookUrl: process.env.N8N_OPENAI_WEBHOOK_URL,
+    }),
   },
   // هنا متغيرات أخرى إن وجدت
 });

@@ -23,7 +23,7 @@ export class StorefrontLeadsController {
     return this.leads.create(merchantId, {
       sessionId: body.sessionId,
       data: body.data,
-      source: body.source,
+      ...(body.source && { source: body.source }),
     });
   }
 }

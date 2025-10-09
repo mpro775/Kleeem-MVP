@@ -31,13 +31,13 @@ export class WhatsAppCloudAdapter implements ChannelAdapter {
       throw new Error('accessToken & phoneNumberId required');
     c.accessTokenEnc = encryptSecret(payload.accessToken);
     c.phoneNumberId = payload.phoneNumberId;
-    c.wabaId = payload.wabaId;
+    c.wabaId = payload.wabaId as unknown as string;
     c.appSecretEnc = payload.appSecret
       ? encryptSecret(payload.appSecret)
-      : undefined;
+      : (undefined as unknown as string);
     c.verifyTokenHash = payload.verifyToken
       ? hashSecret(payload.verifyToken)
-      : undefined;
+      : (undefined as unknown as string);
     const rawBase = (this.config.get('PUBLIC_WEBHOOK_BASE') as string) || '';
     const base = rawBase.replace(/\/+$/, ''); // شيل السلاشات الأخيرة
     const hooksBase = /\/webhooks$/i.test(base) ? base : `${base}/webhooks`;
@@ -55,10 +55,10 @@ export class WhatsAppCloudAdapter implements ChannelAdapter {
     c.enabled = false;
     c.status = 'disconnected' as ChannelStatus;
     if (mode === 'wipe') {
-      c.accessTokenEnc = undefined;
-      c.refreshTokenEnc = undefined;
-      c.appSecretEnc = undefined;
-      c.verifyTokenHash = undefined;
+      c.accessTokenEnc = undefined as unknown as string;
+      c.refreshTokenEnc = undefined as unknown as string;
+      c.appSecretEnc = undefined as unknown as string;
+      c.verifyTokenHash = undefined as unknown as string;
     }
     await c.save();
   }

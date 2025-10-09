@@ -224,8 +224,8 @@ export class MessageController {
     @Query('page') page = '1',
   ): Promise<{ data: MessageSessionEntity[]; total: number }> {
     return this.messageService.findAll({
-      merchantId,
-      channel,
+      ...(merchantId && { merchantId }),
+      ...(channel && { channel }),
       limit: parseInt(limit, 10),
       page: parseInt(page, 10),
     });

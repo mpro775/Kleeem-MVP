@@ -92,11 +92,19 @@ export class MerchantCacheService {
 
   async getStoreContext(merchantId: string): Promise<StoreContext> {
     const merchant = await this.findOne(merchantId);
-    return {
+    const context: StoreContext = {
       merchantId: String(merchant._id),
-      name: merchant.name,
-      description: merchant.businessDescription,
       // توسعة لاحقًا بما يلزم
     };
+
+    if (merchant.name) {
+      context.name = merchant.name;
+    }
+
+    if (merchant.businessDescription) {
+      context.description = merchant.businessDescription;
+    }
+
+    return context;
   }
 }

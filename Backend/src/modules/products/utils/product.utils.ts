@@ -82,7 +82,7 @@ function handleObjectToString(x: unknown): string | undefined {
   const toStr = (x as { toString?: () => string }).toString;
   if (typeof toStr === 'function') {
     try {
-      const s = toStr.call(x) as string;
+      const s = toStr.call(x);
       return typeof s === 'string' ? s : undefined;
     } catch {
       return undefined;
@@ -211,76 +211,105 @@ export function computePricing(doc: unknown): {
 
 // ===== Field Extractors =====
 function extractBasicFields(doc: unknown) {
-  return {
+  const result: Partial<EmbeddableProduct> = {
     id: toIdStr(get(doc, ['_id'])) ?? '',
     merchantId: toIdStr(get(doc, ['merchantId'])) ?? '',
-    name: asString(get(doc, ['name'])) ?? undefined,
-    description: asString(get(doc, ['description'])) ?? undefined,
-    categoryId: toIdStr(get(doc, ['category'])) ?? undefined,
   };
+
+  const name = asString(get(doc, ['name']));
+  if (name !== null) result.name = name;
+
+  const description = asString(get(doc, ['description']));
+  if (description !== null) result.description = description;
+
+  const categoryId = toIdStr(get(doc, ['category']));
+  if (categoryId !== null) result.categoryId = categoryId;
+
+  return result;
 }
 
 function extractUrlFields(
   doc: unknown,
   sf?: { slug?: string; domain?: string } | null,
 ) {
-  return {
-    slug: asString(get(doc, ['slug'])) ?? undefined,
-    storefrontSlug:
-      sf?.slug ?? asString(get(doc, ['storefrontSlug'])) ?? undefined,
-    domain: sf?.domain ?? asString(get(doc, ['storefrontDomain'])) ?? undefined,
-    publicUrlStored:
-      asString(get(doc, ['publicUrlStored'])) ??
-      asString(get(doc, ['publicUrl'])) ??
-      undefined,
-  };
+  const result: Partial<EmbeddableProduct> = {};
+
+  const slug = asString(get(doc, ['slug']));
+  if (slug !== null) result.slug = slug;
+
+  const storefrontSlug = sf?.slug ?? asString(get(doc, ['storefrontSlug']));
+  if (storefrontSlug != null) result.storefrontSlug = storefrontSlug;
+
+  const domain = sf?.domain ?? asString(get(doc, ['storefrontDomain']));
+  if (domain != null) result.domain = domain;
+
+  const publicUrlStored =
+    asString(get(doc, ['publicUrlStored'])) ??
+    asString(get(doc, ['publicUrl']));
+  if (publicUrlStored != null) result.publicUrlStored = publicUrlStored;
+
+  return result;
 }
 
 function extractContentFields(doc: unknown) {
-  const specsBlockRaw = get(doc, ['specsBlock']);
-  const keywordsRaw = get(doc, ['keywords']);
-  const imagesRaw = get(doc, ['images']);
+  const result: Partial<EmbeddableProduct> = {};
 
-  return {
-    specsBlock: Array.isArray(specsBlockRaw) ? specsBlockRaw : undefined,
-    keywords: Array.isArray(keywordsRaw) ? keywordsRaw : undefined,
-    attributes: (() => {
-      const a = get(doc, ['attributes']);
-      return isRecord(a) ? a : undefined;
-    })(),
-    images: Array.isArray(imagesRaw)
-      ? imagesRaw.slice(0, MAX_IMAGES)
-      : undefined,
-    currency: asString(get(doc, ['currency'])) ?? undefined,
-  };
+  const specsBlockRaw = get(doc, ['specsBlock']);
+  if (Array.isArray(specsBlockRaw)) result.specsBlock = specsBlockRaw;
+
+  const keywordsRaw = get(doc, ['keywords']);
+  if (Array.isArray(keywordsRaw)) result.keywords = keywordsRaw;
+
+  const attributes = get(doc, ['attributes']);
+  if (isRecord(attributes)) result.attributes = attributes;
+
+  const imagesRaw = get(doc, ['images']);
+  if (Array.isArray(imagesRaw)) result.images = imagesRaw.slice(0, MAX_IMAGES);
+
+  const currency = asString(get(doc, ['currency']));
+  if (currency !== null) result.currency = currency;
+
+  return result;
 }
 
 function extractStatusFields(doc: unknown) {
+  const result: Partial<EmbeddableProduct> = {};
+
   const isAvailableRaw = get(doc, ['isAvailable']);
-  return {
-    isAvailable:
-      typeof isAvailableRaw === 'boolean' ? isAvailableRaw : undefined,
-    status: get(doc, ['status']) ?? undefined,
-    quantity: toNum(get(doc, ['quantity'])) ?? undefined,
-  };
+  if (typeof isAvailableRaw === 'boolean') result.isAvailable = isAvailableRaw;
+
+  const status = get(doc, ['status']);
+  if (status !== undefined) result.status = status;
+
+  const quantity = toNum(get(doc, ['quantity']));
+  if (quantity !== null) result.quantity = quantity;
+
+  return result;
 }
 
 function extractOfferFields(doc: unknown) {
   const { price, priceOld, priceNew, effective, hasOffer, discountPct } =
     computePricing(doc);
-  return {
+
+  const result: Partial<EmbeddableProduct> = {
     price,
     priceEffective: effective,
     hasActiveOffer: hasOffer,
     priceOld,
     priceNew,
-    offerStart:
-      (get(doc, ['offer', 'startAt']) as string | Date | undefined) ??
-      undefined,
-    offerEnd:
-      (get(doc, ['offer', 'endAt']) as string | Date | undefined) ?? undefined,
     discountPct,
   };
+
+  const offerStart = get(doc, ['offer', 'startAt']) as
+    | string
+    | Date
+    | undefined;
+  if (offerStart !== undefined) result.offerStart = offerStart;
+
+  const offerEnd = get(doc, ['offer', 'endAt']) as string | Date | undefined;
+  if (offerEnd !== undefined) result.offerEnd = offerEnd;
+
+  return result;
 }
 
 // ===== Embeddable DTO =====
@@ -295,12 +324,14 @@ export function toEmbeddable(
   const status = extractStatusFields(doc);
   const offer = extractOfferFields(doc);
 
-  return {
+  const result = {
     ...basic,
-    categoryName: categoryName ?? undefined,
     ...urls,
     ...content,
     ...offer,
     ...status,
-  };
+    ...(categoryName !== undefined && { categoryName }),
+  } as EmbeddableProduct;
+
+  return result;
 }

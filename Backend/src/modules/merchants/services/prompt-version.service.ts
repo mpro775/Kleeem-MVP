@@ -17,7 +17,7 @@ export class PromptVersionService {
     if (currentTpl) {
       await this.repo.appendAdvancedHistory(merchantId, {
         template: currentTpl,
-        note,
+        note: note ?? '',
         updatedAt: new Date(),
       });
     }
@@ -52,7 +52,7 @@ export class PromptVersionService {
     await this.repo.setCurrentAdvancedConfig(merchantId, {
       template: version.template,
       updatedAt: new Date(),
-      note: version.note,
+      note: version.note ?? '',
     });
   }
 }

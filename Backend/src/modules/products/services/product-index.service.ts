@@ -34,12 +34,7 @@ export class ProductIndexService {
 
       const ep: VectorEmbeddable = {
         ...src,
-        status:
-          typeof src.status === 'string'
-            ? src.status
-            : src.status == null
-              ? undefined
-              : null,
+        status: typeof src.status === 'string' ? src.status : null,
       };
 
       await this.retry(() => this.vector.upsertProducts([ep]));

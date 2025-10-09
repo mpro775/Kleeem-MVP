@@ -6,13 +6,13 @@ export type WebhookDocument = Webhook & Document;
 @Schema()
 export class Webhook {
   @Prop({ required: true })
-  eventType: string;
+  eventType!: string;
 
   @Prop({ required: true })
-  payload: string;
+  payload!: string;
 
   @Prop({ default: Date.now })
-  receivedAt: Date;
+  receivedAt!: Date;
 }
 
 export const WebhookSchema = SchemaFactory.createForClass(Webhook);

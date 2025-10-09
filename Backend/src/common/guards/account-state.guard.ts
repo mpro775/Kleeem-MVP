@@ -30,7 +30,7 @@ export class AccountStateGuard implements CanActivate {
 
     if (!u) return false;
 
-    if (u.active === false) {
+    if (u.active === false || u.active === null || u.active === undefined) {
       throw new ForbiddenException('الحساب معطّل، تواصل مع الدعم');
     }
 

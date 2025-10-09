@@ -68,12 +68,12 @@ function extractRoute(req: RequestWithMeta): string {
   if ((req as unknown as { route?: { path?: string } }).route?.path) {
     return (req as unknown as { route: { path: string } }).route.path;
   }
-  const url = req.originalUrl ?? req.url ?? '/';
-  const path = url.split('?')[0];
+  const url = req.originalUrl || req.url || '/';
+  const path = url.split(/[?#]/)[0];
   return path
     .replace(/\/[0-9a-fA-F]{24}/g, '/:id') // MongoDB ObjectIds
     .replace(/\/\d+/g, '/:id') // Numeric IDs
-    .replace(/\/[a-zA-Z0-9-_]{8,}/g, '/:slug'); // Slugs
+    .replace(/\/[a-zA-Z0-9-_]{12,}(\/|$)/g, '/:slug$1'); // Slugs (longer segments)
 }
 
 function categorizeError(statusCode: number): string {
@@ -90,7 +90,13 @@ function formatErrorForLog(error: unknown): {
   stack?: string;
 } {
   if (error instanceof Error) {
-    return { message: error.message, stack: error.stack };
+    const result: { message: string; stack?: string } = {
+      message: error.message,
+    };
+    if (error.stack) {
+      result.stack = error.stack;
+    }
+    return result;
   }
   return { message: String(error) };
 }

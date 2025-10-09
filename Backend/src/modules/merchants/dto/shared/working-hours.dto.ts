@@ -15,7 +15,7 @@ export class WorkingHourDto {
     required: true,
   })
   @IsEnum(WeekDay, { message: 'يجب تحديد يوم أسبوع صالح' })
-  day: WeekDay;
+  day!: WeekDay;
 
   @ApiProperty({
     description: 'وقت الفتح (بتنسيق HH:mm)',
@@ -27,7 +27,7 @@ export class WorkingHourDto {
   @Matches(/^\d{2}:\d{2}$/, {
     message: 'يجب أن يكون وقت الفتح بتنسيق HH:mm',
   })
-  openTime: string;
+  openTime!: string;
 
   @ApiProperty({
     description: 'وقت الإغلاق (بتنسيق HH:mm)',
@@ -39,5 +39,5 @@ export class WorkingHourDto {
   @Matches(/^\d{2}:\d{2}$/, {
     message: 'يجب أن يكون وقت الإغلاق بتنسيق HH:mm',
   })
-  closeTime: string;
+  closeTime!: string;
 }

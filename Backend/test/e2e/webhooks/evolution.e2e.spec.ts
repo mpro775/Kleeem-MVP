@@ -65,12 +65,14 @@ describe('Evolution API Webhook E2E (H3)', () => {
         ],
       };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post(`/api/webhooks/whatsapp_qr/${channelId}`)
         .set('apikey', apiKey)
         .set('Content-Type', 'application/json')
         .send(payload)
         .expect(200);
+
+      expect(response.body).toHaveProperty('status');
     });
 
     it('should reject request with wrong API key', async () => {
@@ -83,12 +85,14 @@ describe('Evolution API Webhook E2E (H3)', () => {
         ],
       };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post(`/api/webhooks/whatsapp_qr/${channelId}`)
         .set('X-Evolution-ApiKey', 'wrong-api-key')
         .set('Content-Type', 'application/json')
         .send(payload)
         .expect(403);
+
+      expect(response.status).toBe(403);
     });
 
     it('should reject request without API key', async () => {
@@ -96,11 +100,13 @@ describe('Evolution API Webhook E2E (H3)', () => {
         messages: [{ key: { id: 'evo-test-no-key' } }],
       };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post(`/api/webhooks/whatsapp_qr/${channelId}`)
         .set('Content-Type', 'application/json')
         .send(payload)
         .expect(403);
+
+      expect(response.status).toBe(403);
     });
   });
 
@@ -157,12 +163,14 @@ describe('Evolution API Webhook E2E (H3)', () => {
         },
       };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post(`/api/webhooks/whatsapp_qr/${channelId}`)
         .set('X-Evolution-ApiKey', apiKey)
         .set('Content-Type', 'application/json')
         .send(payload)
         .expect(200);
+
+      expect(response.body).toHaveProperty('status');
     });
   });
 
@@ -182,11 +190,13 @@ describe('Evolution API Webhook E2E (H3)', () => {
       ];
 
       for (const key of keys) {
-        await request(app.getHttpServer())
+        const response = await request(app.getHttpServer())
           .post(`/api/webhooks/whatsapp_qr/${channelId}`)
           .set('X-Evolution-ApiKey', key)
           .send(payload)
           .expect(403);
+
+        expect(response.status).toBe(403);
       }
     });
 
@@ -196,12 +206,14 @@ describe('Evolution API Webhook E2E (H3)', () => {
         instance: { status: 'connected' },
       };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post(`/api/webhooks/whatsapp_qr/${channelId}/event`)
         .set('X-Evolution-ApiKey', apiKey)
         .set('Content-Type', 'application/json')
         .send(statusPayload)
         .expect(200);
+
+      expect(response.status).toBe(200);
     });
   });
 });

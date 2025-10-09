@@ -118,10 +118,15 @@ export class BotPromptController {
     @Query('type') type?: 'system' | 'user',
     @Query('includeArchived') includeArchived?: string,
   ): Promise<BotPromptLean[]> {
-    return this.svc.findAll({
-      type,
+    const options: { type?: 'system' | 'user'; includeArchived?: boolean } = {
       includeArchived: includeArchived === 'true',
-    });
+    };
+
+    if (type) {
+      options.type = type;
+    }
+
+    return this.svc.findAll(options);
   }
 
   @Get(':id')

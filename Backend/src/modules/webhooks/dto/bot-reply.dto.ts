@@ -17,7 +17,7 @@ export class BotReplyDto {
   })
   @IsString()
   @IsNotEmpty()
-  sessionId: string;
+  sessionId!: string;
 
   @ApiProperty({
     description: 'نص الردّ الذي ولّده n8n',
@@ -25,7 +25,7 @@ export class BotReplyDto {
   })
   @IsString()
   @IsNotEmpty()
-  text: string;
+  text!: string;
 
   @IsIn(['whatsapp', 'telegram', 'webchat'])
   channel!: PublicChannel;

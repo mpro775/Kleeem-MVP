@@ -32,8 +32,8 @@ export class OrdersService {
     });
 
     try {
-      await this.leadsService.create(dto.merchantId, {
-        sessionId: dto.sessionId,
+      await this.leadsService.create(dto.merchantId ?? '', {
+        sessionId: dto.sessionId ?? '',
         data: dto.customer as unknown as Record<string, unknown>,
         source: 'order',
       });

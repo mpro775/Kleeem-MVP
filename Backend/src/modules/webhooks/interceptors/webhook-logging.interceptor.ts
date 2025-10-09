@@ -7,7 +7,8 @@ import {
 import { Request, Response } from 'express';
 import { Observable, tap } from 'rxjs';
 
-function redact(
+// جعل الدالة متاحة للاختبار
+export function redact(
   obj: unknown,
   keys: string[] = [
     'access_token',

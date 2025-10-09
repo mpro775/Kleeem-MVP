@@ -7,7 +7,7 @@ import { MerchantNotFoundError } from '../../../common/errors/business-errors';
 import { PaginationService } from '../../../common/services/pagination.service';
 import { Merchant } from '../../merchants/schemas/merchant.schema';
 import { GetOrdersDto, SortOrder } from '../dto/get-orders.dto';
-import { Order, OrderDocument } from '../schemas/order.schema';
+import { Order, OrderDocument, OrderProduct } from '../schemas/order.schema';
 import { normalizePhone } from '../utils/phone.util';
 
 import { OrdersRepository } from './orders.repository';
@@ -127,14 +127,15 @@ export class MongoOrdersRepository implements OrdersRepository {
     const phoneRaw = zidOrder.customer?.phone;
     const phoneNormalized = normalizePhone(asString(phoneRaw));
 
-    const products = (zidOrder.products ?? []).map(
-      (p): Order['products'][number] => ({
-        product: toObjectId(p.id ?? p.productId),
+    const products = (zidOrder.products ?? []).map((p): OrderProduct => {
+      const productId = toObjectId(p.id ?? p.productId);
+      return {
+        product: productId as Types.ObjectId,
         name: asString(p.name),
         price: asNumber(p.price, 0),
         quantity: asNumber(p.quantity, 1),
-      }),
-    );
+      } as OrderProduct;
+    });
 
     const orderData: Partial<Order> & { createdAt: Date } = {
       merchantId,
@@ -241,7 +242,7 @@ export class MongoOrdersRepository implements OrdersRepository {
     const items = result.items.map((item) => ({
       ...item,
       _id: toStringId((item as unknown as { _id?: unknown })?._id),
-      merchantId: item.merchantId,
+      merchantId: item.merchantId || '',
     }));
 
     return { ...result, items };
@@ -277,7 +278,7 @@ export class MongoOrdersRepository implements OrdersRepository {
     const items = result.items.map((item) => ({
       ...item,
       _id: toStringId((item as unknown as { _id?: unknown })?._id),
-      merchantId: item.merchantId,
+      merchantId: item.merchantId || '',
     }));
 
     return { ...result, items };

@@ -10,16 +10,16 @@ export class Instruction {
   merchantId?: Types.ObjectId;
 
   @Prop({ type: String, required: true })
-  instruction: string;
+  instruction!: string;
 
   @Prop({ type: [String], default: [] })
   relatedReplies?: string[];
 
   @Prop({ type: String, enum: ['auto', 'manual'], default: 'auto' })
-  type: string;
+  type!: string;
 
   @Prop({ type: Boolean, default: true })
-  active: boolean;
+  active!: boolean;
 }
 
 export const InstructionSchema = SchemaFactory.createForClass(Instruction);

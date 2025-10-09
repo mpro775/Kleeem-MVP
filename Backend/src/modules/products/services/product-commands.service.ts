@@ -47,19 +47,16 @@ function ensureValidObjectId(id: string, errMsg: string): Types.ObjectId {
 
 function toOffer(dto: CreateProductDto['offer']): Product['offer'] | undefined {
   if (!dto) return undefined;
-  return {
-    ...dto,
-    startAt: dto.startAt ? new Date(dto.startAt) : undefined,
-    endAt: dto.endAt ? new Date(dto.endAt) : undefined,
-  };
+  const offer: Product['offer'] = { enabled: dto.enabled ?? false };
+  if (dto.oldPrice !== undefined) offer.oldPrice = dto.oldPrice;
+  if (dto.newPrice !== undefined) offer.newPrice = dto.newPrice;
+  if (dto.startAt) offer.startAt = new Date(dto.startAt);
+  if (dto.endAt) offer.endAt = new Date(dto.endAt);
+  return offer;
 }
 
 function mapSource(s?: ProductSource): 'manual' | 'api' {
   return s === ProductSource.API ? 'api' : 'manual';
-}
-
-function stringOrUndefined(v: unknown): string | undefined {
-  return typeof v === 'string' && v.trim().length > 0 ? v : undefined;
 }
 
 function oidToString(oid: Types.ObjectId): string {
@@ -135,7 +132,7 @@ export class ProductCommandsService {
     dto: CreateProductDto & { merchantId: string },
     merchantId: Types.ObjectId,
   ): Partial<Product> {
-    return {
+    const data: Partial<Product> = {
       merchantId,
       originalUrl: dto.originalUrl ?? null,
       sourceUrl: dto.sourceUrl ?? null,
@@ -144,20 +141,22 @@ export class ProductCommandsService {
       name: dto.name,
       description: dto.description ?? '',
       price: dto.price ?? 0,
-      currency: dto.currency,
-      offer: toOffer(dto.offer),
       isAvailable: dto.isAvailable ?? true,
-      category: dto.category ? new Types.ObjectId(dto.category) : undefined,
       source: mapSource(dto.source),
       status: STATUS_ACTIVE,
     };
+    if (dto.currency) data.currency = dto.currency;
+    const offer = toOffer(dto.offer);
+    if (offer) data.offer = offer;
+    if (dto.category) data.category = new Types.ObjectId(dto.category);
+    return data;
   }
 
   private buildStorefrontData(sf: MinimalStorefront | null): Partial<Product> {
-    return {
-      storefrontSlug: stringOrUndefined(sf?.slug ?? undefined),
-      storefrontDomain: stringOrUndefined(sf?.domain ?? undefined),
-    };
+    const data: Partial<Product> = {};
+    if (sf?.slug) data.storefrontSlug = sf.slug;
+    if (sf?.domain) data.storefrontDomain = sf.domain;
+    return data;
   }
 
   private buildArraysData(dto: CreateProductDto): Partial<Product> {
@@ -179,6 +178,11 @@ export class ProductCommandsService {
       const createdDoc = await (session
         ? this.repo.create(data, session)
         : this.repo.create(data));
+      if (!createdDoc.merchantId) {
+        throw new BadRequestException(
+          'Failed to create product: merchantId is missing',
+        );
+      }
       const productIdStr = oidToString(createdDoc._id);
       const merchantIdStr = oidToString(createdDoc.merchantId);
 
@@ -224,6 +228,10 @@ export class ProductCommandsService {
     created: ProductDocument,
     sf: MinimalStorefront | null,
   ): Promise<void> {
+    if (!created.merchantId) {
+      throw new BadRequestException('Product merchantId is missing');
+    }
+
     const catName =
       created.category &&
       (await this.categories.findOne(
@@ -235,7 +243,10 @@ export class ProductCommandsService {
     await this.indexer.upsert(
       created,
       sf
-        ? { slug: sf.slug ?? undefined, domain: sf.domain ?? undefined }
+        ? {
+            ...(sf.slug && { slug: sf.slug }),
+            ...(sf.domain && { domain: sf.domain }),
+          }
         : undefined,
       catName?.name ?? null,
     );
@@ -263,18 +274,41 @@ export class ProductCommandsService {
   }
 
   private buildUpdatePatch(dto: UpdateProductDto): Partial<Product> {
-    return {
-      name: dto.name,
-      description: dto.description,
-      price: dto.price,
-      currency: dto.currency,
-      offer: toOffer(dto.offer),
-      isAvailable: dto.isAvailable,
-      category: dto.category ? new Types.ObjectId(dto.category) : undefined,
-      specsBlock: Array.isArray(dto.specsBlock) ? dto.specsBlock : undefined,
-      keywords: Array.isArray(dto.keywords) ? dto.keywords : undefined,
-      images: Array.isArray(dto.images) ? dto.images : undefined,
-    };
+    const patch: Partial<Product> = {};
+
+    // Basic fields
+    if (dto.name !== undefined) patch.name = dto.name;
+    if (dto.description !== undefined) patch.description = dto.description;
+    if (dto.price !== undefined) patch.price = dto.price;
+    if (dto.currency !== undefined) patch.currency = dto.currency;
+    if (dto.isAvailable !== undefined) patch.isAvailable = dto.isAvailable;
+
+    // Offer handling
+    if (dto.offer !== undefined) {
+      const offer = toOffer(dto.offer);
+      if (offer) patch.offer = offer;
+    }
+
+    // Category
+    if (dto.category !== undefined)
+      patch.category = new Types.ObjectId(dto.category);
+
+    // Array fields
+    this.assignArrayField(patch, 'specsBlock', dto.specsBlock);
+    this.assignArrayField(patch, 'keywords', dto.keywords);
+    this.assignArrayField(patch, 'images', dto.images);
+
+    return patch;
+  }
+
+  private assignArrayField<T extends keyof Product>(
+    patch: Partial<Product>,
+    field: T,
+    value: unknown,
+  ): void {
+    if (value !== undefined) {
+      patch[field] = (Array.isArray(value) ? value : []) as Product[T];
+    }
   }
 
   private async performUpdate(
@@ -291,6 +325,9 @@ export class ProductCommandsService {
   }
 
   private async handleUpdateEvents(updated: ProductDocument): Promise<void> {
+    if (!updated.merchantId) {
+      throw new BadRequestException('Product merchantId is missing');
+    }
     const productIdStr = oidToString(updated._id);
     const merchantIdStr = oidToString(updated.merchantId);
 
@@ -306,6 +343,9 @@ export class ProductCommandsService {
   }
 
   private async handlePostUpdateTasks(updated: ProductDocument): Promise<void> {
+    if (!updated.merchantId) {
+      throw new BadRequestException('Product merchantId is missing');
+    }
     const merchantIdStr = oidToString(updated.merchantId);
 
     const sf = (await this.storefronts.findByMerchant(
@@ -321,7 +361,10 @@ export class ProductCommandsService {
     await this.indexer.upsert(
       updated,
       sf
-        ? { slug: sf.slug ?? undefined, domain: sf.domain ?? undefined }
+        ? {
+            ...(sf.slug && { slug: sf.slug }),
+            ...(sf.domain && { domain: sf.domain }),
+          }
         : undefined,
       catName?.name ?? null,
     );
@@ -351,6 +394,10 @@ export class ProductCommandsService {
       throw new NotFoundException(
         this.translationService.translateProduct('errors.notFound'),
       );
+    }
+
+    if (!before.merchantId) {
+      throw new BadRequestException('Product merchantId is missing');
     }
 
     const session = hasStartSession(this.repo)

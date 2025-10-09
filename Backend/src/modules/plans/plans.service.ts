@@ -19,7 +19,7 @@ export class PlansService {
   ) {}
 
   async create(dto: CreatePlanDto): Promise<PlanEntity> {
-    const exists = await this.repo.findOneByName(dto.name);
+    const exists = await this.repo.findOneByName(dto.name ?? '');
     if (exists) throw new Error('Plan name already exists');
     return this.repo.create(dto);
   }

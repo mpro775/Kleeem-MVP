@@ -5,7 +5,7 @@ import { MerchantDocument } from '../../schemas/merchant.schema';
 
 class WebhookInfo {
   @ApiProperty()
-  hookUrl: string;
+  hookUrl!: string;
 
   @ApiProperty()
   telegramResponse: unknown;
@@ -13,10 +13,10 @@ class WebhookInfo {
 
 export class OnboardingResponseDto {
   @ApiProperty()
-  message: string;
+  message!: string;
 
   @ApiProperty({ type: Object }) // أو ApiProperty({ type: () => MerchantDto })
-  merchant: MerchantDocument;
+  merchant!: MerchantDocument;
 
   @ApiPropertyOptional({ type: WebhookInfo })
   webhookInfo?: WebhookInfo;

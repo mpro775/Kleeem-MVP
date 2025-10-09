@@ -7,10 +7,10 @@ export type PromptType = 'system' | 'user';
 @Schema({ timestamps: true })
 export class BotPrompt extends Document {
   @Prop({ type: String, enum: ['system', 'user'], required: true })
-  type: PromptType;
+  type!: PromptType;
 
   @Prop({ required: true })
-  content: string;
+  content!: string;
 
   @Prop({ default: '' })
   name?: string;
@@ -19,7 +19,7 @@ export class BotPrompt extends Document {
   tags?: string[];
 
   @Prop({ default: true })
-  active: boolean;
+  active!: boolean;
   @Prop({ type: Number, default: 1 }) version?: number; // للـ system
   @Prop({ type: String, enum: ['ar', 'en'], default: 'ar' }) locale?:
     | 'ar'
@@ -33,7 +33,7 @@ export class BotPrompt extends Document {
   @Prop({ type: Object, default: {} }) variables?: Record<string, string>;
   @Prop({ type: String, default: 'convince' }) goal?: string; // أو 'support'
   @Prop({ default: false })
-  archived: boolean;
+  archived!: boolean;
 }
 
 export const BotPromptSchema = SchemaFactory.createForClass(BotPrompt);

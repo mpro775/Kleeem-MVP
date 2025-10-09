@@ -134,14 +134,16 @@ export class CategoriesService {
       computedSlug,
     );
 
+    const { parent, ...rest } = dto;
     return this.repo.createCategory({
-      ...dto,
+      ...rest,
       slug: computedSlug,
       merchantId,
       ancestors,
       depth,
       path,
       order: dto.order ?? 0,
+      parent: parent ? new Types.ObjectId(parent) : null,
     } as Partial<CategoryDocument>);
   }
 
@@ -200,7 +202,7 @@ export class CategoriesService {
       path: 1,
       depth: 1,
     });
-    return rows.sort((a, b) => a.depth - b.depth);
+    return rows.sort((a, b) => (a.depth ?? 0) - (b.depth ?? 0));
   }
 
   async subtree(id: string, merchantId: string): Promise<TreeCategory> {
@@ -361,8 +363,8 @@ export class CategoriesService {
 
       if (parentChanged) {
         await this.update(id, merchantId, {
-          parent: newParentId ? String(newParentId) : undefined,
-        });
+          parent: newParentId ? String(newParentId) : null,
+        } as UpdateCategoryDto);
       }
 
       await this.repo.updateOrder(current._id, newOrder, session);

@@ -33,7 +33,7 @@ import {
   ErrorManagementModule,
 } from './common';
 import { CacheModule } from './common/cache/cache.module';
-import varsConfig from './common/config/vars.config';
+import { varsConfig } from './common/config/vars.config';
 import { NonceController } from './common/controllers/nonce.controller';
 import { IdempotencyGuard } from './common/guards/idempotency.guard';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -47,7 +47,7 @@ import { OutboxModule } from './common/outbox/outbox.module';
 import { DatabaseConfigModule } from './config/database.config';
 import { RedisConfig } from './config/redis.config';
 import { RedisModule } from './config/redis.module';
-import configuration from './configuration';
+import { configuration } from './configuration';
 import { DispatchersModule } from './infra/dispatchers/dispatchers.module';
 import { RabbitModule } from './infra/rabbit/rabbit.module';
 import { AmqpMetrics, AmqpMetricsProviders } from './metrics/amqp.metrics';
@@ -87,6 +87,7 @@ import { WorkflowHistoryModule } from './modules/workflow-history/workflow-histo
 import { AiReplyWorkerModule } from './workers/ai-reply.worker.module';
 import { WebhookDispatcherWorkerModule } from './workers/webhook-dispatcher.worker.module';
 
+import type { ConfigFactory } from '@nestjs/config';
 import type {
   IncomingMessage,
   ServerResponse,
@@ -96,6 +97,7 @@ import type { Options as PinoHttpOptions, ReqId as PinoReqId } from 'pino-http';
 
 // -------------------- Local helpers --------------------
 const isTsRuntime = __filename.endsWith('.ts');
+const IS_TEST_MIN = process.env.APP_MINIMAL_BOOT === '1';
 
 function resolveI18nPath(): string {
   const distPath = path.join(__dirname, 'i18n');
@@ -139,100 +141,109 @@ const getHeader = (req: IncomingMessage, name: string): string | undefined => {
 @Module({
   imports: [
     // Logger (Pino)
-    LoggerModule.forRoot({
-      pinoHttp: {
-        level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
+    LoggerModule.forRoot(
+      IS_TEST_MIN
+        ? { pinoHttp: { enabled: false } }
+        : {
+            pinoHttp: {
+              level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
 
-        redact: {
-          paths: [
-            'req.headers.authorization',
-            'req.headers.cookie',
-            'req.headers["x-hub-signature-256"]',
-            'req.headers["x-telegram-bot-api-secret-token"]',
-            'req.headers["x-evolution-apikey"]',
-            'req.headers.apikey',
-            'req.headers["x-timestamp"]',
-            'req.headers["x-idempotency-key"]',
-            'req.headers["set-cookie"]',
-            'req.body.password',
-            'req.body.confirmPassword',
-            'req.body.refreshToken',
-            'req.body.accessToken',
-            'req.body.token',
-            'req.body.secret',
-            'req.body.apikey',
-            'req.body.appSecret',
-            'req.body.verifyToken',
-            'res.headers["set-cookie"]',
-            'responseTime',
-          ],
-          censor: '[REDACTED]',
-        },
+              redact: {
+                paths: [
+                  'req.headers.authorization',
+                  'req.headers.cookie',
+                  'req.headers["x-hub-signature-256"]',
+                  'req.headers["x-telegram-bot-api-secret-token"]',
+                  'req.headers["x-evolution-apikey"]',
+                  'req.headers.apikey',
+                  'req.headers["x-timestamp"]',
+                  'req.headers["x-idempotency-key"]',
+                  'req.headers["set-cookie"]',
+                  'req.body.password',
+                  'req.body.confirmPassword',
+                  'req.body.refreshToken',
+                  'req.body.accessToken',
+                  'req.body.token',
+                  'req.body.secret',
+                  'req.body.apikey',
+                  'req.body.appSecret',
+                  'req.body.verifyToken',
+                  'res.headers["set-cookie"]',
+                  'responseTime',
+                ],
+                censor: '[REDACTED]',
+              },
 
-        autoLogging: {
-          ignore: (req: IncomingMessage): boolean => {
-            const ignoredRoutes = ['/metrics', '/health', '/api/health'];
-            const url = req.url ?? '';
-            return ignoredRoutes.includes(url);
+              autoLogging: {
+                ignore: (req: IncomingMessage): boolean => {
+                  const ignoredRoutes = ['/metrics', '/health', '/api/health'];
+                  const url = req.url ?? '';
+                  return ignoredRoutes.includes(url);
+                },
+              },
+
+              customLogLevel: (
+                _req: IncomingMessage,
+                res: ServerResponse<IncomingMessage>,
+                err?: unknown,
+              ) => {
+                const status = res.statusCode ?? 200;
+                if (status >= 400 && status < 500) return 'warn';
+                if (status >= 500 || err) return 'error';
+                return 'info';
+              },
+
+              // يجب أن تُرجع دائماً ReqId (بدون undefined)
+              genReqId: (req: IncomingMessage): PinoReqId => {
+                const fromHeader = getHeader(req, 'x-request-id');
+                if (typeof fromHeader === 'string' && fromHeader.length > 0) {
+                  return fromHeader;
+                }
+                const r = req as ExtendedReq;
+                if (typeof r.id === 'string' || typeof r.id === 'number') {
+                  return r.id;
+                }
+                // fallback آمن
+                return randomUUID();
+              },
+
+              formatters: {
+                level: (label: string) => ({ level: label }),
+              },
+
+              customProps: (req: IncomingMessage) => {
+                const r = req as ExtendedReq;
+                const userAgent = getHeader(req, 'user-agent');
+                const requestId = getHeader(req, 'x-request-id');
+                const ip = r.ip ?? r.connection?.remoteAddress;
+
+                return {
+                  service: 'kaleem-api',
+                  requestId: requestId ?? r.id,
+                  userId: r.user?.sub,
+                  merchantId: r.user?.merchantId,
+                  userAgent,
+                  ip,
+                };
+              },
+            } satisfies PinoHttpOptions<
+              IncomingMessage,
+              ServerResponse<IncomingMessage>
+            >, // تدقيق صارم
           },
-        },
+    ),
 
-        customLogLevel: (
-          _req: IncomingMessage,
-          res: ServerResponse<IncomingMessage>,
-          err?: unknown,
-        ) => {
-          const status = res.statusCode ?? 200;
-          if (status >= 400 && status < 500) return 'warn';
-          if (status >= 500 || err) return 'error';
-          return 'info';
-        },
-
-        // يجب أن تُرجع دائماً ReqId (بدون undefined)
-        genReqId: (req: IncomingMessage): PinoReqId => {
-          const fromHeader = getHeader(req, 'x-request-id');
-          if (typeof fromHeader === 'string' && fromHeader.length > 0) {
-            return fromHeader;
-          }
-          const r = req as ExtendedReq;
-          if (typeof r.id === 'string' || typeof r.id === 'number') {
-            return r.id;
-          }
-          // fallback آمن
-          return randomUUID();
-        },
-
-        formatters: {
-          level: (label: string) => ({ level: label }),
-        },
-
-        customProps: (req: IncomingMessage) => {
-          const r = req as ExtendedReq;
-          const userAgent = getHeader(req, 'user-agent');
-          const requestId = getHeader(req, 'x-request-id');
-          const ip = r.ip ?? r.connection?.remoteAddress;
-
-          return {
-            service: 'kaleem-api',
-            requestId: requestId ?? r.id,
-            userId: r.user?.sub,
-            merchantId: r.user?.merchantId,
-            userAgent,
-            ip,
-          };
-        },
-      } satisfies PinoHttpOptions<
-        IncomingMessage,
-        ServerResponse<IncomingMessage>
-      >, // تدقيق صارم
-    }),
-
-    MetricsModule,
-    SystemModule,
-    CommonModule,
-    CommonServicesModule,
-    ErrorManagementModule,
-    CacheModule,
+    // الواردات الأساسية: في الاختبار المصغّر نأخذ الحد الأدنى
+    ...(IS_TEST_MIN
+      ? [CommonModule, CommonServicesModule]
+      : [
+          MetricsModule,
+          SystemModule,
+          CommonModule,
+          CommonServicesModule,
+          ErrorManagementModule,
+          CacheModule,
+        ]),
 
     EventEmitterModule.forRoot({
       wildcard: false,
@@ -249,7 +260,7 @@ const getHeader = (req: IncomingMessage, name: string): string | undefined => {
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET'),
+        secret: config.get<string>('JWT_SECRET')!,
         signOptions: { expiresIn: '7d' },
       }),
       inject: [ConfigService],
@@ -258,7 +269,7 @@ const getHeader = (req: IncomingMessage, name: string): string | undefined => {
     // Config
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [configuration, varsConfig],
+      load: [configuration, varsConfig] as ConfigFactory[],
     }),
 
     // i18n
@@ -267,7 +278,7 @@ const getHeader = (req: IncomingMessage, name: string): string | undefined => {
       loader: I18nJsonLoader,
       loaderOptions: {
         path: resolveI18nPath(),
-        watch: process.env.NODE_ENV !== 'production',
+        watch: process.env.NODE_ENV !== 'production' && !IS_TEST_MIN, // لا مراقبة ملفات في الاختبار
       },
       resolvers: [
         { use: QueryResolver, options: ['lang', 'locale'] },
@@ -276,91 +287,104 @@ const getHeader = (req: IncomingMessage, name: string): string | undefined => {
       ],
     }),
 
-    // Static
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'uploads'),
-      serveRoot: '/uploads',
-    }),
+    // لا نخدم ملفات ولا جداول زمنية ولا أوتبوكس ولا رابت ولا بول أثناء الاختبار المصغّر
+    ...(IS_TEST_MIN
+      ? []
+      : [
+          ServeStaticModule.forRoot({
+            rootPath: join(process.cwd(), 'uploads'),
+            serveRoot: '/uploads',
+          }),
 
-    // Infra
-    ScheduleModule.forRoot(),
-    RedisModule,
-    OutboxModule,
-    RabbitModule,
+          // Infra
+          ScheduleModule.forRoot(),
+          RedisModule,
+          OutboxModule,
+          RabbitModule,
 
-    // Bull (Redis) for queues
-    BullModule.forRootAsync({
-      imports: [RedisModule, ConfigModule],
-      useFactory: (config: ConfigService): BullModuleOptions => {
-        const url = config.get<string>('REDIS_URL');
-        if (!url) throw new Error('REDIS_URL not defined');
-        const parsed = new URL(url);
-        return {
-          redis: {
-            host: parsed.hostname,
-            port: parseInt(parsed.port, 10),
-            password: parsed.password || undefined,
-            tls: parsed.protocol === 'rediss:' ? {} : undefined,
-          },
-        };
-      },
-      inject: [ConfigService],
-    }),
+          // Bull (Redis) for queues
+          BullModule.forRootAsync({
+            imports: [RedisModule, ConfigModule],
+            useFactory: (config: ConfigService): BullModuleOptions => {
+              const url = config.get<string>('REDIS_URL');
+              if (!url) throw new Error('REDIS_URL not defined');
+              const parsed = new URL(url);
+              return {
+                redis: {
+                  host: parsed.hostname,
+                  port: parseInt(parsed.port, 10),
+                  password: parsed.password || '',
+                  tls: parsed.protocol === 'rediss:' ? {} : {},
+                },
+              };
+            },
+            inject: [ConfigService],
+          }),
 
-    // Database
-    DatabaseConfigModule,
+          // Database
+          DatabaseConfigModule,
+        ]),
 
-    // Features
-    AnalyticsModule,
-    AuthModule,
-    UsersModule,
-    ProductsModule,
-    MessagingModule,
-    MerchantsModule,
-    SupportModule,
-    PlansModule,
-    AiReplyWorkerModule,
-    WebhookDispatcherWorkerModule,
-    VectorModule,
-    ChatModule,
-    DocumentsModule,
-    N8nWorkflowModule,
-    OrdersModule,
-    KnowledgeModule,
-    FaqModule,
-    WorkflowHistoryModule,
-    WebhooksModule,
-    CategoriesModule,
-    StorefrontModule,
-    ZidModule,
-    LeadsModule,
-    IntegrationsModule,
-    ScraperModule,
-    KleemModule,
-    InstructionsModule,
-    OffersModule,
-    AiModule,
-    ChannelsModule,
-    NotificationsModule,
-    CatalogModule,
-    PublicModule,
-    DispatchersModule,
+    // ميزات الدومين: في الاختبار المصغّر إمّا نستبعدها أو نأخذ الحد الأدنى
+    ...(IS_TEST_MIN
+      ? []
+      : [
+          AnalyticsModule,
+          AuthModule,
+          UsersModule,
+          ProductsModule,
+          MessagingModule,
+          MerchantsModule,
+          SupportModule,
+          PlansModule,
+          AiReplyWorkerModule,
+          WebhookDispatcherWorkerModule,
+          VectorModule,
+          ChatModule,
+          DocumentsModule,
+          N8nWorkflowModule,
+          OrdersModule,
+          KnowledgeModule,
+          FaqModule,
+          WorkflowHistoryModule,
+          WebhooksModule,
+          CategoriesModule,
+          StorefrontModule,
+          ZidModule,
+          LeadsModule,
+          IntegrationsModule,
+          ScraperModule,
+          KleemModule,
+          InstructionsModule,
+          OffersModule,
+          AiModule,
+          ChannelsModule,
+          NotificationsModule,
+          CatalogModule,
+          PublicModule,
+          DispatchersModule,
+        ]),
   ],
   providers: [
     AppService,
-    { provide: APP_GUARD, useClass: JwtAuthGuard },
-    { provide: APP_GUARD, useClass: ThrottlerTenantGuard },
-    ...AmqpMetricsProviders,
-    AmqpMetrics,
-    { provide: APP_GUARD, useClass: RolesGuard },
-    ServiceTokenGuard,
-    IdempotencyGuard,
-    RedisConfig,
-    OutboxDispatcher,
-    HttpMetricsInterceptor,
-    PerformanceTrackingInterceptor,
+    // نفس الفكرة للحُرّاس والاعتراضات
+    ...(IS_TEST_MIN
+      ? []
+      : [
+          { provide: APP_GUARD, useClass: JwtAuthGuard },
+          { provide: APP_GUARD, useClass: ThrottlerTenantGuard },
+          ...AmqpMetricsProviders,
+          AmqpMetrics,
+          { provide: APP_GUARD, useClass: RolesGuard },
+          ServiceTokenGuard,
+          IdempotencyGuard,
+          RedisConfig,
+          OutboxDispatcher,
+          HttpMetricsInterceptor,
+          PerformanceTrackingInterceptor,
+        ]),
   ],
-  exports: [AmqpMetrics],
+  exports: IS_TEST_MIN ? [] : [AmqpMetrics],
   controllers: [AppController, NonceController],
 })
 export class AppModule extends AppConfig {}

@@ -93,9 +93,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   private async validateTokenSession(token: string): Promise<boolean> {
     try {
       const v = this.jwtService.verify<JwtPayload>(token, {
-        secret: process.env.JWT_SECRET,
-        issuer: process.env.JWT_ISSUER,
-        audience: process.env.JWT_AUDIENCE,
+        secret: process.env.JWT_SECRET as string,
+        issuer: process.env.JWT_ISSUER as string,
+        audience: process.env.JWT_AUDIENCE as string,
       });
       if (!v?.jti) return false;
       if (await this.cacheManager.get(`bl:${v.jti}`)) return false;

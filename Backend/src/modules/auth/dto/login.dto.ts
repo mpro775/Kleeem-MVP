@@ -10,9 +10,9 @@ export class LoginDto {
     example: 'user@example.com',
   })
   @IsEmail({}, I18nMessage('email'))
-  email: string;
+  email!: string;
 
   @ApiProperty({ description: 'كلمة المرور', example: '12345678' })
   @IsString(I18nMessage('validation.string'))
-  password: string;
+  password!: string;
 }

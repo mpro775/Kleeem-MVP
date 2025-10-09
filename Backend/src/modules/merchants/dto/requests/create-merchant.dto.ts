@@ -47,7 +47,7 @@ export class CreateMerchantDto {
   @IsNotEmpty(I18nMessage('validation.required'))
   @MinLength(3, I18nMessage('validation.minLength'))
   @MaxLength(100, I18nMessage('validation.maxLength'))
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({
     description: 'رابط شعار التاجر',
@@ -76,7 +76,7 @@ export class CreateMerchantDto {
   })
   @ValidateNested()
   @Type(() => SubscriptionPlanDto)
-  subscription: SubscriptionPlanDto;
+  subscription!: SubscriptionPlanDto;
 
   @ApiPropertyOptional({
     description: 'فئات المنتجات/الخدمات',

@@ -1,0 +1,8 @@
+# /etc/cron.d/kaleem-backups — sample entries
+# Run unified backup daily at 03:00
+0 3 * * * root BACKUP_ROOT=/backups RESTIC_REPO=/backups/restic-local RESTIC_PASSWORD_FILE=/etc/restic.pass \
+  /usr/bin/env bash /opt/kaleem/scripts/kaleem-backup.sh >> /var/log/kaleem-backups/backup.log 2>&1
+
+# Optional: run retention only at 04:00 (if you prefer separately)
+#0 4 * * * root RESTIC_REPO=/backups/restic-local RESTIC_PASSWORD_FILE=/etc/restic.pass \
+#  restic -r /backups/restic-local forget --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune >> /var/log/kaleem-backups/retention.log 2>&1

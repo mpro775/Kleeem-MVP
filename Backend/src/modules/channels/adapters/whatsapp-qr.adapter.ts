@@ -109,7 +109,8 @@ export class WhatsAppQrAdapter implements ChannelAdapter {
       const mapped = mapEvoStatus(inst as unknown as Record<string, unknown>);
       if (mapped && mapped !== c.status) {
         c.status = mapped;
-        if (mapped === ChannelStatus.CONNECTED) c.qr = undefined;
+        if (mapped === ChannelStatus.CONNECTED)
+          c.qr = undefined as unknown as string;
         await c.save();
       }
       return {
@@ -147,7 +148,8 @@ export class WhatsAppQrAdapter implements ChannelAdapter {
         : null;
       if (mapped && mapped !== c.status) {
         c.status = mapped;
-        if (mapped === ChannelStatus.CONNECTED) c.qr = undefined;
+        if (mapped === ChannelStatus.CONNECTED)
+          c.qr = undefined as unknown as string;
         await c.save();
       }
     } catch (err) {

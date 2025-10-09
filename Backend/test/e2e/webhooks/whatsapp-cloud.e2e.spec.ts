@@ -50,7 +50,7 @@ describe('WhatsApp Cloud Webhook E2E (H1)', () => {
     });
 
     it('should reject verification with wrong parameters', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .get(`/api/webhooks/incoming/${merchantId}`)
         .query({
           'hub.mode': 'wrong',
@@ -58,6 +58,8 @@ describe('WhatsApp Cloud Webhook E2E (H1)', () => {
           'hub.challenge': 'challenge',
         })
         .expect(400);
+
+      expect(response.status).toBe(400);
     });
   });
 
@@ -127,12 +129,14 @@ describe('WhatsApp Cloud Webhook E2E (H1)', () => {
         ],
       };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post(`/api/webhooks/incoming/${merchantId}`)
         .set('Content-Type', 'application/json')
         .set('X-Hub-Signature-256', 'sha256=invalid-signature')
         .send(payload)
         .expect(403);
+
+      expect(response.status).toBe(403);
     });
 
     /**
@@ -212,12 +216,14 @@ describe('WhatsApp Cloud Webhook E2E (H1)', () => {
     it('should reject malformed signature header', async () => {
       const payload = { entry: [] };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post(`/api/webhooks/incoming/${merchantId}`)
         .set('Content-Type', 'application/json')
         .set('X-Hub-Signature-256', 'malformed-signature')
         .send(payload)
         .expect(403);
+
+      expect(response.status).toBe(403);
     });
   });
 });

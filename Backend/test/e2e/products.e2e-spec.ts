@@ -106,10 +106,12 @@ describe('Products E2E', () => {
         price: 10,
       };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/products')
         .send(productData)
         .expect(404);
+
+      expect(response.status).toBe(404);
     });
   });
 
@@ -132,15 +134,19 @@ describe('Products E2E', () => {
     });
 
     it('should return 404 for non-existent product', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .get('/api/products/507f1f77bcf86cd799439011')
         .expect(404);
+
+      expect(response.status).toBe(404);
     });
 
     it('should return 400 for invalid ObjectId', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .get('/api/products/invalid-id')
         .expect(400);
+
+      expect(response.status).toBe(400);
     });
   });
 
@@ -171,16 +177,18 @@ describe('Products E2E', () => {
         price: 20,
       };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .put('/api/products/507f1f77bcf86cd799439011')
         .send(updateData)
         .expect(404);
+
+      expect(response.status).toBe(404);
     });
   });
 
   describe('DELETE /api/products/:id', () => {
     it('should delete product successfully', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .delete(`/api/products/${createdProductId}`)
         .expect(200);
 
@@ -188,12 +196,16 @@ describe('Products E2E', () => {
       await request(app.getHttpServer())
         .get(`/api/products/${createdProductId}`)
         .expect(404);
+
+      expect(response.status).toBe(404);
     });
 
     it('should return 404 when deleting non-existent product', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .delete('/api/products/507f1f77bcf86cd799439011')
         .expect(404);
+
+      expect(response.status).toBe(404);
     });
   });
 
@@ -291,11 +303,13 @@ describe('Products E2E', () => {
     });
 
     it('should handle malformed JSON', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/products')
         .set('Content-Type', 'application/json')
         .send('{ invalid json }')
         .expect(400);
+
+      expect(response.status).toBe(400);
     });
   });
 });

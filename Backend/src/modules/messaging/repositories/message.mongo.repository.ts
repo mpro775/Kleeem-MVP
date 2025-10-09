@@ -29,7 +29,7 @@ export class MessageMongoRepository implements MessageRepository {
   async findByMerchantSessionChannel(
     merchantId: string,
     sessionId: string,
-    channel: string,
+    channel?: string,
     opts?: { session?: ClientSession },
   ): Promise<MessageSessionEntity | null> {
     return this.model
@@ -47,7 +47,7 @@ export class MessageMongoRepository implements MessageRepository {
     data: {
       merchantId: string;
       sessionId: string;
-      channel: string;
+      channel?: string;
       messages: MessageItem[];
     },
     opts?: { session?: ClientSession },
@@ -74,7 +74,7 @@ export class MessageMongoRepository implements MessageRepository {
     await this.model.updateOne(
       { _id: new Types.ObjectId(id) },
       { $push: { messages: { $each: messages } } },
-      { session: opts?.session },
+      opts?.session ? { session: opts.session } : {},
     );
     return (await this.model.findById(id).lean<MessageSessionEntity>().exec())!;
   }

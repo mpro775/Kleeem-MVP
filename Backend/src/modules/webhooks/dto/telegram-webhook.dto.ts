@@ -3,13 +3,13 @@ import { IsString } from 'class-validator';
 
 export class TelegramWebhookDto {
   @IsString()
-  readonly messageId: string;
+  readonly messageId!: string;
 
   @IsString()
-  readonly chatId: string;
+  readonly chatId!: string;
 
   @IsString()
-  readonly text: string;
+  readonly text!: string;
 
   // أضف الحقول التي تعتمد عليها في المعالجة
 }

@@ -32,7 +32,7 @@ export class OnboardingBasicDto {
   @IsNotEmpty({ message: 'اسم التاجر مطلوب' })
   @MinLength(3, { message: 'يجب أن لا يقل اسم التاجر عن 3 أحرف' })
   @MaxLength(100, { message: 'يجب أن لا يزيد اسم التاجر عن 100 حرف' })
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({
     description: 'نوع النشاط التجاري',

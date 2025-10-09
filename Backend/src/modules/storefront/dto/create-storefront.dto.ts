@@ -34,7 +34,7 @@ export class BannerDto {
   })
   @IsString({ message: 'يجب أن يكون نص البانر نصيًا' })
   @IsNotEmpty({ message: 'نص البانر مطلوب' })
-  text: string;
+  text?: string;
 
   @ApiPropertyOptional({
     description: 'رابط البانر (اختياري)',
@@ -85,7 +85,7 @@ export class CreateStorefrontDto {
   })
   @IsString({ message: 'يجب أن يكون معرف التاجر نصيًا' })
   @IsNotEmpty({ message: 'معرف التاجر مطلوب' })
-  merchant: string;
+  merchant?: string;
 
   @ApiPropertyOptional({
     description: 'اللون الأساسي لواجهة المتجر (تنسيق HEX)',

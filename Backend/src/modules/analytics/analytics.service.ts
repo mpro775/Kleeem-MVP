@@ -242,8 +242,8 @@ export class AnalyticsService {
         byStatus: ordersByStatus,
         totalSales,
       },
-      csat: csat ?? undefined,
-      firstResponseTimeSec: frt ?? undefined,
+      ...(csat && { csat }),
+      ...(frt !== undefined && { firstResponseTimeSec: frt }),
       missingOpen,
       storeExtras: { paidOrders, aov },
     };
@@ -365,11 +365,11 @@ export class AnalyticsService {
     );
     const doc = list.items[0];
     if (!doc) throw new NotFoundException('Missing response not found');
-    if (doc.merchant.toString() !== merchantId)
+    if (doc.merchant?.toString() !== merchantId)
       throw new ForbiddenException('Not your resource');
 
     const created = await this.faqService.createMany(merchantId, [
-      { question: payload.question, answer: payload.answer },
+      { question: payload.question ?? '', answer: payload.answer ?? '' },
     ]);
 
     await this.repo.markMissingResolved(missingId, userId);

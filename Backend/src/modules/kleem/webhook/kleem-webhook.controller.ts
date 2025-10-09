@@ -36,14 +36,14 @@ class MessageDto {
     example: 'user',
     enum: ['user', 'bot', 'agent'],
   })
-  role: 'user' | 'bot' | 'agent';
+  role!: 'user' | 'bot' | 'agent';
 
   @ApiProperty({
     description: 'نص الرسالة',
     example: 'مرحباً، كيف يمكنني المساعدة؟',
     type: String,
   })
-  text: string;
+  text!: string;
 
   @ApiPropertyOptional({
     description: 'بيانات إضافية',
@@ -74,7 +74,7 @@ class ConversationRequestDto {
       },
     ],
   })
-  messages: MessageDto[];
+  messages!: MessageDto[];
 }
 
 /**

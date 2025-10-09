@@ -19,6 +19,43 @@ const MAX_IDLE_TIME_MS = 30000;
 const HEARTBEAT_FREQUENCY_MS = 10000;
 const WRITE_CONCERN_WTIMEOUT_MS = 10000;
 
+function getMongoUri(configService: ConfigService): string {
+  const nodeEnv = configService.get<string>('NODE_ENV') || 'development';
+  return nodeEnv === 'test'
+    ? 'mongodb://localhost:27017/kaleem_test'
+    : configService.get<string>('MONGODB_URI') || '';
+}
+
+function isLocalConnection(mongoUri: string): boolean {
+  return (
+    mongoUri?.includes('localhost') ||
+    mongoUri?.includes('127.0.0.1') ||
+    mongoUri?.includes('mongo:27017') ||
+    mongoUri?.includes('mongodb:27017')
+  );
+}
+
+function shouldEnableSSL(
+  configService: ConfigService,
+  mongoUri: string,
+): boolean {
+  const nodeEnv = configService.get<string>('NODE_ENV') || 'development';
+  const isProd = nodeEnv === 'production';
+  const sslOverride = configService.get<string>('MONGODB_SSL');
+  const nonSSLServers = ['31.97.155.167'];
+  const isNonSSLServer = nonSSLServers.some((server) =>
+    mongoUri?.includes(server),
+  );
+
+  return (
+    sslOverride === 'true' ||
+    (sslOverride !== 'false' &&
+      isProd &&
+      !isLocalConnection(mongoUri) &&
+      !isNonSSLServer)
+  );
+}
+
 // Database metrics provider - defined here to avoid circular dependency
 export const DatabaseMetricsProvider = makeHistogramProvider({
   name: 'database_query_duration_seconds',
@@ -37,32 +74,13 @@ export const DATABASE_QUERY_DURATION_SECONDS =
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const mongoUri =
-          configService.get<string>('MONGODB_URI') ||
-          'mongodb://admin:strongpassword@31.97.155.167:27017/musaidbot?authSource=admin&retryWrites=false&directConnection=true';
+        const mongoUri = getMongoUri(configService);
         const nodeEnv = configService.get<string>('NODE_ENV') || 'development';
-        const isLocalConnection =
-          mongoUri.includes('localhost') ||
-          mongoUri.includes('127.0.0.1') ||
-          mongoUri.includes('mongo:27017') ||
-          mongoUri.includes('mongodb:27017');
-
-        const nonSSLServers = ['31.97.155.167'];
-        const isNonSSLServer = nonSSLServers.some((server) =>
-          mongoUri.includes(server),
-        );
-
         const isProd = nodeEnv === 'production';
-        const sslOverride = configService.get<string>('MONGODB_SSL');
-        const enableSSL =
-          sslOverride === 'true' ||
-          (sslOverride !== 'false' &&
-            isProd &&
-            !isLocalConnection &&
-            !isNonSSLServer);
+        const enableSSL = shouldEnableSSL(configService, mongoUri);
 
         return {
-          uri: mongoUri.replace('directConnection=true', ''),
+          uri: mongoUri?.replace('directConnection=true', ''),
           autoIndex: !isProd,
           maxPoolSize: MAX_POOL_SIZE,
           minPoolSize: MIN_POOL_SIZE,

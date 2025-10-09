@@ -12,18 +12,21 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
-
   "editor.formatOnSave": true,
 
-  // لو تستخدم Prettier كفورماتر للـ TS/JS (زي ما هو عندك في User Settings) خليه زي ما هو.
-  // ما تحتاج تعدّل هنا أي شيء لـ prettier.
-
-  // لا تضع eslint.runtime إطلاقًا — خله غير موجود.
-  // هذا يجعل الإضافة تستخدم Node المدمج تلقائيًا.
-
-  // اختياري: قلّل ضجيج المشاكل من node_modules/dist
   "files.exclude": {
     "**/dist": true,
     "**/coverage": true
-  }
+  },
+
+  "jest.runMode": {
+    "type": "on-demand",
+    "testFile": true
+  },
+  "jest.coverage": {
+    "showOnLoad": false
+  },
+  "jest.jestCommandLine": "npx jest --config jest.config.js --runInBand",
+  "jest.rootPath": ".",
+  "testing.automaticallyOpenPeekView": "never"
 }

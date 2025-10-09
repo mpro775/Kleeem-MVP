@@ -91,18 +91,13 @@ export function mapOrderDocumentToOrder(
   const status = safeString((orderDoc as { status?: unknown }).status);
 
   // customer
-  const customer = {
-    name:
-      customerRaw.name !== undefined ? safeString(customerRaw.name) : undefined,
-    phone:
-      customerRaw.phone !== undefined
-        ? safeString(customerRaw.phone)
-        : undefined,
-    address:
-      customerRaw.address !== undefined
-        ? safeString(customerRaw.address)
-        : undefined,
-  };
+  const customer: { name?: string; phone?: string; address?: string } = {};
+  if (customerRaw.name !== undefined)
+    customer.name = safeString(customerRaw.name);
+  if (customerRaw.phone !== undefined)
+    customer.phone = safeString(customerRaw.phone);
+  if (customerRaw.address !== undefined)
+    customer.address = safeString(customerRaw.address);
 
   // products
   const productsRaw = (orderDoc as { products?: unknown }).products;

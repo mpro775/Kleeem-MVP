@@ -39,7 +39,7 @@ class SendKaleemMessageDto {
     example: 'مرحباً، أريد الاستفسار عن الخدمات المتوفرة',
     required: true,
   })
-  text: string;
+  text!: string;
 
   @IsOptional()
   @IsObject()
@@ -60,7 +60,7 @@ class RateMessageKaleemDto {
     example: 2,
     required: true,
   })
-  msgIdx: number;
+  msgIdx!: number;
 
   @IsIn([0, 1])
   @ApiProperty({
@@ -69,7 +69,7 @@ class RateMessageKaleemDto {
     example: 1,
     required: true,
   })
-  rating: 0 | 1;
+  rating!: 0 | 1;
 
   @IsOptional()
   @IsString()

@@ -65,12 +65,14 @@ describe('Telegram Webhook E2E (H2)', () => {
         },
       };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post(`/api/webhooks/telegram/${channelId}`)
         .set('X-Telegram-Bot-Api-Secret-Token', 'wrong-secret')
         .set('Content-Type', 'application/json')
         .send(payload)
         .expect(403);
+
+      expect(response.status).toBe(403);
     });
 
     it('should reject request without secret token', async () => {
@@ -79,11 +81,13 @@ describe('Telegram Webhook E2E (H2)', () => {
         message: { text: 'No secret header' },
       };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post(`/api/webhooks/telegram/${channelId}`)
         .set('Content-Type', 'application/json')
         .send(payload)
         .expect(403);
+
+      expect(response.status).toBe(403);
     });
   });
 
@@ -146,11 +150,13 @@ describe('Telegram Webhook E2E (H2)', () => {
       };
 
       // كلاهما يجب أن يُعالج بنجاح
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post(`/api/webhooks/telegram/${channelId}`)
         .set(headers)
         .send(payload1)
         .expect(200);
+
+      expect(response.status).toBe(200);
 
       await request(app.getHttpServer())
         .post(`/api/webhooks/telegram/${channelId}`)
@@ -175,12 +181,17 @@ describe('Telegram Webhook E2E (H2)', () => {
       ];
 
       for (const secret of secrets) {
-        await request(app.getHttpServer())
+        const response = await request(app.getHttpServer())
           .post(`/api/webhooks/telegram/${channelId}`)
           .set('X-Telegram-Bot-Api-Secret-Token', secret)
           .send(payload)
           .expect(403);
+
+        expect(response.status).toBe(403);
       }
+
+      // Verify all secrets were tested
+      expect(secrets).toHaveLength(3);
     });
   });
 });

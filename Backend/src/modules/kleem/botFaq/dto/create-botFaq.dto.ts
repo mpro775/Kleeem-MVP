@@ -24,7 +24,7 @@ export class CreateBotFaqDto {
   )
   @IsString()
   @MaxLength(500)
-  question: string;
+  question!: string;
 
   @ApiProperty({
     description: 'إجابة السؤال',
@@ -38,7 +38,7 @@ export class CreateBotFaqDto {
   )
   @IsString()
   @MaxLength(MAX_LENGTH_FEEDBACK)
-  answer: string;
+  answer!: string;
 
   @ApiPropertyOptional({
     description: 'مصدر السؤال',

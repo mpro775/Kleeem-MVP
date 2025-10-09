@@ -1,186 +1,218 @@
-import { HttpService } from '@nestjs/axios';
-import { ConfigService } from '@nestjs/config';
-import { Test, type TestingModule } from '@nestjs/testing';
 import { Types } from 'mongoose';
-import { of } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
-import { SallaService } from '../../salla/salla.service';
-import {
-  SALLA_INTEGRATION_REPOSITORY,
-  SALLA_MERCHANT_REPOSITORY,
-} from '../../salla/tokens';
+import { SallaService } from '../salla.service';
 
-import type { SallaIntegrationRepository } from '../../salla/repositories/integration.repository';
-import type { SallaMerchantRepository } from '../../salla/repositories/merchant.repository';
+jest.mock('rxjs', () => {
+  const actual = jest.requireActual('rxjs');
+  return { ...actual, firstValueFrom: jest.fn() };
+});
+
+const firstValueFromMock = firstValueFrom as jest.MockedFunction<
+  typeof firstValueFrom
+>;
 
 describe('SallaService', () => {
-  let service: SallaService;
+  const makeDeps = () => {
+    const http = {
+      post: jest.fn(),
+      get: jest.fn(),
+    } as any;
+    const configValues: Record<string, unknown> = {
+      SALLA_CLIENT_ID: 'client-id',
+      SALLA_CLIENT_SECRET: 'client-secret',
+      SALLA_REDIRECT_URI: 'https://app/callback',
+      SALLA_SCOPE: 'offline_access',
+      SALLA_API_BASE: 'https://api.salla.dev',
+      SALLA_WEBHOOK_URL: 'https://webhook',
+    };
+    const config = {
+      get: jest.fn((key: string) => configValues[key]),
+    } as any;
+    const integrations = {
+      upsert: jest.fn(),
+      findByMerchant: jest.fn(),
+    } as any;
+    const merchants = {
+      updateProductSourceSalla: jest.fn(),
+    } as any;
 
-  const integRepo: jest.Mocked<SallaIntegrationRepository> = {
-    findByMerchant: jest.fn(),
-    upsert: jest.fn(),
+    return { http, config, integrations, merchants };
   };
 
-  const merchRepo: jest.Mocked<SallaMerchantRepository> = {
-    updateProductSourceSalla: jest.fn(),
+  const makeService = () => {
+    const deps = makeDeps();
+    const svc = new SallaService(
+      deps.http,
+      deps.config,
+      deps.integrations,
+      deps.merchants,
+    );
+    return { ...deps, svc };
   };
 
-  const httpMock = {
-    get: jest.fn(),
-    post: jest.fn(),
-  } as unknown as jest.Mocked<HttpService>;
-
-  const configMock = {
-    get: jest.fn((k: string) => {
-      const map: Record<string, string> = {
-        SALLA_CLIENT_ID: 'cid',
-        SALLA_CLIENT_SECRET: 'sec',
-        SALLA_REDIRECT_URI: 'https://app.example.com/callback',
-        SALLA_WEBHOOK_URL: 'https://api.example.com/webhooks/salla',
-        SALLA_API_BASE: 'https://api.salla.dev',
-      };
-      return map[k];
-    }),
-  } as unknown as jest.Mocked<ConfigService>;
-
-  const merchantId = new Types.ObjectId();
-
-  beforeEach(async () => {
+  beforeEach(() => {
     jest.clearAllMocks();
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        SallaService,
-        { provide: SALLA_INTEGRATION_REPOSITORY, useValue: integRepo },
-        { provide: SALLA_MERCHANT_REPOSITORY, useValue: merchRepo },
-        { provide: HttpService, useValue: httpMock },
-        { provide: ConfigService, useValue: configMock },
-      ],
-    }).compile();
-
-    service = module.get(SallaService);
   });
 
-  it('getOAuthUrl includes client_id and state', () => {
-    const url = service.getOAuthUrl('state123');
-    expect(url).toContain('client_id=cid');
-    expect(url).toContain('state=state123');
+  it('builds OAuth URL with state', () => {
+    const { svc } = makeService();
+    const url = svc.getOAuthUrl('state-123');
+    expect(url).toContain('client_id=client-id');
+    expect(url).toContain('state=state-123');
   });
 
-  it('getValidAccessToken returns cached token when not expiring', async () => {
-    integRepo.findByMerchant.mockResolvedValue({
-      _id: new Types.ObjectId(),
+  it('exchanges code for token', async () => {
+    const { svc, http } = makeService();
+    http.post.mockReturnValue('OBS');
+    firstValueFromMock.mockResolvedValueOnce({
+      data: {
+        access_token: 'token',
+        token_type: 'bearer',
+        expires: 3600,
+      },
+    });
+
+    const token = await svc.exchangeCodeForToken('code');
+    expect(token.access_token).toBe('token');
+    expect(http.post).toHaveBeenCalledWith(
+      'https://accounts.salla.sa/oauth2/token',
+      expect.any(URLSearchParams),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+    );
+  });
+
+  it('upserts integration and updates merchant', async () => {
+    const { svc, integrations, merchants } = makeService();
+    const merchantId = new Types.ObjectId();
+    await svc.upsertIntegration(merchantId, {
+      access_token: 'acc',
+      token_type: 'bearer',
+      expires: 10,
+    });
+    expect(integrations.upsert).toHaveBeenCalledWith(
       merchantId,
-      provider: 'salla',
-      accessToken: 'tA',
-      expiresAt: new Date(Date.now() + 5 * 60_000),
-    } as any);
+      expect.objectContaining({ provider: 'salla', accessToken: 'acc' }),
+    );
+    expect(merchants.updateProductSourceSalla).toHaveBeenCalledWith(
+      merchantId,
+      expect.objectContaining({ lastSync: expect.any(Date) }),
+    );
+  });
 
-    const tok = await service.getValidAccessToken(merchantId);
-    expect(tok).toBe('tA');
+  it('refreshAccessToken fetches new token from API', async () => {
+    const { svc, integrations, http } = makeService();
+    const merchantId = new Types.ObjectId();
+    integrations.findByMerchant.mockResolvedValueOnce({ refreshToken: 'ref' });
+    http.post.mockReturnValue('OBS');
+    firstValueFromMock.mockResolvedValueOnce({
+      data: {
+        access_token: 'new-access',
+        token_type: 'bearer',
+        expires: 3600,
+      },
+    });
+    integrations.upsert.mockResolvedValueOnce(undefined);
+
+    const token = await svc.refreshAccessToken(merchantId);
+    expect(token).toBe('new-access');
+    expect(integrations.upsert).toHaveBeenCalled();
+  });
+
+  it('getValidAccessToken reuses valid token', async () => {
+    const { svc, integrations } = makeService();
+    const merchantId = new Types.ObjectId();
+    integrations.findByMerchant.mockResolvedValueOnce({
+      accessToken: 'still-valid',
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
+
+    const token = await svc.getValidAccessToken(merchantId);
+    expect(token).toBe('still-valid');
   });
 
   it('getValidAccessToken refreshes when near expiry', async () => {
-    integRepo.findByMerchant
-      .mockResolvedValueOnce({
-        _id: new Types.ObjectId(),
-        merchantId,
-        provider: 'salla',
-        refreshToken: 'r1',
-        expiresAt: new Date(Date.now() + 30_000),
-      } as any)
-      .mockResolvedValueOnce({
-        _id: new Types.ObjectId(),
-        merchantId,
-        provider: 'salla',
-        accessToken: 'tB',
-        refreshToken: 'r1',
-        expiresAt: new Date(Date.now() + 3600_000),
-      } as any);
+    const { svc, integrations } = makeService();
+    const merchantId = new Types.ObjectId();
+    const refreshSpy = jest
+      .spyOn(svc, 'refreshAccessToken')
+      .mockResolvedValueOnce('refreshed');
+    integrations.findByMerchant.mockResolvedValueOnce({
+      accessToken: 'old',
+      expiresAt: new Date(Date.now() + 30 * 1000),
+      refreshToken: 'refresh',
+    });
 
-    (httpMock.post as any).mockReturnValue(
-      of({
+    const token = await svc.getValidAccessToken(merchantId);
+    expect(refreshSpy).toHaveBeenCalled();
+    expect(token).toBe('refreshed');
+  });
+
+  it('fetchProductsPage returns processed products and pagination flag', async () => {
+    const { svc, http } = makeService();
+    http.get.mockReturnValue('OBS');
+    firstValueFromMock.mockResolvedValueOnce({
+      data: {
         data: {
-          access_token: 'tB',
-          refresh_token: 'r1',
-          token_type: 'Bearer',
-          expires: 3600,
+          products: [
+            {
+              id: 1,
+              name: 'Product 1',
+              price: { amount: 10, currency: 'SAR' },
+              stock: 5,
+              updated_at: '2024-01-01T00:00:00Z',
+            },
+          ],
         },
-      }),
+        links: { next: 'next-link' },
+      },
+    });
+
+    const { products, hasNext } = await (svc as any).fetchProductsPage(
+      'https://api.salla.dev',
+      'token',
+      1,
     );
-
-    const tok = await service.getValidAccessToken(merchantId);
-    const upsertCall = expect(integRepo.upsert.bind(integRepo));
-    upsertCall.toHaveBeenCalled();
-    expect(tok).toBe('tB');
+    expect(products[0]).toMatchObject({
+      externalId: '1',
+      title: 'Product 1',
+      price: 10,
+      stock: 5,
+    });
+    expect(hasNext).toBe(true);
+    expect(http.get).toHaveBeenCalledWith(
+      'https://api.salla.dev/admin/v2/products?page=1',
+      { headers: { Authorization: 'Bearer token' } },
+    );
   });
 
-  it('fetchSallaProducts paginates and maps results', async () => {
-    integRepo.findByMerchant.mockResolvedValue({
-      _id: new Types.ObjectId(),
-      merchantId,
-      provider: 'salla',
-      accessToken: 't',
-      expiresAt: new Date(Date.now() + 3600_000),
-    } as any);
+  it('fetchSallaProducts loops pages until no next', async () => {
+    const { svc } = makeService();
+    const fetchPage = jest
+      .spyOn(svc as any, 'fetchProductsPage')
+      .mockResolvedValueOnce({ products: [{ externalId: '1' }], hasNext: true })
+      .mockResolvedValueOnce({
+        products: [{ externalId: '2' }],
+        hasNext: false,
+      });
+    jest.spyOn(svc, 'getValidAccessToken').mockResolvedValueOnce('token');
 
-    (httpMock.get as any)
-      .mockReturnValueOnce(
-        of({
-          data: {
-            data: {
-              products: [
-                {
-                  id: 1,
-                  name: 'سلعة',
-                  price: { amount: 10, currency: 'SAR' },
-                  stock: 3,
-                  updated_at: '2024-01-01T00:00:00Z',
-                },
-              ],
-            },
-            links: { next: 'next' },
-          },
-        }),
-      )
-      .mockReturnValueOnce(
-        of({
-          data: {
-            data: {
-              products: [
-                {
-                  product_id: 2,
-                  title: 'Item',
-                  pricing: { price: 20 },
-                  inventory: { quantity: 0 },
-                  updatedAt: null,
-                },
-              ],
-            },
-            links: { next: null },
-          },
-        }),
-      );
-
-    const res = await service.fetchSallaProducts(merchantId);
-    expect(res).toHaveLength(2);
-    expect(res[0].externalId).toBe('1');
-    expect(res[1].title).toBe('Item');
+    const result = await svc.fetchSallaProducts(new Types.ObjectId());
+    expect(result).toEqual([{ externalId: '1' }, { externalId: '2' }]);
+    expect(fetchPage).toHaveBeenCalledTimes(2);
   });
 
-  it('registerDefaultWebhooks posts subscribe', async () => {
-    integRepo.findByMerchant.mockResolvedValue({
-      _id: new Types.ObjectId(),
-      merchantId,
-      provider: 'salla',
-      accessToken: 't',
-      expiresAt: new Date(Date.now() + 3600_000),
-    } as any);
+  it('registerDefaultWebhooks posts subscription', async () => {
+    const { svc, http } = makeService();
+    http.post.mockReturnValue('OBS');
+    firstValueFromMock.mockResolvedValueOnce({ data: {} });
+    jest.spyOn(svc, 'getValidAccessToken').mockResolvedValueOnce('token');
 
-    (httpMock.post as any).mockReturnValue(of({ data: { ok: true } }));
-
-    await service.registerDefaultWebhooks(merchantId);
-    expect((httpMock.post as any).mock.calls[0][0]).toContain(
-      '/webhooks/subscribe',
+    await svc.registerDefaultWebhooks(new Types.ObjectId());
+    expect(http.post).toHaveBeenCalledWith(
+      'https://api.salla.dev/admin/v2/webhooks/subscribe',
+      { url: 'https://webhook', event: 'product.created' },
+      { headers: { Authorization: 'Bearer token' } },
     );
   });
 });

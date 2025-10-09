@@ -105,7 +105,7 @@ export class MongoCategoriesRepository implements CategoriesRepository {
     await this.categoryModel.updateOne(
       { _id: categoryId },
       { $set: { order } },
-      { session },
+      ...(session ? [{ session }] : []),
     );
   }
 
@@ -115,14 +115,18 @@ export class MongoCategoriesRepository implements CategoriesRepository {
     session?: ClientSession,
   ): Promise<void> {
     const siblings = await this.categoryModel
-      .find({ merchantId, parent: parentId }, null, { session })
+      .find(
+        { merchantId, parent: parentId },
+        null,
+        ...(session ? [{ session }] : []),
+      )
       .sort({ order: 1, name: 1 });
     for (let i = 0; i < siblings.length; i++) {
       if (siblings[i].order !== i) {
         await this.categoryModel.updateOne(
           { _id: siblings[i]._id },
           { $set: { order: i } },
-          { session },
+          ...(session ? [{ session }] : []),
         );
       }
     }

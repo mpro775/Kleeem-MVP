@@ -7,13 +7,13 @@ export type LeadDocument = Lead & Document;
 @Schema({ timestamps: true })
 export class Lead {
   @Prop({ required: true, index: true })
-  merchantId: string;
+  merchantId?: string;
 
   @Prop({ required: true })
-  sessionId: string;
+  sessionId?: string;
 
   @Prop({ type: Object, required: true })
-  data: Record<string, unknown>;
+  data?: Record<string, unknown>;
 
   @Prop()
   source?: string;

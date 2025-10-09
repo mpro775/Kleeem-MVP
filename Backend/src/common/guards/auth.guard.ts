@@ -10,7 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 
 import type { JwtPayload } from '../interfaces/jwt-payload.interface';
-
+const LENTHOFBARER = 6; // Length of "Bearer"
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
@@ -28,7 +28,7 @@ export class AuthGuard implements CanActivate {
 
     try {
       const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
-        secret: process.env.JWT_SECRET,
+        secret: process.env.JWT_SECRET as string,
       });
 
       // إضافة المستخدم للطلب
@@ -41,7 +41,25 @@ export class AuthGuard implements CanActivate {
   }
 
   private extractTokenFromHeader(request: Request): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    return type === 'Bearer' ? token : undefined;
+    const authHeader = request.headers?.authorization;
+    if (!authHeader) return undefined;
+
+    const lowerAuth = authHeader.toLowerCase();
+
+    // Check if it starts with "bearer" (case insensitive)
+    if (!lowerAuth.startsWith('bearer')) return undefined;
+
+    // Check if there's whitespace after "bearer"
+    if (
+      authHeader.length <= LENTHOFBARER ||
+      !/\s/.test(authHeader[LENTHOFBARER])
+    )
+      return undefined;
+
+    // Extract token after "Bearer" + whitespace and trim any extra whitespace
+    const tokenPart = authHeader.slice(LENTHOFBARER).trim(); // Skip "Bearer", then trim
+    if (!tokenPart) return undefined;
+
+    return tokenPart;
   }
 }

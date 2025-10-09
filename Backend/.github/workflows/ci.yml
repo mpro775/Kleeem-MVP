@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [18, 20]
+        node: [22]
     services:
       redis:
         image: redis:7-alpine
@@ -63,20 +63,38 @@ jobs:
         run: npm run test:cov
 
       - name: Upload coverage artifact
-        if: matrix.node == 20
+        if: matrix.node == 22
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
           path: coverage/
           retention-days: 7
 
-      - name: Enforce coverage >= 70%
-        if: matrix.node == 20
+      - name: Enforce coverage thresholds
+        if: matrix.node == 22
         run: |
-          sudo apt-get update && sudo apt-get install -y jq
-          PCT=$(jq '.total.lines.pct' coverage/coverage-summary.json)
-          echo "Coverage: ${PCT}%"
-          awk "BEGIN {exit !(${PCT} < 70)}" && { echo "❌ Coverage below 70%"; exit 1; } || echo "✅ Coverage OK"
+          sudo apt-get update && sudo apt-get install -y jq bc
+          echo "=== Coverage Report ==="
+          jq '.total' coverage/coverage-summary.json
+
+          # Check each threshold
+          STATEMENTS=$(jq '.total.statements.pct' coverage/coverage-summary.json)
+          LINES=$(jq '.total.lines.pct' coverage/coverage-summary.json)
+          BRANCHES=$(jq '.total.branches.pct' coverage/coverage-summary.json)
+          FUNCTIONS=$(jq '.total.functions.pct' coverage/coverage-summary.json)
+
+          echo "Statements: ${STATEMENTS}% (required: 70%)"
+          echo "Lines: ${LINES}% (required: 70%)"
+          echo "Branches: ${BRANCHES}% (required: 60%)"
+          echo "Functions: ${FUNCTIONS}% (required: 40%)"
+
+          # Check thresholds
+          if [ $(echo "${STATEMENTS} < 70" | bc -l) -eq 1 ]; then echo "❌ Statements coverage below 70%"; exit 1; fi
+          if [ $(echo "${LINES} < 70" | bc -l) -eq 1 ]; then echo "❌ Lines coverage below 70%"; exit 1; fi
+          if [ $(echo "${BRANCHES} < 60" | bc -l) -eq 1 ]; then echo "❌ Branches coverage below 60%"; exit 1; fi
+          if [ $(echo "${FUNCTIONS} < 40" | bc -l) -eq 1 ]; then echo "❌ Functions coverage below 40%"; exit 1; fi
+
+          echo "✅ All coverage thresholds met!"
 
       - name: E2E / Integration tests (PRs only)
         if: github.event_name == 'pull_request'

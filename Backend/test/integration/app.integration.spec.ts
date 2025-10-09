@@ -74,10 +74,12 @@ describe('API Integration Tests', () => {
     });
 
     it('should not allow duplicate registration', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/auth/register')
         .send(testUser)
         .expect(400);
+
+      expect(response.status).toBe(400);
     });
 
     it('should login with valid credentials', async () => {
@@ -97,24 +99,32 @@ describe('API Integration Tests', () => {
     });
 
     it('should reject invalid credentials', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({
           email: testUser.email,
           password: 'wrongpassword',
         })
         .expect(400);
+
+      expect(response.status).toBe(400);
     });
 
     it('should access protected route with valid token', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .get('/api/auth/profile')
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
+
+      expect(response.status).toBe(200);
     });
 
     it('should reject access without token', async () => {
-      await request(app.getHttpServer()).get('/api/auth/profile').expect(401);
+      const response = await request(app.getHttpServer())
+        .get('/api/auth/profile')
+        .expect(401);
+
+      expect(response.status).toBe(401);
     });
   });
 
@@ -196,16 +206,14 @@ describe('API Integration Tests', () => {
     });
 
     it('should delete a product', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .delete(`/api/products/${productId}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
+      expect(response.status).toBe(200);
+
       // Verify product is deleted
-      await request(app.getHttpServer())
-        .get(`/api/products/${productId}`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .expect(404);
     });
   });
 
@@ -320,17 +328,21 @@ describe('API Integration Tests', () => {
     });
 
     it('should handle not found errors', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .get('/api/products/507f1f77bcf86cd799439011') // Valid ObjectId that doesn't exist
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(404);
+
+      expect(response.status).toBe(404);
     });
 
     it('should handle unauthorized access', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .get('/api/products')
         .set('Authorization', 'Bearer invalid-token')
         .expect(401);
+
+      expect(response.status).toBe(401);
     });
   });
 

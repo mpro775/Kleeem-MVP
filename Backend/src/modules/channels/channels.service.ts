@@ -48,16 +48,19 @@ export class ChannelsService {
   }
 
   async create(dto: CreateChannelDto): Promise<HydratedDocument<Channel>> {
-    const doc = await this.repo.create({
-      merchantId: new Types.ObjectId(
-        dto.merchantId,
-      ) as unknown as Types.ObjectId,
+    const data: Partial<HydratedDocument<Channel>> = {
+      merchantId: new Types.ObjectId(dto.merchantId),
       provider: dto.provider as unknown as ChannelProvider,
-      accountLabel: dto.accountLabel,
       isDefault: !!dto.isDefault,
       enabled: false,
       status: ChannelStatus.DISCONNECTED,
-    });
+    };
+
+    if (dto.accountLabel) {
+      data.accountLabel = dto.accountLabel;
+    }
+
+    const doc = await this.repo.create(data);
 
     if (doc.isDefault) {
       await this.repo.unsetDefaults(

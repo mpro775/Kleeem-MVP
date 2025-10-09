@@ -66,7 +66,10 @@ describe('Webhooks Integration Tests', () => {
         authToken = loginResponse.body.access_token;
       }
     } catch (error) {
-      console.warn('Error during test setup:', error.message);
+      console.warn(
+        'Error during test setup:',
+        error instanceof Error ? error.message : String(error),
+      );
       authToken = 'mock-token';
     }
   });
@@ -98,10 +101,12 @@ describe('Webhooks Integration Tests', () => {
     it('should return error for invalid merchant', async () => {
       const webhookPayload = { test: 'data' };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/webhooks/incoming/invalid-merchant')
         .send(webhookPayload)
         .expect(500); // Because merchant not found
+
+      expect(response.status).toBe(500);
     });
   });
 
@@ -143,13 +148,15 @@ describe('Webhooks Integration Tests', () => {
     });
 
     it('should reject invalid verification', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .get(`/webhooks/${mockMerchant.id}/incoming`)
         .query({
           'hub.verify_token': 'wrong-token',
           'hub.mode': 'subscribe',
         })
         .expect(403);
+
+      expect(response.status).toBe(403);
     });
   });
 
@@ -185,10 +192,12 @@ describe('Webhooks Integration Tests', () => {
         },
       };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post(`/webhooks/agent-reply/${mockMerchant.id}`)
         .send(agentReplyData)
         .expect(401);
+
+      expect(response.status).toBe(401);
     });
   });
 });

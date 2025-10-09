@@ -6,17 +6,17 @@ export type StatsDocument = Stats & Document;
 @Schema()
 export class Stats {
   @Prop({ type: Types.ObjectId, required: true, index: true })
-  merchantId: Types.ObjectId;
+  merchantId?: Types.ObjectId;
 
   @Prop({
     required: true,
     enum: ['daily', 'weekly', 'monthly'],
     index: true,
   })
-  period: 'daily' | 'weekly' | 'monthly';
+  period?: 'daily' | 'weekly' | 'monthly';
 
   @Prop({ type: Date, required: true, index: true })
-  date: Date; // بداية اليوم/الأسبوع/الشهر
+  date?: Date; // بداية اليوم/الأسبوع/الشهر
 
   @Prop()
   productCount?: number;

@@ -7,12 +7,12 @@ export type IntegrationDocument = Integration & Document;
 @Schema({ timestamps: true })
 export class Integration {
   @Prop({ type: Types.ObjectId, ref: 'Merchant', index: true, required: true })
-  merchantId: Types.ObjectId;
+  merchantId!: Types.ObjectId;
 
   @Prop({ enum: ['salla', 'zid'], required: true, index: true })
-  provider: 'salla' | 'zid';
+  provider!: 'salla' | 'zid';
 
-  @Prop({ default: false }) active: boolean;
+  @Prop({ default: false }) active!: boolean;
 
   // ======== أسرار/توكنات (عام) — قديمة (للتوافق الخلفي) ========
   @Prop() accessToken?: string;

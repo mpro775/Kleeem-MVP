@@ -4,10 +4,10 @@ import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class IncomingEvent {
-  @Prop({ required: true }) merchantId: string;
-  @Prop({ required: true }) channel: string; // whatsapp|telegram|webchat
-  @Prop({ required: true }) platformMessageId: string; // message_id | key.id
-  @Prop() sessionId: string;
+  @Prop({ required: true }) merchantId!: string;
+  @Prop({ required: true }) channel!: string; // whatsapp|telegram|webchat
+  @Prop({ required: true }) platformMessageId!: string; // message_id | key.id
+  @Prop() sessionId!: string;
 }
 
 export type IncomingEventDocument = IncomingEvent & Document;

@@ -4,7 +4,11 @@ import { registerAs } from '@nestjs/config';
 const parseIntWithDefault = (
   value: string | undefined,
   defaultValue: number,
-): number => parseInt(value ?? String(defaultValue), 10);
+): number => {
+  const parsed = parseInt(value ?? String(defaultValue), 10);
+  // Return default if parsing failed (NaN) or resulted in negative value
+  return isNaN(parsed) || parsed < 0 ? defaultValue : parsed;
+};
 
 import {
   RABBIT_CONFIRM_TIMEOUT_MS_DEFAULT,
@@ -109,7 +113,7 @@ const getCacheConfig = () => ({
   ), // 5 minutes
 });
 
-export default registerAs('vars', () => ({
+export const varsConfig = registerAs('vars', () => ({
   rabbit: getRabbitConfig(),
   chat: getChatConfig(),
   embeddings: getEmbeddingsConfig(),

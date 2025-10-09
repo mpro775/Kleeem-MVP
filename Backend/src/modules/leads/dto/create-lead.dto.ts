@@ -9,7 +9,7 @@ export class CreateLeadDto {
   })
   @IsString({ message: 'يجب أن يكون معرف الجلسة نصيًا' })
   @IsNotEmpty({ message: 'معرف الجلسة مطلوب' })
-  sessionId: string;
+  sessionId?: string;
 
   @ApiProperty({
     description: 'بيانات النموذج كـ key/value object',
@@ -23,7 +23,7 @@ export class CreateLeadDto {
   })
   @IsObject({ message: 'يجب أن تكون البيانات كائنًا' })
   @IsNotEmpty({ message: 'بيانات النموذج مطلوبة' })
-  data: Record<string, unknown>;
+  data?: Record<string, unknown>;
 
   @ApiPropertyOptional({
     description: 'مصدر العميل المحتمل',

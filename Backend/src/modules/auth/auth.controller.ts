@@ -63,7 +63,7 @@ const MINUTES_15 = 15 * SECONDS_PER_MINUTE; // 15m
 const DAYS_7 = 7 * 24 * SECONDS_PER_MINUTE * 60; // 7d
 
 // ========== Local DTOs (لطلبات بسيطة داخل هذا الكنترولر) ==========
-class RefreshRequestDto {
+export class RefreshRequestDto {
   @ApiPropertyOptional({
     description: 'Refresh token (optional if cookie set)',
   })
@@ -72,7 +72,7 @@ class RefreshRequestDto {
   refreshToken?: string;
 }
 
-class LogoutRequestDto {
+export class LogoutRequestDto {
   @ApiPropertyOptional({
     description: 'Refresh token (optional if cookie set)',
   })
@@ -725,7 +725,7 @@ export class AuthController {
     ip: string;
   } {
     return {
-      userAgent: getHeaderString(req, 'user-agent') ?? undefined,
+      userAgent: getHeaderString(req, 'user-agent') ?? '',
       ip: req.ip ?? '',
     };
   }
@@ -819,9 +819,9 @@ export class AuthController {
     userId: string | null,
   ): void {
     const verifyOptions: JwtVerifyOptions = {
-      secret: this.config.get<string>('JWT_SECRET'),
-      issuer: this.config.get<string>('JWT_ISSUER'),
-      audience: this.config.get<string>('JWT_AUDIENCE'),
+      secret: this.config.get<string>('JWT_SECRET') ?? '',
+      issuer: this.config.get<string>('JWT_ISSUER') ?? '',
+      audience: this.config.get<string>('JWT_AUDIENCE') ?? '',
     };
     const decoded = this.jwtService.verify<JwtDecodedMinimal>(
       refreshToken,
@@ -841,9 +841,9 @@ export class AuthController {
     const access = authHeader.slice(7);
     try {
       const verifyOptions: JwtVerifyOptions = {
-        secret: this.config.get<string>('JWT_SECRET'),
-        issuer: this.config.get<string>('JWT_ISSUER'),
-        audience: this.config.get<string>('JWT_AUDIENCE'),
+        secret: this.config.get<string>('JWT_SECRET') ?? '',
+        issuer: this.config.get<string>('JWT_ISSUER') ?? '',
+        audience: this.config.get<string>('JWT_AUDIENCE') ?? '',
       };
       const decoded = this.jwtService.verify<JwtDecodedMinimal>(
         access,

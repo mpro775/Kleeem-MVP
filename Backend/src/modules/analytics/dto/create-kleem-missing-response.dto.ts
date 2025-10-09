@@ -4,10 +4,10 @@ import { IsString, IsOptional, IsBoolean, IsIn } from 'class-validator';
 export class CreateKleemMissingResponseDto {
   @IsString()
   @IsIn(['telegram', 'whatsapp', 'webchat'])
-  channel: 'telegram' | 'whatsapp' | 'webchat';
+  channel?: 'telegram' | 'whatsapp' | 'webchat';
 
   @IsString()
-  question: string;
+  question?: string;
 
   @IsOptional()
   @IsString()

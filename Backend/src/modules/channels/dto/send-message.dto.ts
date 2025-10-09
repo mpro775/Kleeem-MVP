@@ -5,9 +5,9 @@ import { IsString } from 'class-validator';
 export class SendMessageDto {
   @ApiProperty()
   @IsString()
-  to: string;
+  to!: string;
 
   @ApiProperty()
   @IsString()
-  text: string;
+  text!: string;
 }

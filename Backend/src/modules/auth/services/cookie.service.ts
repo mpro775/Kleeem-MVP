@@ -48,7 +48,7 @@ export class CookieService {
       httpOnly: true,
       secure,
       sameSite,
-      domain,
+      ...(domain && { domain }),
       path: '/',
     };
   }

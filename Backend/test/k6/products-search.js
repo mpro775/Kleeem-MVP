@@ -13,7 +13,7 @@ export const options = {
   ],
 };
 
-export default function () {
+export function productsSearch() {
   const url = `${env.API_BASE}/products/search?q=brake`;
   const res = http.get(url);
   check(res, { 'status 200': (r) => r.status === 200 });

@@ -7,10 +7,10 @@ export type KleemRole = 'user' | 'bot';
 @Schema({ _id: false })
 export class BotSingleMessage {
   @Prop({ type: String, enum: ['user', 'bot'], required: true })
-  role: KleemRole;
+  role!: KleemRole;
 
   @Prop({ type: String, required: true })
-  text: string;
+  text!: string;
 
   @Prop({ type: Object, default: {} })
   metadata?: Record<string, unknown>;
@@ -28,10 +28,10 @@ export class BotSingleMessage {
 @Schema({ timestamps: true })
 export class BotChatSession extends Document {
   @Prop({ required: true })
-  sessionId: string;
+  sessionId!: string;
 
   @Prop({ type: [BotSingleMessage], default: [] })
-  messages: BotSingleMessage[];
+  messages!: BotSingleMessage[];
 }
 
 export const BotChatSessionSchema =

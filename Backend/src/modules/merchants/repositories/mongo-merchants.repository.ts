@@ -233,12 +233,23 @@ export class MongoMerchantsRepository implements MerchantsRepository {
 
     merchant.active = false;
     merchant.deletedAt = new Date();
-    merchant.deletion = {
+    const deletionData: {
+      requestedAt: Date;
+      requestedBy: Types.ObjectId;
+      reason?: string;
+      forcedAt?: Date;
+      forcedBy?: Types.ObjectId;
+    } = {
       ...(merchant.deletion || {}),
       requestedAt: new Date(),
       requestedBy: new Types.ObjectId(actor.userId),
-      reason,
     };
+
+    if (reason) {
+      deletionData.reason = reason;
+    }
+
+    merchant.deletion = deletionData;
     await merchant.save();
 
     return { message: 'Merchant soft-deleted', at: merchant.deletedAt };
@@ -293,20 +304,35 @@ export class MongoMerchantsRepository implements MerchantsRepository {
       ? merchant.subscription.endDate > new Date()
       : true;
 
-    return {
+    const subscription: {
+      tier: PlanTier;
+      status: 'active' | 'expired' | 'pending';
+      startDate: Date;
+      endDate?: Date;
+    } = {
+      tier: merchant.subscription.tier,
+      status: active ? 'active' : 'expired',
+      startDate: merchant.subscription.startDate,
+    };
+
+    if (merchant.subscription.endDate) {
+      subscription.endDate = merchant.subscription.endDate;
+    }
+
+    const result: MerchantStatusResponse = {
       status: merchant.status as MerchantStatusLiteral,
-      subscription: {
-        tier: merchant.subscription.tier,
-        status: active ? 'active' : 'expired',
-        startDate: merchant.subscription.startDate,
-        endDate: merchant.subscription.endDate,
-      },
-      lastActivity: merchant.lastActivity,
+      subscription,
       promptStatus: {
         configured: !!merchant.finalPromptTemplate,
         lastUpdated: merchant.updatedAt,
       },
     };
+
+    if (merchant.lastActivity) {
+      result.lastActivity = merchant.lastActivity;
+    }
+
+    return result;
   }
 
   // ---------- Prompts / advanced config ----------
@@ -322,7 +348,17 @@ export class MongoMerchantsRepository implements MerchantsRepository {
     note?: string,
   ): Promise<void> {
     const m = await this.findOne(id);
-    m.currentAdvancedConfig = { template: newTpl, note, updatedAt: new Date() };
+    const configData: {
+      template: string;
+      updatedAt: Date;
+      note?: string;
+    } = { template: newTpl, updatedAt: new Date() };
+
+    if (note) {
+      configData.note = note;
+    }
+
+    m.currentAdvancedConfig = configData;
     await m.save();
   }
 

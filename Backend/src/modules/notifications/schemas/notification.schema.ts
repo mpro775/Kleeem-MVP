@@ -6,16 +6,16 @@ export type NotificationDocument = HydratedDocument<Notification>;
 @Schema({ timestamps: true })
 export class Notification {
   @Prop({ type: Types.ObjectId, ref: 'User', index: true })
-  userId: Types.ObjectId;
+  userId?: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Merchant', index: true })
   merchantId?: Types.ObjectId;
 
   @Prop({ required: true }) // ex: catalog.sync.completed
-  type: string;
+  type?: string;
 
   @Prop({ required: true })
-  title: string;
+  title?: string;
 
   @Prop()
   body?: string;
@@ -24,10 +24,10 @@ export class Notification {
   data?: Record<string, unknown>;
 
   @Prop({ enum: ['info', 'success', 'warning', 'error'], default: 'info' })
-  severity: 'info' | 'success' | 'warning' | 'error';
+  severity?: 'info' | 'success' | 'warning' | 'error';
 
   @Prop({ default: false, index: true })
-  read: boolean;
+  read?: boolean;
 
   @Prop()
   readAt?: Date;

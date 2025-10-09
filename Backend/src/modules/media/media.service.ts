@@ -35,7 +35,6 @@ function asStringOrNull(v: unknown): string | null {
   return typeof v === 'string' ? v : null;
 }
 function getContentType(filePath: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   const mt = mime.lookup(filePath) as string | undefined;
   return typeof mt === 'string' ? mt : DEFAULT_OCTET;
 }
@@ -77,7 +76,7 @@ export class MediaService {
 
     try {
       // 1) تنزيل الملف إلى مسار مؤقت آمن
-      tmpFile = await this.downloadToTempFile(dto.fileUrl);
+      tmpFile = await this.downloadToTempFile(dto.fileUrl ?? '');
 
       // 2) معالجة بحسب النوع
       const text = await this.processByType(dto, tmpFile);

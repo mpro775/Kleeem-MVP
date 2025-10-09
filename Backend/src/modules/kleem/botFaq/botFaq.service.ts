@@ -69,22 +69,25 @@ export class BotFaqService {
   }
 
   async create(dto: CreateBotFaqDto, createdBy?: string): Promise<BotFaqLean> {
-    const created = await this.repo.create({
+    const createData: Partial<BotFaq> = {
       ...(dto as unknown as Partial<BotFaq>),
       vectorStatus: 'pending',
-      createdBy,
-    });
+    };
+
+    if (createdBy) {
+      createData.createdBy = createdBy;
+    }
+
+    const created = await this.repo.create(createData);
     try {
+      const faqData = created as unknown as BotFaqLean;
       await this.embedAndUpsert({
-        id: String(
-          (created as unknown as BotFaqLean)._id ??
-            (created as unknown as BotFaqLean).id,
-        ),
-        question: (created as unknown as BotFaqLean).question,
-        answer: (created as unknown as BotFaqLean).answer,
-        source: (created as unknown as BotFaqLean).source,
-        tags: (created as unknown as BotFaqLean).tags,
-        locale: (created as unknown as BotFaqLean).locale,
+        id: String(faqData._id ?? faqData.id),
+        question: faqData.question,
+        answer: faqData.answer,
+        source: faqData.source ?? 'manual',
+        tags: faqData.tags ?? [],
+        locale: faqData.locale ?? 'ar',
       });
       const updated = await this.repo.updateById(
         String((created as unknown as BotFaqLean)._id),
@@ -125,12 +128,13 @@ export class BotFaqService {
   }
 
   private getFaqData(doc: BotFaqLean | null, existing: BotFaqLean) {
+    const { question, answer, source, tags, locale } = { ...existing, ...doc };
     return {
-      question: doc?.question || existing.question,
-      answer: doc?.answer || existing.answer,
-      source: doc?.source || existing.source,
-      tags: doc?.tags || existing.tags,
-      locale: doc?.locale || existing.locale,
+      question,
+      answer,
+      source: source ?? 'manual',
+      tags: tags ?? [],
+      locale: locale ?? 'ar',
     };
   }
 
@@ -201,11 +205,16 @@ export class BotFaqService {
     createdBy?: string,
   ): Promise<{ inserted: number }> {
     const docs = await this.repo.insertMany(
-      body.items.map((x) => ({
-        ...(x as unknown as Partial<BotFaq>),
-        vectorStatus: 'pending',
-        createdBy,
-      })),
+      body.items.map((x) => {
+        const item: Partial<BotFaq> = {
+          ...(x as unknown as Partial<BotFaq>),
+          vectorStatus: 'pending',
+        };
+        if (createdBy) {
+          item.createdBy = createdBy;
+        }
+        return item;
+      }),
     );
 
     const BATCH = 50;

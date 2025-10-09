@@ -5,10 +5,10 @@ import { Document } from 'mongoose';
 @Schema({ timestamps: true, collection: 'kleem_missing_responses' })
 export class KleemMissingResponse {
   @Prop({ required: true, enum: ['telegram', 'whatsapp', 'webchat'] })
-  channel: string;
+  channel?: string;
 
   @Prop({ required: true })
-  question: string;
+  question?: string;
 
   @Prop()
   botReply?: string;
@@ -20,7 +20,7 @@ export class KleemMissingResponse {
   customerId?: string;
 
   @Prop({ default: false })
-  resolved: boolean;
+  resolved?: boolean;
 
   @Prop()
   manualReply?: string;

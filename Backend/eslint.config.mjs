@@ -83,6 +83,21 @@ export default tseslint.config(
         },
       ],
 
+      // ممنوع default exports في NestJS modules/services
+      'no-restricted-exports': [
+        'error',
+        {
+          restrictedNamedExports: [],
+          restrictDefaultExports: {
+            direct: true,
+            named: true,
+            defaultFrom: true,
+            namedFrom: true,
+            namespaceFrom: true,
+          },
+        },
+      ],
+
       'prettier/prettier': 'warn',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
@@ -165,10 +180,18 @@ export default tseslint.config(
       globals: { ...jestPlugin.environments.globals.globals },
     },
     rules: {
+      ...jestPlugin.configs.recommended.rules,
+      '@typescript-eslint/unbound-method': 'off',
+      'jest/unbound-method': 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       'no-magic-numbers': 'off',

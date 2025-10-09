@@ -6,6 +6,7 @@ import type {
   ValidationArguments,
   ValidationOptions,
   ValidatorConstraintInterface,
+  ValidationDecoratorOptions,
 } from 'class-validator';
 
 @ValidatorConstraint({ name: 'match', async: false })
@@ -31,13 +32,13 @@ export function Match(
   property: string,
   validationOptions?: ValidationOptions,
 ): PropertyDecorator {
-  return (target: object, propertyName: string): void => {
+  return (target: object, propertyName: string | symbol): void => {
     registerDecorator({
       target: target.constructor,
-      propertyName,
-      options: validationOptions,
+      propertyName: propertyName as string,
+      ...(validationOptions && { options: validationOptions }),
       constraints: [property],
       validator: MatchConstraint,
-    });
+    } as ValidationDecoratorOptions);
   };
 }

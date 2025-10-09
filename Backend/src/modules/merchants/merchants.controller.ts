@@ -476,7 +476,10 @@ export class MerchantsController {
     if (dto.source !== ProductSource.INTERNAL || dto.syncMode === 'immediate') {
       if (!dto.confirmPassword)
         throw new BadRequestException('كلمة المرور مطلوبة للتأكيد');
-      const ok = await bcrypt.compare(dto.confirmPassword, account.password);
+      const ok = await bcrypt.compare(
+        dto.confirmPassword,
+        account.password ?? '',
+      );
       if (!ok)
         throw new BadRequestException(
           this.translationService.translate('auth.errors.invalidCredentials'),

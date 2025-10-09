@@ -18,8 +18,8 @@ export function setupApp(
   app: INestApplication & {
     use: (
       middleware: (req: Request, res: Response, next: NextFunction) => void,
-    ) => void;
-    enableCors: (options?: unknown) => void;
+    ) => INestApplication;
+    enableCors: (options?: Record<string, unknown>) => void;
   },
   config: ConfigService,
 ): INestApplication {

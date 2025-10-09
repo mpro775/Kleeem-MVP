@@ -63,8 +63,14 @@ function translateOperations(
       | undefined;
     if (!op) continue;
 
-    op.summary = translate(op.summary);
-    op.description = translate(op.description);
+    const translatedSummary = translate(op.summary);
+    if (translatedSummary !== undefined) {
+      op.summary = translatedSummary;
+    }
+    const translatedDescription = translate(op.description);
+    if (translatedDescription !== undefined) {
+      op.description = translatedDescription;
+    }
 
     translateParameters(op, translate);
     translateResponses(op, translate);
@@ -77,7 +83,10 @@ function translateParameters(
 ): void {
   if (Array.isArray(op.parameters)) {
     for (const p of op.parameters as ParameterObject[]) {
-      p.description = translate(p.description);
+      const translatedDesc = translate(p.description);
+      if (translatedDesc !== undefined) {
+        p.description = translatedDesc;
+      }
     }
   }
 }
@@ -103,7 +112,10 @@ function translateTags(
   const tags = doc.tags;
   if (Array.isArray(tags)) {
     for (const t of tags) {
-      t.description = translate(t.description);
+      const translatedDesc = translate(t.description);
+      if (translatedDesc !== undefined) {
+        t.description = translatedDesc;
+      }
     }
   }
 }

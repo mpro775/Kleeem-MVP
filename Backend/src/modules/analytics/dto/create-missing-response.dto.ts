@@ -5,7 +5,7 @@ import { IsString, IsOptional, IsBoolean } from 'class-validator';
 export class CreateMissingResponseDto {
   @ApiProperty({ description: 'معرف التاجر', example: 'merchant_123' })
   @IsString()
-  merchant: string;
+  merchant?: string;
 
   @ApiProperty({
     description: 'القناة التي وردت منها الرسالة',
@@ -13,21 +13,21 @@ export class CreateMissingResponseDto {
     example: 'whatsapp',
   })
   @IsString()
-  channel: 'telegram' | 'whatsapp' | 'webchat';
+  channel?: 'telegram' | 'whatsapp' | 'webchat';
 
   @ApiProperty({
     description: 'سؤال العميل',
     example: 'هل يتوفر لديكم هذا المنتج؟',
   })
   @IsString()
-  question: string;
+  question?: string;
 
   @ApiProperty({
     description: 'رد البوت على سؤال العميل',
     example: 'عفواً، لم أفهم السؤال.',
   })
   @IsString()
-  botReply: string;
+  botReply?: string;
 
   @ApiProperty({
     description: 'معرف الجلسة (اختياري)',
@@ -62,7 +62,7 @@ export class CreateMissingResponseDto {
     example: 'missing_response',
   })
   @IsString()
-  type: 'missing_response' | 'unavailable_product';
+  type?: 'missing_response' | 'unavailable_product';
 
   @ApiProperty({
     description: 'ما إذا كانت الاستجابة قد تمت معالجتها أم لا (اختياري)',

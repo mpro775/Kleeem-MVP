@@ -71,6 +71,7 @@ export class UsageService {
         { $setOnInsert: { merchantId: mId, monthKey, messagesUsed: 0 } },
         { upsert: true, new: true, session },
       );
+      if (!doc) throw new Error('Failed to create or find usage document');
 
       if (doc.messagesUsed + n > messageLimit) {
         throw new PaymentRequiredException(

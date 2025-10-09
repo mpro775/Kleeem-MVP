@@ -41,13 +41,14 @@ export class LeadsService {
     const phone = this.extractPhone(dto);
     const name = this.extractName(dto);
 
+    const phoneNormalized = normalizePhone(phone);
     const created = await this.leadsRepo.create({
       merchantId,
-      sessionId: dto.sessionId,
-      data: dto.data,
-      source: dto.source,
-      phoneNormalized: normalizePhone(phone),
-      name,
+      sessionId: dto.sessionId!,
+      data: dto.data!,
+      ...(dto.source && { source: dto.source }),
+      ...(phoneNormalized && { phoneNormalized }),
+      ...(name && { name }),
     });
 
     return created as Lead;

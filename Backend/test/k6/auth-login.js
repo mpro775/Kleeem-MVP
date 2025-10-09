@@ -9,7 +9,7 @@ const CONSTANTS = {
 };
 export const options = { vus: CONSTANTS.VUS, duration: '30s' };
 
-export default function () {
+export function authLogin() {
   const url = env.API_BASE + '/auth/login';
   const payload = JSON.stringify({
     email: env.TEST_EMAIL,

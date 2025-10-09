@@ -24,22 +24,22 @@ class OrderItemInput {
   @ApiProperty({ description: 'معرّف المنتج', example: '66bdcf0b8f2e12...' })
   @IsString({ message: 'يجب أن يكون معرّف المنتج نصيًا' })
   @IsNotEmpty({ message: 'معرّف المنتج مطلوب' })
-  productId: string;
+  productId?: string;
 
   @ApiProperty({ description: 'الكمية', minimum: 1, example: 2 })
   @IsNumber({}, { message: 'يجب أن تكون الكمية رقمية' })
   @Min(1, { message: 'الحد الأدنى للكمية هو 1' })
-  quantity: number;
+  quantity?: number;
 
   @ApiProperty({ description: 'السعر', minimum: 0, example: 100 })
   @IsNumber({}, { message: 'يجب أن يكون السعر رقمياً' })
   @Min(0, { message: 'السعر يجب أن يكون أكبر من أو يساوي صفر' })
-  price: number;
+  price?: number;
 
   @ApiProperty({ description: 'اسم المنتج', example: 'منتج مميز' })
   @IsString({ message: 'يجب أن يكون اسم المنتج نصيًا' })
   @IsNotEmpty({ message: 'اسم المنتج مطلوب' })
-  name: string;
+  name?: string;
 
   @ApiPropertyOptional({
     description: 'ملاحظات إضافية',
@@ -59,28 +59,28 @@ class OrderProductDto {
   @ApiProperty({ description: 'اسم المنتج', example: 'منتج مميز' })
   @IsString({ message: 'يجب أن يكون اسم المنتج نصيًا' })
   @IsNotEmpty({ message: 'اسم المنتج مطلوب' })
-  name: string;
+  name?: string;
 
   @ApiProperty({ description: 'السعر', minimum: 0, example: 100 })
   @IsNumber({}, { message: 'يجب أن يكون السعر رقمياً' })
   @Min(0, { message: 'السعر يجب أن يكون أكبر من أو يساوي صفر' })
-  price: number;
+  price?: number;
 
   @ApiProperty({ description: 'الكمية', minimum: 1, example: 2 })
   @IsNumber({}, { message: 'يجب أن تكون الكمية رقمية' })
   @Min(1, { message: 'الحد الأدنى للكمية هو 1' })
-  quantity: number;
+  quantity?: number;
 }
 
 class CustomerDto {
   @ApiProperty({ description: 'اسم العميل', example: 'محمد أحمد' })
   @IsString({ message: 'يجب أن يكون اسم العميل نصيًا' })
   @IsNotEmpty({ message: 'اسم العميل مطلوب' })
-  name: string;
+  name?: string;
 
   @ApiProperty({ description: 'رقم هاتف العميل', example: '+966501234567' })
   @IsNotEmpty({ message: 'رقم الهاتف مطلوب' })
-  phone: string;
+  phone?: string;
 
   @ApiPropertyOptional({
     description: 'رقم الهاتف الموحّد بدون رموز',
@@ -124,12 +124,12 @@ export class CreateOrderDto {
   })
   @IsString({ message: 'يجب أن يكون معرّف التاجر نصيًا' })
   @IsNotEmpty({ message: 'معرّف التاجر مطلوب' })
-  merchantId: string;
+  merchantId?: string;
 
   @ApiProperty({ description: 'معرّف الجلسة', example: 'sess-xyz' })
   @IsString({ message: 'يجب أن يكون معرّف الجلسة نصيًا' })
   @IsNotEmpty({ message: 'معرّف الجلسة مطلوب' })
-  sessionId: string;
+  sessionId?: string;
 
   @ApiPropertyOptional({
     description: 'المصدر',
@@ -151,7 +151,7 @@ export class CreateOrderDto {
   @ApiProperty({ description: 'بيانات العميل', type: CustomerDto })
   @ValidateNested()
   @Type(() => CustomerDto)
-  customer: CustomerDto;
+  customer?: CustomerDto;
 
   // ← هذا الحقل مخفي فقط للدعم الخلفي وتحويله إلى products
   @ApiHideProperty()
@@ -183,16 +183,16 @@ export class CreateOrderDto {
       // إن أُرسلت items (النسخة القديمة من الفرونت)، حوّلها:
       if (Array.isArray(obj?.items)) {
         return obj.items.map((i: OrderItemInput) => ({
-          product: i.productId,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity,
+          product: i.productId ?? '',
+          name: i.name ?? '',
+          price: i.price ?? 0,
+          quantity: i.quantity ?? 0,
         }));
       }
       return value as OrderProductDto[];
     },
   )
-  products: OrderProductDto[];
+  products?: OrderProductDto[];
 
   @ApiPropertyOptional({
     description: 'بيانات إضافية',

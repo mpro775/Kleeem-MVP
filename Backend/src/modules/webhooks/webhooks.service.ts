@@ -63,7 +63,7 @@ export class WebhooksService {
     private readonly evoService: EvolutionService,
     private readonly config: ConfigService,
     private readonly chatGateway: ChatGateway,
-    @Inject('ChannelsRepository')
+    @Inject('ChannelRepository')
     private readonly channelsRepo: ChannelRepository,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}

@@ -25,7 +25,7 @@ export class SubscriptionPlanDto {
   })
   @IsEnum(PlanTier, { message: 'يجب تحديد مستوى اشتراك صالح' })
   @IsNotEmpty({ message: 'مستوى الاشتراك مطلوب' })
-  tier: PlanTier;
+  tier!: PlanTier;
 
   @ApiProperty({
     description: 'تاريخ بدء الاشتراك (بتنسيق ISO 8601)',
@@ -34,7 +34,7 @@ export class SubscriptionPlanDto {
   })
   @IsDateString({}, { message: 'يجب إدخال تاريخ بدء صالح' })
   @IsNotEmpty({ message: 'تاريخ بدء الاشتراك مطلوب' })
-  startDate: string;
+  startDate!: string;
 
   @ApiPropertyOptional({
     description: 'تاريخ انتهاء الاشتراك (بتنسيق ISO 8601) - اختياري',
@@ -54,5 +54,5 @@ export class SubscriptionPlanDto {
   @IsArray({ message: 'يجب أن تكون المميزات مصفوفة' })
   @ArrayNotEmpty({ message: 'يجب تحديد مميزات الاشتراك' })
   @IsString({ each: true, message: 'يجب أن تكون كل ميزة نصية' })
-  features: string[];
+  features!: string[];
 }

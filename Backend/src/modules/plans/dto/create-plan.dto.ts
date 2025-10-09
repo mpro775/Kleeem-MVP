@@ -15,16 +15,16 @@ export class CreatePlanDto {
   @ApiProperty({ example: 'Pro Monthly' })
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name?: string;
   @ApiProperty({ example: 100, description: 'السعر بالسنتات' })
   @IsNumber()
   @Min(0)
-  priceCents: number;
+  priceCents?: number;
   @ApiProperty({ example: 'USD', enum: ['USD', 'SAR', 'AED', 'YER'] })
   @IsString()
   @IsIn(['USD', 'SAR', 'AED', 'YER'])
-  currency: string;
-  @ApiProperty({ example: 30 }) @IsNumber() @Min(1) durationDays: number;
+  currency?: string;
+  @ApiProperty({ example: 30 }) @IsNumber() @Min(1) durationDays?: number;
 
   @ApiPropertyOptional({ example: 100 })
   @IsOptional()

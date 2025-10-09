@@ -86,7 +86,7 @@ export class PublicChatWidgetController {
     // تطبيع لتوافق DTO (مثال على خريطة بسيطة من السكيمة إلى DTO)
     return {
       merchantId: settings.merchantId,
-      widgetSlug: settings.widgetSlug,
+      widgetSlug: settings.widgetSlug as string,
       embedMode: settings.embedMode,
       theme: {
         headerBgColor: settings.headerBgColor,

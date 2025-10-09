@@ -16,12 +16,12 @@ class WhatsAppCloudContactDto {
   };
 
   @IsString()
-  wa_id: string;
+  wa_id!: string;
 }
 
 class WhatsAppCloudMessageDto {
   @IsString()
-  id: string;
+  id!: string;
 
   @IsString()
   @IsOptional()
@@ -32,7 +32,7 @@ class WhatsAppCloudMessageDto {
   type?: string;
 
   @IsString()
-  from: string;
+  from!: string;
 
   @IsObject()
   @IsOptional()
@@ -59,22 +59,22 @@ class WhatsAppCloudMessageDto {
 
 class WhatsAppCloudStatusDto {
   @IsString()
-  id: string;
+  id!: string;
 
   @IsString()
   @IsOptional()
   timestamp?: string;
 
   @IsString()
-  recipient_id: string;
+  recipient_id!: string;
 
   @IsString()
-  status: string;
+  status!: string;
 }
 
 class WhatsAppCloudValueDto {
   @IsString()
-  messaging_product: string;
+  messaging_product!: string;
 
   @IsObject()
   @IsOptional()
@@ -105,28 +105,28 @@ class WhatsAppCloudValueDto {
 class WhatsAppCloudChangeDto {
   @ValidateNested()
   @Type(() => WhatsAppCloudValueDto)
-  value: WhatsAppCloudValueDto;
+  value!: WhatsAppCloudValueDto;
 
   @IsString()
-  field: string;
+  field!: string;
 }
 
 class WhatsAppCloudEntryDto {
   @IsString()
-  id: string;
+  id!: string;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => WhatsAppCloudChangeDto)
-  changes: WhatsAppCloudChangeDto[];
+  changes!: WhatsAppCloudChangeDto[];
 }
 
 export class WhatsAppCloudDto {
   @IsString()
-  object: string;
+  object!: string;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => WhatsAppCloudEntryDto)
-  entry: WhatsAppCloudEntryDto[];
+  entry!: WhatsAppCloudEntryDto[];
 }

@@ -3,6 +3,7 @@ import { Module, Global } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 
+import { RedisModule } from '../../config/redis.module';
 import {
   AllExceptionsFilter,
   WsAllExceptionsFilter,
@@ -20,6 +21,7 @@ import { TranslationService } from '../services/translation.service';
       secret: process.env.JWT_SECRET || 'your-secret-key',
       signOptions: { expiresIn: '24h' },
     }),
+    RedisModule,
   ],
   providers: [
     // Global Filters

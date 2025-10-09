@@ -7,5 +7,5 @@ export class ConfirmPasswordDto {
   @ApiProperty({ description: 'كلمة مرور المستخدم الحالية' })
   @IsString()
   @MinLength(MIN_PASSWORD_LENGTH)
-  confirmPassword: string;
+  confirmPassword!: string;
 }

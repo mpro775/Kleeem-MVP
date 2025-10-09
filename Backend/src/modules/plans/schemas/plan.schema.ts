@@ -6,16 +6,16 @@ export type PlanDocument = Plan & Document;
 @Schema({ timestamps: true, versionKey: false })
 export class Plan {
   @Prop({ required: true, unique: true, trim: true })
-  name: string;
+  name?: string;
 
   @Prop({ required: true, min: 0 })
-  priceCents: number;
+  priceCents?: number;
 
   @Prop({ required: true, enum: ['USD', 'SAR', 'AED', 'YER'], default: 'USD' })
-  currency: string;
+  currency?: string;
 
   @Prop({ required: true, min: 1 })
-  durationDays: number;
+  durationDays?: number;
 
   @Prop({ default: 100, min: 0 })
   messageLimit?: number;

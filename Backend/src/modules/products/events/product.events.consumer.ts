@@ -27,7 +27,7 @@ export class ProductEventsConsumer {
   }): Promise<void> {
     const id = msg.aggregate.id;
     const doc = await this.productsRepo.findById(new Types.ObjectId(id));
-    if (!doc) return;
+    if (!doc || !doc.merchantId) return;
 
     // اجلب storefront/category ثم upsert (Idempotent)
     const sf = (await this.storefronts.findByMerchant(

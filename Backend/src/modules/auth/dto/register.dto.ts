@@ -12,7 +12,7 @@ export class RegisterDto {
   })
   @IsEmail({}, I18nMessage('email'))
   @IsNotEmpty(I18nMessage('validation.required'))
-  email: string;
+  email!: string;
 
   @ApiProperty({
     description: 'كلمة المرور (6 أحرف فأكثر)',
@@ -21,18 +21,18 @@ export class RegisterDto {
   @IsString(I18nMessage('validation.string'))
   @MinLength(MIN_PASSWORD_LENGTH, I18nMessage('validation.minLength'))
   @IsNotEmpty(I18nMessage('validation.required'))
-  password: string;
+  password!: string;
 
   @ApiProperty({ description: 'تأكيد كلمة المرور', example: 'securePass' })
   @IsString(I18nMessage('validation.string'))
   @MinLength(MIN_PASSWORD_LENGTH, I18nMessage('validation.minLength'))
   @IsNotEmpty(I18nMessage('validation.required'))
   @Match('password', { message: 'كلمتا المرور غير متطابقتين' })
-  confirmPassword: string;
+  confirmPassword!: string;
 
   @ApiProperty({ description: 'اسم المستخدم/التاجر', example: 'أحمد' })
   @IsString(I18nMessage('validation.string'))
   @MinLength(3, I18nMessage('validation.minLength'))
   @IsNotEmpty(I18nMessage('validation.required'))
-  name: string;
+  name!: string;
 }

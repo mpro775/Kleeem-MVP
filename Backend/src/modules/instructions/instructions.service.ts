@@ -12,7 +12,7 @@ export class InstructionsService {
   ) {}
 
   async create(instruction: {
-    merchantId?: string;
+    merchantId: string;
     instruction: string;
     relatedReplies?: string[];
     type?: 'auto' | 'manual';
@@ -21,7 +21,7 @@ export class InstructionsService {
     return this.repo.create({
       merchantId: instruction.merchantId,
       instruction: instruction.instruction,
-      relatedReplies: instruction.relatedReplies,
+      relatedReplies: instruction.relatedReplies || [],
       type: instruction.type ?? 'auto',
       active: true,
     });

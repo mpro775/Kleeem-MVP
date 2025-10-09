@@ -56,26 +56,26 @@ export class User {
     lowercase: true,
     trim: true,
   })
-  email: string;
+  email!: string;
 
   // لا تُرجع كلمة السر افتراضياً
   @Prop({ required: true, select: false })
-  password: string;
+  password!: string;
 
   @Prop({ default: true })
-  firstLogin: boolean;
+  firstLogin!: boolean;
 
   @Prop({ required: true, trim: true })
-  name: string;
+  name!: string;
 
   @Prop()
-  phone?: string;
+  phone!: string;
 
   @Prop({ type: String, enum: UserRole, default: UserRole.MEMBER })
-  role: UserRole;
+  role!: UserRole;
 
   @Prop({ default: false })
-  emailVerified: boolean;
+  emailVerified!: boolean;
 
   @Prop()
   emailVerificationCode?: string;
@@ -122,7 +122,7 @@ export class User {
     topics: NotificationsTopics;
     quietHours: QuietHours;
   };
-  @Prop({ default: true, index: true }) active: boolean;
+  @Prop({ default: true, index: true }) active?: boolean;
 
   // (اختياري) دعم حذف ناعم
   @Prop()

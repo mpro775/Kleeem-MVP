@@ -19,7 +19,7 @@ export class MessageItemDto {
   @IsString()
   @IsNotEmpty()
   @IsEnum(['customer', 'bot', 'agent'])
-  role: 'customer' | 'bot' | 'agent';
+  role?: 'customer' | 'bot' | 'agent';
 
   @ApiProperty({
     description: 'نص الرسالة',
@@ -27,7 +27,7 @@ export class MessageItemDto {
   })
   @IsString()
   @IsNotEmpty()
-  text: string;
+  text?: string;
 
   @ApiPropertyOptional({
     description: 'بيانات إضافية للرسالة (اختياري)',
@@ -55,7 +55,7 @@ export class CreateMessageDto {
   })
   @IsString()
   @IsNotEmpty()
-  merchantId: string;
+  merchantId?: string;
 
   @ApiProperty({
     description: 'معرّف الجلسة (عادةً رقم الهاتف أو المعرف الفريد للجلسة)',
@@ -63,7 +63,7 @@ export class CreateMessageDto {
   })
   @IsString()
   @IsNotEmpty()
-  sessionId: string;
+  sessionId?: string;
 
   @ApiProperty({
     description: 'قناة التواصل',
@@ -73,7 +73,7 @@ export class CreateMessageDto {
   @IsString()
   @IsNotEmpty()
   @IsEnum(['whatsapp', 'telegram', 'webchat'])
-  channel: string;
+  channel?: string;
 
   @ApiProperty({
     description: 'مصفوفة تحتوي على الرسائل المراد إضافتها',
@@ -89,5 +89,5 @@ export class CreateMessageDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => MessageItemDto)
-  messages: MessageItemDto[];
+  messages?: MessageItemDto[];
 }

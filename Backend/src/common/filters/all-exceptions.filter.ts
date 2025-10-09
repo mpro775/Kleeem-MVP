@@ -121,8 +121,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       code: DEFAULT_HTTP_ERROR_CODE,
       message: DEFAULT_ERROR_MESSAGE,
-      requestId,
       timestamp,
+      ...(requestId && { requestId }),
     };
     this.logError(fallback, request, exception);
     response.status(fallback.status).json(fallback);
@@ -140,29 +140,31 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // إذا كان الرد أصلاً بصيغة payload قياسي يحوي code
     if (isObject(res) && 'code' in res) {
-      const base: Omit<ErrorPayload, 'status' | 'code' | 'message'> = {
-        requestId,
-        timestamp,
-      };
       const obj = res;
-      return {
+      const result: ErrorPayload = {
         status,
         code:
           typeof obj.code === 'string' || typeof obj.code === 'number'
             ? String(obj.code)
             : HTTP_EXCEPTION_CODE,
         message: typeof obj.message === 'string' ? obj.message : 'خطأ',
-        ...base,
-        details: obj.details as Record<string, unknown> | undefined,
+        timestamp,
+        ...(requestId && { requestId }),
       };
+
+      if (obj.details && typeof obj.details === 'object') {
+        result.details = obj.details as Record<string, unknown>;
+      }
+
+      return result;
     }
 
     return {
       status,
       code: HTTP_EXCEPTION_CODE,
       message: typeof res === 'string' ? res : 'خطأ',
-      requestId,
       timestamp,
+      ...(requestId && { requestId }),
     };
   }
 
@@ -176,9 +178,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         status: HttpStatus.BAD_REQUEST,
         code: VALIDATION_ERROR_CODE,
         message: 'بيانات غير صحيحة',
-        details: this.formatMongoValidationError(exception),
-        requestId,
         timestamp,
+        ...(requestId && { requestId }),
+        details: this.formatMongoValidationError(exception),
       };
     }
 
@@ -187,9 +189,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         status: HttpStatus.BAD_REQUEST,
         code: INVALID_ID_CODE,
         message: 'معرف غير صحيح',
-        details: { field: exception.path, value: exception.value },
-        requestId,
         timestamp,
+        ...(requestId && { requestId }),
+        details: { field: exception.path, value: exception.value },
       };
     }
 
@@ -202,9 +204,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         status: HttpStatus.CONFLICT,
         code: 'DUPLICATE_ENTRY',
         message: 'البيانات موجودة مسبقاً',
-        details: { field: Object.keys(exception.keyPattern ?? {}) },
-        requestId,
         timestamp,
+        ...(requestId && { requestId }),
+        details: { field: Object.keys(exception.keyPattern ?? {}) },
       };
     }
 
@@ -212,9 +214,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       code: DB_ERROR_CODE,
       message: 'خطأ في قاعدة البيانات',
-      details: { code: exception.code },
-      requestId,
       timestamp,
+      ...(requestId && { requestId }),
+      details: { code: exception.code },
     };
   }
 
@@ -228,14 +230,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status,
       code: EXTERNAL_SERVICE_ERROR_CODE,
       message: 'خطأ في الخدمة الخارجية',
+      timestamp,
+      ...(requestId && { requestId }),
       details: {
         url: exception.config?.url,
         method: exception.config?.method,
         status: exception.response?.status,
         data: exception.response?.data,
       },
-      requestId,
-      timestamp,
     };
   }
 
@@ -249,8 +251,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
         status: HttpStatus.UNAUTHORIZED,
         code: INVALID_TOKEN_CODE,
         message: 'توكن غير صحيح',
-        requestId,
         timestamp,
+        ...(requestId && { requestId }),
       };
     }
     // TokenExpiredError
@@ -258,8 +260,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status: HttpStatus.UNAUTHORIZED,
       code: TOKEN_EXPIRED_CODE,
       message: 'التوكن منتهي الصلاحية',
-      requestId,
       timestamp,
+      ...(requestId && { requestId }),
     };
   }
 
@@ -305,7 +307,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       details[key] = {
         message: fieldError.message,
         value: fieldError.value,
-        kind: fieldError.kind,
+        ...(fieldError.kind && { kind: fieldError.kind }),
       };
     }
 

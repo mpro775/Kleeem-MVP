@@ -43,6 +43,13 @@ function getEnvRegexes(): RegExp[] {
     .filter(Boolean)
     .map((pat) => {
       try {
+        // Handle patterns with flags like "^/test/i"
+        const lastSlashIndex = pat.lastIndexOf('/');
+        if (lastSlashIndex > 0) {
+          const pattern = pat.slice(0, lastSlashIndex);
+          const flags = pat.slice(lastSlashIndex + 1);
+          return new RegExp(pattern, flags);
+        }
         return new RegExp(pat);
       } catch {
         return null;
@@ -69,7 +76,7 @@ function shouldBypassByUrl(url: string): boolean {
   if (EXACT_PATHS.includes(url)) return true;
 
   // مطابقات مسبوق-بـ
-  if (PREFIX_PATHS.some((p) => url === p || url.startsWith(p + '/'))) {
+  if (PREFIX_PATHS.some((p) => url === p || url.startsWith(p))) {
     return true;
   }
 

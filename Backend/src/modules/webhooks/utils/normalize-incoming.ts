@@ -147,7 +147,9 @@ const tgMedia = (m: Record<string, unknown>): MediaOut => {
         const last = photos![photos!.length - 1];
         const fileId =
           isRecord(last) && isString(last.file_id) ? last.file_id : undefined;
-        return { fileId, mediaType: 'image' as MediaKind };
+        return fileId
+          ? { fileId, mediaType: 'image' as MediaKind }
+          : { mediaType: 'image' as MediaKind };
       },
     },
     {
@@ -155,7 +157,10 @@ const tgMedia = (m: Record<string, unknown>): MediaOut => {
       handler: () => {
         const fileId = isString(voice!.file_id) ? voice!.file_id : undefined;
         const mime = isString(voice!.mime_type) ? voice!.mime_type : undefined;
-        return { fileId, mimeType: mime, mediaType: 'audio' as MediaKind };
+        const result: MediaOut = { mediaType: 'audio' as MediaKind };
+        if (fileId) result.fileId = fileId;
+        if (mime) result.mimeType = mime;
+        return result;
       },
     },
     {
@@ -170,12 +175,13 @@ const tgMedia = (m: Record<string, unknown>): MediaOut => {
         const mime = isString(document!.mime_type)
           ? document!.mime_type
           : undefined;
-        return {
-          fileId,
-          fileName,
-          mimeType: mime,
+        const result: MediaOut = {
           mediaType: inferMediaType(mime, fileName),
         };
+        if (fileId) result.fileId = fileId;
+        if (fileName) result.fileName = fileName;
+        if (mime) result.mimeType = mime;
+        return result;
       },
     },
   ];
@@ -248,11 +254,12 @@ const wabaMedia = (m: Record<string, unknown>, typ: string): MediaOut => {
       handler: () => {
         const img = (m as { image?: { id?: unknown; mime_type?: unknown } })
           .image;
-        return {
-          fileId: toStringSafe(img?.id),
-          mimeType: toStringSafe(img?.mime_type),
-          mediaType: 'image' as MediaKind,
-        };
+        const fileId = toStringSafe(img?.id) || undefined;
+        const mimeType = toStringSafe(img?.mime_type) || undefined;
+        const result: MediaOut = { mediaType: 'image' as MediaKind };
+        if (fileId) result.fileId = fileId;
+        if (mimeType) result.mimeType = mimeType;
+        return result;
       },
     },
     {
@@ -260,11 +267,12 @@ const wabaMedia = (m: Record<string, unknown>, typ: string): MediaOut => {
       handler: () => {
         const au = (m as { audio?: { id?: unknown; mime_type?: unknown } })
           .audio;
-        return {
-          fileId: toStringSafe(au?.id),
-          mimeType: toStringSafe(au?.mime_type),
-          mediaType: 'audio' as MediaKind,
-        };
+        const fileId = toStringSafe(au?.id) || undefined;
+        const mimeType = toStringSafe(au?.mime_type) || undefined;
+        const result: MediaOut = { mediaType: 'audio' as MediaKind };
+        if (fileId) result.fileId = fileId;
+        if (mimeType) result.mimeType = mimeType;
+        return result;
       },
     },
     {
@@ -272,11 +280,12 @@ const wabaMedia = (m: Record<string, unknown>, typ: string): MediaOut => {
       handler: () => {
         const vd = (m as { video?: { id?: unknown; mime_type?: unknown } })
           .video;
-        return {
-          fileId: toStringSafe(vd?.id),
-          mimeType: toStringSafe(vd?.mime_type),
-          mediaType: 'video' as MediaKind,
-        };
+        const fileId = toStringSafe(vd?.id) || undefined;
+        const mimeType = toStringSafe(vd?.mime_type) || undefined;
+        const result: MediaOut = { mediaType: 'video' as MediaKind };
+        if (fileId) result.fileId = fileId;
+        if (mimeType) result.mimeType = mimeType;
+        return result;
       },
     },
     {
@@ -291,15 +300,16 @@ const wabaMedia = (m: Record<string, unknown>, typ: string): MediaOut => {
             };
           }
         ).document;
-        const fileId = toStringSafe(doc?.id);
-        const fileName = toStringSafe(doc?.filename);
-        const mimeType = toStringSafe(doc?.mime_type);
-        return {
-          fileId,
-          fileName,
-          mimeType,
+        const fileId = toStringSafe(doc?.id) || undefined;
+        const fileName = toStringSafe(doc?.filename) || undefined;
+        const mimeType = toStringSafe(doc?.mime_type) || undefined;
+        const result: MediaOut = {
           mediaType: inferMediaType(mimeType, fileName),
         };
+        if (fileId) result.fileId = fileId;
+        if (fileName) result.fileName = fileName;
+        if (mimeType) result.mimeType = mimeType;
+        return result;
       },
     },
   ];
@@ -328,11 +338,10 @@ function parseTelegram(
   const media = tgMedia(msg);
   const role: Role = isAgentFlag(body) ? 'agent' : 'customer';
 
-  return {
+  const result: NormalizedMessage = {
     merchantId,
     sessionId: sid,
     channel: 'telegram',
-    transport: undefined,
     text,
     role,
     metadata: {
@@ -344,12 +353,14 @@ function parseTelegram(
     },
     timestamp: now(),
     platformMessageId: pid,
-    fileUrl: undefined,
-    fileId: media.fileId,
-    fileName: media.fileName,
-    mimeType: media.mimeType,
-    mediaType: media.mediaType,
   };
+
+  if (media.fileId) result.fileId = media.fileId;
+  if (media.fileName) result.fileName = media.fileName;
+  if (media.mimeType) result.mimeType = media.mimeType;
+  if (media.mediaType) result.mediaType = media.mediaType;
+
+  return result;
 }
 
 /** WhatsApp Cloud API — مقسمة لمساعدات لتقليل السطور/التعقيد */
@@ -373,7 +384,7 @@ function parseWhatsappCloud(
   const media = wabaMedia(m, typ);
   const role: Role = isAgentFlag(body) ? 'agent' : 'customer';
 
-  return {
+  const result: NormalizedMessage = {
     merchantId,
     sessionId: sid,
     channel: 'whatsapp',
@@ -389,12 +400,14 @@ function parseWhatsappCloud(
     },
     timestamp: now(),
     platformMessageId: pid,
-    fileUrl: undefined,
-    fileId: media.fileId,
-    fileName: media.fileName,
-    mimeType: media.mimeType,
-    mediaType: media.mediaType,
   };
+
+  if (media.fileId) result.fileId = media.fileId;
+  if (media.fileName) result.fileName = media.fileName;
+  if (media.mimeType) result.mimeType = media.mimeType;
+  if (media.mediaType) result.mediaType = media.mediaType;
+
+  return result;
 }
 
 const qrNewExtractData = (body: Record<string, unknown>) => {
@@ -513,7 +526,7 @@ function parseWhatsappQrNew(
   const { fileName, mimeType, mediaType } = qrNewExtractMedia(msg, md);
   const role: Role = isAgentFlag(body) ? 'agent' : 'customer';
 
-  return {
+  const result: NormalizedMessage = {
     merchantId,
     sessionId: sid,
     channel: 'whatsapp',
@@ -523,12 +536,13 @@ function parseWhatsappQrNew(
     metadata: md,
     timestamp: now(),
     platformMessageId: pid,
-    fileUrl: undefined,
-    fileId: undefined,
-    fileName,
-    mimeType,
-    mediaType,
   };
+
+  if (fileName) result.fileName = fileName;
+  if (mimeType) result.mimeType = mimeType;
+  if (mediaType) result.mediaType = mediaType;
+
+  return result;
 }
 
 const qrOldExtractData = (body: Record<string, unknown>) => {
@@ -636,7 +650,7 @@ function parseWhatsappQrOld(
   const { fileUrl, fileName, mimeType, mediaType } = qrOldExtractMedia(msg);
   const role: Role = isAgentFlag(body) ? 'agent' : 'customer';
 
-  return {
+  const result: NormalizedMessage = {
     merchantId,
     sessionId: sid,
     channel: 'whatsapp',
@@ -650,12 +664,14 @@ function parseWhatsappQrOld(
     },
     timestamp: now(),
     platformMessageId: pid,
-    fileUrl,
-    fileId: undefined,
-    fileName,
-    mimeType,
-    mediaType,
   };
+
+  if (fileUrl) result.fileUrl = fileUrl;
+  if (fileName) result.fileName = fileName;
+  if (mimeType) result.mimeType = mimeType;
+  if (mediaType) result.mediaType = mediaType;
+
+  return result;
 }
 
 /* ===== orchestrator ===== */
@@ -669,16 +685,19 @@ export function normalizeIncomingMessage(
     parseTelegram(base, merchantId) ||
     parseWhatsappCloud(base, merchantId) ||
     parseWhatsappQrNew(base, merchantId) ||
-    parseWhatsappQrOld(base, merchantId) || {
-      merchantId,
-      sessionId: '',
-      channel: 'webchat',
-      transport: undefined,
-      text: '',
-      role: 'customer',
-      metadata: baseMeta(base),
-      timestamp: now(),
-      platformMessageId: `${Date.now()}`,
-    }
+    parseWhatsappQrOld(base, merchantId) ||
+    (() => {
+      const result: NormalizedMessage = {
+        merchantId,
+        sessionId: '',
+        channel: 'webchat',
+        text: '',
+        role: 'customer',
+        metadata: baseMeta(base),
+        timestamp: now(),
+        platformMessageId: `${Date.now()}`,
+      };
+      return result;
+    })()
   );
 }

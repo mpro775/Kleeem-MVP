@@ -30,6 +30,11 @@ export class WaitlistController {
       req.socket.remoteAddress ||
       undefined;
     const userAgent = req.headers['user-agent'];
-    return this.service.create(dto, { ip, userAgent });
+
+    const metadata: { ip?: string; userAgent?: string } = {};
+    if (ip) metadata.ip = ip;
+    if (userAgent) metadata.userAgent = userAgent;
+
+    return this.service.create(dto, metadata);
   }
 }

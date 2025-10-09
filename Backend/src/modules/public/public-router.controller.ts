@@ -120,7 +120,7 @@ export class PublicRouterController {
       theme: {
         primaryColor: store?.primaryColor,
         secondaryColor: store?.secondaryColor,
-      },
+      } as { primaryColor?: string; secondaryColor?: string },
     };
   }
 

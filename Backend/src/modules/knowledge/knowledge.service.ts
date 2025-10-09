@@ -157,9 +157,9 @@ export class KnowledgeService {
       failed: urls.filter((u) => u.status === 'failed').length,
       urls: urls.map((u) => ({
         id: String(u._id),
-        url: u.url,
+        url: u.url ?? '',
         status: u.status,
-        errorMessage: u.errorMessage,
+        errorMessage: u.errorMessage ?? null,
         textLength: u.textExtracted?.length ?? 0,
       })),
     };
@@ -218,10 +218,10 @@ export class KnowledgeService {
     const rec = await this.sourceUrls.findByIdForMerchant(id, merchantId);
     if (!rec) throw new NotFoundException('record not found');
 
-    await this.deleteVectorsByUrl(merchantId, rec.url);
+    await this.deleteVectorsByUrl(merchantId, rec.url ?? '');
     await this.sourceUrls.deleteByIdForMerchant(id, merchantId);
 
-    return { success: true, deleted: 1, url: rec.url };
+    return { success: true, deleted: 1, url: rec.url ?? '' };
   }
 
   async deleteByUrl(merchantId: string, url: string): Promise<DeleteResult> {
@@ -277,7 +277,7 @@ export class KnowledgeService {
         await this.notifyCompleted(
           requestedBy,
           merchantId,
-          rec.url,
+          rec.url ?? '',
           processedChunks,
         );
         await this.enqueueOutbox(RK_URL_COMPLETED, merchantId, {
@@ -293,10 +293,10 @@ export class KnowledgeService {
         await this.sourceUrls.markFailed(String(rec._id), msg);
         failed += 1;
 
-        await this.notifyFailed(requestedBy, merchantId, rec.url, msg);
+        await this.notifyFailed(requestedBy, merchantId, rec.url ?? '', msg);
         await this.enqueueOutbox(RK_URL_FAILED, merchantId, {
           merchantId,
-          url: rec.url,
+          url: rec.url ?? '',
           error: msg,
         });
       }
@@ -325,7 +325,7 @@ export class KnowledgeService {
     merchantId: string,
     rec: SourceUrlEntity,
   ): Promise<number> {
-    const { text } = await this.extractTextFromUrl(rec.url);
+    const { text } = await this.extractTextFromUrl(rec.url ?? '');
     this.logger.log(`Extracted ${text.length} characters from ${rec.url}`);
 
     const chunks = splitIntoChunks(text, CHUNK_SIZE);
@@ -348,7 +348,7 @@ export class KnowledgeService {
           vector: embedding,
           payload: {
             merchantId,
-            url: rec.url,
+            url: rec.url ?? '',
             text: chunk,
             type: TYPE_URL,
             source: SOURCE_WEB,

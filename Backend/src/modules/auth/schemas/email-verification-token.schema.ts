@@ -7,15 +7,15 @@ export type EmailVerificationTokenDocument =
 @Schema({ collection: 'email_verification_tokens', timestamps: true })
 export class EmailVerificationToken {
   @Prop({ type: Types.ObjectId, ref: 'User', index: true, required: true })
-  userId: Types.ObjectId;
+  userId?: Types.ObjectId;
 
   // تخزين Hash فقط للرمز
   @Prop({ required: true })
-  codeHash: string;
+  codeHash?: string;
 
   // TTL: حذف المستند عند وصول هذه اللحظة
   @Prop({ required: true, index: { expires: 0 } })
-  expiresAt: Date;
+  expiresAt?: Date;
 }
 
 export const EmailVerificationTokenSchema = SchemaFactory.createForClass(

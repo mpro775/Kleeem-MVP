@@ -1,5 +1,5 @@
 // test/mocks/ioredis.mock.ts
-export default class Redis {
+export class Redis {
   get(key: string): Promise<string | null> {
     return Promise.resolve(typeof key === 'string' ? null : (key[0] ?? null));
   }

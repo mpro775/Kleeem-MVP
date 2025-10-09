@@ -6,16 +6,16 @@ import { Types } from 'mongoose';
 @Schema({ timestamps: true })
 export class ProductSetupConfig {
   @Prop({ type: Types.ObjectId, ref: 'Merchant', required: true })
-  merchantId: Types.ObjectId;
+  merchantId?: Types.ObjectId;
 
   @Prop({ enum: ['traditional', 'ecommerce'], required: true })
-  storeType: string;
+  storeType?: string;
 
   @Prop({ enum: ['zid', 'salla', 'shopify', 'custom'], default: null })
   provider?: string;
 
   @Prop({ default: false })
-  hasApi: boolean;
+  hasApi?: boolean;
 
   @Prop({ default: '' })
   apiUrl?: string;

@@ -5,10 +5,10 @@ import { Document } from 'mongoose';
 @Schema({ _id: false })
 export class Address {
   @Prop({ default: '' })
-  street: string;
+  street!: string;
 
   @Prop({ default: '' })
-  city: string;
+  city!: string;
 
   @Prop({ default: '' })
   state?: string;
@@ -17,7 +17,7 @@ export class Address {
   postalCode?: string;
 
   @Prop({ default: '' })
-  country: string;
+  country!: string;
 }
 
 export type AddressDocument = Address & Document;

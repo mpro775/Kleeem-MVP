@@ -15,11 +15,11 @@ export type DocumentEntity = Document & {
 
 @Schema({ timestamps: true })
 export class DocumentSchemaClass {
-  @Prop({ required: true }) merchantId: string;
-  @Prop({ required: true }) filename: string;
-  @Prop({ required: true }) fileType: string;
-  @Prop({ required: true }) storageKey: string;
-  @Prop({ default: 'pending' }) status: string;
+  @Prop({ required: true }) merchantId!: string;
+  @Prop({ required: true }) filename!: string;
+  @Prop({ required: true }) fileType!: string;
+  @Prop({ required: true }) storageKey!: string;
+  @Prop({ default: 'pending' }) status!: string;
   @Prop() errorMessage?: string;
 }
 

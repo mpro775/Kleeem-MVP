@@ -10,37 +10,37 @@ export class OrderProduct {
   product?: Types.ObjectId;
 
   @Prop({ required: true })
-  name: string;
+  name?: string;
 
   @Prop({ required: true })
-  price: number;
+  price?: number;
 
   @Prop({ required: true })
-  quantity: number;
+  quantity?: number;
 }
 export const OrderProductSchema = SchemaFactory.createForClass(OrderProduct);
 
 @Schema({ timestamps: true })
 export class Order {
   @Prop({ required: true })
-  merchantId: string;
+  merchantId?: string;
 
   @Prop({ required: true })
-  sessionId: string;
+  sessionId?: string;
 
   // اتركها مرنة لكن احرص أن تضيف phoneNormalized لاحقًا بالخدمة
   @Prop({ required: true, type: Object })
-  customer: Record<string, unknown>;
+  customer?: Record<string, unknown>;
 
   // ✅ استخدم الـSchema الفرعي بدل class مباشرة
   @Prop({ type: [OrderProductSchema], required: true })
-  products: OrderProduct[];
+  products?: OrderProduct[];
 
   @Prop({
     default: 'pending',
     enum: ['pending', 'paid', 'canceled', 'shipped', 'delivered', 'refunded'],
   })
-  status: string;
+  status?: string;
 
   @Prop()
   externalId?: string;

@@ -140,7 +140,7 @@ export class WhatsappQrWebhookController {
     const mapped = mapEvoStatus(evoState as unknown as Record<string, unknown>);
     if (mapped) {
       chDoc.status = mapped;
-      if (mapped === ChannelStatus.CONNECTED) chDoc.qr = undefined;
+      if (mapped === ChannelStatus.CONNECTED) chDoc.qr = '';
       await chDoc.save();
     }
   }

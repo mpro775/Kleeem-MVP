@@ -46,7 +46,7 @@ import type { PublicChannel } from './types/channels';
 export class WebhooksController {
   constructor(
     private readonly service: WebhooksService,
-    @Inject('ChannelsRepository')
+    @Inject('ChannelRepository')
     private readonly channelsRepo: ChannelRepository,
   ) {}
 

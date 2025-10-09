@@ -13,84 +13,84 @@ export type ProductDocument = HydratedDocument<Product>;
   toObject: { virtuals: true },
 })
 export class Product {
-  _id: Types.ObjectId;
+  _id?: Types.ObjectId;
 
   // Timestamps (added automatically by timestamps: true)
   createdAt?: Date;
   updatedAt?: Date;
 
   @Prop({ type: Types.ObjectId, ref: 'Merchant', required: true })
-  merchantId: Types.ObjectId;
+  merchantId?: Types.ObjectId;
 
   // لم تعد مطلوبة للإنشاء اليدوي
   @Prop({ type: String, default: null })
-  originalUrl: string | null;
+  originalUrl?: string | null;
 
   @Prop({ default: '' })
-  platform: string;
+  platform?: string;
 
   @Prop({ required: true, trim: true, default: '' })
-  name: string;
+  name?: string;
 
   @Prop({ default: '' })
-  description: string;
+  description?: string;
 
   @Prop({ default: 0 })
-  price: number;
+  price?: number;
 
   @Prop({ default: true })
-  isAvailable: boolean;
+  isAvailable?: boolean;
 
   @Prop({ default: [] })
-  images: string[];
+  images?: string[];
 
   @Prop({ type: Types.ObjectId, ref: 'Category' })
-  category: Types.ObjectId;
+  category?: Types.ObjectId;
 
   @Prop({ default: '' })
   lowQuantity?: string;
 
   @Prop({ default: [] })
-  specsBlock: string[];
+  specsBlock?: string[];
 
   @Prop({ type: Date, default: null })
-  lastFetchedAt: Date | null;
+  lastFetchedAt?: Date | null;
 
   @Prop({ type: Date, default: null })
-  lastFullScrapedAt: Date | null;
+  lastFullScrapedAt?: Date | null;
 
   @Prop({ type: String, default: null })
-  errorState: string | null;
+  errorState?: string | null;
 
   @Prop({ enum: ['manual', 'api'], required: true })
-  source: 'manual' | 'api';
+  source?: 'manual' | 'api';
 
   @Prop({ type: String, default: null })
-  sourceUrl: string | null;
+  sourceUrl?: string | null;
 
   @Prop({ type: String, default: null })
-  externalId: string | null;
+  externalId?: string | null;
 
   @Prop({ default: 'active', enum: ['active', 'inactive', 'out_of_stock'] })
-  status: string;
+  status?: string;
 
   @Prop({ type: Date, default: null })
-  lastSync: Date | null;
+  lastSync?: Date | null;
 
   @Prop({ type: String, default: null })
-  syncStatus: 'ok' | 'error' | 'pending' | null;
+  syncStatus?: 'ok' | 'error' | 'pending' | null;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Offer' }], default: [] })
-  offers: Types.ObjectId[];
+  offers?: Types.ObjectId[];
 
   @Prop({ default: [] })
-  keywords: string[];
+  keywords?: string[];
 
   @Prop({ sparse: true })
-  uniqueKey: string;
+  uniqueKey?: string;
 
   @Prop({ type: String, enum: Object.values(Currency), default: Currency.SAR })
-  currency: Currency;
+  currency?: Currency;
 
   @Prop({ type: Map, of: [String], default: undefined })
   attributes?: Map<string, string[]>;
@@ -180,7 +180,8 @@ function recomputePublicUrlStored(doc: ProductDocument) {
   }
 }
 
-ProductSchema.pre('save', function (next: NextFunction) {
+// @ts-expect-error Mongoose types are restrictive for pre-save hooks
+ProductSchema.pre('save', function (this: ProductDocument, next: NextFunction) {
   recomputePublicUrlStored(this);
   next();
 });

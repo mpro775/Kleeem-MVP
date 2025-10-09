@@ -43,7 +43,7 @@ type PaginateModelParam = Parameters<PaginationService['paginate']>[0];
 function toProductLean(p: unknown): ProductLean {
   if (!isObject(p)) {
     // نبني أقل شكل ممكن لتفادي any
-    return { attributes: undefined } as ProductLean;
+    return { attributes: {} } as ProductLean;
   }
 
   const attributes = toPlainAttributes(p.attributes);
@@ -72,7 +72,7 @@ export class MongoProductsRepository {
     session?: ClientSession,
   ): Promise<ProductDocument> {
     const doc = new this.productModel(data);
-    return doc.save({ session });
+    return doc.save({ session: session ?? null });
   }
 
   updateById(
@@ -84,7 +84,7 @@ export class MongoProductsRepository {
       .findByIdAndUpdate(
         id,
         { $set: set },
-        { new: true, runValidators: true, session },
+        { new: true, runValidators: true, session: session ?? null },
       )
       .exec();
   }
@@ -98,7 +98,7 @@ export class MongoProductsRepository {
     session?: ClientSession,
   ): Promise<boolean> {
     const res = await this.productModel
-      .findByIdAndDelete(id, { session })
+      .findByIdAndDelete(id, { session: session ?? null })
       .exec();
     return !!res;
   }
@@ -127,12 +127,12 @@ export class MongoProductsRepository {
           upsert: true,
           runValidators: true,
           setDefaultsOnInsert: true,
-          session,
+          session: session ?? null,
         },
       )
       .exec();
     // مع upsert:true الدوكومنت مضمون
-    return doc as ProductDocument;
+    return doc as unknown as ProductDocument;
   }
 
   countByMerchant(merchantId: Types.ObjectId): Promise<number> {

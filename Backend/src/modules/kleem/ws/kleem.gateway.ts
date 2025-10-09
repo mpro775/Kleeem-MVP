@@ -63,7 +63,7 @@ const ROLE_AGENT = 'AGENT' as const;
 export class KleemGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
 {
-  @WebSocketServer() server: Server;
+  @WebSocketServer() server!: Server;
 
   constructor(
     private readonly kleem: KleemChatService,
@@ -73,11 +73,11 @@ export class KleemGateway
   ) {}
 
   private verifyJwtToken(token: string | undefined): {
-    userId?: string;
+    userId: string | undefined;
     merchantId?: string;
     roleIsAdminOrAgent: boolean;
   } {
-    let userId: string | undefined;
+    let userId: string | undefined = undefined;
     let merchantId: string | undefined;
     let roleIsAdminOrAgent = false;
 
@@ -104,7 +104,20 @@ export class KleemGateway
       // ضيف بدون صلاحيات
     }
 
-    return { userId, merchantId, roleIsAdminOrAgent };
+    const result: {
+      userId: string | undefined;
+      merchantId?: string;
+      roleIsAdminOrAgent: boolean;
+    } = {
+      userId,
+      roleIsAdminOrAgent,
+    };
+
+    if (merchantId !== undefined && merchantId !== null) {
+      result.merchantId = merchantId;
+    }
+
+    return result;
   }
 
   private joinRooms(

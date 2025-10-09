@@ -27,7 +27,7 @@ export class ProductPublicService {
     if (!sf)
       return {
         items: [],
-        meta: { hasMore: false, nextCursor: undefined, count: 0 },
+        meta: { hasMore: false, count: 0 },
       };
     return this.repo.listPublicByMerchant(new Types.ObjectId(sf.merchant), dto);
   };

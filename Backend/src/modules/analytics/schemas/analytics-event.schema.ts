@@ -19,10 +19,10 @@ export class AnalyticsEvent {
       'unavailable_product',
     ],
   })
-  type: string;
+  type?: string;
 
   @Prop({ type: String, required: true })
-  channel: string; // e.g. 'whatsapp' | 'telegram' | 'webchat'
+  channel?: string; // e.g. 'whatsapp' | 'telegram' | 'webchat'
 
   @Prop({ type: mongoose.Schema.Types.Mixed, default: {} })
   payload: unknown;

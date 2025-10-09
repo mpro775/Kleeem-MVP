@@ -31,9 +31,9 @@ export class RolesGuard implements CanActivate {
     // إذا ما فيه @Roles => لا تقييد
     if (!requiredRoles || requiredRoles.length === 0) return true;
 
-    // 3) احصل على المستخدم من request (بعد JwtAuthGuard)
+    // 3) احصل على المستخدم من request (بعد JwtAuthGuard أو IdentityGuard)
     const request = context.switchToHttp().getRequest<RequestWithUser>();
-    const user = request.user;
+    const user = request.user || request.authUser;
 
     if (!user) {
       // ما انفكّت JWT أو مافيه Authorization

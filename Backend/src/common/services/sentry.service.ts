@@ -114,36 +114,8 @@ export class SentryService {
     }
 
     try {
-      const eventId = Sentry.captureException(error, {
-        level: 'error',
-        tags: {
-          ...context.tags,
-          service: 'kaleem-bot',
-        },
-        user: context.userId
-          ? {
-              id: context.userId,
-              ip_address: context.ip,
-            }
-          : undefined,
-        extra: {
-          ...context.extra,
-          merchantId: context.merchantId,
-          requestId: context.requestId,
-          url: context.url,
-          method: context.method,
-          userAgent: context.userAgent,
-        },
-        contexts: {
-          request: {
-            url: context.url,
-            method: context.method,
-            headers: {
-              'User-Agent': context.userAgent,
-            },
-          },
-        },
-      });
+      const captureContext = this.buildExceptionContext(context);
+      const eventId = Sentry.captureException(error, captureContext);
 
       this.logger.debug(`Error captured in Sentry with ID: ${eventId}`);
       return eventId;
@@ -151,6 +123,103 @@ export class SentryService {
       this.logger.error('Failed to capture error in Sentry', sentryError);
       return '';
     }
+  }
+
+  private buildExceptionContext(context: SentryContext): {
+    level: 'error';
+    tags: Record<string, string>;
+    user?: { id: string; ip_address?: string };
+    extra?: Record<string, unknown>;
+    contexts?: {
+      request?: {
+        url?: string;
+        method?: string;
+        headers?: Record<string, string>;
+      };
+    };
+  } {
+    const captureContext: {
+      level: 'error';
+      tags: Record<string, string>;
+      user?: { id: string; ip_address?: string };
+      extra?: Record<string, unknown>;
+      contexts?: {
+        request?: {
+          url?: string;
+          method?: string;
+          headers?: Record<string, string>;
+        };
+      };
+    } = {
+      level: 'error',
+      tags: {
+        ...context.tags,
+        service: 'kaleem-bot',
+      },
+    };
+
+    if (context.userId) {
+      captureContext.user = {
+        id: context.userId,
+        ...(context.ip && { ip_address: context.ip }),
+      };
+    }
+
+    const extra = this.buildExtraData(context);
+    if (extra) captureContext.extra = extra;
+
+    const requestContext = this.buildRequestContext(context);
+    if (requestContext) captureContext.contexts = { request: requestContext };
+
+    return captureContext;
+  }
+
+  private buildExtraData(
+    context: SentryContext,
+  ): Record<string, unknown> | undefined {
+    const extra: Record<string, unknown> = { ...context.extra };
+    const hasExtra =
+      Object.keys(extra).length > 0 ||
+      context.merchantId ||
+      context.requestId ||
+      context.url ||
+      context.method ||
+      context.userAgent;
+
+    if (!hasExtra) return undefined;
+
+    if (context.merchantId) extra.merchantId = context.merchantId;
+    if (context.requestId) extra.requestId = context.requestId;
+    if (context.url) extra.url = context.url;
+    if (context.method) extra.method = context.method;
+    if (context.userAgent) extra.userAgent = context.userAgent;
+
+    return extra;
+  }
+
+  private buildRequestContext(context: SentryContext):
+    | {
+        url?: string;
+        method?: string;
+        headers?: Record<string, string>;
+      }
+    | undefined {
+    const hasRequestContext =
+      context.url || context.method || context.userAgent;
+    if (!hasRequestContext) return undefined;
+
+    const requestContext: {
+      url?: string;
+      method?: string;
+      headers?: Record<string, string>;
+    } = {};
+
+    if (context.url) requestContext.url = context.url;
+    if (context.method) requestContext.method = context.method;
+    if (context.userAgent)
+      requestContext.headers = { 'User-Agent': context.userAgent };
+
+    return requestContext;
   }
 
   /**
@@ -167,27 +236,8 @@ export class SentryService {
     }
 
     try {
-      const eventId = Sentry.captureMessage(message, {
-        level,
-        tags: {
-          ...context.tags,
-          service: 'kaleem-bot',
-        },
-        user: context.userId
-          ? {
-              id: context.userId,
-              ip_address: context.ip,
-            }
-          : undefined,
-        extra: {
-          ...context.extra,
-          merchantId: context.merchantId,
-          requestId: context.requestId,
-          url: context.url,
-          method: context.method,
-          userAgent: context.userAgent,
-        },
-      });
+      const captureContext = this.buildMessageContext(level, context);
+      const eventId = Sentry.captureMessage(message, captureContext);
 
       this.logger.debug(`Message captured in Sentry with ID: ${eventId}`);
       return eventId;
@@ -195,6 +245,41 @@ export class SentryService {
       this.logger.error('Failed to capture message in Sentry', sentryError);
       return '';
     }
+  }
+
+  private buildMessageContext(
+    level: Sentry.SeverityLevel,
+    context: SentryContext,
+  ): {
+    level: Sentry.SeverityLevel;
+    tags: Record<string, string>;
+    user?: { id: string; ip_address?: string };
+    extra?: Record<string, unknown>;
+  } {
+    const captureContext: {
+      level: Sentry.SeverityLevel;
+      tags: Record<string, string>;
+      user?: { id: string; ip_address?: string };
+      extra?: Record<string, unknown>;
+    } = {
+      level,
+      tags: {
+        ...context.tags,
+        service: 'kaleem-bot',
+      },
+    };
+
+    if (context.userId) {
+      captureContext.user = {
+        id: context.userId,
+        ...(context.ip && { ip_address: context.ip }),
+      };
+    }
+
+    const extra = this.buildExtraData(context);
+    if (extra) captureContext.extra = extra;
+
+    return captureContext;
   }
 
   /**

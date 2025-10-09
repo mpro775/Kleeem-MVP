@@ -16,7 +16,7 @@ export class AdvancedTemplateDto {
   template?: string;
 
   @Prop({ default: Date.now })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @ApiPropertyOptional({
     description: 'ملاحظة عن هذه النسخة',

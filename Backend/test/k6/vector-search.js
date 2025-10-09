@@ -6,7 +6,7 @@ const env = (globalThis && globalThis.__ENV) || {};
 
 export const options = { vus: 100, duration: '1m' };
 
-export default function () {
+export function vectorSearch() {
   const url = env.API_BASE + '/vector/unified-search';
   const payload = JSON.stringify({
     merchantId: env.MERCHANT_ID || 'test-merchant',

@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRedis } from '@nestjs-modules/ioredis';
+import { Injectable, Inject } from '@nestjs/common';
 
 import { MILLISECONDS_PER_MINUTE } from '../cache/constant';
 
@@ -7,7 +6,7 @@ import type Redis from 'ioredis';
 
 @Injectable()
 export class RedisLockService {
-  constructor(@InjectRedis() private readonly redis: Redis) {}
+  constructor(@Inject('IORedisClient') private readonly redis: Redis) {}
 
   async tryLock(
     key: string,

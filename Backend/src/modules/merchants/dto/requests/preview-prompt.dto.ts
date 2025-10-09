@@ -19,12 +19,12 @@ export class PreviewPromptDto {
   @ApiProperty({ default: false })
   @IsBoolean()
   @IsDefined()
-  useAdvanced: boolean;
+  useAdvanced!: boolean;
 
   @ApiProperty({ example: { productName: 'هاتف ذكي', customerName: 'أحمد' } })
   @IsObject()
   @IsNotEmptyObject()
-  testVars: Record<string, string>;
+  testVars!: Record<string, string>;
 
   @ApiPropertyOptional({ enum: ['agent', 'merchant'], default: 'merchant' })
   @IsOptional()

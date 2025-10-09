@@ -101,73 +101,119 @@ export class AuthService {
       emailVerified: boolean;
     };
   }> {
-    const { password, confirmPassword, email, name } = registerDto;
+    this.validateRegistrationData(registerDto);
+
+    try {
+      const result = await this.createUserWithVerification(registerDto);
+      await this.sendVerificationEmailSafely(
+        registerDto.email,
+        result.verificationCode,
+      );
+
+      return this.buildRegistrationResponse(result.userDoc);
+    } catch (err: unknown) {
+      this.handleRegistrationError(err);
+    }
+  }
+
+  private validateRegistrationData(dto: RegisterDto): void {
+    const { password, confirmPassword } = dto;
     if (password !== confirmPassword) {
       throw new BadRequestException(
         this.translationService.translate('auth.errors.passwordMismatch'),
       );
     }
+  }
 
+  private async createUserWithVerification(
+    dto: RegisterDto,
+  ): Promise<{ userDoc: UserDocument; verificationCode: string }> {
+    const { password, email, name } = dto;
+
+    const userDoc = await this.repo.createUser({
+      name: name || '',
+      email,
+      password: password || '',
+      role: 'MERCHANT',
+      active: true,
+      firstLogin: true,
+      emailVerified: false,
+    });
+
+    const code = generateNumericCode(VERIFICATION_CODE_LENGTH);
+    await this.repo.createEmailVerificationToken({
+      userId: userDoc._id,
+      codeHash: sha256(code),
+      expiresAt: minutesFromNow(15),
+    });
+
+    return { userDoc, verificationCode: code };
+  }
+
+  private async sendVerificationEmailSafely(
+    email: string,
+    verificationCode: string,
+  ): Promise<void> {
     try {
-      const userDoc = await this.repo.createUser({
-        name,
-        email,
-        password, // pre-save hook يتولى الهاش
-        role: 'MERCHANT',
-        active: true,
-        firstLogin: true,
-        emailVerified: false,
-      });
+      await this.mailService.sendVerificationEmail(
+        email || '',
+        verificationCode,
+      );
+      this.businessMetrics.incEmailSent();
+    } catch {
+      this.businessMetrics.incEmailFailed();
+    }
+  }
 
-      const code = generateNumericCode(VERIFICATION_CODE_LENGTH);
-      await this.repo.createEmailVerificationToken({
-        userId: userDoc._id,
-        codeHash: sha256(code),
-        expiresAt: minutesFromNow(15),
-      });
+  private buildRegistrationResponse(userDoc: UserDocument): {
+    accessToken: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      merchantId: string | null;
+      firstLogin: boolean;
+      emailVerified: boolean;
+    };
+  } {
+    const { accessToken } = this.tokenService.createAccessOnly({
+      userId: String(userDoc._id),
+      role: userDoc.role ?? 'MERCHANT',
+      merchantId: null,
+    });
 
-      try {
-        await this.mailService.sendVerificationEmail(email, code);
-        this.businessMetrics.incEmailSent();
-      } catch {
-        this.businessMetrics.incEmailFailed();
-      }
-
-      const { accessToken } = this.tokenService.createAccessOnly({
-        userId: String(userDoc._id),
-        role: userDoc.role,
+    return {
+      accessToken,
+      user: {
+        id: String(userDoc._id),
+        name: userDoc.name || '',
+        email: userDoc.email || '',
+        role: userDoc.role || 'MERCHANT',
         merchantId: null,
-      });
-      return {
-        accessToken,
-        user: {
-          id: String(userDoc._id),
-          name: userDoc.name,
-          email: userDoc.email,
-          role: userDoc.role,
-          merchantId: null,
-          firstLogin: userDoc.firstLogin,
-          emailVerified: userDoc.emailVerified,
-        },
-      };
-    } catch (err: unknown) {
-      if (
-        err &&
-        typeof err === 'object' &&
-        'code' in err &&
-        'keyPattern' in err &&
-        (err as MongoDuplicateKeyError).code === DUPLICATE_KEY_CODE &&
-        (err as MongoDuplicateKeyError).keyPattern?.email
-      ) {
-        throw new ConflictException(
-          this.translationService.translate('auth.errors.emailAlreadyExists'),
-        );
-      }
-      this.logger.error('Registration failed', err);
-      throw new InternalServerErrorException(
-        this.translationService.translate('auth.errors.registrationFailed'),
+        firstLogin: userDoc.firstLogin ?? true,
+        emailVerified: userDoc.emailVerified ?? false,
+      },
+    };
+  }
+
+  private handleRegistrationError(err: unknown): never {
+    if (
+      err &&
+      typeof err === 'object' &&
+      'code' in err &&
+      'keyPattern' in err &&
+      (err as MongoDuplicateKeyError).code === DUPLICATE_KEY_CODE &&
+      (err as MongoDuplicateKeyError).keyPattern?.email
+    ) {
+      throw new ConflictException(
+        this.translationService.translate('auth.errors.emailAlreadyExists'),
       );
     }
+    this.logger.error('Registration failed', err);
+    throw new InternalServerErrorException(
+      this.translationService.translate('auth.errors.registrationFailed'),
+    );
   }
 
   async login(
@@ -187,8 +233,43 @@ export class AuthService {
     };
   }> {
     const { email, password } = loginDto;
+    const userDoc = await this.repo.findUserByEmailWithPassword(email || '');
 
-    const userDoc = await this.repo.findUserByEmailWithPassword(email);
+    const validatedUser = await this.validateUserLogin(userDoc, password);
+    await this.validateMerchantStatus(validatedUser);
+
+    const tokens = await this.tokenService.createTokenPair(
+      {
+        userId: String(validatedUser._id),
+        role: validatedUser.role,
+        merchantId: validatedUser.merchantId
+          ? String(validatedUser.merchantId)
+          : null,
+      },
+      sessionInfo,
+    );
+
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      user: {
+        id: String(validatedUser._id),
+        name: validatedUser.name || '',
+        email: validatedUser.email || '',
+        role: validatedUser.role || 'MERCHANT',
+        merchantId: validatedUser.merchantId
+          ? String(validatedUser.merchantId)
+          : null,
+        firstLogin: validatedUser.firstLogin ?? true,
+        emailVerified: validatedUser.emailVerified ?? false,
+      },
+    };
+  }
+
+  private async validateUserLogin(
+    userDoc: UserDocument | null,
+    password: string,
+  ): Promise<UserDocument> {
     if (!userDoc) {
       throw new BadRequestException(
         this.translationService.translate('auth.errors.invalidCredentials'),
@@ -201,7 +282,10 @@ export class AuthService {
       );
     }
 
-    const isMatch = await bcrypt.compare(password, userDoc.password);
+    const isMatch = await bcrypt.compare(
+      password || '',
+      userDoc.password ?? '',
+    );
     if (!isMatch) {
       throw new BadRequestException(
         this.translationService.translate('auth.errors.invalidCredentials'),
@@ -214,11 +298,18 @@ export class AuthService {
       );
     }
 
+    return userDoc;
+  }
+
+  private async validateMerchantStatus(userDoc: UserDocument): Promise<void> {
     if (userDoc.merchantId && String(userDoc.role) !== 'ADMIN') {
-      const m = await this.repo.findMerchantBasicById(
+      const merchant = await this.repo.findMerchantBasicById(
         userDoc.merchantId as unknown as string,
       );
-      if (m && (m.active === false || (m as MerchantDocument).deletedAt)) {
+      if (
+        merchant &&
+        (merchant.active === false || (merchant as MerchantDocument).deletedAt)
+      ) {
         throw new BadRequestException(
           this.translationService.translate(
             'auth.errors.merchantAccountSuspended',
@@ -226,31 +317,6 @@ export class AuthService {
         );
       }
     }
-
-    const payload = {
-      userId: String(userDoc._id),
-      role: userDoc.role,
-      merchantId: userDoc.merchantId ? String(userDoc.merchantId) : null,
-    };
-
-    const tokens = await this.tokenService.createTokenPair(
-      payload,
-      sessionInfo,
-    );
-
-    return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      user: {
-        id: String(userDoc._id),
-        name: userDoc.name,
-        email: userDoc.email,
-        role: userDoc.role,
-        merchantId: userDoc.merchantId ? String(userDoc.merchantId) : null,
-        firstLogin: userDoc.firstLogin,
-        emailVerified: userDoc.emailVerified,
-      },
-    };
   }
 
   async refreshTokens(
@@ -307,7 +373,20 @@ export class AuthService {
     };
   }> {
     const { email, code } = dto;
-    const user = await this.repo.findUserByEmailWithPassword(email);
+    const user = await this.validateVerificationRequest(email, code);
+
+    await this.updateUserAfterVerification(user);
+    await this.ensureUserMerchant(user);
+    await this.cleanupVerificationTokens(user);
+
+    return this.buildVerificationResponse(user);
+  }
+
+  private async validateVerificationRequest(
+    email: string,
+    code: string,
+  ): Promise<UserDocument> {
+    const user = await this.repo.findUserByEmailWithPassword(email || '');
     if (!user) {
       throw new BadRequestException(
         this.translationService.translate(
@@ -319,14 +398,14 @@ export class AuthService {
     const tokenDoc = await this.repo.latestEmailVerificationTokenByUser(
       user._id,
     );
-    if (!tokenDoc || tokenDoc.codeHash !== sha256(code)) {
+    if (!tokenDoc || tokenDoc.codeHash !== sha256(code || '')) {
       throw new BadRequestException(
         this.translationService.translate(
           'auth.errors.invalidVerificationCode',
         ),
       );
     }
-    if (tokenDoc.expiresAt.getTime() < Date.now()) {
+    if (!tokenDoc.expiresAt || tokenDoc.expiresAt.getTime() < Date.now()) {
       throw new BadRequestException(
         this.translationService.translate(
           'auth.errors.verificationCodeExpired',
@@ -334,35 +413,58 @@ export class AuthService {
       );
     }
 
+    return user;
+  }
+
+  private async updateUserAfterVerification(user: UserDocument): Promise<void> {
     user.emailVerified = true;
     user.firstLogin = true;
     await this.repo.saveUser(user);
 
     // Invalidate cache after user update
-    await this.invalidateUserCache(user.email, String(user._id));
+    await this.invalidateUserCache(user.email || '', String(user._id));
+  }
 
+  private async ensureUserMerchant(user: UserDocument): Promise<void> {
     const merchant = await this.merchants.ensureForUser(user._id, {
-      name: user.name,
+      name: user.name ?? '',
     });
 
     if (!user.merchantId) {
       user.merchantId = merchant._id as Types.ObjectId;
       await this.repo.saveUser(user);
     }
-    await this.repo.deleteEmailVerificationTokensByUser(user._id);
+  }
 
+  private async cleanupVerificationTokens(user: UserDocument): Promise<void> {
+    await this.repo.deleteEmailVerificationTokensByUser(user._id);
+  }
+
+  private buildVerificationResponse(user: UserDocument): {
+    accessToken: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      merchantId: string | null;
+      firstLogin: boolean;
+      emailVerified: boolean;
+    };
+  } {
     const { accessToken } = this.tokenService.createAccessOnly({
       userId: String(user._id),
-      role: user.role,
+      role: user.role ?? 'MERCHANT',
       merchantId: user.merchantId ? String(user.merchantId) : null,
     });
+
     return {
       accessToken,
       user: {
         id: String(user._id),
-        name: user.name,
-        email: user.email,
-        role: user.role,
+        name: user.name || '',
+        email: user.email || '',
+        role: user.role || 'MERCHANT',
         merchantId: toStr(user.merchantId),
         firstLogin: true,
         emailVerified: true,
@@ -397,7 +499,7 @@ export class AuthService {
 
   async resendVerification(dto: ResendVerificationDto): Promise<void> {
     const { email } = dto;
-    const user = await this.findUserByEmail(email);
+    const user = await this.findUserByEmail(email || '');
     if (!user) {
       throw new BadRequestException(
         this.translationService.translate('auth.errors.emailNotRegistered'),
@@ -437,7 +539,7 @@ export class AuthService {
     });
 
     try {
-      await this.mailService.sendVerificationEmail(email, code);
+      await this.mailService.sendVerificationEmail(email || '', code);
     } catch (e: unknown) {
       this.logger.error('Failed to send verification email', e);
     }
@@ -445,7 +547,7 @@ export class AuthService {
 
   async requestPasswordReset(dto: RequestPasswordResetDto): Promise<void> {
     const { email } = dto;
-    const user = await this.repo.findUserByEmailSelectId(email);
+    const user = await this.repo.findUserByEmailSelectId(email || '');
     if (!user) return;
 
     const last = await this.repo.latestPasswordResetTokenByUser(user._id, true);
@@ -477,9 +579,9 @@ export class AuthService {
       /\/+$/,
       '',
     );
-    const link = `${base}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+    const link = `${base}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email || '')}`;
 
-    await this.mailService.sendPasswordResetEmail(email, link);
+    await this.mailService.sendPasswordResetEmail(email || '', link);
     this.businessMetrics.incEmailSent?.();
   }
 
@@ -487,11 +589,11 @@ export class AuthService {
     email: string,
     token: string,
   ): Promise<boolean> {
-    const u = await this.repo.findUserByEmailSelectId(email);
+    const u = await this.repo.findUserByEmailSelectId(email || '');
     if (!u) return false;
     const doc = await this.repo.findLatestPasswordResetForUser(u._id, true);
     if (!doc) return false;
-    if (doc.expiresAt.getTime() < Date.now()) return false;
+    if (!doc.expiresAt || doc.expiresAt.getTime() < Date.now()) return false;
     return doc.tokenHash === sha256(token);
   }
 
@@ -504,22 +606,22 @@ export class AuthService {
       );
     }
 
-    const user = await this.repo.findUserByEmailWithPassword(email);
+    const user = await this.repo.findUserByEmailWithPassword(email || '');
     if (!user) return;
 
     const doc = await this.repo.latestPasswordResetTokenByUser(user._id, true);
     if (!doc) return;
-    if (doc.expiresAt.getTime() < Date.now()) return;
+    if (!doc.expiresAt || doc.expiresAt.getTime() < Date.now()) return;
 
-    const ok = doc.tokenHash === sha256(token);
+    const ok = doc.tokenHash === sha256(token || '');
     if (!ok) return;
 
-    user.password = newPassword;
+    user.password = newPassword || '';
     user.passwordChangedAt = new Date();
     await this.repo.saveUser(user);
 
     // Invalidate cache after password change
-    await this.invalidateUserCache(user.email, String(user._id));
+    await this.invalidateUserCache(user.email ?? '', String(user._id));
 
     await this.repo.markPasswordResetTokenUsed(doc._id);
     await this.repo.deleteOtherPasswordResetTokens(user._id, doc._id);
@@ -540,7 +642,10 @@ export class AuthService {
       );
     }
 
-    const match = await bcrypt.compare(currentPassword, user.password);
+    const match = await bcrypt.compare(
+      currentPassword || '',
+      user.password ?? '',
+    );
     if (!match) {
       throw new BadRequestException(
         this.translationService.translate(
@@ -549,12 +654,12 @@ export class AuthService {
       );
     }
 
-    user.password = newPassword;
+    user.password = newPassword || '';
     user.passwordChangedAt = new Date();
     await this.repo.saveUser(user);
 
     // Invalidate cache after password change
-    await this.invalidateUserCache(user.email, String(user._id));
+    await this.invalidateUserCache(user.email ?? '', String(user._id));
     await this.cacheManager.set(
       `pwdChangedAt:${user._id.toString()}`,
       user.passwordChangedAt.getTime(),
@@ -579,54 +684,89 @@ export class AuthService {
       active: boolean;
     };
   }> {
+    const user = await this.validateUserExists(userId);
+
+    if (user.merchantId) {
+      await this.validateExistingMerchant(user.merchantId);
+    } else {
+      await this.createMerchantForUser(user);
+    }
+
+    return this.buildMerchantResponse(user);
+  }
+
+  private async validateUserExists(userId: string): Promise<UserDocument> {
     const user = await this.repo.findUserById(userId);
     if (!user) {
       throw new BadRequestException(
         this.translationService.translate('auth.errors.userNotFound'),
       );
     }
+    return user;
+  }
 
-    if (user.merchantId) {
-      const m = await this.repo.findMerchantBasicById(
-        user.merchantId as unknown as string,
-      );
-      if (!m) throw new BadRequestException('Merchant not found');
-      if (
-        (m as MerchantDocument).deletedAt ||
-        (m as MerchantDocument).active === false
-      ) {
-        throw new BadRequestException('تم إيقاف حساب التاجر مؤقتًا');
-      }
-    } else {
-      if (!user.emailVerified)
-        throw new BadRequestException(
-          this.translationService.translate('auth.errors.emailNotVerified'),
-        );
-      const m = await this.merchants.ensureForUser(user._id, {
-        name: user.name,
-      });
-      if (!user.merchantId) {
-        user.merchantId = m._id as Types.ObjectId;
-        await this.repo.saveUser(user);
-      }
+  private async validateExistingMerchant(
+    merchantId: Types.ObjectId,
+  ): Promise<void> {
+    const merchant = await this.repo.findMerchantBasicById(
+      merchantId as unknown as string,
+    );
+    if (!merchant) throw new BadRequestException('Merchant not found');
+    if (
+      (merchant as MerchantDocument).deletedAt ||
+      (merchant as MerchantDocument).active === false
+    ) {
+      throw new BadRequestException('تم إيقاف حساب التاجر مؤقتًا');
     }
+  }
+
+  private async createMerchantForUser(user: UserDocument): Promise<void> {
+    if (!user.emailVerified) {
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.emailNotVerified'),
+      );
+    }
+
+    const merchant = await this.merchants.ensureForUser(user._id, {
+      name: user.name || '',
+    });
+
+    if (!user.merchantId) {
+      user.merchantId = merchant._id as Types.ObjectId;
+      await this.repo.saveUser(user);
+    }
+  }
+
+  private buildMerchantResponse(user: UserDocument): {
+    accessToken: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      merchantId: string | null;
+      firstLogin: boolean;
+      emailVerified: boolean;
+      active: boolean;
+    };
+  } {
     const { accessToken } = this.tokenService.createAccessOnly({
       userId: String(user._id),
-      role: user.role,
+      role: (user.role || 'MERCHANT') as 'MERCHANT' | 'ADMIN' | 'MEMBER',
       merchantId: user.merchantId ? String(user.merchantId) : null,
     });
+
     return {
       accessToken,
-
       user: {
         id: String(user._id),
-        name: user.name,
-        email: user.email,
-        role: user.role,
+        name: user.name || '',
+        email: user.email || '',
+        role: user.role || 'MERCHANT',
         merchantId: user.merchantId ? String(user.merchantId) : null,
-        firstLogin: user.firstLogin,
-        emailVerified: user.emailVerified,
-        active: user.active,
+        firstLogin: user.firstLogin ?? true,
+        emailVerified: user.emailVerified ?? false,
+        active: user.active ?? true,
       },
     };
   }

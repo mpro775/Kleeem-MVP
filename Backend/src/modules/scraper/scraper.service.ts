@@ -8,10 +8,10 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Queue } from 'bullmq';
 import { firstValueFrom } from 'rxjs';
 
 import type { AxiosResponse } from 'axios';
+import type { Queue } from 'bull';
 
 type MinimalResult = { price: number; isAvailable: boolean };
 type FullResult = {

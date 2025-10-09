@@ -28,7 +28,7 @@ type Detected =
   | { provider: ChannelProvider.WHATSAPP_QR; channelId: string }
   | { provider: 'unknown'; channelId?: string };
 
-function timingSafeEqStr(a?: string, b?: string): boolean {
+export function timingSafeEqStr(a?: string, b?: string): boolean {
   if (!a || !b) return false;
   const A = Buffer.from(a);
   const B = Buffer.from(b);
@@ -121,6 +121,7 @@ export class WebhookSignatureGuard implements CanActivate {
     req: RequestWithWebhook,
     ch: ChannelSecretsLean,
   ): boolean {
+    if (!req.headers) return false;
     const sig = req.headers['x-hub-signature-256'] as string;
     if (!sig || !sig.startsWith('sha256=')) return false;
     if (!ch.appSecretEnc) return false;
@@ -139,6 +140,7 @@ export class WebhookSignatureGuard implements CanActivate {
 
   // ======== Telegram ========
   private verifyTelegram(req: RequestWithWebhook): boolean {
+    if (!req.headers) return false;
     // الافضل حفظ secret_token لكل قناة لاحقًا. الآن نستخدم ENV عام:
     const got = req.headers['x-telegram-bot-api-secret-token'] as
       | string
@@ -149,6 +151,7 @@ export class WebhookSignatureGuard implements CanActivate {
 
   // ======== WhatsApp QR (Evolution) ========
   private verifyEvolution(req: RequestWithWebhook): boolean {
+    if (!req.headers) return false;
     const got = (req.headers['x-evolution-apikey'] || req.headers['apikey']) as
       | string
       | undefined;

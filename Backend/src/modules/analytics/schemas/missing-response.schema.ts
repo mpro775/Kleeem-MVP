@@ -6,13 +6,13 @@ export type MissingResponseDocument = HydratedDocument<MissingResponse>;
 @Schema({ timestamps: true, collection: 'missing_responses' })
 export class MissingResponse {
   @Prop({ type: Types.ObjectId, ref: 'Merchant', required: true, index: true })
-  merchant: Types.ObjectId;
+  merchant?: Types.ObjectId;
 
   @Prop({ enum: ['telegram', 'whatsapp', 'webchat'], required: true })
-  channel: 'telegram' | 'whatsapp' | 'webchat';
+  channel?: 'telegram' | 'whatsapp' | 'webchat';
 
-  @Prop({ required: true }) question: string;
-  @Prop({ required: true }) botReply: string;
+  @Prop({ required: true }) question?: string;
+  @Prop({ required: true }) botReply?: string;
 
   @Prop() sessionId?: string;
   @Prop() aiAnalysis?: string;
@@ -22,10 +22,10 @@ export class MissingResponse {
     enum: ['missing_response', 'unavailable_product'],
     default: 'missing_response',
   })
-  type: 'missing_response' | 'unavailable_product';
+  type?: 'missing_response' | 'unavailable_product';
 
   @Prop({ default: false, index: true })
-  resolved: boolean;
+  resolved?: boolean;
 
   @Prop() resolvedAt?: Date;
   @Prop() resolvedBy?: string; // userId أو الإيميل الذي أنهى المهمة

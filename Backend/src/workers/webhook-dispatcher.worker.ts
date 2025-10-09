@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { METRICS_PORT_WEBHOOK_DISPATCHER } from 'src/common/constants/common';
+
+import { METRICS_PORT_WEBHOOK_DISPATCHER } from '../common/constants/common';
 
 import { startMetricsServer } from './shared/metrics';
 import { WebhookDispatcherWorkerModule } from './webhook-dispatcher.worker.module';

@@ -56,14 +56,14 @@ describe('DocumentsService', () => {
     const res = await service.uploadFile('m1', file);
 
     expect((service as any).minio.fPutObject).toHaveBeenCalled();
-    const expectedCall = expect.objectContaining({
-      merchantId: 'm1',
-      filename: 'file.pdf',
-      fileType: 'application/pdf',
-      status: 'pending',
-    });
-    const createCall = expect(repo.create.bind(repo));
-    createCall.toHaveBeenCalledWith(expectedCall);
+    expect(repo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        merchantId: 'm1',
+        filename: 'file.pdf',
+        fileType: 'application/pdf',
+        status: 'pending',
+      }),
+    );
     expect(queue.add).toHaveBeenCalledWith('process', {
       docId: 'doc1',
       merchantId: 'm1',
@@ -97,7 +97,6 @@ describe('DocumentsService', () => {
       process.env.MINIO_BUCKET!,
       'k',
     );
-    const deleteCall = expect(repo.deleteByIdForMerchant.bind(repo));
-    deleteCall.toHaveBeenCalledWith('d1', 'm1');
+    expect(repo.deleteByIdForMerchant).toHaveBeenCalledWith('d1', 'm1');
   });
 });

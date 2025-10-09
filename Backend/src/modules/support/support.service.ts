@@ -245,9 +245,17 @@ export class SupportService {
     return attachments;
   }
 
-  async create(
+  private async validateContactDto(dto: CreateContactDto): Promise<void> {
+    const extendedDto = dto as ExtendedCreateContactDto;
+    if (extendedDto.website) throw new BadRequestException('Spam detected');
+
+    const ok = await this.verifyRecaptcha(extendedDto.recaptchaToken);
+    if (!ok) throw new BadRequestException('reCAPTCHA failed');
+  }
+
+  private async prepareTicketData(
     dto: CreateContactDto,
-    files: Express.Multer.File[] = [],
+    files: Express.Multer.File[],
     meta?: {
       ip?: string;
       userAgent?: string;
@@ -255,31 +263,31 @@ export class SupportService {
       userId?: string;
       source?: 'landing' | 'merchant';
     },
-  ): Promise<SupportTicketEntity> {
-    const extendedDto = dto as ExtendedCreateContactDto;
-    if (extendedDto.website) throw new BadRequestException('Spam detected');
-
-    const ok = await this.verifyRecaptcha(extendedDto.recaptchaToken);
-    if (!ok) throw new BadRequestException('reCAPTCHA failed');
-
+  ): Promise<Partial<SupportTicketEntity>> {
     const ticketNumber = this.generateTicketNumber();
     const attachments = await this.uploadFilesToMinio(ticketNumber, files);
 
-    const created = await this.repo.create({
-      ...dto,
+    const result: Partial<SupportTicketEntity> = {
+      ...(dto as Partial<SupportTicketEntity>),
       ticketNumber,
       status: 'open',
       source: meta?.source || 'landing',
-      ip: meta?.ip,
-      userAgent: meta?.userAgent,
+      ip: meta?.ip || '',
       attachments,
-      merchantId: meta?.merchantId
-        ? new Types.ObjectId(meta.merchantId)
-        : undefined,
-      createdBy: meta?.userId ? new Types.ObjectId(meta.userId) : undefined,
-    });
+    };
 
-    this.notifyChannels(
+    if (meta?.userAgent) result.userAgent = meta.userAgent;
+    if (meta?.merchantId)
+      result.merchantId = new Types.ObjectId(meta.merchantId);
+    if (meta?.userId) result.createdBy = new Types.ObjectId(meta.userId);
+
+    return result;
+  }
+
+  private async notifyTicketCreation(
+    created: SupportTicketEntity,
+  ): Promise<void> {
+    await this.notifyChannels(
       created as Pick<
         SupportTicketEntity,
         | '_id'
@@ -293,6 +301,23 @@ export class SupportService {
         | 'status'
       > & { createdAt?: Date },
     ).catch(() => undefined);
+  }
+
+  async create(
+    dto: CreateContactDto,
+    files: Express.Multer.File[] = [],
+    meta?: {
+      ip?: string;
+      userAgent?: string;
+      merchantId?: string;
+      userId?: string;
+      source?: 'landing' | 'merchant';
+    },
+  ): Promise<SupportTicketEntity> {
+    await this.validateContactDto(dto);
+    const ticketData = await this.prepareTicketData(dto, files, meta);
+    const created = await this.repo.create(ticketData);
+    await this.notifyTicketCreation(created);
     return created;
   }
 }

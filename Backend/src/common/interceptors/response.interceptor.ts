@@ -39,12 +39,17 @@ export class ResponseInterceptor<T>
 
     const requestId = req.requestId;
     return next.handle().pipe(
-      map((data: T) => ({
-        success: true,
-        data,
-        requestId,
-        timestamp: new Date().toISOString(),
-      })),
+      map((data: T) => {
+        const result: ApiResponseData<T> = {
+          success: true,
+          data,
+          timestamp: new Date().toISOString(),
+        };
+        if (requestId) {
+          result.requestId = requestId;
+        }
+        return result;
+      }),
     );
   }
 }

@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { setupApp } from '../common/config/app.config';
 
+import type { INestApplication } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 
 interface EnvironmentValidatorService {
@@ -31,7 +32,7 @@ function ensureCryptoRandomUUID(): void {
 
 export function configureAppBasics(app: NestExpressApplication): void {
   const config = app.get(ConfigService);
-  setupApp(app, config);
+  setupApp(app as INestApplication, config);
 
   // بيئة ومتغيرات
   const envValidator = app.get<EnvironmentValidatorService>(

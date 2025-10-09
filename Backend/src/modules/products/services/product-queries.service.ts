@@ -84,7 +84,6 @@ export class ProductQueriesService {
       return {
         items: heuristicResults,
         meta: {
-          nextCursor: undefined,
           hasMore: false,
           count: heuristicResults.length,
         },
@@ -97,7 +96,6 @@ export class ProductQueriesService {
       return {
         items: textResults,
         meta: {
-          nextCursor: undefined,
           hasMore: false,
           count: textResults.length,
         },
@@ -105,7 +103,7 @@ export class ProductQueriesService {
     } catch {
       return {
         items: [],
-        meta: { nextCursor: undefined, hasMore: false, count: 0 },
+        meta: { hasMore: false, count: 0 },
       };
     }
   }

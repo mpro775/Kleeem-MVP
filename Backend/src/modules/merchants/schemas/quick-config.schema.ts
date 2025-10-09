@@ -4,25 +4,25 @@ import { Document } from 'mongoose';
 @Schema({ _id: false })
 export class QuickConfig {
   @Prop({ default: 'خليجي' })
-  dialect: string;
+  dialect!: string;
 
   @Prop({ default: 'ودّي' })
-  tone: string;
+  tone!: string;
 
   @Prop({ type: [String], default: [] })
-  customInstructions: string[];
+  customInstructions!: string[];
 
   @Prop({ default: true })
-  includeClosingPhrase: boolean;
+  includeClosingPhrase!: boolean;
 
   @Prop({ default: '' })
-  customerServicePhone: string;
+  customerServicePhone!: string;
 
   @Prop({ default: '' })
-  customerServiceWhatsapp: string;
+  customerServiceWhatsapp!: string;
 
   @Prop({ default: 'هل أقدر أساعدك بشي ثاني؟ 😊' })
-  closingText: string;
+  closingText!: string;
 }
 
 export type QuickConfigDocument = QuickConfig & Document;

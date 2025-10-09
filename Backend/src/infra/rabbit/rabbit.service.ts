@@ -265,7 +265,8 @@ export class RabbitService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.connectPromise;
     } finally {
-      this.connectPromise = undefined;
+      // Clear the promise reference after connection attempt
+      this.connectPromise = undefined!;
     }
   }
 
@@ -333,8 +334,8 @@ export class RabbitService implements OnModuleInit, OnModuleDestroy {
   }
 
   private handleDisconnect(): void {
-    this.conn = undefined;
-    this.ch = undefined;
+    this.conn = undefined!;
+    this.ch = undefined!;
   }
 
   private async applySubscription(rec: SubscriptionRecord): Promise<void> {
@@ -364,10 +365,15 @@ export class RabbitService implements OnModuleInit, OnModuleDestroy {
         try {
           const content = safeJsonParse(m.content);
           const headers = pickHeaders(m.properties.headers);
-          await rec.onMessage(content, {
+          const messageProps: MessageProps = {
             messageId: m.properties.messageId as string,
-            headers,
-          });
+          };
+
+          if (headers) {
+            messageProps.headers = headers;
+          }
+
+          await rec.onMessage(content, messageProps);
           ch.ack(m);
         } catch (e) {
           this.logger.error(

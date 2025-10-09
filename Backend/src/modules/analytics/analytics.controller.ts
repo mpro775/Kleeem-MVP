@@ -115,8 +115,8 @@ function buildListQuery(q: Record<string, unknown>): MissingResponsesListQuery {
     channel: (q.channel as MissingResponsesListQuery['channel']) ?? 'all',
     type,
     search: typeof q.search === 'string' ? q.search : '',
-    from: typeof q.from === 'string' ? q.from : undefined,
-    to: typeof q.to === 'string' ? q.to : undefined,
+    from: typeof q.from === 'string' ? q.from : '',
+    to: typeof q.to === 'string' ? q.to : '',
   };
 }
 

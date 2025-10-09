@@ -6,19 +6,19 @@ export type UnavailableProductDocument = UnavailableProduct & Document;
 @Schema({ timestamps: true })
 export class UnavailableProduct {
   @Prop({ type: Types.ObjectId, ref: 'Merchant', required: true })
-  merchant: Types.ObjectId;
+  merchant?: Types.ObjectId;
 
   @Prop({ required: true, enum: ['telegram', 'whatsapp', 'webchat'] })
-  channel: string;
+  channel?: string;
 
   @Prop({ required: true })
-  productName: string; // اسم المنتج المطلوب
+  productName?: string; // اسم المنتج المطلوب
 
   @Prop() // نص سؤال العميل
-  question: string;
+  question?: string;
 
   @Prop() // الرد الآلي (غالباً اعتذار أو نص مخصص)
-  botReply: string;
+  botReply?: string;
 
   @Prop()
   sessionId?: string;
@@ -30,7 +30,7 @@ export class UnavailableProduct {
   context?: Array<{ role: string; text: string }>;
 
   @Prop({ default: false })
-  resolved: boolean;
+  resolved?: boolean;
 
   @Prop()
   manualReply?: string;

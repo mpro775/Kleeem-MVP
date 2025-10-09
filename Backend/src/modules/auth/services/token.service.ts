@@ -197,8 +197,8 @@ export class TokenService {
       merchantId: payload.merchantId as string | null,
       createdAt: now,
       lastUsed: now,
-      userAgent: sessionInfo?.userAgent,
-      ip: sessionInfo?.ip,
+      ...(sessionInfo?.userAgent && { userAgent: sessionInfo.userAgent }),
+      ...(sessionInfo?.ip && { ip: sessionInfo.ip }),
       csrfToken: sessionInfo?.csrfToken ?? this.generateCsrfToken(),
       refreshTokenHash: this.hashRefreshToken(refreshToken),
     };
@@ -265,10 +265,14 @@ export class TokenService {
       throw new UnauthorizedException('Invalid refresh token format');
     }
 
+    const secret = this.config.get<string>('JWT_SECRET');
+    const issuer = this.config.get<string>('JWT_ISSUER');
+    const audience = this.config.get<string>('JWT_AUDIENCE');
+
     const verifyOptions: JwtVerifyOptions = {
-      secret: this.config.get<string>('JWT_SECRET'),
-      issuer: this.config.get<string>('JWT_ISSUER'),
-      audience: this.config.get<string>('JWT_AUDIENCE'),
+      ...(secret && { secret }),
+      ...(issuer && { issuer }),
+      ...(audience && { audience }),
     };
 
     const verifiedPayload = this.jwtService.verify<JwtPayload>(
@@ -339,10 +343,14 @@ export class TokenService {
   /** يتحقق من صلاحية الـ access token مع التأكد من عدم وجوده في القائمة السوداء */
   async validateAccessToken(token: string): Promise<JwtPayload | null> {
     try {
+      const secret = this.config.get<string>('JWT_SECRET');
+      const issuer = this.config.get<string>('JWT_ISSUER');
+      const audience = this.config.get<string>('JWT_AUDIENCE');
+
       const decoded = this.jwtService.verify<JwtPayload>(token, {
-        secret: this.config.get<string>('JWT_SECRET'),
-        issuer: this.config.get<string>('JWT_ISSUER'),
-        audience: this.config.get<string>('JWT_AUDIENCE'),
+        ...(secret && { secret }),
+        ...(issuer && { issuer }),
+        ...(audience && { audience }),
       });
 
       if (typeof decoded?.jti !== 'string') return null;

@@ -6,57 +6,57 @@ import { Currency } from '../enums/product.enums';
 export class ProductResponseDto {
   @ApiProperty({ description: 'المعرف الفريد للمنتج' })
   @Expose()
-  _id: string;
+  _id?: string;
 
   @ApiProperty({ description: 'معرف التاجر مالك المنتج' })
   @Expose()
-  merchantId: string;
+  merchantId?: string;
 
   @ApiProperty({ description: 'الرابط الأصلي للمنتج' })
   @Expose()
-  originalUrl: string;
+  originalUrl?: string;
 
   // الحقول الجديدة
   @ApiProperty({ description: 'اسم المنصة المصدر', example: 'zid' })
   @Expose()
-  platform: string;
+  platform?: string;
 
   @ApiProperty({ description: 'اسم المنتج', example: '' })
   @Expose()
-  name: string;
+  name?: string;
 
   @ApiProperty({ description: 'السعر', example: 0 })
   @Expose()
-  price: number;
+  price?: number;
 
   @ApiProperty({ description: 'هل المنتج متوفر؟', example: true })
   @Expose()
-  isAvailable: boolean;
+  isAvailable?: boolean;
 
   @ApiProperty({ description: 'وصف المنتج', example: '' })
   @Expose()
-  description: string;
+  description?: string;
 
   @ApiProperty({ description: 'الصور', type: [String] })
   @Expose()
-  images: string[];
+  images?: string[];
 
   @IsOptional()
   @IsMongoId()
   @Expose()
-  category: string;
+  category?: string;
 
   @ApiProperty({ description: 'حالة التوفر المنخفض', example: '' })
   @Expose()
-  lowQuantity: string;
+  lowQuantity?: string;
 
   @ApiProperty({ description: 'المواصفات الإضافية', type: [String] })
   @Expose()
-  specsBlock: string[];
+  specsBlock?: string[];
 
   @ApiProperty({ description: 'الكلمات المفتاحية', type: [String] })
   @Expose()
-  keywords: string[];
+  keywords?: string[];
 
   @ApiProperty({ description: 'المواصفات الإضافية', type: [String] })
   @Expose()
@@ -79,7 +79,7 @@ export class ProductResponseDto {
     format: 'date-time',
   })
   @Expose()
-  lastFetchedAt: Date;
+  lastFetchedAt?: Date;
 
   @ApiProperty({
     description: 'آخر تحديث شامل (full)',
@@ -87,7 +87,7 @@ export class ProductResponseDto {
     format: 'date-time',
   })
   @Expose()
-  lastFullScrapedAt: Date;
+  lastFullScrapedAt?: Date;
 
   @ApiProperty({
     description: 'حالة الخطأ عند السكريبينج إن وجدت',

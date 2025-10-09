@@ -57,7 +57,6 @@ describe('ExtractService', () => {
 
     const result = await service.extractFromUrl(url);
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(http.get).toHaveBeenCalledWith(
       'http://extractor-service:8001/extract/',
       { params: { url } },
@@ -74,7 +73,7 @@ describe('ExtractService', () => {
     const result = await service.extractFromUrl(url);
 
     expect(result).toEqual({});
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(http.get).toHaveBeenCalledWith(
       'http://extractor-service:8001/extract/',
       { params: { url } },
@@ -100,7 +99,7 @@ describe('ExtractService', () => {
   it('يتعامل مع خطأ بلا message دون أن يرمي (edge case)', async () => {
     const url = faker.internet.url();
     const weirdErr: any = {}; // بلا message
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+
     http.get.mockReturnValue(throwError(() => weirdErr) as any);
     const loggerSpy = jest
       .spyOn(Logger.prototype, 'error')

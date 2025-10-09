@@ -46,15 +46,23 @@ export class ZidService {
     const obj = item as Record<string, unknown>;
     const name = this.extractProductName(obj);
 
-    return {
+    const currency =
+      typeof obj.currency === 'string' ? obj.currency : undefined;
+
+    const result: ExternalProduct = {
       externalId: String(obj.id),
       title: name,
       price: typeof obj.price === 'number' ? obj.price : null,
-      currency: typeof obj.currency === 'string' ? obj.currency : undefined,
       stock: typeof obj.quantity === 'number' ? obj.quantity : null,
       updatedAt: obj.updated_at ? new Date(obj.updated_at as string) : null,
       raw: item,
     };
+
+    if (currency) {
+      result.currency = currency;
+    }
+
+    return result;
   }
 
   private async fetchProductsPage(

@@ -175,7 +175,7 @@ export class N8nWorkflowController {
     @Param('workflowId') workflowId: string,
     @Body() dto: RollbackDto,
   ): Promise<{ message: string }> {
-    await this.service.rollback(workflowId, dto.version, 'admin');
+    await this.service.rollback(workflowId, dto.version ?? 0, 'admin');
     return { message: `Rolled back to version ${dto.version}` };
   }
 
@@ -251,7 +251,7 @@ export class N8nWorkflowController {
     @Param('workflowId') workflowId: string,
     @Body() dto: SetActiveDto,
   ): Promise<{ message: string }> {
-    await this.service.setActive(workflowId, dto.active);
+    await this.service.setActive(workflowId, dto.active ?? false);
     return { message: `Workflow ${dto.active ? 'activated' : 'deactivated'}` };
   }
 

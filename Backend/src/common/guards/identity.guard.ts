@@ -41,6 +41,7 @@ export class IdentityGuard implements CanActivate {
       .lean();
 
     if (!user) throw new UnauthorizedException('الحساب غير موجود');
+    if (!user.role) throw new UnauthorizedException('بيانات الحساب غير مكتملة');
 
     req.authUser = {
       _id: user['_id'],

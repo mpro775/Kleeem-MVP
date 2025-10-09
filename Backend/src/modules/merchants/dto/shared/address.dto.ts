@@ -18,7 +18,7 @@ export class AddressDto {
     maxLength: 200,
     required: true,
   })
-  street: string;
+  street!: string;
 
   @IsString({ message: 'يجب أن يكون اسم المدينة نصيًا' })
   @IsNotEmpty({ message: 'اسم المدينة مطلوب' })
@@ -30,7 +30,7 @@ export class AddressDto {
     maxLength: 100,
     required: true,
   })
-  city: string;
+  city!: string;
 
   @IsString({ message: 'يجب أن يكون اسم الدولة نصيًا' })
   @IsNotEmpty({ message: 'اسم الدولة مطلوب' })
@@ -42,7 +42,7 @@ export class AddressDto {
     maxLength: 100,
     required: true,
   })
-  country: string;
+  country!: string;
 
   @ApiPropertyOptional({
     description: 'المنطقة أو الولاية (اختياري)',

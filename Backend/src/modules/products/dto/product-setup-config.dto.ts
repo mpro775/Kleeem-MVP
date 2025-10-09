@@ -4,7 +4,7 @@ import { IsEnum, IsOptional, IsString, IsBoolean } from 'class-validator';
 
 export class ProductSetupConfigDto {
   @IsEnum(['traditional', 'ecommerce'])
-  storeType: 'traditional' | 'ecommerce';
+  storeType?: 'traditional' | 'ecommerce';
 
   @IsOptional()
   @IsEnum(['zid', 'salla', 'shopify', 'custom'])
@@ -19,5 +19,5 @@ export class ProductSetupConfigDto {
   accessToken?: string;
 
   @IsBoolean()
-  hasApi: boolean;
+  hasApi?: boolean;
 }

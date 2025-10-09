@@ -11,7 +11,7 @@ export class SetActiveDto {
     type: Boolean,
   })
   @IsBoolean({ message: 'يجب أن تكون قيمة active منطقية (true/false)' })
-  active: boolean;
+  active?: boolean;
 
   @ApiPropertyOptional({
     description: 'سبب تغيير الحالة (اختياري)',

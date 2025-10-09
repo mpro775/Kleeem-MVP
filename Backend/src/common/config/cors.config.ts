@@ -52,10 +52,20 @@ const ALLOW_ALL = parseBool(process.env.CORS_ALLOW_ALL, false);
 
 export const corsOptions: CorsOptions = {
   origin(origin, cb) {
-    if (ALLOW_ALL) return cb(null, true);
+    // Helper function to safely call callback
+    const safeCallback = (err: Error | null, allow?: boolean) => {
+      try {
+        cb(err, allow);
+      } catch (error) {
+        // Silently handle callback errors to prevent crashes
+        console.warn('CORS origin callback error:', error);
+      }
+    };
+
+    if (ALLOW_ALL) return safeCallback(null, true);
 
     // بدون Origin (curl/server-to-server)
-    if (!origin) return cb(null, ALLOW_EMPTY_ORIGIN);
+    if (!origin) return safeCallback(null, ALLOW_EMPTY_ORIGIN);
 
     // إزالة / في النهاية لتوحيد المقارنة
     const normalized = origin.replace(/\/+$/, '');
@@ -64,7 +74,7 @@ export const corsOptions: CorsOptions = {
       STATIC_ORIGINS.includes(normalized) || KALEEM_SUBDOMAIN.test(normalized);
 
     // مهم: إن لم يُسمح، رجّع Error ليتم منع إضافة هيدرز CORS
-    cb(allowed ? null : new Error('CORS_NOT_ALLOWED'), allowed);
+    safeCallback(allowed ? null : new Error('CORS_NOT_ALLOWED'), allowed);
   },
 
   credentials: parseBool(process.env.CORS_CREDENTIALS, true),

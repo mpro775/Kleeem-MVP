@@ -27,18 +27,18 @@ export class QdrantWrapper {
     }
   }
 
-  upsert = this.client?.upsert?.bind(this.client) as (
+  upsert = this.client?.upsert?.bind(this.client) as unknown as (
     collection: string,
     points: unknown,
-  ) => Promise<void>;
-  search = this.client?.search?.bind(this.client) as (
+  ) => Promise<unknown>;
+  search = this.client?.search?.bind(this.client) as unknown as (
     collection: string,
     query: unknown,
   ) => Promise<unknown>;
   delete = this.client?.delete?.bind(this.client) as (
     collection: string,
     ids: string[],
-  ) => Promise<void>;
+  ) => Promise<unknown>;
   getCollections = this.client?.getCollections?.bind(
     this.client,
   ) as () => Promise<unknown>;

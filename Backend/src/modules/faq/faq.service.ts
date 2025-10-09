@@ -175,7 +175,7 @@ export class FaqService {
 
         await this.repo.updateFieldsById(faq._id, {
           status: STATUS_COMPLETED,
-          errorMessage: undefined,
+          errorMessage: '',
         } as Partial<Faq>);
         done++;
 
@@ -278,7 +278,7 @@ export class FaqService {
       question,
       answer,
       status: STATUS_PENDING,
-      errorMessage: undefined,
+      errorMessage: '',
     } as Partial<Faq>);
 
     try {

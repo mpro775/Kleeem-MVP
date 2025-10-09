@@ -1,91 +1,93 @@
-import { Test } from '@nestjs/testing';
+import { Types } from 'mongoose';
 
 import { AnalyticsService } from '../analytics.service';
 
-import type { AnalyticsRepository } from '../repositories/analytics.repository';
+describe('AnalyticsService (focused)', () => {
+  const makeRepo = () =>
+    ({
+      countSessions: jest.fn().mockResolvedValue(10),
+      aggregateTotalMessages: jest.fn().mockResolvedValue(42),
+      countOrders: jest.fn().mockResolvedValue(2),
+      aggregateOrdersByStatus: jest.fn().mockResolvedValue({ completed: 2 }),
+      sumNonCanceledSales: jest.fn().mockResolvedValue(100),
+      topKeywords: jest.fn().mockResolvedValue([{ keyword: 'k', count: 3 }]),
+      topProducts: jest
+        .fn()
+        .mockResolvedValue([{ productId: 'p', name: 'P', count: 1 }]),
+      getEnabledLogicalChannels: jest
+        .fn()
+        .mockResolvedValue(new Set(['telegram', 'whatsapp'])),
+      channelsUsage: jest
+        .fn()
+        .mockResolvedValue([{ channel: 'telegram', count: 5 }]),
+      getCsat: jest.fn().mockResolvedValue(4.5),
+      getFirstResponseTimeSec: jest.fn().mockResolvedValue(30),
+      countMissingOpen: jest.fn().mockResolvedValue(1),
+      countPaidOrders: jest.fn().mockResolvedValue(2),
+      messagesTimeline: jest
+        .fn()
+        .mockResolvedValue([{ _id: '2025-10-01', count: 5 }]),
+      getTopKeywords: jest.fn().mockResolvedValue([{ keyword: 'k', count: 3 }]),
+      countProducts: jest.fn().mockResolvedValue(7),
+      createMissingFromWebhook: jest
+        .fn()
+        .mockResolvedValue({ _id: new Types.ObjectId() }),
+      listMissingResponses: jest
+        .fn()
+        .mockResolvedValue({ items: [], total: 0 }),
+      statsMissing: jest.fn().mockResolvedValue([]),
+      markMissingResolved: jest.fn().mockResolvedValue(undefined),
+      listKleemMissing: jest.fn().mockResolvedValue({ items: [], total: 0 }),
+      updateKleemMissing: jest.fn().mockResolvedValue({ _id: 'k1' }),
+      bulkResolveKleem: jest.fn().mockResolvedValue({ updated: 2 }),
+      stats: jest.fn().mockResolvedValue([]),
+      topProductsAlt: jest.fn(),
+    }) as any;
 
-describe('AnalyticsService', () => {
-  let service: AnalyticsService;
-  let repo: jest.Mocked<AnalyticsRepository>;
+  const makeSvc = () => {
+    const repo = makeRepo();
+    const faqService = {
+      createMany: jest.fn().mockResolvedValue([{ _id: new Types.ObjectId() }]),
+    } as any;
+    const notifications = {
+      notifyUser: jest.fn().mockResolvedValue(undefined),
+    } as any;
+    const svc = new AnalyticsService(repo, faqService, notifications);
+    return { svc, repo, faqService, notifications };
+  };
 
-  beforeEach(async () => {
-    repo = {
-      countSessions: jest.fn(),
-      aggregateTotalMessages: jest.fn(),
-      countOrders: jest.fn(),
-      aggregateOrdersByStatus: jest.fn(),
-      sumNonCanceledSales: jest.fn(),
-      topKeywords: jest.fn(),
-      topProducts: jest.fn(),
-      getEnabledLogicalChannels: jest.fn(),
-      channelsUsage: jest.fn(),
-      getCsat: jest.fn(),
-      getFirstResponseTimeSec: jest.fn(),
-      countMissingOpen: jest.fn(),
-      createMissingFromWebhook: jest.fn(),
-      listMissingResponses: jest.fn(),
-      markMissingResolved: jest.fn(),
-      bulkResolveMissing: jest.fn(),
-      statsMissing: jest.fn(),
-      countPaidOrders: jest.fn(),
-      countProducts: jest.fn(),
-      messagesTimeline: jest.fn(),
-      getTopKeywords: jest.fn(),
-      createKleemFromWebhook: jest.fn(),
-      listKleemMissing: jest.fn(),
-      updateKleemMissing: jest.fn(),
-      bulkResolveKleem: jest.fn(),
-    };
-
-    const module = await Test.createTestingModule({
-      providers: [
-        AnalyticsService,
-        { provide: 'AnalyticsRepository', useValue: repo },
-        {
-          provide: 'FaqService',
-          useValue: {
-            createMany: jest.fn().mockResolvedValue([{ _id: 'faq1' }]),
-          },
-        },
-        {
-          provide: 'NotificationsService',
-          useValue: { notifyUser: jest.fn() },
-        },
-      ],
-    }).compile();
-
-    service = module.get(AnalyticsService);
+  it('getOverview aggregates metrics', async () => {
+    const { svc } = makeSvc();
+    const out = await svc.getOverview(new Types.ObjectId().toString(), 'week');
+    expect(out.messages).toBe(42);
+    expect(out.channels.total).toBeGreaterThan(0);
+    expect(out.orders.totalSales).toBe(100);
   });
 
-  it('should compute overview', async () => {
-    repo.countSessions.mockResolvedValueOnce(10).mockResolvedValueOnce(5);
-    repo.aggregateTotalMessages.mockResolvedValue(100);
-    repo.countOrders.mockResolvedValueOnce(4).mockResolvedValueOnce(2);
-    repo.aggregateOrdersByStatus.mockResolvedValue({ paid: 2, pending: 2 });
-    repo.sumNonCanceledSales.mockResolvedValue(500);
-    repo.topKeywords.mockResolvedValue([{ keyword: 'test', count: 3 }]);
-    repo.topProducts.mockResolvedValue([
-      { productId: 'p1', name: 'Prod', count: 5 },
-    ]);
-    repo.getEnabledLogicalChannels.mockResolvedValue(
-      new Set(['telegram', 'whatsapp']),
-    );
-    repo.channelsUsage.mockResolvedValue([
-      { channel: 'telegram', count: 7 },
-      { channel: 'whatsapp', count: 3 },
-    ]);
-    repo.getCsat.mockResolvedValue(0.8);
-    repo.getFirstResponseTimeSec.mockResolvedValue(12.3);
-    repo.countMissingOpen.mockResolvedValue(2);
-    repo.countPaidOrders.mockResolvedValue(2);
-    // revenue for aov
-    repo.sumNonCanceledSales.mockResolvedValue(500);
+  it('listMissingResponses builds filters and paginates', async () => {
+    const { svc, repo } = makeSvc();
+    await svc.listMissingResponses({
+      merchantId: new Types.ObjectId().toString(),
+      resolved: 'false',
+      channel: 'telegram',
+      type: 'missing_response',
+      search: 'hi',
+      from: '2025-10-01',
+      to: '2025-10-02',
+      page: 2,
+      limit: 10,
+    });
+    expect(repo.listMissingResponses).toHaveBeenCalled();
+  });
 
-    const res = await service.getOverview('m1', 'week');
-    expect(res.sessions.count).toBe(10);
-    expect(res.sessions.changePercent).toBe(100);
-    expect(res.orders.count).toBe(4);
-    expect(res.topKeywords.length).toBe(1);
-    expect(res.channels.total).toBe(2);
+  it('notifyMissingStatsToUser composes and sends notification', async () => {
+    const { svc, notifications } = makeSvc();
+    const res = await svc.notifyMissingStatsToUser({
+      merchantId: 'm',
+      userId: 'u',
+      days: 7,
+    });
+    expect(res.sent).toBe(true);
+    expect(notifications.notifyUser).toHaveBeenCalled();
   });
 });

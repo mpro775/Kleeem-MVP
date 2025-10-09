@@ -81,8 +81,8 @@ export class TelegramAdapter implements ChannelAdapter {
     c.status = 'disconnected' as ChannelStatus;
     c.enabled = false;
     if (mode === 'wipe') {
-      c.botTokenEnc = undefined;
-      c.webhookUrl = undefined;
+      c.botTokenEnc = undefined as unknown as string;
+      c.webhookUrl = undefined as unknown as string;
     }
     await c.save();
   }

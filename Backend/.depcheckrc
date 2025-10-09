@@ -1,13 +1,27 @@
 {
   "ignores": [
     "@nestjs/terminus",
-    "@types/*"
+    "@types/*",
+    "k6",
+    "src",
+    "express-serve-static-core",
+    "@express-rate-limit/tsconfig",
+    "tsconfig-paths",
+    "rimraf",
+    "lint-staged",
+    "cross-env",
+    "swagger-jsdoc",
+    "swagger-ui-express",
+    "ts-loader",
+    "source-map-support"
   ],
   "specials": [
     "bin",
     "eslint",
     "prettier",
     "typescript",
-    "webpack"
+    "webpack",
+    "jest",
+    "babel"
   ]
 }

@@ -85,30 +85,54 @@ export class ProductsController {
       );
     }
 
-    const input = {
-      merchantId: jwtMerchantId, // ✅ بدل req.user.merchantId
-      originalUrl: dto.originalUrl,
-      source: dto.source,
-      sourceUrl: dto.sourceUrl,
-      externalId: dto.externalId,
-      name: dto.name || '',
-      currency: dto.currency,
-      offer: dto.offer,
-      price: dto.price || 0,
-      isAvailable: dto.isAvailable ?? true,
-      keywords: dto.keywords || [],
-      platform: dto.platform || '',
-      description: dto.description || '',
-      images: dto.images || [],
-      category: dto.category || '',
-      specsBlock: dto.specsBlock || [],
-      attributes: dto.attributes,
-    };
-    const product = await this.productsService.create(input);
+    const input = this.buildCreateProductInput(dto, jwtMerchantId);
+    const product = await this.productsService.create(
+      input as unknown as CreateProductDto & { merchantId: string },
+    );
 
     return plainToInstance(ProductResponseDto, product, {
       excludeExtraneousValues: true,
     });
+  }
+
+  private buildCreateProductInput(dto: CreateProductDto, merchantId: string) {
+    const input = {
+      merchantId,
+      name: dto.name || '',
+      price: dto.price || 0,
+      isAvailable: dto.isAvailable ?? true,
+      keywords: dto.keywords || [],
+      description: dto.description || '',
+      images: dto.images || [],
+      category: dto.category || '',
+      specsBlock: dto.specsBlock || [],
+    };
+
+    return this.addOptionalProductFields(input, dto);
+  }
+
+  private addOptionalProductFields(
+    input: Record<string, unknown>,
+    dto: CreateProductDto,
+  ) {
+    const optionalMappings = {
+      originalUrl: dto.originalUrl,
+      source: dto.source,
+      sourceUrl: dto.sourceUrl,
+      externalId: dto.externalId,
+      platform: dto.platform,
+      currency: dto.currency,
+      offer: dto.offer,
+      attributes: dto.attributes,
+    };
+
+    Object.entries(optionalMappings).forEach(([key, value]) => {
+      if (value !== undefined) {
+        input[key] = value;
+      }
+    });
+
+    return input;
   }
 
   @Get()
@@ -140,10 +164,7 @@ export class ProductsController {
   async getProducts(
     @Query() dto: GetProductsDto,
     @CurrentMerchantId() merchantId: string,
-  ): Promise<{
-    items: ProductResponseDto[];
-    meta: PaginationResult<ProductResponseDto>;
-  }> {
+  ): Promise<PaginationResult<ProductResponseDto>> {
     if (!merchantId) {
       throw new ForbiddenException(
         this.translationService.translate('auth.errors.merchantRequired'),
@@ -157,10 +178,8 @@ export class ProductsController {
         excludeExtraneousValues: true,
       }),
       meta: {
-        items: plainToInstance(ProductResponseDto, result.items, {
-          excludeExtraneousValues: true,
-        }),
-        meta: result.meta,
+        hasMore: result.meta.hasMore,
+        count: result.meta.count,
       },
     };
   }
@@ -172,20 +191,16 @@ export class ProductsController {
   async getPublicProducts(
     @Param('storeSlug') storeSlug: string,
     @Query() dto: GetProductsDto,
-  ): Promise<{
-    items: ProductResponseDto[];
-    meta: PaginationResult<ProductResponseDto>;
-  }> {
+  ): Promise<PaginationResult<ProductResponseDto>> {
     const result = await this.productsService.getPublicProducts(storeSlug, dto);
     return {
       items: plainToInstance(ProductResponseDto, result.items, {
         excludeExtraneousValues: true,
       }),
       meta: {
-        items: plainToInstance(ProductResponseDto, result.items, {
-          excludeExtraneousValues: true,
-        }),
-        meta: result.meta,
+        ...(result.meta.nextCursor && { nextCursor: result.meta.nextCursor }),
+        hasMore: result.meta.hasMore,
+        count: result.meta.count,
       },
     };
   }
@@ -221,10 +236,7 @@ export class ProductsController {
     @Query('q') query: string,
     @Query() dto: GetProductsDto,
     @CurrentMerchantId() merchantId: string,
-  ): Promise<{
-    items: ProductResponseDto[];
-    meta: PaginationResult<ProductResponseDto>;
-  }> {
+  ): Promise<PaginationResult<ProductResponseDto>> {
     if (!merchantId) {
       throw new ForbiddenException(
         this.translationService.translate('auth.errors.merchantRequired'),
@@ -248,10 +260,9 @@ export class ProductsController {
         excludeExtraneousValues: true,
       }),
       meta: {
-        items: plainToInstance(ProductResponseDto, result.items, {
-          excludeExtraneousValues: true,
-        }),
-        meta: result.meta,
+        ...(result.meta.nextCursor && { nextCursor: result.meta.nextCursor }),
+        hasMore: result.meta.hasMore,
+        count: result.meta.count,
       },
     };
   }

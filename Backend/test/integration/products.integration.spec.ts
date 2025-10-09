@@ -73,7 +73,10 @@ describe('Products Integration Tests', () => {
         authToken = loginResponse.body.access_token;
       }
     } catch (error) {
-      console.warn('Error during test setup:', error.message);
+      console.warn(
+        'Error during test setup:',
+        error instanceof Error ? error.message : String(error),
+      );
       authToken = 'mock-token';
     }
   });
@@ -105,18 +108,22 @@ describe('Products Integration Tests', () => {
         category: '', // invalid empty category
       };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/products')
         .set('Authorization', `Bearer ${authToken}`)
         .send(invalidProductDto)
         .expect(400);
+
+      expect(response.status).toBe(400);
     });
 
     it('should return 401 for unauthorized access', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/products')
         .send(mockProduct)
         .expect(401);
+
+      expect(response.status).toBe(401);
     });
   });
 
@@ -146,7 +153,11 @@ describe('Products Integration Tests', () => {
     it('should return 404 for non-existent product', async () => {
       const fakeId = '507f1f77bcf86cd799439999';
 
-      await request(app.getHttpServer()).get(`/products/${fakeId}`).expect(404);
+      const response = await request(app.getHttpServer())
+        .get(`/products/${fakeId}`)
+        .expect(404);
+
+      expect(response.status).toBe(404);
     });
   });
 
@@ -167,16 +178,19 @@ describe('Products Integration Tests', () => {
       expect(response.body).toHaveProperty('items');
       expect(response.body).toHaveProperty('meta');
       expect(Array.isArray(response.body.items)).toBe(true);
-      if (response.body.items.length > 0) {
-        expect(response.body.items[0]).toMatchObject({
-          name: expect.any(String),
-          price: expect.any(Number),
-        });
-      }
+
+      expect(response.body.items[0]).toMatchObject({
+        name: expect.any(String),
+        price: expect.any(Number),
+      });
     });
 
     it('should return 401 for unauthorized access to product list', async () => {
-      await request(app.getHttpServer()).get('/products').expect(401);
+      const response = await request(app.getHttpServer())
+        .get('/products')
+        .expect(401);
+
+      expect(response.status).toBe(401);
     });
   });
 
@@ -214,11 +228,13 @@ describe('Products Integration Tests', () => {
       const fakeId = '507f1f77bcf86cd799439999';
       const updateData = { name: 'Updated' };
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .put(`/products/${fakeId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send(updateData)
         .expect(404);
+
+      expect(response.status).toBe(404);
     });
   });
 
@@ -244,10 +260,12 @@ describe('Products Integration Tests', () => {
     it('should return 404 for non-existent product deletion', async () => {
       const fakeId = '507f1f77bcf86cd799439999';
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .delete(`/products/${fakeId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
+
+      expect(response.status).toBe(404);
     });
   });
 
@@ -306,11 +324,13 @@ describe('Products Integration Tests', () => {
     it('should return 404 for non-existent product', async () => {
       const fakeId = '507f1f77bcf86cd799439999';
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post(`/products/${fakeId}/availability`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ isAvailable: false })
         .expect(404);
+
+      expect(response.status).toBe(404);
     });
   });
 });

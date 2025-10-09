@@ -21,7 +21,7 @@ export class CreateBotPromptDto {
     enum: ['system', 'user'],
     example: 'system',
   })
-  type: 'system' | 'user';
+  type!: 'system' | 'user';
 
   @IsString()
   @IsNotEmpty({ message: 'محتوى البرومبت مطلوب' })
@@ -35,7 +35,7 @@ export class CreateBotPromptDto {
     maxLength: MAX_TEMPLATE_LENGTH_Kaleem,
     example: 'أنت مساعد ذكي يساعد المستخدمين في الإجابة على استفساراتهم.',
   })
-  content: string;
+  content!: string;
 
   @IsOptional()
   @IsString({ message: 'يجب أن يكون الاسم نصيًا' })

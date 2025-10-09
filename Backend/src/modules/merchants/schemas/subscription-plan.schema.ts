@@ -12,18 +12,18 @@ export enum PlanTier {
 @Schema({ _id: false })
 export class SubscriptionPlan {
   @Prop({ required: true, enum: Object.values(PlanTier) })
-  tier: PlanTier;
+  tier!: PlanTier;
 
   @Prop({ type: Types.ObjectId, ref: 'Plan', required: false })
   planId?: Types.ObjectId;
 
   @Prop({ required: true })
-  startDate: Date;
+  startDate!: Date;
 
   @Prop()
   endDate?: Date;
   @Prop({ type: [String], default: [] })
-  features: string[];
+  features!: string[];
 }
 
 export type SubscriptionPlanDocument = SubscriptionPlan & Document;

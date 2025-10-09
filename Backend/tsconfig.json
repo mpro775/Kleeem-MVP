@@ -1,5 +1,5 @@
 {
-  "include": ["src/**/*", "scripts/**/*", "test/**/*"],
+  "include": ["src/**/*", "scripts/**/*", "test/**/*", "src/types"],
   "compilerOptions": {
     "module": "commonjs",
     "declaration": true,
@@ -11,18 +11,28 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
+    "typeRoots": ["src/types", "./node_modules/@types"],
+    "paths": {
+      "src/*": ["src/*"]
+    },
+
     "incremental": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "strict": true,
     "strictNullChecks": true,
-    "forceConsistentCasingInFileNames": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
     "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": false,
+    "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
-    "useDefineForClassFields": false,  
-    "types": ["node", "jest"]   
-
+    "useDefineForClassFields": false,
+    "types": ["node", "jest"]
   }
 }

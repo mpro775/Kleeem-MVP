@@ -9,7 +9,7 @@ export class HandleWebhookDto {
   })
   @IsString()
   @IsNotEmpty()
-  eventType: string;
+  eventType!: string;
 
   @ApiPropertyOptional({
     description: 'البيانات المصاحبة للحدث',

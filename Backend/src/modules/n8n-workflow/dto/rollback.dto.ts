@@ -13,7 +13,7 @@ export class RollbackDto {
   })
   @IsInt({ message: 'يجب أن يكون رقم الإصدار رقمًا صحيحًا' })
   @Min(1, { message: 'يجب أن يكون رقم الإصدار أكبر من صفر' })
-  version: number;
+  version?: number;
 
   @ApiPropertyOptional({
     description: 'حفظ النسخة الحالية كنسخة جديدة قبل التراجع (افتراضي: false)',

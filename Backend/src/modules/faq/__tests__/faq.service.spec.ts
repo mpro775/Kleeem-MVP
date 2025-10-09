@@ -70,8 +70,7 @@ describe('FaqService', () => {
       question: 'q2',
     });
     expect(out.success).toBe(true);
-    const updateCall = expect(repo.updateFieldsById.bind(repo));
-    updateCall.toHaveBeenCalled();
+    expect(repo.updateFieldsById).toHaveBeenCalled();
   });
 
   it('softDelete -> ok', async () => {

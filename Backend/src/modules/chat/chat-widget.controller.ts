@@ -331,7 +331,7 @@ export class ChatWidgetController {
   }> {
     // نقبل فقط embedMode من dto
     return this.svc.updateEmbedSettings(merchantId, {
-      embedMode: dto.embedMode,
+      embedMode: dto.embedMode as string,
     });
   }
 }

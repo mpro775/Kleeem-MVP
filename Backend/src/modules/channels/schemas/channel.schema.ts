@@ -27,20 +27,20 @@ export enum ChannelProvider {
 @Schema({ timestamps: true })
 export class Channel {
   @Prop({ type: Types.ObjectId, ref: 'Merchant', index: true, required: true })
-  merchantId: Types.ObjectId;
+  merchantId!: Types.ObjectId;
 
   @Prop({ enum: ChannelProvider, required: true, index: true })
-  provider: ChannelProvider;
+  provider!: ChannelProvider;
 
   @Prop({ default: false })
-  enabled: boolean;
+  enabled!: boolean;
 
   @Prop({
     enum: ChannelStatus,
     default: ChannelStatus.DISCONNECTED,
     index: true,
   })
-  status: ChannelStatus;
+  status!: ChannelStatus;
 
   @Prop() accountLabel?: string;
   @Prop() webhookUrl?: string;

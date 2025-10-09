@@ -54,7 +54,7 @@ import { WhatsappQrWebhookController } from './whatsapp-qr.webhook.controller';
     WebhooksController, // لإعادة استخدامه في TelegramWebhookController
     { provide: WEBHOOK_REPOSITORY, useClass: WebhookMongoRepository },
     WebhookSignatureGuard,
-    { provide: 'ChannelsRepository', useClass: ChannelMongoRepository },
+    { provide: 'ChannelRepository', useClass: ChannelMongoRepository },
   ],
   controllers: [
     WebhooksController,

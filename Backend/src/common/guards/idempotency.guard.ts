@@ -23,15 +23,24 @@ export class IdempotencyGuard implements CanActivate {
         };
       }
     >();
-    const key = String(req.headers['idempotency-key'] || '');
+    const key = String(req.headers?.['idempotency-key'] || '');
 
     if (!key || key.length < IDENPOTENCY_KEY_MIN_LENGTH) return true;
 
-    const rkey = `idemp:${key}`;
-    const ok = await this.redis.set(rkey, '1', 'EX', 60 * 60 * 24, 'NX');
-    if (ok === null) {
-      throw new ConflictException('duplicate idempotency-key');
+    try {
+      const rkey = `idemp:${key}`;
+      const ok = await this.redis.set(rkey, '1', 'EX', 60 * 60 * 24, 'NX');
+      if (ok === null) {
+        throw new ConflictException('duplicate idempotency-key');
+      }
+      return true;
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new Error(
+        `Redis operation failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
-    return true;
   }
 }

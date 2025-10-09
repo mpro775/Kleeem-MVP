@@ -329,7 +329,7 @@ describe('Merchant Complete Journey (E2E)', () => {
   });
 
   describe('6. Real-time WebSocket Communication', () => {
-    beforeAll((done) => {
+    beforeAll(async () => {
       // Connect to WebSocket server
       const serverAddress = `http://localhost:${app.getHttpServer().address()?.port || 3000}`;
       socketClient = SocketClient(serverAddress, {
@@ -339,23 +339,21 @@ describe('Merchant Complete Journey (E2E)', () => {
         },
       });
 
-      socketClient.on('connect', () => {
-        done();
-      });
-
-      socketClient.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
-        done();
+      return new Promise((resolve, reject) => {
+        socketClient.on('connect', () => resolve(void 0));
+        socketClient.on('connect_error', (error) => reject(error));
       });
     });
 
-    it('should receive real-time order updates via WebSocket', (done) => {
+    it('should receive real-time order updates via WebSocket', async () => {
       // Listen for order updates
-      socketClient.on('orderUpdate', (data) => {
-        expect(data).toHaveProperty('orderId');
-        expect(data).toHaveProperty('status');
-        expect(data).toHaveProperty('merchantId', merchantId);
-        done();
+      const orderUpdatePromise = new Promise((resolve) => {
+        socketClient.on('orderUpdate', (data) => {
+          expect(data).toHaveProperty('orderId');
+          expect(data).toHaveProperty('status');
+          expect(data).toHaveProperty('merchantId', merchantId);
+          resolve(data);
+        });
       });
 
       // Trigger an order status update
@@ -365,15 +363,19 @@ describe('Merchant Complete Journey (E2E)', () => {
           .set('Authorization', `Bearer ${accessToken}`)
           .send({ status: 'shipped' });
       }, 100);
+
+      await orderUpdatePromise;
     }, 10000);
 
-    it('should receive real-time chat messages via WebSocket', (done) => {
+    it('should receive real-time chat messages via WebSocket', async () => {
       // Listen for chat messages
-      socketClient.on('newMessage', (data) => {
-        expect(data).toHaveProperty('sessionId');
-        expect(data).toHaveProperty('message');
-        expect(data).toHaveProperty('merchantId', merchantId);
-        done();
+      const messagePromise = new Promise((resolve) => {
+        socketClient.on('newMessage', (data) => {
+          expect(data).toHaveProperty('sessionId');
+          expect(data).toHaveProperty('message');
+          expect(data).toHaveProperty('merchantId', merchantId);
+          resolve(data);
+        });
       });
 
       // Simulate a new chat message
@@ -384,6 +386,8 @@ describe('Merchant Complete Journey (E2E)', () => {
           merchantId,
         });
       }, 100);
+
+      await messagePromise;
     }, 10000);
   });
 
@@ -429,10 +433,12 @@ describe('Merchant Complete Journey (E2E)', () => {
     });
 
     it('should logout and invalidate tokens', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/auth/logout')
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
+
+      expect(response.status).toBe(200);
 
       // Verify that the old token is no longer valid
       await request(app.getHttpServer())
@@ -442,10 +448,12 @@ describe('Merchant Complete Journey (E2E)', () => {
     });
 
     it('should not allow refresh with invalidated token', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/api/auth/refresh')
         .send({ refreshToken })
         .expect(401);
+
+      expect(response.status).toBe(401);
     });
   });
 

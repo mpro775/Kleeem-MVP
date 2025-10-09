@@ -135,12 +135,22 @@ export class InstructionsController {
       throw new ForbiddenException('غير مخوّل للوصول إلى تاجر آخر');
     }
 
-    return this.service.findAll({
+    const findOptions: {
+      merchantId: string;
+      limit: number;
+      page: number;
+      active?: boolean;
+    } = {
       merchantId,
-      active: active === 'true' ? true : active === 'false' ? false : undefined,
       limit: Math.min(Math.max(parseInt(limit, 10) || 30, 1), 200),
       page: Math.max(parseInt(page, 10) || 1, 1),
-    });
+    };
+
+    if (active === 'true' || active === 'false') {
+      findOptions.active = active === 'true';
+    }
+
+    return this.service.findAll(findOptions);
   }
 
   @Patch(':id')

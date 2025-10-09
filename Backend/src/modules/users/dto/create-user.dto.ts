@@ -14,14 +14,14 @@ import { I18nMessage } from '../../../common/validators/i18n-validator';
 import { UserRole } from '../schemas/user.schema';
 
 export class CreateUserDto {
-  id: string;
+  id?: string;
 
   @ApiProperty({
     description: 'البريد الإلكتروني للمستخدم',
     example: 'admin@example.com',
   })
   @IsEmail()
-  email: string;
+  email?: string;
 
   @ApiPropertyOptional({ description: 'رقم الجوال', example: '+970599123456' })
   @IsOptional()
@@ -31,7 +31,7 @@ export class CreateUserDto {
   @ApiProperty({ description: 'اسم المستخدم', example: 'Ahmed Alsaeed' })
   @IsString()
   @MinLength(3)
-  name: string;
+  name?: string;
 
   @ApiPropertyOptional({
     description: 'معرف التاجر',
@@ -40,14 +40,14 @@ export class CreateUserDto {
   })
   @IsString(I18nMessage('validation.string'))
   @IsNotEmpty(I18nMessage('validation.required'))
-  merchantId: string | null;
+  merchantId?: string | null;
   @ApiPropertyOptional({
     description: 'حالة أول تسجيل دخول (لتوجيه Onboarding)',
     example: false,
   })
   @IsOptional()
   @IsBoolean(I18nMessage('validation.boolean'))
-  firstLogin: boolean;
+  firstLogin?: boolean;
 
   @ApiPropertyOptional({
     description: 'الدور الخاص بالمستخدم',
