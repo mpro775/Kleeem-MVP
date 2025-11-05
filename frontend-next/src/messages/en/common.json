@@ -1,0 +1,53 @@
+{
+  "app": {
+    "name": "Kleem",
+    "tagline": "Smart Arabic Store Assistant"
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "pricing": "Pricing",
+    "contact": "Contact Us",
+    "login": "Login",
+    "signup": "Sign Up",
+    "dashboard": "Dashboard",
+    "logout": "Logout"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "actions": "Actions",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm"
+  },
+  "errors": {
+    "general": "An unexpected error occurred",
+    "network": "Network connection error",
+    "notFound": "Page not found",
+    "unauthorized": "Unauthorized access",
+    "validation": "Please check your input"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "toggle": "Toggle Theme"
+  },
+  "language": {
+    "ar": "العربية",
+    "en": "English",
+    "toggle": "Change Language"
+  }
+}
+

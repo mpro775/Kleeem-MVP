@@ -1,0 +1,33 @@
+{
+  "title": "Dashboard",
+  "welcome": "Welcome, {name}",
+  "menu": {
+    "dashboard": "Home",
+    "conversations": "Conversations",
+    "products": "Products",
+    "categories": "Categories",
+    "orders": "Orders",
+    "leads": "Leads",
+    "prompt": "Prompt Studio",
+    "knowledge": "Knowledge Base",
+    "channels": "Channels",
+    "settings": "Settings",
+    "analytics": "Analytics",
+    "storefront": "Storefront",
+    "instructions": "Instructions",
+    "support": "Support"
+  },
+  "stats": {
+    "totalSales": "Total Sales",
+    "activeConversations": "Active Conversations",
+    "newLeads": "New Leads",
+    "conversionRate": "Conversion Rate"
+  },
+  "actions": {
+    "viewAll": "View All",
+    "export": "Export",
+    "import": "Import",
+    "refresh": "Refresh"
+  }
+}
+

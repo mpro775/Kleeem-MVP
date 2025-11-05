@@ -1,0 +1,64 @@
+{
+  "title": "جميع الطلبات",
+  "empty": {
+    "title": "لا توجد طلبات",
+    "description": "لا توجد طلبات تطابق بحثك",
+    "addManual": "إضافة طلب يدوي"
+  },
+  "filters": {
+    "searchByPhone": "ابحث برقم الجوال...",
+    "status": "حالة الطلب",
+    "all": "الكل",
+    "clear": "مسح الفلاتر"
+  },
+  "table": {
+    "orderId": "رقم الطلب",
+    "customer": "العميل",
+    "phone": "الجوال",
+    "total": "الإجمالي",
+    "status": "الحالة",
+    "date": "تاريخ الطلب",
+    "actions": "إجراءات"
+  },
+  "status": {
+    "pending": "قيد الانتظار",
+    "paid": "مدفوع",
+    "shipped": "تم الشحن",
+    "delivered": "تم التوصيل",
+    "canceled": "ملغي",
+    "refunded": "مسترجع"
+  },
+  "details": {
+    "title": "تفاصيل الطلب",
+    "orderId": "رقم الطلب",
+    "updateStatus": "تحديث الحالة",
+    "save": "حفظ",
+    "saveChanges": "حفظ التعديل",
+    "close": "إغلاق",
+    "customerInfo": "معلومات العميل",
+    "name": "الاسم",
+    "phone": "الجوال",
+    "address": "العنوان",
+    "products": "المنتجات",
+    "product": "المنتج",
+    "quantity": "الكمية",
+    "price": "السعر",
+    "lineTotal": "الإجمالي",
+    "grandTotal": "المجموع الإجمالي",
+    "dates": "التواريخ",
+    "createdAt": "تاريخ الإنشاء",
+    "updatedAt": "آخر تحديث",
+    "viewDetails": "عرض التفاصيل"
+  },
+  "actions": {
+    "export": "تصدير",
+    "print": "طباعة",
+    "refresh": "تحديث"
+  },
+  "messages": {
+    "statusUpdated": "تم تحديث حالة الطلب بنجاح",
+    "error": "حدث خطأ أثناء تحديث الطلب",
+    "loading": "جاري التحميل..."
+  }
+}
+

@@ -1,0 +1,46 @@
+{
+  "title": "المنتجات",
+  "addProduct": "إضافة منتج",
+  "search": "ابحث عن منتج",
+  "filters": "التصفية",
+  "columns": {
+    "name": "اسم المنتج",
+    "category": "التصنيف",
+    "price": "السعر",
+    "stock": "المخزون",
+    "status": "الحالة",
+    "actions": "الإجراءات"
+  },
+  "status": {
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "outOfStock": "نفذ من المخزون"
+  },
+  "actions": {
+    "edit": "تعديل",
+    "delete": "حذف",
+    "view": "عرض",
+    "duplicate": "نسخ"
+  },
+  "form": {
+    "name": "اسم المنتج",
+    "description": "الوصف",
+    "price": "السعر",
+    "comparePrice": "السعر قبل التخفيض",
+    "cost": "التكلفة",
+    "sku": "رمز المنتج (SKU)",
+    "barcode": "الباركود",
+    "quantity": "الكمية",
+    "category": "التصنيف",
+    "images": "الصور",
+    "weight": "الوزن",
+    "dimensions": "الأبعاد"
+  },
+  "messages": {
+    "productAdded": "تمت إضافة المنتج بنجاح",
+    "productUpdated": "تم تحديث المنتج بنجاح",
+    "productDeleted": "تم حذف المنتج بنجاح",
+    "confirmDelete": "هل أنت متأكد من حذف هذا المنتج؟"
+  }
+}
+

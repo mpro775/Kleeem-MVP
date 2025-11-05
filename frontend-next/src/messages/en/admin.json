@@ -1,0 +1,43 @@
+{
+  "title": "Admin Dashboard",
+  "prompts": {
+    "title": "Prompts Management",
+    "add": "Add Prompt",
+    "name": "Name",
+    "category": "Category",
+    "content": "Content",
+    "status": "Status",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Inactive",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "templates": {
+    "title": "Templates Management",
+    "add": "Add Template",
+    "name": "Name",
+    "type": "Type",
+    "description": "Description",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "users": {
+    "title": "Users Management",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "status": "Status",
+    "lastLogin": "Last Login",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "messages": {
+    "created": "Created successfully",
+    "updated": "Updated successfully",
+    "deleted": "Deleted successfully",
+    "error": "An error occurred"
+  }
+}
+

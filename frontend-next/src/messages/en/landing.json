@@ -1,0 +1,135 @@
+{
+  "hero": {
+    "title": "Let Kleem respond to your customers in seconds",
+    "subtitle": "Arabic AI assistant specialized in e-commerce management",
+    "description": "Simplify communication, let the smart assistant explain your products, answer questions, and suggest the best automatically.",
+    "cta": "Start with Kleem now for free",
+    "watchDemo": "Watch Demo"
+  },
+  "features": {
+    "title": "Why Kleem?",
+    "subtitle": "Smart assistant that understands your customers and serves them 24/7",
+    "items": {
+      "smartDialect": {
+        "title": "Smart that Understands Your Dialect",
+        "description": "Responds to your customers naturally and customized, even in local dialects, making communication closer and smoother."
+      },
+      "allInOne": {
+        "title": "All Channels in One Place",
+        "description": "Full control over WhatsApp, Telegram, and website chat from one easy-to-use dashboard."
+      },
+      "instantReplies": {
+        "title": "Instant Custom Responses",
+        "description": "Every customer gets a response that fits their question directly without waiting, thanks to AI."
+      },
+      "easyIntegration": {
+        "title": "Connect Your Store Easily",
+        "description": "Supports all major platforms — Salla, Zid, and others — with easy and quick connection steps."
+      },
+      "security": {
+        "title": "Security & Privacy",
+        "description": "Your data and your customers' data are fully secure, with complete control over all settings and permissions."
+      },
+      "analytics": {
+        "title": "Instant Analytics & Reports",
+        "description": "Discover your customers' questions and interests and grow your sales through instant reports and analytics."
+      },
+      "alwaysAvailable": {
+        "title": "Always Available 24/7",
+        "description": "Kleem works day and night to serve your customers and increase your sales without stopping."
+      },
+      "arabicInterface": {
+        "title": "Easy Arabic Interface",
+        "description": "Clear control panel with full support for Arabic, enabling you to manage all your tasks easily."
+      }
+    }
+  },
+  "pricing": {
+    "title": "Pricing Plans",
+    "subtitle": "Choose the right plan for your store size",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "save": "Save {percent}%",
+    "perMonth": "/ month",
+    "starter": {
+      "name": "Starter",
+      "price": "99",
+      "description": "Perfect for small stores",
+      "features": [
+        "500 conversations/month",
+        "1 channel (WhatsApp or Web)",
+        "Integration with 1 platform",
+        "Email support"
+      ],
+      "cta": "Get Started"
+    },
+    "pro": {
+      "name": "Pro",
+      "price": "299",
+      "description": "Most popular for medium stores",
+      "popular": "Popular",
+      "features": [
+        "2000 conversations/month",
+        "All channels (WhatsApp, Telegram, Web)",
+        "Integration with 2 platforms",
+        "Advanced analytics",
+        "Priority support"
+      ],
+      "cta": "Try Free"
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "price": "Custom",
+      "description": "For large enterprise stores",
+      "features": [
+        "Unlimited conversations",
+        "All channels",
+        "Unlimited integrations",
+        "Full customization",
+        "Dedicated account manager",
+        "24/7 support"
+      ],
+      "cta": "Contact Us"
+    }
+  },
+  "howItWorks": {
+    "title": "How Kleem Works?",
+    "subtitle": "Three simple steps to start using Kleem",
+    "step1": {
+      "title": "Connect Your Store",
+      "description": "Choose your store platform and connect in minutes"
+    },
+    "step2": {
+      "title": "Customize Settings",
+      "description": "Define response style and information you want to share"
+    },
+    "step3": {
+      "title": "Start Selling",
+      "description": "Kleem is ready to serve your customers 24/7"
+    }
+  },
+  "integrations": {
+    "title": "Integrates with Your Favorite Platforms",
+    "subtitle": "Quick and easy connection with popular e-commerce platforms",
+    "platforms": [
+      "Salla",
+      "Zid",
+      "Shopify",
+      "WooCommerce"
+    ]
+  },
+  "testimonials": {
+    "title": "What Our Customers Say",
+    "subtitle": "Join hundreds of merchants who trust Kleem"
+  },
+  "cta": {
+    "title": "Ready to Transform Your Store?",
+    "subtitle": "Start free today, no credit card required",
+    "button": "Start Free Now"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Answers to the most common questions"
+  }
+}
+

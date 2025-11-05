@@ -1,0 +1,38 @@
+{
+  "title": "Knowledge Base",
+  "description": "Manage FAQs and content",
+  "tabs": {
+    "faqs": "FAQs",
+    "docs": "Documents",
+    "links": "Links"
+  },
+  "actions": {
+    "addFaq": "Add FAQ",
+    "addDoc": "Add Document",
+    "addLink": "Add Link",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "form": {
+    "question": "Question",
+    "answer": "Answer",
+    "category": "Category",
+    "tags": "Tags",
+    "enabled": "Enabled",
+    "title": "Title",
+    "content": "Content",
+    "url": "URL",
+    "description": "Description"
+  },
+  "messages": {
+    "created": "Created successfully",
+    "updated": "Updated successfully",
+    "deleted": "Deleted successfully",
+    "error": "An error occurred",
+    "empty": "No items",
+    "comingSoon": "This feature is under development"
+  }
+}
+

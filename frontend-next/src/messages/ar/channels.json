@@ -1,0 +1,37 @@
+{
+  "title": "إدارة القنوات",
+  "description": "قم بإدارة قنوات التواصل المختلفة",
+  "channels": {
+    "telegram": "تيليجرام",
+    "whatsapp": "واتساب",
+    "whatsappQr": "واتساب QR",
+    "whatsappApi": "واتساب API",
+    "webchat": "ويب شات",
+    "instagram": "إنستجرام",
+    "messenger": "ماسنجر"
+  },
+  "status": {
+    "connected": "متصل",
+    "pending": "قيد الانتظار",
+    "disconnected": "غير متصل",
+    "disabled": "معطل"
+  },
+  "actions": {
+    "enable": "تفعيل",
+    "disable": "تعطيل",
+    "connect": "ربط",
+    "disconnect": "فصل",
+    "details": "تفاصيل",
+    "configure": "إعداد"
+  },
+  "messages": {
+    "enabled": "تم تفعيل القناة",
+    "disabled": "تم تعطيل القناة",
+    "connected": "تم الربط بنجاح",
+    "disconnected": "تم الفصل",
+    "error": "حدث خطأ",
+    "comingSoon": "هذه الميزة ستكون متاحة قريباً"
+  },
+  "comingSoon": "قريباً"
+}
+

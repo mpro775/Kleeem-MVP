@@ -1,0 +1,37 @@
+{
+  "title": "Channels Management",
+  "description": "Manage different communication channels",
+  "channels": {
+    "telegram": "Telegram",
+    "whatsapp": "WhatsApp",
+    "whatsappQr": "WhatsApp QR",
+    "whatsappApi": "WhatsApp API",
+    "webchat": "Web Chat",
+    "instagram": "Instagram",
+    "messenger": "Messenger"
+  },
+  "status": {
+    "connected": "Connected",
+    "pending": "Pending",
+    "disconnected": "Disconnected",
+    "disabled": "Disabled"
+  },
+  "actions": {
+    "enable": "Enable",
+    "disable": "Disable",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "details": "Details",
+    "configure": "Configure"
+  },
+  "messages": {
+    "enabled": "Channel enabled",
+    "disabled": "Channel disabled",
+    "connected": "Connected successfully",
+    "disconnected": "Disconnected",
+    "error": "An error occurred",
+    "comingSoon": "This feature will be available soon"
+  },
+  "comingSoon": "Coming Soon"
+}
+
