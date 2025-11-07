@@ -1,0 +1,327 @@
+
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: kaleem-api
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    env_file:
+      - ./Backend/.env
+    environment:
+      NODE_ENV: production
+      RABBIT_URL: amqp://kaleem:${RABBITMQ_PASSWORD}@rabbitmq:5672/kleem
+      EVOLUTION_API_URL: http://evolution-api:8080
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
+      SENTRY_DSN: ${SENTRY_DSN}
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY}
+      GRAFANA_CLOUD_INSTANCE_ID: ${GRAFANA_CLOUD_INSTANCE_ID}
+    ports:
+      - '127.0.0.1:3000:3000'
+    volumes:
+      - ./Backend/uploads:/app/uploads
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 0.5
+    networks:
+      - kaleem-net
+
+  frontend:
+    build:
+      context: ./frontend-next
+      dockerfile: Dockerfile
+    container_name: kaleem-frontend
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE_URL: https://api.kaleem-ai.com/api
+      NEXT_PUBLIC_ENV: production
+    depends_on:
+      - api
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.3
+    networks:
+      - kaleem-net
+
+  mongo:
+    image: mongo:5
+    container_name: kaleem-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: kaleem
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    command:
+      - --wiredTigerCacheSizeGB=1
+      - --quiet
+    ports:
+      - '127.0.0.1:27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          mongo --quiet --eval "db.adminCommand('ping')" \
+          -u $$MONGO_INITDB_ROOT_USERNAME \
+          -p $$MONGO_INITDB_ROOT_PASSWORD || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    mem_limit: 1536m
+    cpus: 0.5
+    networks:
+      - kaleem-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: kaleem-redis
+    command:
+      - redis-server
+      - --maxmemory 256mb
+      - --maxmemory-policy allkeys-lru
+      - --save 900 1
+      - --save 300 10
+      - --appendonly no
+    ports:
+      - '127.0.0.1:6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.2
+    networks:
+      - kaleem-net
+
+  rabbitmq:
+    image: rabbitmq:3.13-alpine
+    container_name: kaleem-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: kaleem
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: kaleem
+      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.6
+    command:
+      - bash
+      - -lc
+      - |
+        rabbitmq-plugins enable --offline rabbitmq_prometheus
+        rabbitmq-server
+    ports:
+      - '127.0.0.1:5672:5672'
+      - '127.0.0.1:15672:15672'
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./Backend/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./Backend/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'rabbitmq-diagnostics -q ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.3
+    networks:
+      - kaleem-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: kaleem-minio
+    command: server --console-address ':9001' /data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    ports:
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.2
+    networks:
+      - kaleem-net
+
+  embedding:
+    build:
+      context: ./Backend/embedding-service
+      dockerfile: Dockerfile
+    container_name: kaleem-embedding
+    ports:
+      - '127.0.0.1:8000:8000'
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 0.3
+    networks:
+      - kaleem-net
+
+  extractor:
+    build:
+      context: ./Backend/extractor-service
+      dockerfile: Dockerfile
+    container_name: kaleem-extractor
+    ports:
+      - '127.0.0.1:8001:8001'
+    shm_size: '512m'
+    init: true
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 0.3
+    networks:
+      - kaleem-net
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: kaleem-qdrant
+    ports:
+      - '127.0.0.1:6333:6333'
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:6333']
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.2
+    networks:
+      - kaleem-net
+
+  n8n:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile.n8n
+    container_name: kaleem-n8n
+    env_file:
+      - ./Backend/.env
+    environment:
+      N8N_HOST: n8n.kaleem-ai.com
+      N8N_PORT: 5678
+      N8N_PROTOCOL: https
+      EXECUTIONS_MODE: regular
+      N8N_METRICS: 'false'
+      N8N_LOG_LEVEL: warn
+    ports:
+      - '127.0.0.1:5678:5678'
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - n8n_data:/home/node/.n8n
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.3
+    networks:
+      - kaleem-net
+
+  evolution-api:
+    image: atendai/evolution-api:v1.8.7
+    container_name: kaleem-evolution-api
+    env_file:
+      - ./Backend/.env.evo
+    ports:
+      - '127.0.0.1:8080:8080'
+    volumes:
+      - evolution_store:/evolution/store
+      - evolution_instances:/evolution/instances
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.3
+    networks:
+      - kaleem-net
+
+  ai-reply-worker:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: kaleem-ai-reply
+    command: ['node', 'dist/src/workers/ai-incoming.consumer.js']
+    env_file:
+      - ./Backend/.env
+    environment:
+      NODE_ENV: production
+      RABBIT_URL: amqp://kaleem:${RABBITMQ_PASSWORD}@rabbitmq:5672/kleem
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.3
+    networks:
+      - kaleem-net
+
+  grafana-agent:
+    image: grafana/agent:v0.40.4
+    container_name: kaleem-grafana-agent
+    command:
+      - --config.file=/etc/agent/grafana-agent.yaml
+    environment:
+      - GRAFANA_CLOUD_METRICS_URL=${GRAFANA_CLOUD_METRICS_URL}
+      - GRAFANA_CLOUD_METRICS_USERNAME=${GRAFANA_CLOUD_METRICS_USERNAME}
+      - GRAFANA_CLOUD_API_KEY=${GRAFANA_CLOUD_API_KEY}
+    volumes:
+      - ./Backend/observability/grafana-agent.yaml:/etc/agent/grafana-agent.yaml:ro
+    depends_on:
+      - api
+      - rabbitmq
+    restart: unless-stopped
+    networks:
+      - kaleem-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: kaleem-nginx
+    depends_on:
+      - api
+      - frontend
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Backend/nginx.lb.conf:/etc/nginx/nginx.conf:ro
+      - ./Backend/nginx.ssl:/etc/nginx/ssl:ro
+      - nginx_cache:/var/cache/nginx
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.2
+    networks:
+      - kaleem-net
+
+volumes:
+  mongo_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+  qdrant_data:
+  n8n_data:
+  evolution_store:
+  evolution_instances:
+  nginx_cache:
+
+networks:
+  kaleem-net:
+    driver: bridge
+    name: kaleem-net
+
+

@@ -3,7 +3,7 @@
 > تم التحديث ليعكس الواقع الحقيقي للمشروع (2025-09-27)
 
 ## 📦 Deployment & Infrastructure
-- [x] **Docker Compose** (مطبق) → `deployment/docker-compose.yml`
+- [x] **Docker Compose** (مطبق) → `../../docker-compose.mvp.yml`
 - [x] **Kubernetes Manifests** (مستقبلي) → `deployment/k8s/*.yaml`
 - [x] **Network Topology** → `deployment/network-topology.md`
 - [x] **Config & Secrets** → `config-secrets.md`

@@ -82,10 +82,22 @@ export const darkTheme = createTheme({
           boxShadow: '0 3px 10px 0 rgba(155,127,217,0.15)',
         },
         contained: {
-          background: 'linear-gradient(90deg, #9B7FD9 0%, #7E66AC 100%)',
+          background: 'linear-gradient(90deg, #A498CB 0%, #7E66AC 100%)',
           color: '#fff',
           '&:hover': {
             background: 'linear-gradient(90deg, #B39EE6 0%, #9B7FD9 100%)',
+          },
+          '&:disabled': {
+            background: '#3a3a3a',
+            color: '#666',
+          },
+        },
+        outlined: {
+          borderColor: '#9B7FD9',
+          color: '#9B7FD9',
+          '&:hover': {
+            borderColor: '#B39EE6',
+            backgroundColor: 'rgba(155, 127, 217, 0.08)',
           },
         },
       },

@@ -36,11 +36,13 @@ import {
 } from './schemas/product-setup-config.schema';
 import { Product, ProductSchema } from './schemas/product.schema';
 import { ProductCommandsService } from './services/product-commands.service';
+import { ProductCsvService } from './services/product-csv.service';
 import { ProductIndexService } from './services/product-index.service';
 import { ProductMediaService } from './services/product-media.service';
 import { ProductPublicService } from './services/product-public.service';
 import { ProductQueriesService } from './services/product-queries.service';
 import { ProductSyncService } from './services/product-sync.service';
+import { ProductValidationService } from './services/product-validation.service';
 import { ProductsCron } from './utils/products.cron';
 
 @Module({
@@ -86,6 +88,8 @@ import { ProductsCron } from './utils/products.cron';
     ProductSyncService,
     ProductQueriesService,
     ProductPublicService,
+    ProductValidationService,
+    ProductCsvService,
 
     // Product setup configuration service
     ProductSetupConfigService,

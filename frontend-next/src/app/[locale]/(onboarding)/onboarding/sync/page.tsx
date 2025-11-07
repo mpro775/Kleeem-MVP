@@ -11,23 +11,7 @@ import {
   getIntegrationsStatus,
   syncCatalog,
 } from '@/features/onboarding/integrations-api';
-
-// Temporary auth helpers
-function useAuthToken() {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('auth-token');
-}
-
-function useUser() {
-  if (typeof window === 'undefined') return null;
-  const userStr = localStorage.getItem('user');
-  if (!userStr) return null;
-  try {
-    return JSON.parse(userStr);
-  } catch {
-    return null;
-  }
-}
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SyncPage() {
   const router = useRouter();
@@ -35,15 +19,25 @@ export default function SyncPage() {
   const locale = params.locale as string;
   const t = useTranslations('onboarding');
   const { enqueueSnackbar } = useSnackbar();
-
-  const token = useAuthToken();
-  const user = useUser();
+  const { user } = useAuth();
 
   const [statusText, setStatusText] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [imported, setImported] = useState<number | null>(null);
   const [updated, setUpdated] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
+  // Get token on mount
+  useEffect(() => {
+    const getToken = async () => {
+      const authToken = await fetch('/api/auth/me').then(r => 
+        r.ok ? r.headers.get('Authorization')?.replace('Bearer ', '') : null
+      );
+      setToken(authToken);
+    };
+    getToken();
+  }, []);
 
   useEffect(() => {
     setStatusText(t('step3.readyToSync'));

@@ -1,13 +1,22 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 
 import { PaginationResult } from '../../common/dto/pagination.dto';
+import { CouponsService } from '../coupons/coupons.service';
 import { LeadsService } from '../leads/leads.service';
+import { PromotionsService } from '../promotions/promotions.service';
 
 import { CreateOrderDto } from './dto/create-order.dto';
 import { GetOrdersDto } from './dto/get-orders.dto';
 import { OrdersRepository } from './repositories/orders.repository';
 import { Order } from './schemas/order.schema';
+import { PricingService } from './services/pricing.service';
 import { normalizePhone } from './utils/phone.util';
+
+import type {
+  CalculatePricingOptions,
+  PricingCartItem,
+  PricingResult,
+} from './services/pricing.service';
 
 @Injectable()
 export class OrdersService {
@@ -15,31 +24,55 @@ export class OrdersService {
     @Inject('OrdersRepository')
     private readonly ordersRepository: OrdersRepository,
     private readonly leadsService: LeadsService,
+    private readonly pricingService: PricingService,
+    private readonly couponsService: CouponsService,
+    private readonly promotionsService: PromotionsService,
   ) {}
 
   async create(dto: CreateOrderDto): Promise<Order> {
+    const merchantId = dto.merchantId;
+
+    if (!merchantId) {
+      throw new BadRequestException('merchantId is required');
+    }
+
     const phoneNormalized = normalizePhone(dto.customer?.phone);
     const products = (dto.products || []).map((p) => ({
       ...p,
       product: p.product,
     }));
 
+    const cartItems: PricingCartItem[] = products.map((p) => ({
+      productId: p.product || '',
+      price: p.price || 0,
+      quantity: p.quantity || 1,
+      name: p.name || '',
+    }));
+
+    // حساب الأسعار والخصومات
+    const pricingOptions = this.buildPricingOptions(merchantId, dto, cartItems);
+    const pricingResult =
+      await this.pricingService.calculateOrderPricing(pricingOptions);
+
     const created = await this.ordersRepository.create({
       ...dto,
       products,
       source: dto.source ?? 'storefront',
-      customer: { ...dto.customer, phoneNormalized },
+      customer: dto.customer ? { ...dto.customer, phoneNormalized } : undefined,
+      pricing: pricingResult.pricing,
+      currency: pricingResult.currency,
+      exchangeRate: pricingResult.exchangeRate,
+      discountPolicy: pricingResult.discountPolicy,
+      appliedCouponCode: pricingResult.appliedCouponCode,
     });
 
-    try {
-      await this.leadsService.create(dto.merchantId ?? '', {
-        sessionId: dto.sessionId ?? '',
-        data: dto.customer as unknown as Record<string, unknown>,
-        source: 'order',
-      });
-    } catch (e: unknown) {
-      console.error(e);
-    }
+    await this.handleCouponUsage(
+      merchantId,
+      pricingResult,
+      dto.customer?.phone,
+    );
+    await this.handlePromotionUsage(pricingResult);
+    await this.createLeadFromOrder(merchantId, dto.sessionId, dto.customer);
 
     return created;
   }
@@ -96,5 +129,103 @@ export class OrdersService {
     dto: GetOrdersDto,
   ): Promise<PaginationResult<Order>> {
     return this.ordersRepository.getOrdersByCustomer(merchantId, phone, dto);
+  }
+
+  private buildPricingOptions(
+    merchantId: string,
+    dto: CreateOrderDto,
+    cartItems: PricingCartItem[],
+  ): CalculatePricingOptions {
+    const options: CalculatePricingOptions = {
+      merchantId,
+      cartItems,
+      shippingCost: 0,
+    };
+
+    if (dto.couponCode) {
+      options.couponCode = dto.couponCode;
+    }
+
+    if (dto.customer?.phone) {
+      options.customerPhone = dto.customer.phone;
+    }
+
+    if (dto.currency) {
+      options.currency = dto.currency;
+    }
+
+    return options;
+  }
+
+  private async handleCouponUsage(
+    merchantId: string,
+    pricingResult: PricingResult,
+    customerPhone?: string,
+  ): Promise<void> {
+    if (!pricingResult.appliedCouponCode || !pricingResult.pricing.coupon) {
+      return;
+    }
+
+    try {
+      const coupon = await this.couponsService.findByCode(
+        merchantId,
+        pricingResult.appliedCouponCode,
+      );
+
+      if (coupon._id) {
+        await this.couponsService.incrementUsage(
+          coupon._id.toString(),
+          pricingResult.pricing.coupon.amount,
+          customerPhone,
+        );
+      }
+    } catch (e) {
+      console.error('Failed to increment coupon usage:', e);
+    }
+  }
+
+  private async handlePromotionUsage(
+    pricingResult: PricingResult,
+  ): Promise<void> {
+    if (!pricingResult.pricing.promotions?.length) {
+      return;
+    }
+
+    for (const promo of pricingResult.pricing.promotions) {
+      if (!promo.id) {
+        continue;
+      }
+
+      try {
+        await this.promotionsService.incrementUsage(
+          promo.id.toString(),
+          promo.amount,
+        );
+      } catch (e) {
+        console.error('Failed to increment promotion usage:', e);
+      }
+    }
+  }
+
+  private async createLeadFromOrder(
+    merchantId: string,
+    sessionId: string | undefined,
+    customer: CreateOrderDto['customer'],
+  ): Promise<void> {
+    if (!customer) {
+      return;
+    }
+
+    try {
+      const leadData: Record<string, unknown> = { ...customer };
+
+      await this.leadsService.create(merchantId, {
+        sessionId: sessionId ?? '',
+        data: leadData,
+        source: 'order',
+      });
+    } catch (e) {
+      console.error(e);
+    }
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -9,9 +9,28 @@ import {
   Button,
   Fab,
   CircularProgress,
+  Chip,
+  TextField,
+  InputAdornment,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  IconButton,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CategoryRoundedIcon from '@mui/icons-material/CategoryRounded';
+import SearchIcon from '@mui/icons-material/Search';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { useTheme, useMediaQuery } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -22,24 +41,65 @@ import ProductsTable from '@/features/merchant/products/components/ProductsTable
 import AddProductDialog from '@/features/merchant/products/components/AddProductDialog';
 import type { ProductResponse } from '@/features/merchant/products/types';
 import { hasAnyCategory } from '@/features/merchant/categories/api';
+import axiosInstance from '@/lib/axios';
 
-// TODO: Get merchantId from auth context/API
-// For now, using a placeholder
+/**
+ * Get merchantId from authenticated user
+ * Tries multiple sources: localStorage, sessionStorage, cookies
+ */
 function useMerchantId(): string {
-  // This should come from your auth system
-  // For now, return empty string or get from localStorage/cookies
-  if (typeof window !== 'undefined') {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
+  const [merchantId, setMerchantId] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+
+    // Try localStorage first
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
         const user = JSON.parse(userStr);
-        return user?.merchantId || '';
-      } catch {
-        return '';
+        if (user?.merchantId) {
+          return user.merchantId;
+        }
       }
+    } catch (error) {
+      console.warn('Failed to parse user from localStorage:', error);
     }
-  }
-  return '';
+
+    // Try sessionStorage
+    try {
+      const sessionUser = sessionStorage.getItem('user');
+      if (sessionUser) {
+        const user = JSON.parse(sessionUser);
+        if (user?.merchantId) {
+          return user.merchantId;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to parse user from sessionStorage:', error);
+    }
+
+    return '';
+  });
+
+  useEffect(() => {
+    // If no merchantId found in storage, try API
+    if (!merchantId && typeof window !== 'undefined') {
+      axiosInstance
+        .get('/auth/me')
+        .then((response) => {
+          const user = response.data;
+          if (user?.merchantId) {
+            setMerchantId(user.merchantId);
+            // Save to localStorage for future use
+            localStorage.setItem('user', JSON.stringify(user));
+          }
+        })
+        .catch((error) => {
+          console.error('Failed to fetch user info:', error);
+        });
+    }
+  }, [merchantId]);
+
+  return merchantId;
 }
 
 export default function ProductsPage() {
@@ -54,6 +114,24 @@ export default function ProductsPage() {
 
   const [hasCategories, setHasCategories] = useState<boolean | null>(null);
   const [catError, setCatError] = useState<string | null>(null);
+
+  // Filters & Search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [productTypeFilter, setProductTypeFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // CSV Import/Export
+  const [csvImportDialog, setCsvImportDialog] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvLoading, setCsvLoading] = useState(false);
+  const [csvResult, setCsvResult] = useState<{
+    success: number;
+    failed: number;
+    errors: { row: number; error: string }[];
+  } | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const theme = useTheme();
   const isSm = useMediaQuery(theme.breakpoints.down('sm'));
@@ -97,6 +175,102 @@ export default function ProductsPage() {
     setOpenAddDialog(true);
   };
 
+  // CSV Export
+  const handleExportCSV = async () => {
+    try {
+      const response = await axiosInstance.get('/products/export/csv', {
+        params: { merchantId },
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `products-${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      enqueueSnackbar('تم تصدير المنتجات بنجاح', { variant: 'success' });
+    } catch (error) {
+      console.error('Export failed:', error);
+      enqueueSnackbar('فشل تصدير المنتجات', { variant: 'error' });
+    }
+  };
+
+  // CSV Import
+  const handleImportCSV = async () => {
+    if (!csvFile) {
+      enqueueSnackbar('الرجاء اختيار ملف CSV', { variant: 'warning' });
+      return;
+    }
+
+    setCsvLoading(true);
+    const formData = new FormData();
+    formData.append('file', csvFile);
+    formData.append('merchantId', merchantId);
+
+    try {
+      const response = await axiosInstance.post(
+        '/products/import/csv',
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
+
+      setCsvResult(response.data);
+      enqueueSnackbar(
+        `تم استيراد ${response.data.success} منتج بنجاح`,
+        { variant: 'success' }
+      );
+      setRefresh((r) => r + 1);
+    } catch (error) {
+      console.error('Import failed:', error);
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message || 'فشل استيراد المنتجات';
+      enqueueSnackbar(errorMessage, { variant: 'error' });
+    } finally {
+      setCsvLoading(false);
+    }
+  };
+
+  // Download CSV Template
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await axiosInstance.get('/products/export/csv/template', {
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'products-template.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      enqueueSnackbar('تم تنزيل القالب بنجاح', { variant: 'success' });
+    } catch (error) {
+      console.error('Template download failed:', error);
+      enqueueSnackbar('فشل تنزيل القالب', { variant: 'error' });
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.csv')) {
+        enqueueSnackbar('الرجاء اختيار ملف CSV فقط', { variant: 'warning' });
+        return;
+      }
+      setCsvFile(file);
+    }
+  };
+
   return (
     <Box
       position="relative"
@@ -105,27 +279,131 @@ export default function ProductsPage() {
       dir="rtl"
     >
       {/* Header */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems={{ xs: 'stretch', sm: 'center' }}
-        flexWrap="wrap"
-        gap={1.5}
-        mb={3}
-      >
-        <Typography variant="h5" fontWeight={800}>
-          {t('title')}
-        </Typography>
-        {hasCategories ? (
-          <Stack
-            direction="row"
-            spacing={1.5}
-            flexWrap="wrap"
-            sx={{ display: { xs: 'none', sm: 'flex' } }}
+      <Box mb={3}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          flexWrap="wrap"
+          gap={1.5}
+          mb={2}
+        >
+          <Typography variant="h5" fontWeight={800}>
+            {t('title')}
+          </Typography>
+          {hasCategories ? (
+            <Stack
+              direction="row"
+              spacing={1.5}
+              flexWrap="wrap"
+              sx={{ display: { xs: 'none', sm: 'flex' } }}
+            >
+              <Tooltip title="تصدير CSV">
+                <Button
+                  variant="outlined"
+                  startIcon={<FileDownloadIcon />}
+                  onClick={handleExportCSV}
+                  size="small"
+                >
+                  تصدير
+                </Button>
+              </Tooltip>
+              <Tooltip title="استيراد CSV">
+                <Button
+                  variant="outlined"
+                  startIcon={<FileUploadIcon />}
+                  onClick={() => setCsvImportDialog(true)}
+                  size="small"
+                >
+                  استيراد
+                </Button>
+              </Tooltip>
+              <ProductsActions onAddProduct={handleRequestAdd} />
+            </Stack>
+          ) : null}
+        </Box>
+
+        {/* Search & Filters */}
+        {hasCategories && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+            }}
           >
-            <ProductsActions onAddProduct={handleRequestAdd} />
-          </Stack>
-        ) : null}
+            <Stack spacing={2}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="ابحث عن منتج..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <IconButton
+                  onClick={() => setShowFilters(!showFilters)}
+                  color={showFilters ? 'primary' : 'default'}
+                  sx={{ display: { xs: 'flex', sm: 'none' } }}
+                >
+                  <FilterListIcon />
+                </IconButton>
+              </Stack>
+
+              {(showFilters || !isSm) && (
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <InputLabel>نوع المنتج</InputLabel>
+                    <Select
+                      value={productTypeFilter}
+                      label="نوع المنتج"
+                      onChange={(e) => setProductTypeFilter(e.target.value)}
+                    >
+                      <MenuItem value="all">جميع الأنواع</MenuItem>
+                      <MenuItem value="physical">منتج مادي</MenuItem>
+                      <MenuItem value="digital">منتج رقمي</MenuItem>
+                      <MenuItem value="service">خدمة</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <InputLabel>الحالة</InputLabel>
+                    <Select
+                      value={statusFilter}
+                      label="الحالة"
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                      <MenuItem value="all">جميع الحالات</MenuItem>
+                      <MenuItem value="draft">مسودة</MenuItem>
+                      <MenuItem value="published">منشور</MenuItem>
+                      <MenuItem value="scheduled">مجدول</MenuItem>
+                      <MenuItem value="archived">مؤرشف</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  <Tooltip title="تحديث">
+                    <IconButton
+                      onClick={() => setRefresh((r) => r + 1)}
+                      color="primary"
+                    >
+                      <RefreshIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              )}
+            </Stack>
+          </Paper>
+        )}
       </Box>
 
       {/* حالة التحقق / عدم وجود فئات */}
@@ -245,6 +523,120 @@ export default function ProductsPage() {
           enqueueSnackbar('تمت إضافة المنتج بنجاح', { variant: 'success' });
         }}
       />
+
+      {/* CSV Import Dialog */}
+      <Dialog
+        open={csvImportDialog}
+        onClose={() => {
+          if (!csvLoading) {
+            setCsvImportDialog(false);
+            setCsvFile(null);
+            setCsvResult(null);
+          }
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>استيراد المنتجات من CSV</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Alert severity="info">
+              يمكنك استيراد المنتجات بشكل جماعي باستخدام ملف CSV. قم بتنزيل
+              القالب أولاً لمعرفة التنسيق الصحيح.
+            </Alert>
+
+            <Button
+              variant="outlined"
+              onClick={handleDownloadTemplate}
+              startIcon={<FileDownloadIcon />}
+              fullWidth
+            >
+              تنزيل قالب CSV
+            </Button>
+
+            <Box>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+              />
+              <Button
+                variant="outlined"
+                onClick={() => fileInputRef.current?.click()}
+                startIcon={<FileUploadIcon />}
+                fullWidth
+              >
+                اختر ملف CSV
+              </Button>
+              {csvFile && (
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  الملف المختار: {csvFile.name}
+                </Typography>
+              )}
+            </Box>
+
+            {csvResult && (
+              <Paper sx={{ p: 2, bgcolor: 'success.50' }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  نتائج الاستيراد:
+                </Typography>
+                <Stack spacing={1}>
+                  <Chip
+                    label={`نجح: ${csvResult.success}`}
+                    color="success"
+                    size="small"
+                  />
+                  <Chip
+                    label={`فشل: ${csvResult.failed}`}
+                    color="error"
+                    size="small"
+                  />
+                  {csvResult.errors.length > 0 && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="caption" color="error">
+                        الأخطاء:
+                      </Typography>
+                      {csvResult.errors.slice(0, 5).map((err, idx) => (
+                        <Typography key={idx} variant="caption" display="block">
+                          - صف {err.row}: {err.error}
+                        </Typography>
+                      ))}
+                      {csvResult.errors.length > 5 && (
+                        <Typography variant="caption" color="text.secondary">
+                          ... و {csvResult.errors.length - 5} أخطاء أخرى
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                </Stack>
+              </Paper>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setCsvImportDialog(false);
+              setCsvFile(null);
+              setCsvResult(null);
+            }}
+            disabled={csvLoading}
+          >
+            إلغاء
+          </Button>
+          <Button
+            onClick={handleImportCSV}
+            variant="contained"
+            disabled={!csvFile || csvLoading}
+            startIcon={csvLoading && <CircularProgress size={20} />}
+          >
+            {csvLoading ? 'جارٍ الاستيراد...' : 'استيراد'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* TODO: Add EditProductDialog when ready */}
       {editing && (
         <Paper

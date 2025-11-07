@@ -1,202 +1,226 @@
-'use client';
+// src/pages/ChatPage.tsx
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import axios from '@/lib/axios';
+import { Box, Paper, Skeleton, Alert, Stack } from '@mui/material';
+import { useErrorHandler } from '@/lib/errors';
+import WidgetChatUI from '@/features/merchant/widget-config/ui/WidgetChatUI';
 
-import { use, useState, useEffect, useRef } from 'react';
-import {
-  Box,
-  Paper,
-  TextField,
-  IconButton,
-  Avatar,
-  Typography,
-  Container,
-} from '@mui/material';
-import { Send, AttachFile } from '@mui/icons-material';
-import { useConversationSocket } from '@/lib/hooks/useWebSocket';
+type Raw = unknown;
 
-type Message = {
-  id: string;
-  text: string;
-  sender: 'user' | 'bot';
-  timestamp: Date;
-};
-
-export default function ChatPage({
-  params,
-}: {
-  params: Promise<{ slug: string; locale: string }>;
-}) {
-  const { slug, locale } = use(params);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'مرحباً! كيف يمكنني مساعدتك اليوم؟',
-      sender: 'bot',
-      timestamp: new Date(),
-    },
-  ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const handleNewMessage = (message: any) => {
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        text: message.text,
-        sender: 'bot',
-        timestamp: new Date(message.timestamp),
-      },
-    ]);
-  };
-
-  // WebSocket connection
-  useConversationSocket(slug, handleNewMessage);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSend = () => {
-    if (!inputMessage.trim()) return;
-
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: inputMessage,
-      sender: 'user',
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
-    setInputMessage('');
-
-    // Simulate bot response
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          text: 'شكراً على رسالتك. سأساعدك في ذلك.',
-          sender: 'bot',
-          timestamp: new Date(),
-        },
-      ]);
-    }, 1000);
-  };
-
-  return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Paper
-        sx={{
-          height: '80vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Chat Header */}
-        <Box
-          sx={{
-            p: 2,
-            borderBottom: 1,
-            borderColor: 'divider',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <Avatar src="/assets/kaleem.svg" />
-          <Box>
-            <Typography variant="subtitle1" fontWeight={600}>
-              كليم
-            </Typography>
-            <Typography variant="caption" color="success.main">
-              متصل
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Messages Area */}
-        <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-          {messages.map((message) => (
-            <Box
-              key={message.id}
-              sx={{
-                display: 'flex',
-                justifyContent:
-                  message.sender === 'user' ? 'flex-start' : 'flex-end',
-                mb: 2,
-              }}
-            >
-              <Paper
-                sx={{
-                  p: 2,
-                  maxWidth: '70%',
-                  ...(message.sender === 'user'
-                    ? {
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        color: 'white',
-                      }
-                    : {
-                        background: '#f5f5f5',
-                      }),
-                }}
-              >
-                <Typography variant="body1">{message.text}</Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    opacity: 0.7,
-                    display: 'block',
-                    mt: 0.5,
-                    textAlign: 'left',
-                  }}
-                >
-                  {message.timestamp.toLocaleTimeString('ar-SA', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </Typography>
-              </Paper>
-            </Box>
-          ))}
-          <div ref={messagesEndRef} />
-        </Box>
-
-        {/* Input Area */}
-        <Box
-          sx={{
-            p: 2,
-            borderTop: 1,
-            borderColor: 'divider',
-            display: 'flex',
-            gap: 1,
-          }}
-        >
-          <IconButton>
-            <AttachFile />
-          </IconButton>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="اكتب رسالتك..."
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleSend();
-              }
-            }}
-          />
-          <IconButton color="primary" onClick={handleSend}>
-            <Send />
-          </IconButton>
-        </Box>
-      </Paper>
-    </Container>
-  );
+interface Settings {
+  merchantId: string | undefined;
+  botName: string;
+  welcomeMessage: string;
+  brandColor: string;
+  fontFamily: string;
+  avatarUrl?: string;
+  showPoweredBy: boolean;
+  publicSlug?: string;
+  widgetSlug?: string;
+  embedMode: string;
 }
 
+function unwrap(x: Raw) {
+  // الباك إند يرسل الآن: { success, data, requestId, timestamp }
+  // البيانات تأتي في data مباشرة
+  if (x && typeof x === 'object') {
+    const obj = x as Record<string, unknown>;
+    if ('data' in obj && obj.data !== undefined) {
+      return obj.data;
+    }
+  }
+  return x;
+}
+
+// طبع الإعدادات إلى الواجهة المتوقعة من WidgetChatUI
+function normalizeSettings(raw: Raw): Settings {
+  const d = unwrap(raw) as Record<string, unknown>;
+
+  // merchant object
+  const merchant =
+    typeof d.merchant === 'object' && d.merchant !== null
+      ? (d.merchant as Record<string, unknown>)
+      : undefined;
+  const merchantId =
+    typeof merchant?.id === 'string'
+      ? merchant.id
+      : typeof merchant?._id === 'string'
+      ? merchant._id
+      : typeof d.merchantId === 'string'
+      ? d.merchantId
+      : undefined;
+
+  const publicSlug =
+    typeof merchant?.slug === 'string'
+      ? merchant.slug
+      : typeof d.publicSlug === 'string'
+      ? d.publicSlug
+      : typeof d.slug === 'string'
+      ? d.slug
+      : undefined;
+
+  const widgetSlug =
+    typeof d.widgetSlug === 'string' ? d.widgetSlug : publicSlug;
+
+  return {
+    merchantId,
+    botName:
+      typeof d.botName === 'string'
+        ? d.botName
+        : typeof merchant?.name === 'string'
+        ? merchant.name
+        : 'Kaleem Bot',
+    welcomeMessage:
+      typeof d.welcomeMessage === 'string'
+        ? d.welcomeMessage
+        : 'أهلًا! كيف أقدر أساعدك؟',
+    brandColor:
+      typeof d.theme === 'object' &&
+      d.theme !== null &&
+      typeof (d.theme as Record<string, unknown>).primaryColor === 'string'
+        ? ((d.theme as Record<string, unknown>).primaryColor as string)
+        : typeof d.brandColor === 'string'
+        ? (d.brandColor as string)
+        : '#111827',
+    fontFamily:
+      typeof d.fontFamily === 'string'
+        ? d.fontFamily
+        : 'Tajawal, system-ui, sans-serif',
+    avatarUrl: typeof d.avatarUrl === 'string' ? d.avatarUrl : undefined,
+    showPoweredBy:
+      typeof d.showPoweredBy === 'boolean' ? d.showPoweredBy : true,
+    publicSlug,
+    widgetSlug,
+    embedMode: typeof d.embedMode === 'string' ? d.embedMode : 'bubble',
+  };
+}
+export default function ChatPage() {
+  const { handleError } = useErrorHandler();
+
+  // ✅ التقط أي اسم بارام محتمل لتفادي undefined
+  const params = useParams();
+  const slug =
+    (params.widgetSlug as string) ||
+    (params.slug as string) ||
+    (params.slugOrId as string) ||
+    (params.id as string) ||
+    '';
+
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        if (!slug) throw new Error('لا يوجد سلاج في المسار.');
+
+        // ملاحظة: الاندبوينت عندك هو /public/chat-widget/:slug
+        const res = await axios.get(`/public/chat-widget/${slug}`);
+        const normalized = normalizeSettings(res);
+
+        if (!normalized.merchantId) {
+          throw new Error('تعذر تحديد معرف التاجر لإعدادات الدردشة.');
+        }
+
+        if (mounted) setSettings(normalized);
+      } catch (e: unknown) {
+        if (!mounted) return;
+        let errorMsg = 'حدث خطأ غير متوقع';
+        if (typeof e === 'object' && e !== null) {
+          const errObj = e as Record<string, unknown>;
+          if (
+            'response' in errObj &&
+            typeof errObj.response === 'object' &&
+            errObj.response !== null
+          ) {
+            const resp = errObj.response as Record<string, unknown>;
+            if (
+              'data' in resp &&
+              typeof resp.data === 'object' &&
+              resp.data !== null &&
+              'message' in (resp.data as Record<string, unknown>) &&
+              typeof (resp.data as Record<string, unknown>).message === 'string'
+            ) {
+              errorMsg = (resp.data as Record<string, unknown>)
+                .message as string;
+            }
+          } else if (
+            'message' in errObj &&
+            typeof errObj.message === 'string'
+          ) {
+            errorMsg = errObj.message as string;
+          }
+        }
+        setError(errorMsg);
+        handleError(e);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [slug, handleError]);
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100dvh',
+        p: { xs: 1.5, md: 3 },
+        background: 'linear-gradient(180deg,#f6f7fb,#eef1f7)',
+        display: 'flex',
+        alignItems: 'stretch',
+      }}
+    >
+      {/* وعاء مرن بعرض محترم على الديسكتوب، وعرض كامل على الجوال */}
+      <Box
+        sx={{
+          mx: 'auto',
+          width: '100%',
+          maxWidth: { xs: '100%', sm: '100%', md: '100%' },
+          height: { xs: 'calc(100dvh - 24px)', md: 'calc(100dvh - 48px)' },
+          display: 'flex',
+        }}
+      >
+        {loading && (
+          <Paper elevation={0} sx={{ p: 2, borderRadius: 3, flex: 1 }}>
+            <Stack spacing={1.5}>
+              <Skeleton variant="rounded" height={60} />
+              <Skeleton variant="rounded" height={280} />
+              <Skeleton variant="rounded" height={56} />
+            </Stack>
+          </Paper>
+        )}
+
+        {!loading && error && (
+          <Alert severity="error" sx={{ direction: 'rtl', flex: 1 }}>
+            {error}
+          </Alert>
+        )}
+
+        {!loading && !error && !settings && (
+          <Alert severity="warning" sx={{ direction: 'rtl', flex: 1 }}>
+            لم يتم العثور على إعدادات الدردشة.
+          </Alert>
+        )}
+
+        {!loading && !error && settings && (
+          <WidgetChatUI
+            settings={{
+              ...settings,
+              merchantId: settings.merchantId || '',
+              embedMode: 'conversational',
+            }}
+            layout="standalone"
+          />
+        )}
+      </Box>
+    </Box>
+  );
+}

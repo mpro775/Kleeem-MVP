@@ -1,6 +1,6 @@
 // src/modules/orders/repositories/orders.repository.ts
 import type { PaginationResult } from '../../../common/dto/pagination.dto';
-import type { Merchant } from '../../merchants/schemas/merchant.schema';
+import type { MerchantDocument } from '../../merchants/schemas/merchant.schema';
 import type { GetOrdersDto } from '../dto/get-orders.dto';
 import type { Order } from '../schemas/order.schema';
 
@@ -11,7 +11,7 @@ export interface OrdersRepository {
   updateStatus(id: string, status: string): Promise<Order | null>;
   upsertFromZid(storeId: string, zidOrder: unknown): Promise<Order>;
   findMine(merchantId: string, sessionId: string): Promise<Order[]>;
-  findMerchantByStoreId(storeId: string): Promise<Merchant | null>;
+  findMerchantByStoreId(storeId: string): Promise<MerchantDocument | null>;
   updateOrderStatusFromZid(
     storeId: string,
     zidOrder: unknown,

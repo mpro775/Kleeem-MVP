@@ -1,0 +1,10 @@
+# Ignore real certificates and private keys
+*.crt
+*.key
+*.pem
+*.pfx
+*.csr
+
+# Keep directory in git
+!.gitignore
+

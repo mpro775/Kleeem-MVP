@@ -16,6 +16,9 @@
     "syncComplete": "Sync completed!",
     "syncStats": "Imported {{imported}} and updated {{updated}} products."
   },
+  "progress": {
+    "stepOf": "Step {{step}} of {{total}}"
+  },
   "fields": {
     "businessName": "Business Name",
     "phone": "Phone Number",

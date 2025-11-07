@@ -23,7 +23,7 @@
 | Read-only Filesystem | ✅ | RO root filesystem | `Dockerfile` | - | Immutable containers |
 | Security Context | ✅ | RunAsNonRoot, allowPrivilegeEscalation=false | `k8s/10-backend-deployment.yaml` | - | Pod security standards |
 | **Network Security** | | | | | |
-| Internal Network | ✅ | Docker internal network | `docker-compose.yml` | - | Service isolation |
+| Internal Network | ✅ | Docker internal network | `docker-compose.mvp.yml` | - | Service isolation |
 | SSL/TLS | ✅ | Nginx + Cloudflare | `nginx.conf` | `SSL_CERT` | End-to-end encryption |
 | **Data Protection** | | | | | |
 | Encryption at Rest | ❌ | Not implemented | - | - | Database encryption needed |
@@ -38,7 +38,7 @@
 | Data Retention | 🔄 | Partial implementation | `src/common/services/data-retention.service.ts` | - | Some retention policies |
 | Right to Access | ❌ | Not implemented | - | - | Data export APIs needed |
 | **Secrets Management** | | | | | |
-| Environment Secrets | ✅ | Docker/CI secrets | `docker-compose.yml` | `*_SECRET` | Production secrets |
+| Environment Secrets | ✅ | Docker/CI secrets | `docker-compose.mvp.yml` | `*_SECRET` | Production secrets |
 | Secret Rotation | ❌ | Manual only | - | - | No automated rotation |
 | Secret Encryption | ❌ | Plain text | - | - | Encryption needed |
 | **Infrastructure Security** | | | | | |

@@ -16,6 +16,9 @@
     "syncComplete": "اكتملت المزامنة!",
     "syncStats": "تم استيراد {{imported}} وتحديث {{updated}} منتجًا."
   },
+  "progress": {
+    "stepOf": "الخطوة {{step}} من {{total}}"
+  },
   "fields": {
     "businessName": "اسم النشاط",
     "phone": "رقم الجوال",

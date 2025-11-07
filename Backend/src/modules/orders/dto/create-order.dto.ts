@@ -255,5 +255,22 @@ export class CreateOrderDto {
   @IsOptional()
   notes?: string;
 
+  @ApiPropertyOptional({
+    description: 'كود الكوبون المستخدم',
+    example: 'SUMMER2025',
+  })
+  @IsString({ message: 'كود الكوبون يجب أن يكون نصياً' })
+  @IsOptional()
+  couponCode?: string;
+
+  @ApiPropertyOptional({
+    description: 'العملة المستخدمة',
+    example: 'SAR',
+    default: 'SAR',
+  })
+  @IsString({ message: 'العملة يجب أن تكون نصية' })
+  @IsOptional()
+  currency?: string;
+
   // ⚠️ احذف التعريف القديم للـ products كـ Object[] داخل dto (كان مكرر ومربك)
 }

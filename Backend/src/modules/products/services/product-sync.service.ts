@@ -20,7 +20,6 @@ import type { Product, ProductDocument } from '../schemas/product.schema';
 
 /* ===================== ثوابت لتجنّب الأرقام السحرية ===================== */
 const MAX_SYNC_IMAGES = 6;
-const STATUS_ACTIVE = 'active';
 const SYNC_OK = 'ok';
 
 /* =============================== حُرّاس/مساعدات =============================== */
@@ -168,7 +167,7 @@ export class ProductSyncService {
       originalUrl: permalink,
 
       keywords: [],
-      status: STATUS_ACTIVE,
+      status: 'published',
       syncStatus: SYNC_OK,
     };
 

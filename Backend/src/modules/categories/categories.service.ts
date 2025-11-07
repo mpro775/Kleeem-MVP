@@ -281,6 +281,10 @@ export class CategoriesService {
     if (dto.description !== undefined) cat.description = dto.description ?? '';
     if (dto.image !== undefined) cat.image = dto.image ?? '';
     if (dto.keywords !== undefined) cat.keywords = dto.keywords ?? [];
+    if (dto.seoTitle !== undefined) cat.seoTitle = dto.seoTitle ?? '';
+    if (dto.seoDescription !== undefined)
+      cat.seoDescription = dto.seoDescription ?? '';
+    if (dto.icon !== undefined) cat.icon = dto.icon ?? '';
 
     await cat.save();
     return cat;

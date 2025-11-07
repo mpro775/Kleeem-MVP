@@ -46,7 +46,7 @@ export class UsageService {
   }
 
   private async getMerchantOrThrow(merchantId: string) {
-    const m = await this.merchantModel.findById(merchantId).lean();
+    const m = await this.merchantModel.findById(merchantId);
     if (!m) throw new NotFoundException('Merchant not found');
     return m;
   }

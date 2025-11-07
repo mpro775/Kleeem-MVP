@@ -5,7 +5,7 @@ import { Model, Types } from 'mongoose';
 
 import { MerchantNotFoundError } from '../../../common/errors/business-errors';
 import { PaginationService } from '../../../common/services/pagination.service';
-import { Merchant } from '../../merchants/schemas/merchant.schema';
+import { Merchant, MerchantDocument } from '../../merchants/schemas/merchant.schema';
 import { GetOrdersDto, SortOrder } from '../dto/get-orders.dto';
 import { Order, OrderDocument, OrderProduct } from '../schemas/order.schema';
 import { normalizePhone } from '../utils/phone.util';
@@ -83,7 +83,8 @@ function toStringId(id: unknown): string {
 export class MongoOrdersRepository implements OrdersRepository {
   constructor(
     @InjectModel(Order.name) private readonly orderModel: Model<OrderDocument>,
-    @InjectModel(Merchant.name) private readonly merchantModel: Model<Merchant>,
+    @InjectModel(Merchant.name)
+    private readonly merchantModel: Model<MerchantDocument>,
     private readonly paginationService: PaginationService,
   ) {}
 
@@ -169,10 +170,11 @@ export class MongoOrdersRepository implements OrdersRepository {
       .exec();
   }
 
-  async findMerchantByStoreId(storeId: string): Promise<Merchant | null> {
+  async findMerchantByStoreId(
+    storeId: string,
+  ): Promise<MerchantDocument | null> {
     return this.merchantModel
       .findOne({ 'zidIntegration.storeId': storeId })
-      .lean()
       .exec();
   }
 

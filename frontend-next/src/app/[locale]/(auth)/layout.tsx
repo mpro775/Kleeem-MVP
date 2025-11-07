@@ -1,34 +1,95 @@
-import { Box, Container } from '@mui/material';
+'use client';
+
+import { Box, Container, Paper } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { motion } from 'framer-motion';
+import logo from '@/assets/logo.png';
+import bgShape from '@/assets/bg-shape.png';
+
+type Props = {
+  children: React.ReactNode;
+  title?: React.ReactNode;
+  subtitle?: React.ReactNode;
+  maxWidth?: 'xs' | 'sm' | 'md';
+};
 
 export default function AuthLayout({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+  title,
+  subtitle,
+  maxWidth = 'sm',
+}: Props) {
+  const theme = useTheme();
+  
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background:
-            'radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%), radial-gradient(circle at 80% 80%, rgba(255, 135, 135, 0.3), transparent 50%)',
-          zIndex: 0,
-        },
+        minHeight: '100vh',
+        background: `linear-gradient(90deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+        overflow: 'hidden',
+        py: 8,
       }}
     >
-      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
-        {children}
+      {/* Background decorations */}
+      <Box
+        component="img"
+        src={bgShape.src}
+        alt=""
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          top: { xs: -60, md: -80 },
+          left: { xs: -60, md: -80 },
+          width: { xs: 160, md: 300 },
+          opacity: 0.18,
+          zIndex: 0,
+        }}
+      />
+      <Box
+        component="img"
+        src={bgShape.src}
+        alt=""
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          bottom: { xs: -80, md: -100 },
+          right: { xs: -60, md: -100 },
+          width: { xs: 200, md: 400 },
+          opacity: 0.12,
+          transform: 'rotate(180deg)',
+          zIndex: 0,
+        }}
+      />
+
+      <Container maxWidth={maxWidth} sx={{ position: 'relative', zIndex: 2 }}>
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Paper elevation={8} sx={{ borderRadius: 4, overflow: 'hidden' }}>
+            <Box
+              sx={{
+                height: 4,
+                background: `linear-gradient(90deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+              }}
+            />
+            <Box sx={{ p: 4 }}>
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <Box
+                  component="img"
+                  src={logo.src}
+                  alt="Kleem"
+                  sx={{ maxWidth: 140, mb: 1 }}
+                />
+                {title}
+                {subtitle}
+              </Box>
+              {children}
+            </Box>
+          </Paper>
+        </motion.div>
       </Container>
     </Box>
   );

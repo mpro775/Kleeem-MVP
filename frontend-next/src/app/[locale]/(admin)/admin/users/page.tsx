@@ -41,7 +41,7 @@ export default function AdminUsersPage() {
     {
       _id: '3',
       name: 'Admin User',
-      email: 'admin@kleeem.com',
+      email: 'admin@kaleem.com',
       role: 'admin' as const,
       isActive: true,
       lastLogin: '2025-11-05',

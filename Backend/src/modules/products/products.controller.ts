@@ -48,6 +48,7 @@ import { ProductSetupConfigDto } from './dto/product-setup-config.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductSetupConfigService } from './product-setup-config.service';
 import { ProductsService } from './products.service';
+import { ProductCsvService } from './services/product-csv.service';
 
 const MAX_IMAGES = 6;
 
@@ -61,6 +62,7 @@ export class ProductsController {
     private readonly productsService: ProductsService,
     private readonly productSetupConfigService: ProductSetupConfigService,
     private readonly translationService: TranslationService,
+    private readonly csvService: ProductCsvService,
   ) {}
 
   @Post()
@@ -465,5 +467,205 @@ export class ProductsController {
     return plainToInstance(ProductResponseDto, p, {
       excludeExtraneousValues: true,
     });
+  }
+
+  /**
+   * تحديث المنتجات الشبيهة
+   */
+  @Put(':id/related')
+  @ApiParam({ name: 'id', type: 'string', description: 'معرّف المنتج' })
+  @ApiOperation({
+    summary: 'تحديث المنتجات الشبيهة',
+    description: 'تحديث قائمة المنتجات الشبيهة (حد أقصى 10 منتجات)',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        relatedProductIds: {
+          type: 'array',
+          items: { type: 'string' },
+          maxItems: 10,
+          example: ['507f1f77bcf86cd799439011', '507f191e810c19729de860ea'],
+        },
+      },
+    },
+  })
+  async updateRelatedProducts(
+    @Param('id') id: string,
+    @Body('relatedProductIds') relatedProductIds: string[],
+    @CurrentMerchantId() jwtMerchantId: string | null,
+    @CurrentUser() user: { role: string; merchantId: string },
+  ): Promise<ProductResponseDto> {
+    const product = await this.productsService.findOne(id);
+    if (
+      user.role !== 'ADMIN' &&
+      String(product.merchantId) !== String(jwtMerchantId)
+    ) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.accessDenied'),
+      );
+    }
+
+    const updated = await this.productsService.update(id, {
+      relatedProducts: relatedProductIds,
+    });
+
+    return plainToInstance(ProductResponseDto, updated, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  /**
+   * جلب المنتجات الشبيهة (populated)
+   */
+  @Public()
+  @Get(':id/related')
+  @ApiParam({ name: 'id', type: 'string', description: 'معرّف المنتج' })
+  @ApiOperation({
+    summary: 'جلب المنتجات الشبيهة',
+    description: 'جلب المنتجات الشبيهة لمنتج معين',
+  })
+  @ApiOkResponse({
+    type: ProductResponseDto,
+    isArray: true,
+    description: 'قائمة المنتجات الشبيهة',
+  })
+  async getRelatedProducts(
+    @Param('id') id: string,
+  ): Promise<ProductResponseDto[]> {
+    const product = await this.productsService.findOne(id);
+
+    if (!product.relatedProducts || product.relatedProducts.length === 0) {
+      return [];
+    }
+
+    // جلب المنتجات الشبيهة
+    const relatedProducts = await Promise.all(
+      product.relatedProducts.map((relatedId) =>
+        this.productsService.findOne(relatedId.toString()).catch(() => null),
+      ),
+    );
+
+    // فلترة null values
+    const validProducts = relatedProducts.filter((p) => p !== null);
+
+    return plainToInstance(ProductResponseDto, validProducts, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  /**
+   * جلب جميع التاجز المستخدمة
+   */
+  @Get('tags')
+  @ApiOperation({
+    summary: 'جلب جميع التاجز المستخدمة',
+    description: 'جلب قائمة بجميع التاجز (keywords) المستخدمة في منتجات التاجر',
+  })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        tags: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['إلكترونيات', 'هواتف', 'أجهزة لوحية'],
+        },
+        count: { type: 'number', example: 15 },
+      },
+    },
+  })
+  async getTags(
+    @CurrentMerchantId() jwtMerchantId: string | null,
+  ): Promise<{ tags: string[]; count: number }> {
+    if (!jwtMerchantId) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.merchantRequired'),
+      );
+    }
+
+    const tags = await this.productsService.getAllTags(jwtMerchantId);
+
+    return {
+      tags,
+      count: tags.length,
+    };
+  }
+
+  /**
+   * تصدير المنتجات إلى CSV
+   */
+  @Get('export/csv')
+  @ApiOperation({
+    summary: 'تصدير المنتجات إلى CSV',
+    description: 'تصدير جميع منتجات التاجر إلى ملف CSV',
+  })
+  async exportCsv(
+    @CurrentMerchantId() jwtMerchantId: string | null,
+  ): Promise<{ csv: string }> {
+    if (!jwtMerchantId) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.merchantRequired'),
+      );
+    }
+
+    const csv = await this.csvService.exportToCSV(jwtMerchantId);
+
+    return { csv };
+  }
+
+  /**
+   * استيراد المنتجات من CSV
+   */
+  @Post('import/csv')
+  @UseInterceptors(FilesInterceptor('file', 1))
+  @ApiOperation({
+    summary: 'استيراد المنتجات من CSV',
+    description: 'استيراد منتجات جديدة من ملف CSV',
+  })
+  async importCsv(
+    @UploadedFiles() files: Express.Multer.File[],
+    @CurrentMerchantId() jwtMerchantId: string | null,
+  ): Promise<{
+    success: number;
+    failed: number;
+    errors: Array<{ row: number; error: string }>;
+  }> {
+    if (!jwtMerchantId) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.merchantRequired'),
+      );
+    }
+
+    if (!files || files.length === 0) {
+      throw new BadRequestException(
+        this.translationService.translate('validation.fileRequired'),
+      );
+    }
+
+    const file = files[0];
+    const csvContent = file.buffer.toString('utf-8');
+
+    const result = await this.csvService.importFromCSV(
+      jwtMerchantId,
+      csvContent,
+    );
+
+    return result;
+  }
+
+  /**
+   * تنزيل template CSV فارغ
+   */
+  @Public()
+  @Get('export/csv/template')
+  @ApiOperation({
+    summary: 'تنزيل template CSV',
+    description: 'تنزيل ملف CSV فارغ كمثال للاستيراد',
+  })
+  exportCsvTemplate(): { csv: string } {
+    const csv = this.csvService.exportTemplate();
+    return { csv };
   }
 }

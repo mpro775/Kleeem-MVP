@@ -214,7 +214,7 @@ graph LR
 #### 5.1.1 Docker Compose للتطوير
 
 ```yaml
-# docker-compose.yml (الرئيسي)
+# docker-compose.mvp.yml (الرئيسي)
 version: '3.8'
 services:
   redis:
@@ -354,8 +354,9 @@ services:
 # scripts/deploy.sh - سكريبت النشر الفعلي
 
 # إعدادات عامة
-COMPOSE_BASE="docker-compose.yml"
-COMPOSE_OVERRIDE="docker-compose.image.override.yml"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+COMPOSE_FILE="${COMPOSE_FILE:-$REPO_ROOT/docker-compose.mvp.yml}"
 
 # متغيّرات مطلوبة
 KALEEM_API_IMAGE="${KALEEM_API_IMAGE:?KALEEM_API_IMAGE is required}"
@@ -373,7 +374,7 @@ log "⬇️  Pulling image: $KALEEM_API_IMAGE"
 docker pull "$KALEEM_API_IMAGE"
 
 # التقاط صورة الخدمة الحالية للرجوع
-PREV_IMAGE="$(docker compose -f "$COMPOSE_BASE" ps --format json 2>/dev/null \
+PREV_IMAGE="$(docker compose -f "$COMPOSE_FILE" ps --format json 2>/dev/null \
   | jq -r '.[] | select(.Service=="api") | .Image' || true)"
 
 # نسخ احتياطي لمونغو مع تدوير
@@ -386,7 +387,7 @@ docker run --rm --network host \
 # تطبيق الترقية
 log "🔄 Updating service: api"
 export KALEEM_API_IMAGE
-docker compose -f "$COMPOSE_BASE" -f "$COMPOSE_OVERRIDE" up -d --no-deps api
+docker compose -f "$COMPOSE_FILE" up -d --no-deps api
 
 # فحص الصحة مع رجوع تلقائي
 log "🩺 Health check: $HEALTH_URL"
@@ -397,7 +398,7 @@ until curl -fsS "$HEALTH_URL" >/dev/null; do
     if [[ -n "$PREV_IMAGE" ]]; then
       log "🔙 Rolling back to previous image: $PREV_IMAGE"
       export KALEEM_API_IMAGE="$PREV_IMAGE"
-      docker compose -f "$COMPOSE_BASE" -f "$COMPOSE_OVERRIDE" up -d --no-deps api || true
+      docker compose -f "$COMPOSE_FILE" up -d --no-deps api || true
     fi
     error_exit "Deployment failed"
   fi

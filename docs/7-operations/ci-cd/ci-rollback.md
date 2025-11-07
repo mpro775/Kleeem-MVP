@@ -46,7 +46,7 @@ curl -fsS "$HEALTH_URL" || {
 ```bash
 # Automatic rollback to previous image
 export KALEEM_API_IMAGE="$PREV_IMAGE"
-docker compose -f docker-compose.yml -f docker-compose.image.override.yml up -d --no-deps api
+docker compose -f docker-compose.mvp.yml up -d --no-deps api
 ```
 
 ### 3. Verification
@@ -74,7 +74,7 @@ PREV_IMAGE="ghcr.io/owner/repo/kaleem-api:v0.0.1"
 
 # 3. Deploy previous image
 export KALEEM_API_IMAGE="$PREV_IMAGE"
-docker compose -f docker-compose.yml -f docker-compose.image.override.yml up -d --no-deps api
+docker compose -f docker-compose.mvp.yml up -d --no-deps api
 
 # 4. Verify rollback
 curl -f http://localhost:3000/api/health
@@ -87,14 +87,14 @@ BACKUP_DIR="/opt/kaleem/backups"
 LATEST_BACKUP=$(ls -t "$BACKUP_DIR"/mongo-*.archive.gz | head -1)
 
 # 2. Stop application
-docker compose stop api
+docker compose -f docker-compose.mvp.yml stop api
 
 # 3. Restore database
 docker run --rm --network host -v "$BACKUP_DIR:/backup" mongo:5 \
   bash -lc "mongorestore --uri='$MONGODB_URI' --archive=/backup/$(basename $LATEST_BACKUP) --gzip"
 
 # 4. Restart application
-docker compose up -d api
+docker compose -f docker-compose.mvp.yml up -d api
 
 # 5. Verify restoration
 curl -f http://localhost:3000/api/health
@@ -104,7 +104,7 @@ curl -f http://localhost:3000/api/health
 ```bash
 # 1. Backup current state (if needed)
 # 2. Stop all services
-docker compose down
+docker compose -f docker-compose.mvp.yml down
 
 # 3. Restore database from backup
 # (see Database Rollback steps above)
@@ -113,9 +113,9 @@ docker compose down
 # (see Image Rollback steps above)
 
 # 5. Start services in order
-docker compose up -d mongo redis qdrant rabbitmq
+docker compose -f docker-compose.mvp.yml up -d mongo redis qdrant rabbitmq
 sleep 30  # Wait for services to be ready
-docker compose up -d api frontend nginx
+docker compose -f docker-compose.mvp.yml up -d api frontend nginx
 
 # 6. Verify full system
 curl -f http://localhost/api/health

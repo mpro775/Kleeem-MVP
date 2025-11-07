@@ -174,6 +174,69 @@ export class Merchant {
 
   @Prop({ type: Types.ObjectId, ref: 'Storefront' })
   storefront?: Types.ObjectId;
+
+  // — Currency Settings —
+  @Prop({
+    type: {
+      baseCurrency: {
+        type: String,
+        enum: ['SAR', 'USD', 'YER', 'EUR', 'GBP', 'AED'],
+        default: 'SAR',
+      },
+      supportedCurrencies: {
+        type: [String],
+        default: ['SAR'],
+      },
+      exchangeRates: {
+        type: Map,
+        of: Number,
+        default: {},
+      },
+      roundingStrategy: {
+        type: String,
+        enum: ['none', 'ceil', 'floor', 'round'],
+        default: 'round',
+      },
+      roundToNearest: { type: Number, default: 1 },
+    },
+    _id: false,
+    default: () => ({
+      baseCurrency: 'SAR',
+      supportedCurrencies: ['SAR'],
+      exchangeRates: {},
+      roundingStrategy: 'round',
+      roundToNearest: 1,
+    }),
+  })
+  currencySettings?: {
+    baseCurrency: 'SAR' | 'USD' | 'YER' | 'EUR' | 'GBP' | 'AED';
+    supportedCurrencies: string[];
+    exchangeRates: Map<string, number>;
+    roundingStrategy: 'none' | 'ceil' | 'floor' | 'round';
+    roundToNearest: number;
+  };
+
+  // — Discount Policy —
+  @Prop({
+    type: {
+      stackCouponsWithPromotions: { type: Boolean, default: true },
+      applyOrder: {
+        type: String,
+        enum: ['product_first', 'promotion_first', 'coupon_first'],
+        default: 'product_first',
+      },
+    },
+    _id: false,
+    default: () => ({
+      stackCouponsWithPromotions: true,
+      applyOrder: 'product_first',
+    }),
+  })
+  discountPolicy?: {
+    stackCouponsWithPromotions: boolean;
+    applyOrder: 'product_first' | 'promotion_first' | 'coupon_first';
+  };
+
   // — Working hours —
   @Prop({ type: [WorkingHourSchema], default: [] })
   workingHours!: WorkingHour[];

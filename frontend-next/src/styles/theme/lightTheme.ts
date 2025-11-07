@@ -82,10 +82,22 @@ export const lightTheme = createTheme({
           boxShadow: '0 3px 10px 0 rgba(76,60,170,0.10)',
         },
         contained: {
-          background: 'linear-gradient(90deg, #6a3f9c 0%, #4b247a 100%)',
+          background: 'linear-gradient(90deg, #A498CB 0%, #502E91 100%)',
           color: '#fff',
           '&:hover': {
             background: 'linear-gradient(90deg, #502e91 0%, #3a1c5e 100%)',
+          },
+          '&:disabled': {
+            background: '#e0e0e0',
+            color: '#999',
+          },
+        },
+        outlined: {
+          borderColor: '#7E66AC',
+          color: '#7E66AC',
+          '&:hover': {
+            borderColor: '#502E91',
+            backgroundColor: 'rgba(126, 102, 172, 0.08)',
           },
         },
       },

@@ -24,10 +24,11 @@ import type { MerchantInfo } from "@/features/merchant/merchant-settings/types";
 import type { Storefront } from "@/features/merchant/storefront-theme/type";
 import CartDialog from "./CartDialog";
 import CustomerInfoDialog from "@/features/store/home/ui/CustomerInfoDialog";
-import { useNavigate, useParams } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { getSessionId } from "@/lib/utils/session";
 import { getLocalCustomer } from "@/lib/utils/customer";
-import type { CustomerInfo } from "@/features/store/type";
+import type { CustomerInfo } from "@/features/store/types";
+import { CurrencySwitcher } from "../components/CurrencySwitcher";
 
 interface Props {
   merchant: MerchantInfo;
@@ -37,11 +38,10 @@ interface Props {
 export function StoreNavbar({ merchant }: Props) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const { items } = useCart();
+  const { items, setSelectedCurrency } = useCart();
   const [openCart, setOpenCart] = useState(false);
   const [openInfo, setOpenInfo] = useState(false);
-  const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const openMenu = Boolean(anchorEl);
@@ -51,6 +51,12 @@ export function StoreNavbar({ merchant }: Props) {
 
   const sessionId = getSessionId();
   const defaultCustomer = getLocalCustomer() as CustomerInfo;
+  
+  const handleCurrencyChange = (currency: string) => {
+    setSelectedCurrency(currency);
+    // يمكن إعادة تحميل الصفحة لتحديث الأسعار
+    // window.location.reload();
+  };
 
   return (
     <>

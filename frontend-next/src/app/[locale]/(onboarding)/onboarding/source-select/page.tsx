@@ -18,28 +18,12 @@ import { useSnackbar } from 'notistack';
 import OnboardingLayout from '@/components/layouts/OnboardingLayout';
 import axiosInstance from '@/lib/axios';
 import type { IntegrationsStatus } from '@/features/onboarding/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Source = 'internal' | 'salla' | 'zid';
 
 const isExternal = (s: IntegrationsStatus) =>
   s.productSource === 'salla' || s.productSource === 'zid';
-
-// Temporary auth helpers
-function useAuthToken() {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('auth-token');
-}
-
-function useUser() {
-  if (typeof window === 'undefined') return null;
-  const userStr = localStorage.getItem('user');
-  if (!userStr) return null;
-  try {
-    return JSON.parse(userStr);
-  } catch {
-    return null;
-  }
-}
 
 export default function SourceSelectPage() {
   const router = useRouter();
@@ -48,9 +32,7 @@ export default function SourceSelectPage() {
   const locale = params.locale as string;
   const t = useTranslations('onboarding');
   const { enqueueSnackbar } = useSnackbar();
-
-  const token = useAuthToken();
-  const user = useUser();
+  const { user } = useAuth();
 
   const [source, setSource] = useState<Source>('internal');
   const [saving, setSaving] = useState(false);
@@ -61,6 +43,7 @@ export default function SourceSelectPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const pollTimer = useRef<number | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
   const headers = useMemo(
     () => ({ Authorization: `Bearer ${token}` }),
@@ -68,6 +51,17 @@ export default function SourceSelectPage() {
   );
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+  // Get token on mount
+  useEffect(() => {
+    const getToken = async () => {
+      const authToken = await fetch('/api/auth/me').then(r => 
+        r.ok ? r.headers.get('Authorization')?.replace('Bearer ', '') : null
+      );
+      setToken(authToken);
+    };
+    getToken();
+  }, []);
 
   const stopPolling = () => {
     if (pollTimer.current) {

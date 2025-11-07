@@ -1,8 +1,8 @@
 'use client';
 
+import { Footer, Navbar } from '@/features/landing';
 import { Box } from '@mui/material';
-import Navbar from '@/components/features/landing/ui/Navbar';
-import Footer from '@/components/features/landing/ui/Footer';
+
 
 export default function PublicLayout({
   children,

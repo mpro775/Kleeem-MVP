@@ -21,45 +21,12 @@ import { useTranslations } from 'next-intl';
 import { useSnackbar } from 'notistack';
 
 import OnboardingLayout from '@/components/layouts/OnboardingLayout';
-import { saveBasicInfo } from '@/features/onboarding/api';
+import { saveBasicInfo, ensureMerchant } from '@/features/onboarding/api';
 import {
   BUSINESS_TYPES,
   STORE_CATEGORIES,
 } from '@/features/onboarding/constants';
-
-// Temporary auth helpers (until AuthContext is fully migrated)
-function useAuthToken() {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('auth-token');
-}
-
-function useUser() {
-  if (typeof window === 'undefined') return null;
-  const userStr = localStorage.getItem('user');
-  if (!userStr) return null;
-  try {
-    return JSON.parse(userStr);
-  } catch {
-    return null;
-  }
-}
-
-async function ensureMerchant(token: string) {
-  // This should call your backend API
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-  const response = await fetch(`${API_BASE}/auth/ensure-merchant`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'فشل تهيئة المتجر');
-  }
-  return response.json();
-}
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -67,9 +34,7 @@ export default function OnboardingPage() {
   const locale = params.locale as string;
   const t = useTranslations('onboarding');
   const { enqueueSnackbar } = useSnackbar();
-
-  const token = useAuthToken();
-  const user = useUser();
+  const { user, refetch } = useAuth();
 
   const [businessType, setBusinessType] = useState('store');
   const [name, setName] = useState('');
@@ -94,25 +59,31 @@ export default function OnboardingPage() {
     let mounted = true;
 
     (async () => {
-      if (!token || user?.merchantId || merchantEnsured) return;
+      if (!user || user?.merchantId || merchantEnsured) return;
       try {
         setEnsuring(true);
         setError(null);
+        
+        // Use ensureMerchant from API
+        const token = await fetch('/api/auth/me').then(r => r.ok ? r.headers.get('Authorization')?.replace('Bearer ', '') : null);
+        if (!token) {
+          setError(t('errors.sessionExpired'));
+          return;
+        }
+        
         const res = await ensureMerchant(token);
         if (!mounted) return;
         if (res?.user?.merchantId) {
-          // Update local storage
-          localStorage.setItem('user', JSON.stringify(res.user));
-          if (res.accessToken) {
-            localStorage.setItem('auth-token', res.accessToken);
-          }
+          // Refetch user to update AuthContext
+          await refetch();
           setMerchantEnsured(true);
         } else {
           setError(t('errors.preparing'));
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
+        const error = e as Error;
         if (!mounted) return;
-        const msg = e.message || t('errors.generic');
+        const msg = error.message || t('errors.generic');
         if (String(msg).includes('Email not verified')) {
           setError(t('errors.emailNotVerified'));
           router.push(`/${locale}/verify-email`);
@@ -127,13 +98,20 @@ export default function OnboardingPage() {
     return () => {
       mounted = false;
     };
-  }, [token, user?.merchantId, merchantEnsured, router, locale, t]);
+  }, [user, user?.merchantId, merchantEnsured, router, locale, t, refetch]);
 
   const handleContinue = async () => {
     try {
       setError(null);
       setSaving(true);
 
+      if (!user) {
+        setError(t('errors.sessionExpired'));
+        return;
+      }
+
+      // Get token from API
+      const token = await fetch('/api/auth/me').then(r => r.ok ? r.headers.get('Authorization')?.replace('Bearer ', '') : null);
       if (!token) {
         setError(t('errors.sessionExpired'));
         return;
@@ -146,13 +124,12 @@ export default function OnboardingPage() {
           const res = await ensureMerchant(token);
           if (res?.user?.merchantId) {
             effectiveMerchantId = res.user.merchantId;
-            localStorage.setItem('user', JSON.stringify(res.user));
-            if (res.accessToken) {
-              localStorage.setItem('auth-token', res.accessToken);
-            }
+            // Refetch user to update AuthContext
+            await refetch();
           }
-        } catch (e: any) {
-          setError(e.message || t('errors.merchantSetupFailed'));
+        } catch (e: unknown) {
+          const error = e as Error;
+          setError(error.message || t('errors.merchantSetupFailed'));
           return;
         }
       }
@@ -175,8 +152,9 @@ export default function OnboardingPage() {
       await saveBasicInfo(effectiveMerchantId, token, payload);
       enqueueSnackbar(t('success.basicInfoSaved'), { variant: 'success' });
       router.push(`/${locale}/onboarding/source-select`);
-    } catch (e: any) {
-      const errorMsg = e.response?.data?.message || e.message || t('errors.saveFailed');
+    } catch (e: unknown) {
+      const error = e as Error;
+      const errorMsg = error.message || t('errors.saveFailed');
       setError(errorMsg);
       enqueueSnackbar(errorMsg, { variant: 'error' });
     } finally {

@@ -27,6 +27,21 @@ export class CreateCategoryDto {
   @IsInt()
   @Min(0)
   order!: number;
+
+  @ApiProperty({ required: false, description: 'عنوان SEO' })
+  @IsOptional()
+  @IsString()
+  seoTitle?: string;
+
+  @ApiProperty({ required: false, description: 'وصف SEO' })
+  @IsOptional()
+  @IsString()
+  seoDescription?: string;
+
+  @ApiProperty({ required: false, description: 'أيقونة الفئة' })
+  @IsOptional()
+  @IsString()
+  icon?: string;
 }
 
 // move-category.dto.ts

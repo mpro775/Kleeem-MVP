@@ -20,6 +20,8 @@ import ShareIcon from "@mui/icons-material/Share";
 import StarIcon from "@mui/icons-material/Star";
 import FlashOnIcon from "@mui/icons-material/FlashOn";
 import { useState } from "react";
+import { OfferBadge } from "../components/OfferBadge";
+import { CountdownTimer } from "../components/CountdownTimer";
 
 type Props = {
   product: ProductResponse;
@@ -61,6 +63,10 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
     ? (product.offer!.newPrice as number)
     : product.price ?? 0;
   const oldPrice = showOffer ? (product.offer!.oldPrice as number) : undefined;
+  
+  // Check if offer has active settings
+  const hasActiveOffer = product.offer?.enabled && 
+    (!product.offer.endAt || new Date(product.offer.endAt) > new Date());
 
   return (
     <Card
@@ -83,22 +89,18 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
         backgroundColor: "#fff",
       }}
     >
-      {/* شارة الخصم (٪) */}
-      {showOffer && (
-        <Chip
-          label={`خصم ${pct}%`}
-          color="error"
-          size="small"
+      {/* شارة العرض المحسّنة */}
+      {hasActiveOffer && product.offer && (
+        <Box
           sx={{
             position: "absolute",
             top: { xs: 8, sm: 12 },
             left: { xs: 8, sm: 12 },
             zIndex: 2,
-            fontWeight: "bold",
-            fontSize: { xs: "0.7rem", sm: "inherit" },
-            height: { xs: 20, sm: 32 }
           }}
-        />
+        >
+          <OfferBadge offer={product.offer} />
+        </Box>
       )}
 
       {/* شارة سريع البيع */}
@@ -368,13 +370,20 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
             </Typography>
           </Box>
 
+          {/* العداد التنازلي للعرض */}
+          {hasActiveOffer && product.offer?.endAt && (
+            <Box sx={{ mb: 1 }}>
+              <CountdownTimer endDate={product.offer.endAt} />
+            </Box>
+          )}
+
           {/* السعر */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
             <Typography
               variant={viewMode === "grid" ? "h6" : "h5"}
               fontWeight="bold"
               sx={{ 
-                color: "var(--brand)",
+                color: hasActiveOffer ? "error.main" : "var(--brand)",
                 fontSize: { xs: "1rem", sm: "inherit" }
               }}
             >
@@ -392,6 +401,19 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
               >
                 {oldPrice.toFixed(2)} ر.س
               </Typography>
+            )}
+            
+            {hasActiveOffer && pct > 0 && (
+              <Chip
+                label={`-${pct}%`}
+                color="error"
+                size="small"
+                sx={{
+                  fontWeight: "bold",
+                  fontSize: { xs: "0.7rem", sm: "inherit" },
+                  height: { xs: 20, sm: 24 }
+                }}
+              />
             )}
           </Box>
 

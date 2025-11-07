@@ -20,6 +20,7 @@ import { UpdateProductDto } from '../dto/update-product.dto';
 
 import { ProductIndexService } from './product-index.service';
 import { ProductMediaService } from './product-media.service';
+import { ProductValidationService } from './product-validation.service';
 
 import type { Storefront } from '../../storefront/schemas/storefront.schema';
 import type { ProductsRepository } from '../repositories/products.repository';
@@ -27,7 +28,6 @@ import type { Product, ProductDocument } from '../schemas/product.schema';
 import type { ClientSession } from 'mongoose';
 
 /* -------------------- ثوابت لتجنّب النصوص السحرية -------------------- */
-const STATUS_ACTIVE = 'active' as const;
 const SYNC_OK = 'ok' as const;
 const SYNC_PENDING = 'pending' as const;
 
@@ -83,6 +83,7 @@ export class ProductCommandsService {
     private readonly translationService: TranslationService,
     private readonly outbox: OutboxService,
     private readonly config: ConfigService,
+    private readonly validation: ProductValidationService,
   ) {}
 
   /** إنشاء منتج جديد مع outbox + فهرسة + كنس كاش */
@@ -94,6 +95,9 @@ export class ProductCommandsService {
       this.translationService.translate('validation.mongoId'),
     );
 
+    // التحقق من صحة البيانات
+    await this.validateCreateDto(dto, merchantId);
+
     const sf = await this.getStorefrontData(merchantId);
     const data = this.buildProductData(dto, merchantId, sf);
 
@@ -101,6 +105,37 @@ export class ProductCommandsService {
     await this.handlePostCreationTasks(created, sf);
 
     return created;
+  }
+
+  private async validateCreateDto(
+    dto: CreateProductDto & { merchantId: string },
+    merchantId: Types.ObjectId,
+  ): Promise<void> {
+    // التحقق من المتغيرات
+    this.validation.validateVariants(dto.hasVariants, dto.variants);
+
+    // التحقق من SKU uniqueness
+    if (dto.hasVariants && dto.variants && dto.variants.length > 0) {
+      const skus = dto.variants.map((v) => v.sku);
+      await this.validation.validateAllSkus(merchantId.toHexString(), skus);
+    }
+
+    // التحقق من المنتجات الرقمية
+    this.validation.validateDigitalProduct(dto.productType, dto.digitalAsset);
+
+    // التحقق من النشر المؤجل
+    this.validation.validateScheduledPublish(
+      dto.status,
+      dto.scheduledPublishAt,
+    );
+
+    // التحقق من المنتجات الشبيهة
+    if (dto.relatedProducts && dto.relatedProducts.length > 0) {
+      await this.validation.validateRelatedProducts(
+        merchantId.toHexString(),
+        dto.relatedProducts,
+      );
+    }
   }
 
   private async getStorefrontData(
@@ -143,13 +178,73 @@ export class ProductCommandsService {
       price: dto.price ?? 0,
       isAvailable: dto.isAvailable ?? true,
       source: mapSource(dto.source),
-      status: STATUS_ACTIVE,
+      status: dto.status ?? 'published',
     };
+
+    this.applyOptionalFields(dto, data);
+    this.applyVariantsData(dto, data);
+    this.applyProductTypeData(dto, data);
+    this.applyPublishingData(dto, data);
+    this.applyRelatedProducts(dto, data);
+
+    return data;
+  }
+
+  private applyOptionalFields(
+    dto: CreateProductDto & { merchantId: string },
+    data: Partial<Product>,
+  ): void {
     if (dto.currency) data.currency = dto.currency;
     const offer = toOffer(dto.offer);
     if (offer) data.offer = offer;
     if (dto.category) data.category = new Types.ObjectId(dto.category);
-    return data;
+  }
+
+  private applyVariantsData(
+    dto: CreateProductDto & { merchantId: string },
+    data: Partial<Product>,
+  ): void {
+    if (dto.hasVariants !== undefined) data.hasVariants = dto.hasVariants;
+    if (dto.variants) {
+      data.variants = dto.variants.map((variant) => ({
+        ...variant,
+        images: variant.images ?? [],
+        isAvailable: variant.isAvailable ?? true,
+        barcode: variant.barcode ?? null,
+        lowStockThreshold: variant.lowStockThreshold ?? null,
+        weight: variant.weight ?? null,
+      }));
+    }
+  }
+
+  private applyProductTypeData(
+    dto: CreateProductDto & { merchantId: string },
+    data: Partial<Product>,
+  ): void {
+    if (dto.productType) data.productType = dto.productType;
+    if (dto.digitalAsset) data.digitalAsset = dto.digitalAsset;
+    if (dto.isUnlimitedStock !== undefined)
+      data.isUnlimitedStock = dto.isUnlimitedStock;
+  }
+
+  private applyPublishingData(
+    dto: CreateProductDto & { merchantId: string },
+    data: Partial<Product>,
+  ): void {
+    if (dto.publishedAt) data.publishedAt = dto.publishedAt;
+    if (dto.scheduledPublishAt)
+      data.scheduledPublishAt = dto.scheduledPublishAt;
+  }
+
+  private applyRelatedProducts(
+    dto: CreateProductDto & { merchantId: string },
+    data: Partial<Product>,
+  ): void {
+    if (dto.relatedProducts) {
+      data.relatedProducts = dto.relatedProducts.map(
+        (id) => new Types.ObjectId(id),
+      );
+    }
   }
 
   private buildStorefrontData(sf: MinimalStorefront | null): Partial<Product> {
@@ -276,29 +371,90 @@ export class ProductCommandsService {
   private buildUpdatePatch(dto: UpdateProductDto): Partial<Product> {
     const patch: Partial<Product> = {};
 
-    // Basic fields
+    this.applyBasicFieldsUpdate(dto, patch);
+    this.applyArrayFieldsUpdate(dto, patch);
+    this.applyVariantsUpdate(dto, patch);
+    this.applyProductTypeUpdate(dto, patch);
+    this.applyPublishingUpdate(dto, patch);
+    this.applyRelatedProductsUpdate(dto, patch);
+
+    return patch;
+  }
+
+  private applyBasicFieldsUpdate(
+    dto: UpdateProductDto,
+    patch: Partial<Product>,
+  ): void {
     if (dto.name !== undefined) patch.name = dto.name;
     if (dto.description !== undefined) patch.description = dto.description;
     if (dto.price !== undefined) patch.price = dto.price;
     if (dto.currency !== undefined) patch.currency = dto.currency;
     if (dto.isAvailable !== undefined) patch.isAvailable = dto.isAvailable;
 
-    // Offer handling
     if (dto.offer !== undefined) {
       const offer = toOffer(dto.offer);
       if (offer) patch.offer = offer;
     }
 
-    // Category
     if (dto.category !== undefined)
       patch.category = new Types.ObjectId(dto.category);
+  }
 
-    // Array fields
+  private applyArrayFieldsUpdate(
+    dto: UpdateProductDto,
+    patch: Partial<Product>,
+  ): void {
     this.assignArrayField(patch, 'specsBlock', dto.specsBlock);
     this.assignArrayField(patch, 'keywords', dto.keywords);
     this.assignArrayField(patch, 'images', dto.images);
+  }
 
-    return patch;
+  private applyVariantsUpdate(
+    dto: UpdateProductDto,
+    patch: Partial<Product>,
+  ): void {
+    if (dto.hasVariants !== undefined) patch.hasVariants = dto.hasVariants;
+    if (dto.variants !== undefined) {
+      patch.variants = dto.variants.map((variant) => ({
+        ...variant,
+        images: variant.images ?? [],
+        isAvailable: variant.isAvailable ?? true,
+        barcode: variant.barcode ?? null,
+        lowStockThreshold: variant.lowStockThreshold ?? null,
+        weight: variant.weight ?? null,
+      }));
+    }
+  }
+
+  private applyProductTypeUpdate(
+    dto: UpdateProductDto,
+    patch: Partial<Product>,
+  ): void {
+    if (dto.productType !== undefined) patch.productType = dto.productType;
+    if (dto.digitalAsset !== undefined) patch.digitalAsset = dto.digitalAsset;
+    if (dto.isUnlimitedStock !== undefined)
+      patch.isUnlimitedStock = dto.isUnlimitedStock;
+  }
+
+  private applyPublishingUpdate(
+    dto: UpdateProductDto,
+    patch: Partial<Product>,
+  ): void {
+    if (dto.status !== undefined) patch.status = dto.status;
+    if (dto.publishedAt !== undefined) patch.publishedAt = dto.publishedAt;
+    if (dto.scheduledPublishAt !== undefined)
+      patch.scheduledPublishAt = dto.scheduledPublishAt;
+  }
+
+  private applyRelatedProductsUpdate(
+    dto: UpdateProductDto,
+    patch: Partial<Product>,
+  ): void {
+    if (dto.relatedProducts !== undefined) {
+      patch.relatedProducts = dto.relatedProducts.map(
+        (id) => new Types.ObjectId(id),
+      );
+    }
   }
 
   private assignArrayField<T extends keyof Product>(

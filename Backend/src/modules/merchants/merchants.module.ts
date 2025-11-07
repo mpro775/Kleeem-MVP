@@ -42,6 +42,7 @@ import { MongoMerchantChecklistRepository } from './repositories/mongo-merchant-
 import { MongoMerchantsRepository } from './repositories/mongo-merchants.repository';
 import { MongoPromptVersionRepository } from './repositories/mongo-prompt-version.repository';
 import { Merchant, MerchantSchema } from './schemas/merchant.schema';
+import { CurrencyService } from './services/currency.service';
 import { MerchantCacheService } from './services/merchant-cache.service';
 import { MerchantDeletionService } from './services/merchant-deletion.service';
 import { MerchantProfileService } from './services/merchant-profile.service';
@@ -101,6 +102,7 @@ import { PromptVersionService } from './services/prompt-version.service';
     MerchantPromptService,
     MerchantProfileService,
     MerchantDeletionService,
+    CurrencyService,
   ],
   controllers: [
     MerchantsController,
@@ -121,6 +123,7 @@ import { PromptVersionService } from './services/prompt-version.service';
     MerchantPromptService,
     MerchantProfileService,
     MerchantDeletionService,
+    CurrencyService,
 
     // Repositories
     'MerchantsRepository',

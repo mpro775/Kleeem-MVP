@@ -148,4 +148,8 @@ export class ProductsService {
   ): Promise<PaginationResult<ProductLean>> {
     return this.queries.listByMerchant(merchantId, dto);
   }
+
+  async getAllTags(merchantId: string): Promise<string[]> {
+    return this.queries.getAllTags(merchantId);
+  }
 }

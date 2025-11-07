@@ -13,6 +13,8 @@ import {
   CircularProgress,
   useTheme,
   Alert,
+  Chip,
+  Divider,
 } from "@mui/material";
 import React, { useState, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
@@ -25,6 +27,7 @@ import RemoveIcon from "@mui/icons-material/Remove";
 import ShoppingCartCheckoutIcon from "@mui/icons-material/ShoppingCartCheckout";
 import PaymentIcon from "@mui/icons-material/Payment";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import { Person } from "@mui/icons-material";
 import { saveLocalCustomer } from "@/lib/utils/customer";
 
@@ -46,7 +49,18 @@ export default function CartDialog({
   defaultCustomer?: CustomerInfo;
 }) {
   const theme = useTheme();
-  const { items, clearCart, removeItem, updateQuantity } = useCart();
+  const {
+    items,
+    clearCart,
+    removeItem,
+    updateQuantity,
+    appliedCoupon,
+    applyCoupon,
+    removeCoupon,
+    getSubtotal,
+    getCouponDiscount,
+    getTotal,
+  } = useCart();
 
   const getInitialCustomer = (): CustomerInfo =>
     defaultCustomer || { name: "", phone: "", address: "" };
@@ -55,6 +69,11 @@ export default function CartDialog({
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [couponError, setCouponError] = useState('');
 
   useEffect(() => {
     saveLocalCustomer({
@@ -84,6 +103,33 @@ export default function CartDialog({
     if (step > 1) setStep((s) => (s - 1) as 1 | 2);
   };
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('الرجاء إدخال كود الكوبون');
+      return;
+    }
+
+    setApplyingCoupon(true);
+    setCouponError('');
+
+    const result = await applyCoupon(couponCode, merchantId);
+
+    if (result.success) {
+      setCouponCode('');
+      // Success feedback is shown via the chip display
+    } else {
+      setCouponError(result.message || 'الكوبون غير صالح');
+    }
+
+    setApplyingCoupon(false);
+  };
+
+  const handleRemoveCoupon = () => {
+    removeCoupon();
+    setCouponCode('');
+    setCouponError('');
+  };
+
   const handleOrder = async () => {
     setLoading(true);
   
@@ -101,6 +147,7 @@ export default function CartDialog({
         source: 'storefront',
         customer: { name: customer.name, phone: customer.phone, address: customer.address },
         products,
+        couponCode: appliedCoupon?.code, // إرسال الكوبون
       });
   
       // الباك إند يرسل الآن: { success, data: order, requestId, timestamp }
@@ -122,6 +169,7 @@ export default function CartDialog({
     });
   
       clearCart();
+      removeCoupon(); // مسح الكوبون بعد الطلب
       onOrderSuccess(id);        // ✅ الآن نمرر الـ id الصحيح دائمًا
       onClose();
       setStep(1);
@@ -131,11 +179,6 @@ export default function CartDialog({
       setLoading(false);
     }
   };
-  
-  const totalAmount = items.reduce(
-    (sum, { product, quantity }) => sum + (product.price || 0) * quantity,
-    0
-  );
 
   // تحقق من حجم الشاشة
   const isMobile = window.innerWidth <= 600;
@@ -393,26 +436,147 @@ export default function CartDialog({
                   ))}
                 </Box>
 
+                {/* قسم الكوبون */}
+                <Box sx={{ mt: 3, mb: 2 }}>
+                  <Typography
+                    variant="subtitle2"
+                    gutterBottom
+                    sx={{ fontWeight: 'bold', mb: 1.5 }}
+                  >
+                    هل لديك كود خصم؟
+                  </Typography>
+
+                  {!appliedCoupon ? (
+                    <Stack direction="row" spacing={1}>
+                      <TextField
+                        size="small"
+                        placeholder="أدخل الكود"
+                        value={couponCode}
+                        onChange={(e) => {
+                          setCouponCode(e.target.value.toUpperCase());
+                          setCouponError('');
+                        }}
+                        disabled={applyingCoupon}
+                        fullWidth
+                        error={!!couponError}
+                      />
+                      <Button
+                        variant="contained"
+                        onClick={handleApplyCoupon}
+                        disabled={!couponCode || applyingCoupon}
+                        sx={{
+                          minWidth: 100,
+                          background: 'var(--brand)',
+                          color: 'var(--on-brand)',
+                          '&:hover': { background: 'var(--brand-hover)' },
+                        }}
+                      >
+                        {applyingCoupon ? (
+                          <CircularProgress size={20} />
+                        ) : (
+                          'تطبيق'
+                        )}
+                      </Button>
+                    </Stack>
+                  ) : (
+                    <Chip
+                      label={`${appliedCoupon.code} - خصم ${appliedCoupon.discount.toFixed(
+                        2
+                      )} ريال`}
+                      onDelete={handleRemoveCoupon}
+                      color="success"
+                      icon={<LocalOfferIcon />}
+                      sx={{
+                        fontWeight: 'bold',
+                        fontSize: '0.9rem',
+                      }}
+                    />
+                  )}
+
+                  {couponError && (
+                    <Alert severity="error" sx={{ mt: 1 }}>
+                      {couponError}
+                    </Alert>
+                  )}
+                </Box>
+
+                {/* ملخص الأسعار التفصيلي */}
                 <Box
                   sx={{
-                    display: "flex",
-                    flexDirection: isMobile ? "column" : "row",
-                    justifyContent: "space-between",
-                    alignItems: isMobile ? "flex-start" : "center",
-                    mt: isMobile ? 2 : 3,
-                    p: isMobile ? 1 : 2,
+                    mt: 2,
+                    p: 2,
                     backgroundColor: theme.palette.grey[50],
                     borderRadius: 2,
                   }}
                 >
-                  <Typography fontWeight="bold">الإجمالي:</Typography>
-                  <Typography
-                    fontWeight="bold"
-                    fontSize={20}
-                    sx={{ color: "var(--brand)" }}
-                  >
-                    {totalAmount.toFixed(2)} ر.س
-                  </Typography>
+                  <Stack spacing={1.5}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Typography>المجموع الفرعي:</Typography>
+                      <Typography>{getSubtotal().toFixed(2)} ر.س</Typography>
+                    </Box>
+
+                    {appliedCoupon && (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          color: 'success.main',
+                        }}
+                      >
+                        <Typography>
+                          خصم الكوبون ({appliedCoupon.code}):
+                        </Typography>
+                        <Typography fontWeight="bold">
+                          -{getCouponDiscount().toFixed(2)} ر.س
+                        </Typography>
+                      </Box>
+                    )}
+
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Typography>الشحن:</Typography>
+                      <Typography>
+                        {appliedCoupon?.discountType === 'free_shipping' ? (
+                          <Chip label="مجاني" size="small" color="success" />
+                        ) : (
+                          '0 ر.س'
+                        )}
+                      </Typography>
+                    </Box>
+
+                    <Divider />
+
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Typography variant="h6" fontWeight="bold">
+                        الإجمالي النهائي:
+                      </Typography>
+                      <Typography
+                        variant="h6"
+                        fontWeight="bold"
+                        sx={{ color: 'var(--brand)' }}
+                      >
+                        {getTotal().toFixed(2)} ر.س
+                      </Typography>
+                    </Box>
+                  </Stack>
                 </Box>
 
                 <Button
@@ -581,8 +745,24 @@ export default function CartDialog({
                     }}
                   >
                     <Typography>المجموع الفرعي:</Typography>
-                    <Typography>{totalAmount.toFixed(2)} ر.س</Typography>
+                    <Typography>{getSubtotal().toFixed(2)} ر.س</Typography>
                   </Box>
+
+                  {appliedCoupon && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        mb: 1,
+                        color: "success.main",
+                      }}
+                    >
+                      <Typography>خصم الكوبون ({appliedCoupon.code}):</Typography>
+                      <Typography fontWeight="bold">
+                        -{getCouponDiscount().toFixed(2)} ر.س
+                      </Typography>
+                    </Box>
+                  )}
 
                   <Box
                     sx={{
@@ -592,7 +772,13 @@ export default function CartDialog({
                     }}
                   >
                     <Typography>رسوم الشحن:</Typography>
-                    <Typography>0.00 ر.س</Typography>
+                    <Typography>
+                      {appliedCoupon?.discountType === 'free_shipping' ? (
+                        <Chip label="مجاني" size="small" color="success" />
+                      ) : (
+                        '0.00 ر.س'
+                      )}
+                    </Typography>
                   </Box>
 
                   <Box
@@ -610,7 +796,7 @@ export default function CartDialog({
                       fontSize={18}
                       sx={{ color: "var(--brand)" }}
                     >
-                      {totalAmount.toFixed(2)} ر.س
+                      {getTotal().toFixed(2)} ر.س
                     </Typography>
                   </Box>
                 </Box>

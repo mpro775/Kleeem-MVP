@@ -20,6 +20,51 @@ export class OrderProduct {
 }
 export const OrderProductSchema = SchemaFactory.createForClass(OrderProduct);
 
+@Schema({ _id: false, timestamps: false })
+export class OrderDiscount {
+  @Prop({ type: Types.ObjectId, ref: 'Promotion' })
+  id?: Types.ObjectId;
+
+  @Prop({ type: String })
+  name?: string;
+
+  @Prop({ required: true })
+  amount!: number;
+}
+export const OrderDiscountSchema = SchemaFactory.createForClass(OrderDiscount);
+
+@Schema({ _id: false, timestamps: false })
+export class OrderPricing {
+  @Prop({ required: true, default: 0 })
+  subtotal!: number; // مجموع المنتجات قبل الخصم
+
+  @Prop({ type: [OrderDiscountSchema], default: [] })
+  promotions?: OrderDiscount[]; // خصومات العروض الترويجية
+
+  @Prop({
+    type: { code: String, amount: Number },
+    default: null,
+    _id: false,
+  })
+  coupon?: { code: string; amount: number } | null; // خصم الكوبون
+
+  @Prop({ type: [OrderDiscountSchema], default: [] })
+  products?: OrderDiscount[]; // خصومات المنتجات
+
+  @Prop({ required: true, default: 0 })
+  totalDiscount!: number; // إجمالي الخصومات
+
+  @Prop({ default: 0 })
+  shippingCost?: number;
+
+  @Prop({ default: 0 })
+  shippingDiscount?: number;
+
+  @Prop({ required: true, default: 0 })
+  total!: number; // النهائي
+}
+export const OrderPricingSchema = SchemaFactory.createForClass(OrderPricing);
+
 @Schema({ timestamps: true })
 export class Order {
   @Prop({ required: true })
@@ -50,6 +95,22 @@ export class Order {
     enum: ['manual', 'api', 'imported', 'mini-store', 'widget', 'storefront'],
   })
   source?: string;
+
+  // ============ تفاصيل التسعير والخصومات ============
+  @Prop({ type: OrderPricingSchema, default: null, _id: false })
+  pricing?: OrderPricing | null;
+
+  @Prop({ type: String, default: 'SAR' })
+  currency?: string; // العملة المستخدمة
+
+  @Prop({ type: Number, default: null })
+  exchangeRate?: number | null; // سعر التحويل المطبق وقت الطلب
+
+  @Prop({ type: String, enum: ['highest', 'stack'], default: 'stack' })
+  discountPolicy?: 'highest' | 'stack'; // سياسة تطبيق الخصومات
+
+  @Prop({ type: String, default: null })
+  appliedCouponCode?: string | null;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);

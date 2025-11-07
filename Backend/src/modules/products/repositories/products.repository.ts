@@ -78,4 +78,7 @@ export interface ProductsRepository {
   ): Promise<ProductLean | null>;
   findByIdsScoped(ids: string[], merchantId: string): Promise<ProductLean[]>;
   removeByExternal(merchantId: string, externalId: string): Promise<void>;
+
+  // tags
+  getAllTags(merchantId: Types.ObjectId): Promise<string[]>;
 }

@@ -687,7 +687,7 @@ limits_config:
 ### 8.1 أمان Grafana و Prometheus
 
 ```yaml
-# docker-compose.yml - أمان Grafana
+# docker-compose.mvp.yml - أمان Grafana
 grafana:
   environment:
     - GF_SECURITY_ADMIN_USER=admin
@@ -695,7 +695,7 @@ grafana:
     - GF_USERS_ALLOW_SIGN_UP=false
     - GF_SERVER_ROOT_URL=https://grafana.kaleem-ai.com/
 
-# docker-compose.yml - أمان Prometheus
+# docker-compose.mvp.yml - أمان Prometheus
 prometheus:
   command:
     - '--web.enable-lifecycle'
@@ -726,7 +726,7 @@ auth_enabled: true
 
 ### 9.2 اختبارات التكامل
 
-- اختبار تكامل Prometheus مع API (`docker-compose.yml`)
+- اختبار تكامل Prometheus مع API (`docker-compose.mvp.yml`)
 - اختبار تكامل Loki مع Promtail (`observability/`)
 - اختبار تكامل Grafana مع جميع مصادر البيانات
 - اختبار نظام التنبيهات (`alertmanager.yml`)

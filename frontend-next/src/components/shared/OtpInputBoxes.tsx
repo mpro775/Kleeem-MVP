@@ -168,8 +168,6 @@ export default function OtpInputBoxes({
                   width: 48,
                   height: 56,
                   borderRadius: 10,
-                  background: '#fff',
-                  boxShadow: '0 2px 8px rgba(80,46,145,0.10)',
                 },
                 'aria-label': `Digit ${i + 1}`,
               },
@@ -177,9 +175,19 @@ export default function OtpInputBoxes({
           }}
           sx={{
             mx: 0.6,
+            '& input': {
+              bgcolor: 'background.paper',
+              boxShadow: '0 2px 8px rgba(80,46,145,0.10)',
+            },
             '.MuiOutlinedInput-notchedOutline': {
-              borderColor: '#A498CB',
+              borderColor: 'primary.light',
               borderWidth: 2,
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: 'primary.main',
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: 'primary.dark',
             },
           }}
         />

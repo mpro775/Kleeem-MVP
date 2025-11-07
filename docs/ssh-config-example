@@ -1,0 +1,85 @@
+# ملف SSH Config للوصول لـ Kleeem VPS
+# 
+# على Windows: انسخ هذا الملف إلى:
+# C:\Users\YOUR_USERNAME\.ssh\config
+#
+# على Mac/Linux: انسخه إلى:
+# ~/.ssh/config
+#
+# تأكد من استبدال YOUR_VPS_IP بعنوان IP الفعلي
+
+Host kaleem-vps
+    # عنوان IP الخاص بالـ VPS (غيّره!)
+    HostName YOUR_VPS_IP
+    
+    # اسم المستخدم
+    User root
+    
+    # منفذ SSH (الافتراضي 22)
+    Port 22
+    
+    # مسار SSH Key (إذا أنشأت واحد)
+    IdentityFile ~/.ssh/id_ed25519
+    
+    # ====== Port Forwarding (Tunnels) ======
+    
+    # MongoDB (قاعدة البيانات الرئيسية)
+    LocalForward 27017 127.0.0.1:27017
+    
+    # Redis (Cache & Sessions)
+    LocalForward 6379 127.0.0.1:6379
+    
+    # RabbitMQ Management UI
+    LocalForward 15672 127.0.0.1:15672
+    
+    # RabbitMQ AMQP Protocol (اختياري)
+    LocalForward 5672 127.0.0.1:5672
+    
+    # MinIO Console (إدارة الملفات)
+    LocalForward 9001 127.0.0.1:9001
+    
+    # MinIO S3 API (اختياري للتطوير المحلي)
+    LocalForward 9000 127.0.0.1:9000
+    
+    # Qdrant (Vector Database) - اختياري
+    # LocalForward 6333 127.0.0.1:6333
+    
+    # ====== إعدادات الاتصال ======
+    
+    # حافظ على الاتصال حيًا
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    TCPKeepAlive yes
+    
+    # تفعيل الضغط لتحسين السرعة
+    Compression yes
+    
+    # إعادة استخدام الاتصال (أسرع)
+    ControlMaster auto
+    ControlPath ~/.ssh/sockets/%r@%h-%p
+    ControlPersist 600
+
+# ====== مثال: اتصالات متعددة ======
+
+# إذا كان لديك VPS آخر للـ staging
+# Host kaleem-staging
+#     HostName STAGING_VPS_IP
+#     User root
+#     IdentityFile ~/.ssh/id_ed25519
+#     LocalForward 27018 127.0.0.1:27017
+#     LocalForward 6380 127.0.0.1:6379
+#     ServerAliveInterval 60
+
+# ====== الاستخدام ======
+#
+# بعد إعداد هذا الملف، ببساطة نفذ:
+#   ssh kaleem-vps
+#
+# جميع الـ tunnels ستعمل تلقائيًا!
+#
+# ثم افتح:
+# - MongoDB Compass → localhost:27017
+# - RedisInsight → localhost:6379
+# - http://localhost:15672 → RabbitMQ
+# - http://localhost:9001 → MinIO
+

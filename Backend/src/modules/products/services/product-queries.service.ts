@@ -107,4 +107,10 @@ export class ProductQueriesService {
       };
     }
   }
+
+  async getAllTags(merchantId: string): Promise<string[]> {
+    const mId = new Types.ObjectId(merchantId);
+    const tags = await this.repo.getAllTags(mId);
+    return tags;
+  }
 }

@@ -1,8 +1,9 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer'; // أضف هذا
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Expose, Type } from 'class-transformer'; // أضف هذا
 import { IsMongoId, IsOptional } from 'class-validator';
 
 import { Currency } from '../enums/product.enums';
+import { ProductVariant } from '../schemas/product-variant.schema';
 export class ProductResponseDto {
   @ApiProperty({ description: 'المعرف الفريد للمنتج' })
   @Expose()
@@ -114,4 +115,71 @@ export class ProductResponseDto {
   @ApiProperty({ description: 'النطاق المخصص للمتجر', example: 'my-store.com' })
   @Expose()
   storefrontDomain?: string;
+
+  // ============ نظام المتغيرات ============
+  @ApiPropertyOptional({
+    description: 'متغيرات المنتج',
+    type: [ProductVariant],
+  })
+  @Expose()
+  @Type(() => ProductVariant)
+  variants?: ProductVariant[];
+
+  @ApiPropertyOptional({ description: 'هل المنتج يحتوي على متغيرات؟' })
+  @Expose()
+  hasVariants?: boolean;
+
+  // ============ نوع المنتج ============
+  @ApiPropertyOptional({
+    description: 'نوع المنتج',
+    enum: ['physical', 'digital', 'service'],
+  })
+  @Expose()
+  productType?: 'physical' | 'digital' | 'service';
+
+  @ApiPropertyOptional({
+    description: 'معلومات الملف الرقمي',
+    type: 'object',
+    additionalProperties: true,
+  })
+  @Expose()
+  digitalAsset?: {
+    downloadUrl: string;
+    fileSize?: number;
+    format?: string;
+  };
+
+  @ApiPropertyOptional({ description: 'هل المخزون غير محدود؟' })
+  @Expose()
+  isUnlimitedStock?: boolean;
+
+  // ============ حالة النشر ============
+  @ApiPropertyOptional({
+    description: 'حالة المنتج',
+    enum: ['draft', 'published', 'scheduled', 'archived'],
+  })
+  @Expose()
+  status?: 'draft' | 'published' | 'scheduled' | 'archived';
+
+  @ApiPropertyOptional({
+    description: 'تاريخ النشر',
+    type: Date,
+  })
+  @Expose()
+  publishedAt?: Date;
+
+  @ApiPropertyOptional({
+    description: 'تاريخ النشر المؤجل',
+    type: Date,
+  })
+  @Expose()
+  scheduledPublishAt?: Date;
+
+  // ============ المنتجات الشبيهة ============
+  @ApiPropertyOptional({
+    description: 'معرفات المنتجات الشبيهة',
+    type: [String],
+  })
+  @Expose()
+  relatedProducts?: string[];
 }

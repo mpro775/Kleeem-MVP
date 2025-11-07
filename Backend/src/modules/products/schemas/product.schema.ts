@@ -4,6 +4,7 @@ import { NextFunction } from 'express';
 import { HydratedDocument, Types } from 'mongoose';
 
 import { Currency } from '../enums/product.enums';
+import { ProductVariant, ProductVariantSchema } from './product-variant.schema';
 
 export type ProductDocument = HydratedDocument<Product>;
 
@@ -71,8 +72,17 @@ export class Product {
   @Prop({ type: String, default: null })
   externalId?: string | null;
 
-  @Prop({ default: 'active', enum: ['active', 'inactive', 'out_of_stock'] })
-  status?: string;
+  @Prop({
+    default: 'published',
+    enum: ['draft', 'published', 'scheduled', 'archived'],
+  })
+  status?: 'draft' | 'published' | 'scheduled' | 'archived';
+
+  @Prop({ type: Date, default: null })
+  publishedAt?: Date | null;
+
+  @Prop({ type: Date, default: null })
+  scheduledPublishAt?: Date | null;
 
   @Prop({ type: Date, default: null })
   lastSync?: Date | null;
@@ -92,6 +102,9 @@ export class Product {
   @Prop({ type: String, enum: Object.values(Currency), default: Currency.SAR })
   currency?: Currency;
 
+  @Prop({ type: Map, of: Number, default: undefined })
+  prices?: Map<string, number>; // أسعار بعملات متعددة {'SAR': 100, 'USD': 27}
+
   @Prop({ type: Map, of: [String], default: undefined })
   attributes?: Map<string, string[]>;
 
@@ -101,18 +114,53 @@ export class Product {
   @Prop({
     type: {
       enabled: { type: Boolean, default: false },
+      type: {
+        type: String,
+        enum: ['percentage', 'fixed_amount', 'buy_x_get_y', 'quantity_based'],
+        default: 'percentage',
+      },
+
+      // للنوع البسيط (percentage/fixed_amount)
+      discountValue: { type: Number },
       oldPrice: { type: Number },
       newPrice: { type: Number },
+
+      // للكمية (quantity_based)
+      quantityThreshold: { type: Number }, // اشتري 3
+      quantityDiscount: { type: Number }, // خذ 20%
+
+      // Buy X Get Y
+      buyQuantity: { type: Number }, // اشتري 2
+      getQuantity: { type: Number }, // خذ 1
+      getProductId: { type: String }, // منتج آخر أو null لنفس المنتج
+      getDiscount: { type: Number }, // خصم على المنتج المجاني (100% = مجاني)
+
+      // الفترة الزمنية
       startAt: { type: Date },
       endAt: { type: Date },
     },
     _id: false,
-    default: undefined,
   })
   offer?: {
     enabled: boolean;
+    type?: 'percentage' | 'fixed_amount' | 'buy_x_get_y' | 'quantity_based';
+
+    // للنوع البسيط
+    discountValue?: number;
     oldPrice?: number;
     newPrice?: number;
+
+    // للكمية
+    quantityThreshold?: number;
+    quantityDiscount?: number;
+
+    // Buy X Get Y
+    buyQuantity?: number;
+    getQuantity?: number;
+    getProductId?: string;
+    getDiscount?: number;
+
+    // الفترة الزمنية
     startAt?: Date;
     endAt?: Date;
   };
@@ -126,6 +174,43 @@ export class Product {
 
   @Prop({ type: String, default: undefined })
   storefrontDomain?: string;
+
+  // ============ نظام المتغيرات ============
+  @Prop({ type: [ProductVariantSchema], default: [] })
+  variants?: ProductVariant[];
+
+  @Prop({ default: false })
+  hasVariants?: boolean;
+
+  // ============ نوع المنتج ============
+  @Prop({
+    type: String,
+    enum: ['physical', 'digital', 'service'],
+    default: 'physical',
+  })
+  productType?: 'physical' | 'digital' | 'service';
+
+  @Prop({
+    type: {
+      downloadUrl: { type: String, required: true },
+      fileSize: { type: Number },
+      format: { type: String },
+    },
+    _id: false,
+    default: undefined,
+  })
+  digitalAsset?: {
+    downloadUrl: string;
+    fileSize?: number;
+    format?: string;
+  };
+
+  @Prop({ default: false })
+  isUnlimitedStock?: boolean;
+
+  // ============ المنتجات الشبيهة ============
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Product' }], default: [] })
+  relatedProducts?: Types.ObjectId[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
@@ -169,7 +254,17 @@ function computeDerived(doc: ProductDocument) {
   }
 
   doc.hasActiveOffer = active;
-  doc.priceEffective = active ? Number(ofr!.newPrice) : Number(doc.price);
+
+  // إذا كان المنتج يحتوي على variants، نحسب السعر من أقل variant متاح
+  let basePrice = Number(doc.price) || 0;
+  if (doc.hasVariants && doc.variants && doc.variants.length > 0) {
+    const availableVariants = doc.variants.filter((v) => v.isAvailable);
+    if (availableVariants.length > 0) {
+      basePrice = Math.min(...availableVariants.map((v) => v.price));
+    }
+  }
+
+  doc.priceEffective = active ? Number(ofr!.newPrice) : basePrice;
 }
 function recomputePublicUrlStored(doc: ProductDocument) {
   try {
@@ -300,3 +395,64 @@ ProductSchema.index(
 
 // فهرس للـ slug
 ProductSchema.index({ slug: 1 }, { sparse: true, background: true });
+
+// ============ فهارس المتغيرات ============
+// فهرس فريد للـ SKU داخل التاجر
+ProductSchema.index(
+  { merchantId: 1, 'variants.sku': 1 },
+  {
+    unique: true,
+    sparse: true,
+    background: true,
+    partialFilterExpression: { hasVariants: true },
+  },
+);
+
+// فهرس للـ Barcode
+ProductSchema.index(
+  { merchantId: 1, 'variants.barcode': 1 },
+  { sparse: true, background: true },
+);
+
+// ============ فهارس النشر والحالة ============
+// فهرس للحالة وتاريخ النشر
+ProductSchema.index(
+  {
+    merchantId: 1,
+    status: 1,
+    publishedAt: -1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للنشر المؤجل
+ProductSchema.index(
+  {
+    status: 1,
+    scheduledPublishAt: 1,
+  },
+  {
+    background: true,
+    partialFilterExpression: { status: 'scheduled' },
+  },
+);
+
+// ============ فهارس نوع المنتج ============
+ProductSchema.index(
+  {
+    merchantId: 1,
+    productType: 1,
+    status: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true },
+);
+
+// فهرس للمنتجات الرقمية
+ProductSchema.index(
+  { merchantId: 1, productType: 1, isUnlimitedStock: 1 },
+  { background: true },
+);

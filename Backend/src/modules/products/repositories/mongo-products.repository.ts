@@ -145,7 +145,7 @@ export class MongoProductsRepository {
       .sort({ createdAt: -1 })
       .populate({ path: 'category', select: 'name' })
       .lean()
-      .exec() as Promise<ProductLean[]>;
+      .exec() as unknown as Promise<ProductLean[]>;
   }
 
   async findPublicBySlug(
@@ -172,7 +172,7 @@ export class MongoProductsRepository {
       })
       .populate({ path: 'category', select: 'name' })
       .lean()
-      .exec();
+      .exec() as unknown as Promise<ProductLean | null>;
   }
 
   // listPublicByMerchant
@@ -280,7 +280,7 @@ export class MongoProductsRepository {
       .sort({ score: { $meta: 'textScore' } })
       .limit(limit)
       .lean()
-      .exec();
+      .exec() as unknown as Promise<ProductLean[]>;
   }
 
   searchHeuristics(
@@ -297,7 +297,7 @@ export class MongoProductsRepository {
       })
       .limit(limit)
       .lean()
-      .exec();
+      .exec() as unknown as Promise<ProductLean[]>;
   }
 
   setAvailability(
@@ -307,7 +307,7 @@ export class MongoProductsRepository {
     return this.productModel
       .findByIdAndUpdate(id, { isAvailable }, { new: true })
       .lean()
-      .exec();
+      .exec() as unknown as Promise<ProductLean | null>;
   }
 
   findByIdsScoped(ids: string[], merchantId: string): Promise<ProductLean[]> {
@@ -317,7 +317,7 @@ export class MongoProductsRepository {
         merchantId: new Types.ObjectId(merchantId),
       })
       .lean()
-      .exec();
+      .exec() as unknown as Promise<ProductLean[]>;
   }
 
   async removeByExternal(
@@ -331,5 +331,16 @@ export class MongoProductsRepository {
         source: 'api',
       })
       .exec();
+  }
+
+  async getAllTags(merchantId: Types.ObjectId): Promise<string[]> {
+    const result = await this.productModel.aggregate<{ _id: string }>([
+      { $match: { merchantId } },
+      { $unwind: '$keywords' },
+      { $group: { _id: '$keywords' } },
+      { $sort: { _id: 1 } },
+    ]);
+
+    return result.map((r) => r._id);
   }
 }

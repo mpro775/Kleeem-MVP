@@ -2,8 +2,9 @@
 set -euo pipefail
 
 ### ================== إعدادات عامة ==================
-COMPOSE_BASE="docker-compose.yml"
-COMPOSE_OVERRIDE="docker-compose.image.override.yml"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+COMPOSE_FILE="${COMPOSE_FILE:-$REPO_ROOT/docker-compose.mvp.yml}"
 
 # متغيّرات يجب تمريرها من الـ CI أو يدويًا قبل التشغيل:
 # KALEEM_API_IMAGE : مثال ghcr.io/OWNER/REPO/kaleem-api@sha256:XXXXXXXX
@@ -41,13 +42,12 @@ mkdir -p "$LOG_DIR" "$BACKUP_DIR"
 # وجه الإخراج إلى السجل أيضًا
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-log "🚀 بدء النشر باستخدام الملف الأساسي: $COMPOSE_BASE + override: $COMPOSE_OVERRIDE"
+log "🚀 بدء النشر باستخدام الملف: $COMPOSE_FILE"
 
 ensure_cmd docker
 ensure_cmd curl
 
-[ -f "$COMPOSE_BASE" ] || error_exit "File not found: $COMPOSE_BASE"
-[ -f "$COMPOSE_OVERRIDE" ] || error_exit "File not found: $COMPOSE_OVERRIDE"
+[ -f "$COMPOSE_FILE" ] || error_exit "File not found: $COMPOSE_FILE"
 
 ### ================== تسجيل الدخول إلى GHCR (اختياري) ==================
 if [[ -n "$GHCR_USER" && -n "$GHCR_TOKEN" ]]; then
@@ -65,11 +65,11 @@ docker pull "$KALEEM_API_IMAGE"
 # نحاول استعمال jq؛ إن لم يوجد نستعمل awk كبديل بسيط
 PREV_IMAGE=""
 if command -v jq >/dev/null 2>&1; then
-  PREV_IMAGE="$(docker compose -f "$COMPOSE_BASE" ps --format json 2>/dev/null \
+  PREV_IMAGE="$(docker compose -f "$COMPOSE_FILE" ps --format json 2>/dev/null \
     | jq -r '.[] | select(.Service=="api") | .Image' || true)"
 else
   # بديل بدائي بدون jq (قد لا يعمل على جميع الإصدارات)
-  PREV_IMAGE="$(docker compose -f "$COMPOSE_BASE" ps 2>/dev/null | awk '/api/ {print $3}' | head -n1 || true)"
+  PREV_IMAGE="$(docker compose -f "$COMPOSE_FILE" ps 2>/dev/null | awk '/api/ {print $3}' | head -n1 || true)"
 fi
 [[ "$PREV_IMAGE" == "null" ]] && PREV_IMAGE=""
 log "📦 Previous API image: ${PREV_IMAGE:-<none>}"
@@ -89,7 +89,7 @@ log "🧹 Rotating backups (keep last $RETENTION)"
 ### ================== تطبيق الترقية للخدمة API فقط ==================
 log "🔄 Updating service: api"
 export KALEEM_API_IMAGE
-docker compose -f "$COMPOSE_BASE" -f "$COMPOSE_OVERRIDE" up -d --no-deps api
+docker compose -f "$COMPOSE_FILE" up -d --no-deps api
 
 ### ================== فحص الصحة ==================
 log "🩺 Health check: $HEALTH_URL"
@@ -102,7 +102,7 @@ until curl -fsS "$HEALTH_URL" >/dev/null; do
     if [[ -n "$PREV_IMAGE" ]]; then
       log "🔙 Rolling back to previous image: $PREV_IMAGE"
       export KALEEM_API_IMAGE="$PREV_IMAGE"
-      docker compose -f "$COMPOSE_BASE" -f "$COMPOSE_OVERRIDE" up -d --no-deps api || true
+      docker compose -f "$COMPOSE_FILE" up -d --no-deps api || true
     else
       log "⚠️ No previous image recorded — skip rollback"
     fi
@@ -117,13 +117,13 @@ log "✅ Service is healthy"
 # مثال: إن مرّرت صور عمال عبر Env؛ وإلا سيبقى البناء المحلي كما هو
 # if [[ -n "${KALEEM_AI_REPLY_IMAGE:-}" ]] && docker compose -f "$COMPOSE_BASE" ps ai-reply-worker >/dev/null 2>&1; then
 #   export KALEEM_AI_REPLY_IMAGE
-#   docker compose -f "$COMPOSE_BASE" -f "$COMPOSE_OVERRIDE" up -d --no-deps ai-reply-worker
+#   docker compose -f "$COMPOSE_FILE" up -d --no-deps ai-reply-worker
 #   log "🔄 Updated ai-reply-worker"
 # fi
 
 # if [[ -n "${KALEEM_WEBHOOK_DISPATCHER_IMAGE:-}" ]] && docker compose -f "$COMPOSE_BASE" ps webhook-dispatcher >/dev/null 2>&1; then
 #   export KALEEM_WEBHOOK_DISPATCHER_IMAGE
-#   docker compose -f "$COMPOSE_BASE" -f "$COMPOSE_OVERRIDE" up -d --no-deps webhook-dispatcher
+#   docker compose -f "$COMPOSE_FILE" up -d --no-deps webhook-dispatcher
 #   log "🔄 Updated webhook-dispatcher"
 # fi
 

@@ -20,7 +20,7 @@
 
 ### Docker Health Checks
 ```yaml
-# docker-compose.yml health checks
+# docker-compose.mvp.yml health checks
 healthcheck:
   test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
   interval: 30s

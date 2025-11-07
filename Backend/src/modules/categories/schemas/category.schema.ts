@@ -40,6 +40,16 @@ export class Category {
 
   @Prop({ default: 0 })
   order?: number; // ترتيب الإخوة
+
+  // ============ SEO Fields ============
+  @Prop({ type: String, default: '' })
+  seoTitle?: string;
+
+  @Prop({ type: String, default: '' })
+  seoDescription?: string;
+
+  @Prop({ type: String, default: '' })
+  icon?: string; // أيقونة منفصلة عن الصورة
 }
 
 export const CategorySchema = SchemaFactory.createForClass(Category);

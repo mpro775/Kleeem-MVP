@@ -4,6 +4,7 @@ import { Box, Container, Paper, LinearProgress, Typography } from '@mui/material
 import { useTheme } from '@mui/material/styles';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 
 type Props = {
   step?: number; // رقم الخطوة الحالية (1-based)
@@ -23,6 +24,7 @@ export default function OnboardingLayout({
   maxWidth = 'sm',
 }: Props) {
   const theme = useTheme();
+  const t = useTranslations('onboarding');
   const value = Math.min(100, Math.max(0, (step / total) * 100));
 
   return (
@@ -30,7 +32,9 @@ export default function OnboardingLayout({
       sx={{
         position: 'relative',
         minHeight: '100vh',
-        background: `linear-gradient(90deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+        background: theme.palette.mode === 'dark' 
+          ? `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.primary.dark} 100%)`
+          : `linear-gradient(90deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
         overflow: 'hidden',
         py: 8,
       }}
@@ -43,9 +47,11 @@ export default function OnboardingLayout({
           left: { xs: -60, md: -80 },
           width: { xs: 160, md: 300 },
           height: { xs: 160, md: 300 },
-          opacity: 0.18,
+          opacity: theme.palette.mode === 'dark' ? 0.08 : 0.18,
           zIndex: 0,
-          background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)',
+          background: theme.palette.mode === 'dark'
+            ? 'radial-gradient(circle, rgba(155,127,217,0.4) 0%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)',
           borderRadius: '50%',
         }}
       />
@@ -56,9 +62,11 @@ export default function OnboardingLayout({
           right: { xs: -60, md: -100 },
           width: { xs: 200, md: 400 },
           height: { xs: 200, md: 400 },
-          opacity: 0.12,
+          opacity: theme.palette.mode === 'dark' ? 0.06 : 0.12,
           zIndex: 0,
-          background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)',
+          background: theme.palette.mode === 'dark'
+            ? 'radial-gradient(circle, rgba(155,127,217,0.3) 0%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)',
           borderRadius: '50%',
         }}
       />
@@ -69,11 +77,22 @@ export default function OnboardingLayout({
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <Paper elevation={8} sx={{ borderRadius: 4, overflow: 'hidden' }}>
+          <Paper 
+            elevation={theme.palette.mode === 'dark' ? 12 : 8} 
+            sx={{ 
+              borderRadius: 4, 
+              overflow: 'hidden',
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? theme.palette.background.paper 
+                : '#fff'
+            }}
+          >
             <Box
               sx={{
                 height: 4,
-                background: `linear-gradient(90deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                background: theme.palette.mode === 'dark'
+                  ? `linear-gradient(90deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})`
+                  : `linear-gradient(90deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
               }}
             />
             <Box sx={{ p: 4 }}>
@@ -97,7 +116,7 @@ export default function OnboardingLayout({
                   variant="body2"
                   sx={{ color: 'text.secondary', mb: 1, fontWeight: 600 }}
                 >
-                  {`الخطوة ${step} من ${total}`}
+                  {t('progress.stepOf', { step, total })}
                 </Typography>
                 <LinearProgress
                   variant="determinate"

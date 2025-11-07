@@ -123,18 +123,18 @@ docker exec redis redis-cli ping || exit 1
 if ! curl -fsS "$HEALTH_URL"; then
   log "🔙 Rolling back to previous image: $PREV_IMAGE"
   export KALEEM_API_IMAGE="$PREV_IMAGE"
-  docker compose up -d --no-deps api
+  docker compose -f docker-compose.mvp.yml up -d --no-deps api
 fi
 ```
 
 ### Manual Rollback Steps
 ```bash
 # 1. Identify previous working image
-PREV_IMAGE=$(docker compose ps --format json | jq -r '.[] | select(.Service=="api") | .Image')
+PREV_IMAGE=$(docker compose -f docker-compose.mvp.yml ps --format json | jq -r '.[] | select(.Service=="api") | .Image')
 
 # 2. Deploy previous image
 export KALEEM_API_IMAGE="$PREV_IMAGE"
-docker compose -f docker-compose.yml -f docker-compose.image.override.yml up -d --no-deps api
+docker compose -f docker-compose.mvp.yml up -d --no-deps api
 
 # 3. Verify rollback
 curl -f http://localhost:3000/api/health
