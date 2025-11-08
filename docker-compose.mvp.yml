@@ -245,7 +245,7 @@ services:
       - ./Backend/.env
     environment:
       NODE_ENV: production
-      RABBIT_URL: amqp://kaleem:${RABBITMQ_PASSWORD}@rabbitmq:5672/kleem
+      RABBIT_URL: amqp://kaleem:${RABBITMQ_PASSWORD}@rabbitmq:5672/kaleem
     depends_on:
       rabbitmq:
         condition: service_healthy
