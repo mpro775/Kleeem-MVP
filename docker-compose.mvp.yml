@@ -98,12 +98,6 @@ services:
       RABBITMQ_DEFAULT_USER: kaleem
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
       RABBITMQ_DEFAULT_VHOST: kaleem
-    command:
-      - sh
-      - -lc
-      - |
-        rabbitmq-plugins enable --offline rabbitmq_management rabbitmq_prometheus
-        rabbitmq-server
     ports:
       - '127.0.0.1:5672:5672'
       - '127.0.0.1:15672:15672'
@@ -111,6 +105,7 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
       - ./Backend/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
       - ./Backend/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./Backend/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
     healthcheck:
       test: ['CMD-SHELL', 'rabbitmq-diagnostics -q ping']
       interval: 30s
