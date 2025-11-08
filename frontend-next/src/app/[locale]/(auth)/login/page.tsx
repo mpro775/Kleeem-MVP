@@ -81,7 +81,7 @@ export default function LoginPage() {
       } else {
         setError(result.error || t('errors.invalidCredentials'));
       }
-    } catch (err) {
+    } catch  {
       setError(t('errors.invalidCredentials'));
     } finally {
       setLoading(false);

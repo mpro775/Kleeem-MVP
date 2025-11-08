@@ -2,8 +2,8 @@
 // File: src/features/store/hooks/useKleemWidget.ts
 // =========================
 import { useEffect } from "react";
-import { API_BASE } from "@/context/config";
 import type { MerchantInfo, Storefront } from "../types";
+import { API_BASE } from "@/lib/config";
 
 export function useKleemWidget(
   merchant: MerchantInfo | null,

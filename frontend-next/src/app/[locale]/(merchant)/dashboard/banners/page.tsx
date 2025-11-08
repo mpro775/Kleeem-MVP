@@ -1,22 +1,16 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import {
-  Box,
-  Paper,
-  Typography,
-  CircularProgress,
-  Snackbar,
-  Alert,
-  Chip,
-} from "@mui/material";
+import { Box, Paper, CircularProgress, Snackbar, Alert, Chip } from "@mui/material";
+import Typography from "@mui/material/Typography";
 import { useSnackbar } from "notistack";
 import BannersEditor from "@/features/store/ui/BannersEditor";
 import type { Banner } from "@/features/store/types";
+import Image from "next/image";
 
 // Storefront API
 import axiosInstance from "@/lib/axios";
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+import { API_BASE } from "@/lib/config";
 
 interface Storefront {
   _id: string;
@@ -165,7 +159,23 @@ export default function BannersManagementPage() {
             {banners.map((banner, idx) => (
               <Paper key={idx} sx={{ p: 2, borderRadius: 2 }}>
                 {banner.image && (
-                  <img src={banner.image} alt={banner.text} style={{ width: "100%", borderRadius: 8 }} />
+                  <Box
+                    sx={{
+                      position: "relative",
+                      width: "100%",
+                      pt: "56.25%",
+                      borderRadius: 2,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <Image
+                      src={banner.image}
+                      alt={banner.text || "Banner"}
+                      fill
+                      sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
+                      style={{ objectFit: "cover" }}
+                    />
+                  </Box>
                 )}
                 <Typography mt={1} fontWeight={600}>{banner.text || "بدون نص"}</Typography>
                 <Chip size="small" label={banner.active ? "مفعل" : "غير مفعل"} color={banner.active ? "success" : "default"} />

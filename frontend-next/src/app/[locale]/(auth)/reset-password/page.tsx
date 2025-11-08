@@ -76,7 +76,7 @@ export default function ResetPasswordPage() {
     setError,
   } = useForm<Form>({ resolver: zodResolver(Schema) });
 
-  const onSubmit = async ({ password, confirm }: Form) => {
+  const onSubmit = async ({ password }: Form) => {
     try {
       const result = await resetPasswordAction(token, password);
       if (result.success) {

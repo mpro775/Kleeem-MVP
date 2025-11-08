@@ -20,7 +20,7 @@ services:
       - ./Backend/.env
     environment:
       NODE_ENV: production
-      RABBIT_URL: amqp://kaleem:${RABBITMQ_PASSWORD}@rabbitmq:5672/kleem
+      RABBIT_URL: amqp://kaleem:${RABBITMQ_PASSWORD}@rabbitmq:5672/kaleem
       EVOLUTION_API_URL: http://evolution-api:8080
       EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
       SENTRY_DSN: ${SENTRY_DSN}
@@ -36,22 +36,6 @@ services:
     networks:
       - kaleem-net
 
-  frontend:
-    build:
-      context: ./frontend-next
-      dockerfile: Dockerfile
-    container_name: kaleem-frontend
-    environment:
-      NODE_ENV: production
-      NEXT_PUBLIC_API_BASE_URL: https://api.kaleem-ai.com/api
-      NEXT_PUBLIC_ENV: production
-    depends_on:
-      - api
-    restart: unless-stopped
-    mem_limit: 512m
-    cpus: 0.3
-    networks:
-      - kaleem-net
 
   mongo:
     image: mongo:5

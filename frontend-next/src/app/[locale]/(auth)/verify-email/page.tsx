@@ -42,7 +42,7 @@ export default function VerifyEmailPage() {
           } else {
             enqueueSnackbar(result.error || 'تعذر تفعيل الحساب', { variant: 'error' });
           }
-        } catch (e) {
+        } catch  {
           enqueueSnackbar('تعذر تفعيل الحساب', { variant: 'error' });
         }
       }
@@ -63,7 +63,7 @@ export default function VerifyEmailPage() {
       } else {
         enqueueSnackbar(result.error || 'حدث خطأ غير متوقع', { variant: 'error' });
       }
-    } catch (err) {
+    } catch  {
       enqueueSnackbar('حدث خطأ غير متوقع', { variant: 'error' });
     } finally {
       setLoading(false);
@@ -128,7 +128,7 @@ export default function VerifyEmailPage() {
           }),
         1000
       );
-    } catch (err) {
+    } catch  {
       enqueueSnackbar('❌ فشل في إعادة إرسال الكود', { variant: 'error' });
     } finally {
       setLoading(false);

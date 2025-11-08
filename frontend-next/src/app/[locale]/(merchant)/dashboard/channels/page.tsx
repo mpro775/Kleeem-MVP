@@ -21,7 +21,7 @@ import {
 import { useTranslations } from 'next-intl';
 
 import { CHANNELS } from '@/features/merchant/channels/constants';
-import { useChannels, useUpdateChannel, useDeleteChannel } from '@/features/merchant/channels';
+import { useChannels, useDeleteChannel } from '@/features/merchant/channels';
 import { ChannelCard } from '@/features/merchant/channels/components/ChannelCard';
 import type { ChannelKey, ChannelDoc } from '@/features/merchant/channels/types';
 
@@ -33,7 +33,6 @@ export default function ChannelsPage() {
   const theme = useTheme();
 
   const { data: channelsList = [], isLoading, refetch } = useChannels(MOCK_MERCHANT_ID);
-  const updateChannelMutation = useUpdateChannel(MOCK_MERCHANT_ID);
   const deleteChannelMutation = useDeleteChannel(MOCK_MERCHANT_ID);
 
   const [busyKey, setBusyKey] = useState<ChannelKey | null>(null);
@@ -87,7 +86,7 @@ export default function ChannelsPage() {
       }
       
       await refetch();
-    } catch (error) {
+    } catch  {
       setToast({ msg: t('messages.error'), type: 'error' });
     } finally {
       setBusyKey(null);
