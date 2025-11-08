@@ -36,7 +36,6 @@ services:
     networks:
       - kaleem-net
 
-
   mongo:
     image: mongo:5
     container_name: kaleem-mongo
@@ -278,7 +277,6 @@ services:
     container_name: kaleem-nginx
     depends_on:
       - api
-      - frontend
     ports:
       - '80:80'
       - '443:443'
