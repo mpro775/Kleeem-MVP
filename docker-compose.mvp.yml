@@ -124,6 +124,8 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      MINIO_SERVER_URL: https://cdn.kaleem-ai.com
+      MINIO_BROWSER_REDIRECT_URL: https://storage.kaleem-ai.com
     ports:
       - '127.0.0.1:9000:9000'
       - '127.0.0.1:9001:9001'
