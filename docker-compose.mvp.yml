@@ -98,12 +98,11 @@ services:
       RABBITMQ_DEFAULT_USER: kaleem
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
       RABBITMQ_DEFAULT_VHOST: kaleem
-      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.6
     command:
       - sh
       - -lc
       - |
-        rabbitmq-plugins enable --offline rabbitmq_prometheus
+        rabbitmq-plugins enable --offline rabbitmq_management rabbitmq_prometheus
         rabbitmq-server
     ports:
       - '127.0.0.1:5672:5672'
