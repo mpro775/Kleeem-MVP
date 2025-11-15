@@ -22,7 +22,7 @@ const WRITE_CONCERN_WTIMEOUT_MS = 10000;
 function getMongoUri(configService: ConfigService): string {
   const nodeEnv = configService.get<string>('NODE_ENV') || 'development';
   return nodeEnv === 'test'
-    ? 'mongodb://localhost:27017/kaleem_test'
+    ? 'mongodb://localhost:27018/kaleem_test'
     : configService.get<string>('MONGODB_URI') || '';
 }
 
@@ -30,8 +30,8 @@ function isLocalConnection(mongoUri: string): boolean {
   return (
     mongoUri?.includes('localhost') ||
     mongoUri?.includes('127.0.0.1') ||
-    mongoUri?.includes('mongo:27017') ||
-    mongoUri?.includes('mongodb:27017')
+    mongoUri?.includes('mongo:27018') ||
+    mongoUri?.includes('mongodb:27018')
   );
 }
 

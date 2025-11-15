@@ -1,0 +1,79 @@
+{
+  "507f1f77bcf86cd799439011": {
+    "telegram": {
+      "enabled": true,
+      "token": "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz",
+      "chatId": "-1001234567890",
+      "webhookUrl": "https://api.kaleem-ai.com/webhooks/telegram/507f1f77bcf86cd799439011",
+      "status": "connected"
+    },
+    "whatsappQr": {
+      "enabled": true,
+      "sessionId": "whatsapp-session-001",
+      "instanceId": "instance-001",
+      "status": "connected",
+      "phone": "+967123456789"
+    },
+    "whatsappApi": {
+      "enabled": false,
+      "accessToken": null,
+      "appSecret": null,
+      "verifyToken": null,
+      "phoneNumberId": null,
+      "wabaId": null,
+      "status": "disconnected"
+    },
+    "webchat": {
+      "enabled": true,
+      "widgetSettings": {
+        "theme": "light",
+        "position": "bottom-right",
+        "greetingMessage": "مرحباً! كيف يمكنني مساعدتك؟",
+        "placeholder": "اكتب رسالتك هنا..."
+      },
+      "status": "active"
+    },
+    "instagram": {
+      "enabled": false,
+      "status": "not_configured"
+    },
+    "messenger": {
+      "enabled": false,
+      "status": "not_configured"
+    }
+  },
+  "507f1f77bcf86cd799439022": {
+    "telegram": {
+      "enabled": false,
+      "status": "disconnected"
+    },
+    "whatsappQr": {
+      "enabled": false,
+      "status": "disconnected"
+
+    },
+    "whatsappApi": {
+      "enabled": false,
+      "status": "disconnected"
+    },
+    "webchat": {
+      "enabled": true,
+      "widgetSettings": {
+        "theme": "dark",
+        "position": "bottom-left",
+        "greetingMessage": "أهلاً وسهلاً!",
+        "placeholder": "اكتب هنا..."
+      },
+      "status": "active"
+    },
+    "instagram": {
+      "enabled": false,
+      "status": "not_configured"
+    },
+    "messenger": {
+      "enabled": false,
+      "status": "not_configured"
+    }
+  }
+}
+

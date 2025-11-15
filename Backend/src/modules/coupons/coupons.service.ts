@@ -1,5 +1,6 @@
 // src/modules/coupons/coupons.service.ts
 import {
+  Inject,
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -29,7 +30,10 @@ export interface ApplyCouponResult {
 
 @Injectable()
 export class CouponsService {
-  constructor(private readonly couponsRepository: CouponsRepository) {}
+  constructor(
+    @Inject('CouponsRepository')
+    private readonly couponsRepository: CouponsRepository,
+  ) {}
 
   async create(dto: CreateCouponDto): Promise<Coupon> {
     // التحقق من أن الكود غير موجود مسبقاً

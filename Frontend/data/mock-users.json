@@ -1,0 +1,53 @@
+[
+  {
+    "id": "user-admin-001",
+    "name": "أحمد محمد علي",
+    "email": "admin@kaleem.com",
+    "role": "ADMIN",
+    "merchantId": null,
+    "firstLogin": false,
+    "emailVerified": true,
+    "storeName": null,
+    "storeLogoUrl": null,
+    "storeAvatarUrl": null
+  },
+  {
+    "id": "user-merchant-001",
+    "name": "فاطمة أحمد حسن",
+    "email": "merchant@example.com",
+    "phone": "+967 777 123 456",
+    "role": "MERCHANT",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "firstLogin": false,
+    "emailVerified": true,
+    "storeName": "متجر فاطمة للإلكترونيات",
+    "storeLogoUrl": "https://png.pngtree.com/png-clipart/20200709/original/pngtree-circuit-tech-element--electronics-icon--digital-electronics-logo-png-image_3986099.jpg",
+    "storeAvatarUrl": "https://png.pngtree.com/png-vector/20200709/original/pngtree-circuit-tech-element--electronics-icon--digital-electronics-logo-png-image_3986099.jpg"
+  },
+  {
+    "id": "user-merchant-002",
+    "name": "محمد علي السعيد",
+    "email": "merchant2@example.com",
+    "phone": "+967 777 789 012",
+    "role": "MERCHANT",
+    "merchantId": "507f1f77bcf86cd799439022",
+    "firstLogin": false,
+    "emailVerified": true,
+    "storeName": "متجر السعيد للملابس",
+    "storeLogoUrl": "https://png.pngtree.com/png-vector/20221028/ourmid/pngtree-laundry-logo-clothes-water-isolated-vector-png-image_39887020.png",
+    "storeAvatarUrl": "https://png.pngtree.com/png-vector/20221028/ourmid/pngtree-laundry-logo-clothes-water-isolated-vector-png-image_39887020.png"
+  },
+  {
+    "id": "user-member-001",
+    "name": "علي حسن محمد",
+    "email": "member@example.com",
+    "role": "MEMBER",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "firstLogin": true,
+    "emailVerified": true,
+    "storeName": "متجر فاطمة للإلكترونيات",
+    "storeLogoUrl": "https://png.pngtree.com/png-vector/20200709/original/pngtree-circuit-tech-element--electronics-icon--digital-electronics-logo-png-image_3986099.jpg",
+    "storeAvatarUrl": "https://png.pngtree.com/png-vector/20200709/original/pngtree-circuit-tech-element--electronics-icon--digital-electronics-logo-png-image_3986099.jpg"
+  }
+]
+

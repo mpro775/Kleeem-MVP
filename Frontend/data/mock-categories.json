@@ -1,0 +1,139 @@
+[
+  {
+    "_id": "cat-001",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "name": "هواتف وتابلت",
+    "slug": "phones-tablets",
+    "path": "/phones-tablets",
+    "parent": null,
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTN3iG5qUqsbU_wmK9NTLEdxzjNDel8NlS4gng9PcSAsbh1FJuez5dRh54KM6DLCyxGAe8&usqp=CAU",
+    "keywords": ["هواتف", "تابلت", "موبايل", "جوال"],
+    "ancestors": [],
+    "depth": 0,
+    "order": 1,
+    "children": [
+      {
+        "_id": "cat-001-1",
+        "merchantId": "507f1f77bcf86cd799439011",
+        "name": "هواتف ذكية",
+        "slug": "smartphones",
+        "path": "/phones-tablets/smartphones",
+        "parent": "cat-001",
+        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTbv4x0RtQFel_9aCOmXG8878z1dEA_XtaMqg&s",
+        "keywords": ["هواتف ذكية", "أندرويد", "iOS"],
+        "ancestors": ["cat-001"],
+        "depth": 1,
+        "order": 1
+      },
+      {
+        "_id": "cat-001-2",
+        "merchantId": "507f1f77bcf86cd799439011",
+        "name": "تابلت",
+        "slug": "tablets",
+        "path": "/phones-tablets/tablets",
+        "parent": "cat-001",
+        "image": "https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/tablet_computer.png",
+        "keywords": ["تابلت", "iPad", "أندرويد"],
+        "ancestors": ["cat-001"],
+        "depth": 1,
+        "order": 2
+      }
+    ]
+  },
+  {
+    "_id": "cat-002",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "name": "لابتوب وكمبيوتر",
+    "slug": "laptops-computers",
+    "path": "/laptops-computers",
+    "parent": null,
+    "image": "https://www.freeiconspng.com/uploads/laptop-icon-19.jpg",
+    "keywords": ["لابتوب", "كمبيوتر", "حاسوب"],
+    "ancestors": [],
+    "depth": 0,
+    "order": 2,
+    "children": [
+      {
+        "_id": "cat-002-1",
+        "merchantId": "507f1f77bcf86cd799439011",
+        "name": "لابتوب",
+        "slug": "laptops",
+        "path": "/laptops-computers/laptops",
+        "parent": "cat-002",
+        "image": null,
+        "keywords": ["لابتوب", "نوت بوك"],
+        "ancestors": ["cat-002"],
+        "depth": 1,
+        "order": 1
+      },
+      {
+        "_id": "cat-002-2",
+        "merchantId": "507f1f77bcf86cd799439011",
+        "name": "كمبيوتر مكتبي",
+        "slug": "desktops",
+        "path": "/laptops-computers/desktops",
+        "parent": "cat-002",
+        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhfve1DP5jMgoMy79txIfFKdRDH-CB71ksHA&s",
+        "keywords": ["كمبيوتر", "ديسكتوب"],
+        "ancestors": ["cat-002"],
+        "depth": 1,
+        "order": 2
+      }
+    ]
+  },
+  {
+    "_id": "cat-003",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "name": "سماعات وإكسسوارات",
+    "slug": "headphones-accessories",
+    "path": "/headphones-accessories",
+    "parent": null,
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Far.pngtree.com%2Ffreepng%2Fheadphone-icon-design-symbol-vector-art-illustration_8301631.html&psig=AOvVaw2E66Hh0dVlYLwJPu7ZHJOI&ust=1763330804569000&source=images&cd=vfe&opi=89978449&ved=0CBUQjRxqFwoTCLijhqeV9ZADFQAAAAAdAAAAABAV",
+    "keywords": ["سماعات", "إكسسوارات", "أجهزة صوت"],
+    "ancestors": [],
+    "depth": 0,
+    "order": 3
+  },
+  {
+    "_id": "cat-004",
+    "merchantId": "507f1f77bcf86cd799439022",
+    "name": "ملابس وأزياء",
+    "slug": "clothing-fashion",
+    "path": "/clothing-fashion",
+    "parent": null,
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQb6eUFCCJIT70aepqzf_5jFNBXwa9Phd27zw&s",
+    "keywords": ["ملابس", "أزياء", "موضة"],
+    "ancestors": [],
+    "depth": 0,
+    "order": 1,
+    "children": [
+      {
+        "_id": "cat-004-1",
+        "merchantId": "507f1f77bcf86cd799439022",
+        "name": "ملابس رجالية",
+        "slug": "mens-clothing",
+        "path": "/clothing-fashion/mens-clothing",
+        "parent": "cat-004",
+        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5rvreZJIxR1zCp_dFT1bAFxiO-z36xDXhYA&s",
+        "keywords": ["رجالي", "رجال"],
+        "ancestors": ["cat-004"],
+        "depth": 1,
+        "order": 1
+      },
+      {
+        "_id": "cat-004-2",
+        "merchantId": "507f1f77bcf86cd799439022",
+        "name": "ملابس نسائية",
+        "slug": "womens-clothing",
+        "path": "/clothing-fashion/womens-clothing",
+        "parent": "cat-004",
+        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQWgsOOXXxB92elUs3_S572oJ3EGPycMqrcTw&s",
+        "keywords": ["نسائي", "نساء"],
+        "ancestors": ["cat-004"],
+        "depth": 1,
+        "order": 2
+      }
+    ]
+  }
+]
+

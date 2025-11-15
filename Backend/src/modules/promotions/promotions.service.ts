@@ -1,5 +1,5 @@
 // src/modules/promotions/promotions.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 
 import { CreatePromotionDto } from './dto/create-promotion.dto';
@@ -23,7 +23,10 @@ export interface ApplicablePromotion {
 
 @Injectable()
 export class PromotionsService {
-  constructor(private readonly promotionsRepository: PromotionsRepository) {}
+  constructor(
+    @Inject('PromotionsRepository')
+    private readonly promotionsRepository: PromotionsRepository,
+  ) {}
 
   async create(dto: CreatePromotionDto): Promise<Promotion> {
     const {

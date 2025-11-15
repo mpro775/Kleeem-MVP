@@ -1,0 +1,44 @@
+[
+  {
+    "_id": "lead-001",
+    "sessionId": "session-001",
+    "data": {
+      "name": "أحمد محمد",
+      "phone": "+967-1-234-5678",
+      "email": "ahmed@example.com",
+      "address": "صنعاء، شارع الزبيري"
+    },
+    "createdAt": "2024-11-15T10:30:00.000Z",
+    "source": "whatsapp",
+    "phoneNormalized": "+96712345678",
+    "name": "أحمد محمد"
+  },
+  {
+    "_id": "lead-002",
+    "sessionId": "session-002",
+    "data": {
+      "name": "فاطمة علي",
+      "phone": "+967-7-123-4567",
+      "email": "fatima@example.com",
+      "productInterest": "هاتف سامسونج"
+    },
+    "createdAt": "2024-11-14T14:20:00.000Z",
+    "source": "webchat",
+    "phoneNormalized": "+96771234567",
+    "name": "فاطمة علي"
+  },
+  {
+    "_id": "lead-003",
+    "sessionId": "session-003",
+    "data": {
+      "name": "محمد حسن",
+      "phone": "+967-3-456-7890",
+      "budget": "150000-200000"
+    },
+    "createdAt": "2024-11-13T09:15:00.000Z",
+    "source": "telegram",
+    "phoneNormalized": "+96734567890",
+    "name": "محمد حسن"
+  }
+]
+

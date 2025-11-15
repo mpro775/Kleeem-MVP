@@ -1,0 +1,21 @@
+{
+  "businessName": "كليم — Kaleem",
+  "email": "support@kaleem.app",
+  "phone": "+967-7-123-4567",
+  "whatsapp": "https://wa.me/96771234567",
+  "telegram": "https://t.me/kaleem_support",
+  "address": "صنعاء، اليمن",
+  "mapEmbedUrl": "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3453.22300390024!2d46.7165336!3d16.776771499999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3f48000000000000%3A0x1234567890abcdef!2sKaleem!5e0!3m2!1sen!2s!4v1234567890!5m2!1sen!2s",
+  "showFaq": true,
+  "enableReCaptcha": false,
+  "workHours": {
+    "0": { "from": "09:00", "to": "18:00" },
+    "1": { "from": "09:00", "to": "18:00" },
+    "2": { "from": "09:00", "to": "18:00" },
+    "3": { "from": "09:00", "to": "18:00" },
+    "4": { "from": "09:00", "to": "18:00" },
+    "5": { "from": "10:00", "to": "16:00" },
+    "6": { "from": "", "to": "", "off": true }
+  }
+}
+

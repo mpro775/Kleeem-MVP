@@ -269,6 +269,7 @@ const getHeader = (req: IncomingMessage, name: string): string | undefined => {
     // Config
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: path.join(process.cwd(), '.env'),
       load: [configuration, varsConfig] as ConfigFactory[],
     }),
 

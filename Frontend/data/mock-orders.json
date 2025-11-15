@@ -1,0 +1,136 @@
+[
+  {
+    "_id": "ord-001",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "customer": {
+      "_id": "cust-001",
+      "name": "أحمد محمد",
+      "phone": "+967-1-234567",
+      "address": {
+        "line1": "شارع الزبيري",
+        "line2": "مبنى رقم 15",
+        "city": "صنعاء",
+        "state": "أمانة العاصمة",
+        "country": "اليمن",
+        "postalCode": "12345"
+      }
+    },
+    "products": [
+      {
+        "product": "prod-001",
+        "name": "هاتف ذكي سامسونج جالاكسي S23",
+        "price": 150000,
+        "quantity": 1
+      }
+    ],
+    "status": "delivered",
+    "createdAt": "2024-11-10T10:00:00.000Z"
+  },
+  {
+    "_id": "ord-002",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "customer": {
+      "_id": "cust-002",
+      "name": "فاطمة علي",
+      "phone": "+967-7-123456",
+      "address": {
+        "line1": "شارع التحرير",
+        "city": "عدن",
+        "state": "عدن",
+        "country": "اليمن"
+      }
+    },
+    "products": [
+      {
+        "product": "prod-002",
+        "name": "لابتوب ديل إكسبيريانس",
+        "price": 350000,
+        "quantity": 1
+      }
+    ],
+    "status": "shipped",
+    "createdAt": "2024-11-14T09:30:00.000Z"
+  },
+  {
+    "_id": "ord-003",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "customer": {
+      "_id": "cust-003",
+      "name": "محمد حسن",
+      "phone": "+967-3-456789",
+      "address": {
+        "line1": "شارع الجمهورية",
+        "city": "تعز",
+        "state": "تعز",
+        "country": "اليمن"
+      }
+    },
+    "products": [
+      {
+        "product": "prod-003",
+        "name": "سماعات سوني WH-1000XM4",
+        "price": 120000,
+        "quantity": 1
+      }
+    ],
+    "status": "confirmed",
+    "createdAt": "2024-11-15T14:20:00.000Z"
+  },
+  {
+    "_id": "ord-004",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "customer": {
+      "_id": "cust-004",
+      "name": "سارة أحمد",
+      "phone": "+967-5-789012",
+      "address": {
+        "line1": "شارع النصر",
+        "city": "الحديدة",
+        "state": "الحديدة",
+        "country": "اليمن"
+      }
+    },
+    "products": [
+      {
+        "product": "prod-001",
+        "name": "هاتف ذكي سامسونج جالاكسي S23",
+        "price": 150000,
+        "quantity": 1
+      },
+      {
+        "product": "prod-003",
+        "name": "سماعات سوني WH-1000XM4",
+        "price": 120000,
+        "quantity": 1
+      }
+    ],
+    "status": "pending",
+    "createdAt": "2024-11-16T08:15:00.000Z"
+  },
+  {
+    "_id": "ord-005",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "customer": {
+      "_id": "cust-005",
+      "name": "علي يوسف",
+      "phone": "+967-2-345678",
+      "address": {
+        "line1": "شارع المطار",
+        "city": "صنعاء",
+        "state": "أمانة العاصمة",
+        "country": "اليمن"
+      }
+    },
+    "products": [
+      {
+        "product": "prod-002",
+        "name": "لابتوب ديل إكسبيريانس",
+        "price": 350000,
+        "quantity": 1
+      }
+    ],
+    "status": "canceled",
+    "createdAt": "2024-11-12T16:45:00.000Z"
+  }
+]
+

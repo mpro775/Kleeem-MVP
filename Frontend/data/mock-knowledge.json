@@ -1,0 +1,95 @@
+{
+  "documents": [
+    {
+      "_id": "doc-001",
+      "filename": "دليل_الاستخدام.pdf",
+      "status": "processed",
+      "createdAt": "2024-10-15T10:00:00.000Z",
+      "fileType": "pdf"
+    },
+    {
+      "_id": "doc-002",
+      "filename": "سياسة_الإرجاع.docx",
+      "status": "processed",
+      "createdAt": "2024-10-20T14:30:00.000Z",
+      "fileType": "docx"
+    },
+    {
+      "_id": "doc-003",
+      "filename": "قائمة_المنتجات.xlsx",
+      "status": "processing",
+      "createdAt": "2024-11-10T09:15:00.000Z",
+      "fileType": "xlsx"
+    }
+  ],
+  "faqs": [
+    {
+      "_id": "faq-001",
+      "question": "ما هي طرق الدفع المتاحة؟",
+      "answer": "نقبل طرق الدفع التالية:\n- الدفع عند الاستلام\n- التحويل البنكي\n- المحافظ الإلكترونية (M-Paisa, Yemen Mobile)",
+      "status": "completed",
+      "createdAt": "2024-10-01T08:00:00.000Z"
+    },
+    {
+      "_id": "faq-002",
+      "question": "كم تستغرق عملية الشحن؟",
+      "answer": "نقوم بشحن المنتجات خلال 1-3 أيام عمل في جميع أنحاء اليمن. قد تستغرق العملية وقتاً أطول في المناطق النائية.",
+      "status": "completed",
+      "createdAt": "2024-10-05T10:00:00.000Z"
+    },
+    {
+      "_id": "faq-003",
+      "question": "هل يمكن إرجاع المنتج؟",
+      "answer": "نعم، يمكن إرجاع المنتج خلال 14 يوماً من تاريخ الاستلام بشرط أن يكون بحالة جيدة وفي العبوة الأصلية.",
+      "status": "pending",
+      "createdAt": "2024-10-10T12:00:00.000Z"
+    },
+    {
+      "_id": "faq-004",
+      "question": "ما هي سياسة الضمان؟",
+      "answer": "جميع المنتجات الإلكترونية تأتي بضمان من الشركة المصنعة لمدة سنة واحدة. يمكنك التواصل معنا لأي مشاكل في الضمان.",
+      "status": "pending",
+      "createdAt": "2024-10-15T14:00:00.000Z"
+    },
+    {
+      "_id": "faq-005",
+      "question": "هل تقدمون خدمة التوصيل المجاني؟",
+      "answer": "نعم، نقدم خدمة التوصيل المجاني للطلبات التي تزيد قيمتها عن 150,000 ريال يمني. استخدم كود الخصم FREESHIP.",
+      "status": "failed",
+      "errorMessage": "فشل في معالجة السؤال",
+      "createdAt": "2024-10-20T16:00:00.000Z"
+    }
+  ],
+  "links": [
+    {
+      "_id": "link-001",
+      "url": "https://www.samsung.com/ye/smartphones/galaxy-s23/",
+      "status": "processed",
+      "textLength": 1250,
+      "createdAt": "2024-10-25T11:00:00.000Z"
+    },
+    {
+      "_id": "link-002",
+      "url": "https://www.dell.com/en-ye/laptops",
+      "status": "processed",
+      "textLength": 890,
+      "createdAt": "2024-10-28T13:00:00.000Z"
+    },
+    {
+      "_id": "link-003",
+      "url": "https://www.sony.com/headphones",
+      "status": "processing",
+      "textLength": 0,
+      "createdAt": "2024-11-12T09:00:00.000Z"
+    },
+    {
+      "_id": "link-004",
+      "url": "https://www.apple.com/iphone",
+      "status": "failed",
+      "errorMessage": "تعذر الوصول إلى الصفحة",
+      "textLength": 0,
+      "createdAt": "2024-11-15T10:00:00.000Z"
+    }
+  ]
+}
+

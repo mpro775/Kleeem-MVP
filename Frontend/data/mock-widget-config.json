@@ -1,0 +1,71 @@
+{
+  "507f1f77bcf86cd799439011": {
+    "botName": "مساعد فاطمة",
+    "brandColor": "#1976d2",
+    "welcomeMessage": "مرحباً! أنا مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟",
+    "fontFamily": "Cairo",
+    "headerBgColor": "#1976d2",
+    "bodyBgColor": "#ffffff",
+    "widgetSlug": "fatima-electronics",
+    "useStorefrontBrand": true,
+    "theme": "light",
+    "leadsEnabled": true,
+    "leadsFormFields": [
+      {
+        "fieldType": "name",
+        "label": "الاسم",
+        "placeholder": "أدخل اسمك",
+        "required": true,
+        "key": "name"
+      },
+      {
+        "fieldType": "phone",
+        "label": "الهاتف",
+        "placeholder": "+967-1-234-5678",
+        "required": true,
+        "key": "phone"
+      },
+      {
+        "fieldType": "email",
+        "label": "البريد الإلكتروني",
+        "placeholder": "example@email.com",
+        "required": false,
+        "key": "email"
+      }
+    ],
+    "handoffEnabled": true,
+    "handoffChannel": "email",
+    "handoffConfig": {
+      "email": "support@example.com"
+    },
+    "topicsTags": ["منتجات", "أسعار", "شحن", "ضمان"],
+    "sentimentTags": ["إيجابي", "محايد", "سلبي"],
+    "embedMode": "bubble",
+    "isActive": true,
+    "createdAt": "2024-10-01T10:00:00.000Z",
+    "updatedAt": "2024-11-15T14:00:00.000Z"
+  },
+  "507f1f77bcf86cd799439022": {
+    "botName": "مساعد السعيد",
+    "brandColor": "#d32f2f",
+    "welcomeMessage": "أهلاً وسهلاً! كيف يمكنني مساعدتك؟",
+    "fontFamily": "Tajawal",
+    "headerBgColor": "#d32f2f",
+    "bodyBgColor": "#f5f5f5",
+    "widgetSlug": "alsaeed-clothing",
+    "useStorefrontBrand": false,
+    "theme": "dark",
+    "leadsEnabled": false,
+    "leadsFormFields": [],
+    "handoffEnabled": false,
+    "handoffChannel": null,
+    "handoffConfig": {},
+    "topicsTags": [],
+    "sentimentTags": [],
+    "embedMode": "conversational",
+    "isActive": true,
+    "createdAt": "2024-09-15T08:00:00.000Z",
+    "updatedAt": "2024-11-10T12:00:00.000Z"
+  }
+}
+

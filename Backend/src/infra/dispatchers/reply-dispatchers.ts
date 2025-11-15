@@ -18,21 +18,21 @@ export class ReplyDispatchers implements OnModuleInit {
         'chat.reply',
         'telegram',
         (p: unknown) => this.handle('telegram', p),
-        { queue: 'telegram.out.q', prefetch: 20, assert: false },
+        { queue: 'telegram.out.q', prefetch: 20 },
       );
 
       await this.rabbit.subscribe(
         'chat.reply',
         'whatsapp',
         (p: unknown) => this.handle('whatsapp', p),
-        { queue: 'whatsapp.out.q', prefetch: 20, assert: false }, // ⬅️ مهم
+        { queue: 'whatsapp.out.q', prefetch: 20 }, // ⬅️ مهم
       );
 
       await this.rabbit.subscribe(
         'chat.reply',
         'webchat',
         (p: unknown) => this.handle('webchat', p),
-        { queue: 'webchat.out.q', prefetch: 20, assert: false }, // ⬅️ مهم
+        { queue: 'webchat.out.q', prefetch: 20 }, // ⬅️ مهم
       );
     } catch (e: unknown) {
       this.log.error('ReplyDispatchers subscriptions failed', e);

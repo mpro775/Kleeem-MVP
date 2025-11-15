@@ -1,0 +1,43 @@
+[
+  {
+    "_id": "inst-001",
+    "instruction": "عندما يسأل العميل عن السعر، قدم السعر الحالي مع أي عروض متاحة واذكر أن الشحن متوفر",
+    "type": "manual",
+    "active": true,
+    "merchantId": "507f1f77bcf86cd799439011",
+    "relatedReplies": ["سعر", "كم", "تكلفة"],
+    "createdAt": "2024-10-15T10:00:00.000Z",
+    "updatedAt": "2024-11-10T14:30:00.000Z"
+  },
+  {
+    "_id": "inst-002",
+    "instruction": "عندما يسأل عن الشحن، اذكر أننا نقدم شحن مجاني للطلبات فوق 150,000 ريال يمني",
+    "type": "manual",
+    "active": true,
+    "merchantId": "507f1f77bcf86cd799439011",
+    "relatedReplies": ["شحن", "توصيل", "متى"],
+    "createdAt": "2024-10-20T09:00:00.000Z",
+    "updatedAt": "2024-11-05T11:20:00.000Z"
+  },
+  {
+    "_id": "inst-003",
+    "instruction": "عندما يسأل عن الضمان، اذكر أن جميع المنتجات الإلكترونية تأتي بضمان سنة واحدة",
+    "type": "auto",
+    "active": true,
+    "merchantId": "507f1f77bcf86cd799439011",
+    "relatedReplies": ["ضمان", "كفالة"],
+    "createdAt": "2024-11-01T12:00:00.000Z",
+    "updatedAt": "2024-11-01T12:00:00.000Z"
+  },
+  {
+    "_id": "inst-004",
+    "instruction": "عندما يسأل عن طريقة الدفع، اذكر أننا نقبل الدفع عند الاستلام والتحويل البنكي",
+    "type": "manual",
+    "active": false,
+    "merchantId": "507f1f77bcf86cd799439011",
+    "relatedReplies": ["دفع", "دفعة"],
+    "createdAt": "2024-10-25T15:00:00.000Z",
+    "updatedAt": "2024-11-08T10:00:00.000Z"
+  }
+]
+

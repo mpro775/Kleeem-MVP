@@ -101,6 +101,7 @@ export const corsOptions: CorsOptions = {
     'X-Kaleem-Timestamp',
     'X-Kaleem-Nonce',
     'X-Kaleem-Signature',
+    'x-client',
   ]),
 
   exposedHeaders: parseList(process.env.CORS_EXPOSED_HEADERS, [

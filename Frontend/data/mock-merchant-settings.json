@@ -1,0 +1,133 @@
+{
+  "507f1f77bcf86cd799439011": {
+    "_id": "507f1f77bcf86cd799439011",
+    "name": "متجر فاطمة للإلكترونيات",
+    "logoUrl": "https://png.pngtree.com/png-clipart/20200709/original/pngtree-circuit-tech-element--electronics-icon--digital-electronics-logo-png-image_3986099.jpg",
+    "phone": "+967-1-234-5678",
+    "publicSlug": "fatima-electronics",
+    "publicSlugEnabled": true,
+    "businessDescription": "متجر متخصص في بيع الأجهزة الإلكترونية والهواتف الذكية بأفضل الأسعار وخدمة عملاء متميزة.",
+    "addresses": [
+      {
+        "street": "شارع الزبيري",
+        "city": "صنعاء",
+        "state": "أمانة العاصمة",
+        "postalCode": "12345",
+        "country": "اليمن"
+      }
+    ],
+    "workingHours": [
+      {
+        "day": "Sunday",
+        "openTime": "09:00",
+        "closeTime": "22:00"
+      },
+      {
+        "day": "Monday",
+        "openTime": "09:00",
+        "closeTime": "22:00"
+      },
+      {
+        "day": "Tuesday",
+        "openTime": "09:00",
+        "closeTime": "22:00"
+      },
+      {
+        "day": "Wednesday",
+        "openTime": "09:00",
+        "closeTime": "22:00"
+      },
+      {
+        "day": "Thursday",
+        "openTime": "09:00",
+        "closeTime": "22:00"
+      },
+      {
+        "day": "Friday",
+        "openTime": "14:00",
+        "closeTime": "22:00"
+      },
+      {
+        "day": "Saturday",
+        "openTime": "09:00",
+        "closeTime": "22:00"
+      }
+    ],
+    "returnPolicy": "يمكن إرجاع المنتج خلال 14 يوماً من تاريخ الاستلام بشرط أن يكون بحالة جيدة وفي العبوة الأصلية. سيتم استرداد المبلغ خلال 5-7 أيام عمل.",
+    "exchangePolicy": "يمكن استبدال المنتج خلال 7 أيام من تاريخ الاستلام بمنتج آخر من نفس القيمة أو أعلى.",
+    "shippingPolicy": "نقوم بشحن المنتجات خلال 1-3 أيام عمل في جميع أنحاء اليمن. تكلفة الشحن تختلف حسب المنطقة والوزن.",
+    "categories": ["cat-001", "cat-002", "cat-003"],
+    "customCategory": null,
+    "socialLinks": {
+      "facebook": "https://facebook.com/fatima-electronics",
+      "instagram": "https://instagram.com/fatima_electronics",
+      "twitter": "https://twitter.com/fatima_electronics",
+      "youtube": "https://youtube.com/@fatimaelectronics"
+    }
+  },
+  "507f1f77bcf86cd799439022": {
+    "_id": "507f1f77bcf86cd799439022",
+    "name": "متجر السعيد للملابس",
+    "logoUrl": "https://png.pngtree.com/png-vector/20221028/ourmid/pngtree-laundry-logo-clothes-water-isolated-vector-png-image_39887020.png",
+    "phone": "+967-2-345-6789",
+    "publicSlug": "alsaeed-clothing",
+    "publicSlugEnabled": true,
+    "businessDescription": "متجر للملابس والأزياء بجودة عالية وأسعار مناسبة للجميع.",
+    "addresses": [
+      {
+        "street": "شارع التحرير",
+        "city": "عدن",
+        "state": "عدن",
+        "postalCode": "67890",
+        "country": "اليمن"
+      }
+    ],
+    "workingHours": [
+      {
+        "day": "Sunday",
+        "openTime": "10:00",
+        "closeTime": "21:00"
+      },
+      {
+        "day": "Monday",
+        "openTime": "10:00",
+        "closeTime": "21:00"
+      },
+      {
+        "day": "Tuesday",
+        "openTime": "10:00",
+        "closeTime": "21:00"
+      },
+      {
+        "day": "Wednesday",
+        "openTime": "10:00",
+        "closeTime": "21:00"
+      },
+      {
+        "day": "Thursday",
+        "openTime": "10:00",
+        "closeTime": "21:00"
+      },
+      {
+        "day": "Friday",
+        "openTime": "14:00",
+        "closeTime": "21:00"
+      },
+      {
+        "day": "Saturday",
+        "openTime": "10:00",
+        "closeTime": "21:00"
+      }
+    ],
+    "returnPolicy": "يمكن إرجاع المنتج خلال 7 أيام من تاريخ الاستلام بشرط عدم الاستخدام والحفاظ على العبوة الأصلية.",
+    "exchangePolicy": "يمكن استبدال المنتج خلال 3 أيام من تاريخ الاستلام بمنتج آخر من نفس القيمة.",
+    "shippingPolicy": "نقوم بشحن المنتجات خلال 2-4 أيام عمل. الشحن مجاني للطلبات التي تزيد عن 100,000 ريال يمني.",
+    "categories": ["cat-004"],
+    "customCategory": null,
+    "socialLinks": {
+      "facebook": "https://facebook.com/alsaeed-clothing",
+      "instagram": "https://instagram.com/alsaeed_clothing"
+    }
+  }
+}
+

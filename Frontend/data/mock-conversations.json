@@ -1,0 +1,407 @@
+[
+  {
+    "_id": "conv-001",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "sessionId": "session-001",
+    "channel": "whatsapp",
+    "messages": [
+      {
+        "role": "customer",
+        "text": "مرحباً، هل متوفر هاتف سامسونج جالاكسي S23؟",
+        "timestamp": "2024-11-15T10:00:00.000Z",
+        "metadata": {
+          "sentiment": "neutral",
+          "confidence": 0.85
+        },
+        "_id": "msg-001",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "bot",
+        "text": "مرحباً! نعم، هاتف سامسونج جالاكسي S23 متوفر في متجرنا. السعر 150,000 ريال يمني (كان 180,000 ريال يمني). هل تود معرفة المزيد من التفاصيل؟",
+        "timestamp": "2024-11-15T10:00:30.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.92
+        },
+        "_id": "msg-002",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "customer",
+        "text": "نعم، أخبرني عن المواصفات من فضلك",
+        "timestamp": "2024-11-15T10:01:00.000Z",
+        "metadata": {
+          "sentiment": "neutral",
+          "confidence": 0.78
+        },
+        "_id": "msg-003",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "bot",
+        "text": "بالتأكيد! هاتف سامسونج جالاكسي S23 يأتي مع:\n- شاشة 6.1 بوصة Dynamic AMOLED 2X\n- معالج Snapdragon 8 Gen 2\n- ذاكرة RAM 8 جيجابايت\n- مساحة تخزين 256 جيجابايت\n- كاميرا خلفية 50 ميجابيكسل\n- بطارية 3900 مللي أمبير\n\nاللون المتوفر: أسود، أبيض، أزرق\nهل تريد شراءه؟",
+        "timestamp": "2024-11-15T10:01:30.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.88
+        },
+        "_id": "msg-004",
+        "rating": 1,
+        "feedback": "إجابة مفيدة ومفصلة"
+      }
+    ],
+    "createdAt": "2024-11-15T10:00:00.000Z",
+    "updatedAt": "2024-11-15T10:05:00.000Z"
+  },
+  {
+    "_id": "conv-002",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "sessionId": "session-002",
+    "channel": "webchat",
+    "messages": [
+      {
+        "role": "customer",
+        "text": "السلام عليكم، أريد استفسار عن شحن المنتجات",
+        "timestamp": "2024-11-14T14:30:00.000Z",
+        "metadata": {
+          "sentiment": "neutral",
+          "confidence": 0.82
+        },
+        "_id": "msg-005",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "agent",
+        "text": "وعليكم السلام! نعم، نقوم بشحن المنتجات في جميع أنحاء اليمن خلال 1-3 أيام عمل. تكلفة الشحن تختلف حسب المنطقة والوزن. هل لديك عنوان محدد تريد الاستفسار عنه؟",
+        "timestamp": "2024-11-14T14:31:00.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.91
+        },
+        "_id": "msg-006",
+        "rating": 1,
+        "feedback": "خدمة عملاء ممتازة"
+      }
+    ],
+    "createdAt": "2024-11-14T14:30:00.000Z",
+    "updatedAt": "2024-11-14T14:35:00.000Z"
+  },
+  {
+    "_id": "conv-003",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "sessionId": "session-003",
+    "channel": "telegram",
+    "messages": [
+      {
+        "role": "customer",
+        "text": "ما هي طرق الدفع المتاحة؟",
+        "timestamp": "2024-11-13T09:15:00.000Z",
+        "metadata": {
+          "sentiment": "neutral",
+          "confidence": 0.75
+        },
+        "_id": "msg-007",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "bot",
+        "text": "نقبل طرق الدفع التالية:\n- الدفع عند الاستلام\n- التحويل البنكي\n- محافظ إلكترونية (M-Paisa, Yemen Mobile)\n\nأي طريقة تفضل؟",
+        "timestamp": "2024-11-13T09:15:30.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.87
+        },
+        "_id": "msg-008",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "customer",
+        "text": "شكراً لك",
+        "timestamp": "2024-11-13T09:16:00.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.90
+        },
+        "_id": "msg-009",
+        "rating": 1,
+        "feedback": null
+      }
+    ],
+    "createdAt": "2024-11-13T09:15:00.000Z",
+    "updatedAt": "2024-11-13T09:16:00.000Z"
+  },
+  {
+    "_id": "conv-004",
+    "merchantId": "507f1f77bcf86cd799439022",
+    "sessionId": "session-004",
+    "channel": "whatsapp",
+    "messages": [
+      {
+        "role": "customer",
+        "text": "السلام عليكم، أريد قميص قطني",
+        "timestamp": "2024-11-15T11:00:00.000Z",
+        "metadata": {
+          "sentiment": "neutral",
+          "confidence": 0.80
+        },
+        "_id": "msg-010",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "bot",
+        "text": "وعليكم السلام ورحمة الله! لدينا قميص قطني كلاسيكي متوفر. السعر 15,000 ريال يمني. متوفر بمقاسات: S، M، L، XL. الألوان المتوفرة: أبيض، أسود، أزرق، رمادي. أي مقاس ولون تفضل؟",
+        "timestamp": "2024-11-15T11:00:30.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.90
+        },
+        "_id": "msg-011",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "customer",
+        "text": "أريد مقاس L باللون الأزرق",
+        "timestamp": "2024-11-15T11:01:00.000Z",
+        "metadata": {
+          "sentiment": "neutral",
+          "confidence": 0.85
+        },
+        "_id": "msg-012",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "bot",
+        "text": "ممتاز! القميص مقاس L باللون الأزرق متوفر. السعر الإجمالي 15,000 ريال يمني. هل تريد إتمام الطلب الآن؟",
+        "timestamp": "2024-11-15T11:01:30.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.88
+        },
+        "_id": "msg-013",
+        "rating": 1,
+        "feedback": "خدمة ممتازة"
+      }
+    ],
+    "createdAt": "2024-11-15T11:00:00.000Z",
+    "updatedAt": "2024-11-15T11:02:00.000Z"
+  },
+  {
+    "_id": "conv-005",
+    "merchantId": "507f1f77bcf86cd799439022",
+    "sessionId": "session-005",
+    "channel": "webchat",
+    "messages": [
+      {
+        "role": "customer",
+        "text": "مرحباً، ما هي سياسة الإرجاع لديكم؟",
+        "timestamp": "2024-11-14T16:20:00.000Z",
+        "metadata": {
+          "sentiment": "neutral",
+          "confidence": 0.82
+        },
+        "_id": "msg-014",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "bot",
+        "text": "مرحباً بك! يمكن إرجاع المنتج خلال 7 أيام من تاريخ الاستلام بشرط عدم الاستخدام والحفاظ على العبوة الأصلية. سيتم استرداد المبلغ خلال 3-5 أيام عمل. هل لديك استفسار آخر؟",
+        "timestamp": "2024-11-14T16:20:30.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.89
+        },
+        "_id": "msg-015",
+        "rating": 1,
+        "feedback": "معلومات واضحة"
+      },
+      {
+        "role": "customer",
+        "text": "شكراً لك",
+        "timestamp": "2024-11-14T16:21:00.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.92
+        },
+        "_id": "msg-016",
+        "rating": null,
+        "feedback": null
+      }
+    ],
+    "createdAt": "2024-11-14T16:20:00.000Z",
+    "updatedAt": "2024-11-14T16:21:00.000Z"
+  },
+  {
+    "_id": "conv-006",
+    "merchantId": "507f1f77bcf86cd799439022",
+    "sessionId": "session-006",
+    "channel": "telegram",
+    "messages": [
+      {
+        "role": "customer",
+        "text": "هل لديكم ملابس نسائية؟",
+        "timestamp": "2024-11-13T13:45:00.000Z",
+        "metadata": {
+          "sentiment": "neutral",
+          "confidence": 0.78
+        },
+        "_id": "msg-017",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "bot",
+        "text": "نعم، لدينا مجموعة متنوعة من الملابس النسائية. حالياً متوفر لدينا قميص قطني كلاسيكي مناسب للرجال والنساء. هل تريدين معرفة المزيد عن المنتجات المتوفرة؟",
+        "timestamp": "2024-11-13T13:45:30.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.86
+        },
+        "_id": "msg-018",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "customer",
+        "text": "نعم، أريد معرفة المزيد",
+        "timestamp": "2024-11-13T13:46:00.000Z",
+        "metadata": {
+          "sentiment": "neutral",
+          "confidence": 0.80
+        },
+        "_id": "msg-019",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "bot",
+        "text": "ممتاز! القميص القطني مصنوع من 100% قطن، قابل للغسيل في الغسالة، ومتوفر بمقاسات مختلفة (S, M, L, XL) وألوان متعددة (أبيض، أسود، أزرق، رمادي). السعر 15,000 ريال يمني. هل تريدين طلب واحد؟",
+        "timestamp": "2024-11-13T13:46:30.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.91
+        },
+        "_id": "msg-020",
+        "rating": null,
+        "feedback": null
+      }
+    ],
+    "createdAt": "2024-11-13T13:45:00.000Z",
+    "updatedAt": "2024-11-13T13:47:00.000Z"
+  },
+  {
+    "_id": "conv-007",
+    "merchantId": "507f1f77bcf86cd799439022",
+    "sessionId": "session-007",
+    "channel": "whatsapp",
+    "messages": [
+      {
+        "role": "customer",
+        "text": "كم تكلفة الشحن إلى عدن؟",
+        "timestamp": "2024-11-12T10:30:00.000Z",
+        "metadata": {
+          "sentiment": "neutral",
+          "confidence": 0.83
+        },
+        "_id": "msg-021",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "bot",
+        "text": "تكلفة الشحن إلى عدن تختلف حسب الوزن. للطلبات التي تزيد عن 100,000 ريال يمني، الشحن مجاني. للطلبات الأصغر، تكلفة الشحن تتراوح بين 5,000 - 10,000 ريال يمني حسب الوزن. هل لديك طلب محدد؟",
+        "timestamp": "2024-11-12T10:30:30.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.87
+        },
+        "_id": "msg-022",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "customer",
+        "text": "كم يستغرق التوصيل؟",
+        "timestamp": "2024-11-12T10:31:00.000Z",
+        "metadata": {
+          "sentiment": "neutral",
+          "confidence": 0.79
+        },
+        "_id": "msg-023",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "bot",
+        "text": "نقوم بشحن المنتجات خلال 2-4 أيام عمل إلى عدن. بعد إتمام الطلب، ستحصل على رقم تتبع لمتابعة شحنتك. هل تريد المتابعة مع الطلب؟",
+        "timestamp": "2024-11-12T10:31:30.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.90
+        },
+        "_id": "msg-024",
+        "rating": 1,
+        "feedback": "معلومات مفيدة"
+      }
+    ],
+    "createdAt": "2024-11-12T10:30:00.000Z",
+    "updatedAt": "2024-11-12T10:32:00.000Z"
+  },
+  {
+    "_id": "conv-008",
+    "merchantId": "507f1f77bcf86cd799439022",
+    "sessionId": "session-008",
+    "channel": "webchat",
+    "messages": [
+      {
+        "role": "customer",
+        "text": "هل يمكنني استبدال المنتج؟",
+        "timestamp": "2024-11-11T15:15:00.000Z",
+        "metadata": {
+          "sentiment": "neutral",
+          "confidence": 0.81
+        },
+        "_id": "msg-025",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "bot",
+        "text": "نعم، يمكن استبدال المنتج خلال 3 أيام من تاريخ الاستلام بمنتج آخر من نفس القيمة. يجب أن يكون المنتج بحالة جيدة وفي العبوة الأصلية. هل تريد استبدال منتج محدد؟",
+        "timestamp": "2024-11-11T15:15:30.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.88
+        },
+        "_id": "msg-026",
+        "rating": null,
+        "feedback": null
+      },
+      {
+        "role": "customer",
+        "text": "شكراً لك على المعلومات",
+        "timestamp": "2024-11-11T15:16:00.000Z",
+        "metadata": {
+          "sentiment": "positive",
+          "confidence": 0.93
+        },
+        "_id": "msg-027",
+        "rating": 1,
+        "feedback": null
+      }
+    ],
+    "createdAt": "2024-11-11T15:15:00.000Z",
+    "updatedAt": "2024-11-11T15:16:00.000Z"
+  }
+]
+

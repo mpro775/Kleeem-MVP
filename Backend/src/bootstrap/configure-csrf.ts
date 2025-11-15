@@ -13,7 +13,14 @@ type CsrfRequest = Request & {
   secret?: string;
 };
 const CSRF_BYPASS_PREFIXES = ['/webhooks', '/docs', '/integrations/n8n'];
-const CSRF_BYPASS_EXACT = ['/docs-json', '/health', '/metrics'];
+const CSRF_BYPASS_EXACT = [
+  '/docs-json',
+  '/health',
+  '/metrics',
+  '/auth/register',
+  '/auth/verify-email',
+  '/auth/resend-verification',
+];
 
 function isPrefixBoundaryMatch(pathname: string, prefix: string): boolean {
   if (pathname === prefix) return true; // "/webhooks"

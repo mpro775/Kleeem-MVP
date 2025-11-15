@@ -1,0 +1,40 @@
+{
+  "507f1f77bcf86cd799439011": {
+    "enabled": true,
+    "fields": [
+      {
+        "key": "name",
+        "fieldType": "name",
+        "label": "الاسم الكامل",
+        "placeholder": "أدخل اسمك الكامل",
+        "required": true
+      },
+      {
+        "key": "phone",
+        "fieldType": "phone",
+        "label": "رقم الهاتف",
+        "placeholder": "+967-1-234-5678",
+        "required": true
+      },
+      {
+        "key": "email",
+        "fieldType": "email",
+        "label": "البريد الإلكتروني",
+        "placeholder": "example@email.com",
+        "required": false
+      },
+      {
+        "key": "address",
+        "fieldType": "address",
+        "label": "العنوان",
+        "placeholder": "أدخل عنوانك",
+        "required": false
+      }
+    ]
+  },
+  "507f1f77bcf86cd799439022": {
+    "enabled": false,
+    "fields": []
+  }
+}
+

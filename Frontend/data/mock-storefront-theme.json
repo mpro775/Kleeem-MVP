@@ -1,0 +1,58 @@
+{
+  "507f1f77bcf86cd799439011": {
+    "_id": "storefront-001",
+    "merchant": "507f1f77bcf86cd799439011",
+    "slug": "fatima-electronics",
+    "domain": null,
+    "storefrontUrl": "https://kaleem.ai/store/fatima-electronics",
+    "banners": [
+      {
+        "image": "https://cdn.salla.sa/form-builder/CQvW2JBFWczlaFujyQZ6HQeb1G69wYznkytLQHJG.jpg",
+        "text": "عروض خاصة على الهواتف الذكية",
+        "url": "/products?category=phones",
+        "color": "#1976d2",
+        "active": true,
+        "order": 1,
+        "_id": "banner-001"
+      },
+      {
+        "image": "https://cdn.salla.sa/form-builder/4RttPNJG5jFuPwAySbxFwHw31dnHr8NKXjiWHbvV.webp",
+        "text": "شحن مجاني للطلبات فوق 150,000 ريال",
+        "url": null,
+        "color": "#4caf50",
+        "active": true,
+        "order": 2,
+        "_id": "banner-002"
+      }
+    ],
+    "primaryColor": "#1976d2",
+    "secondaryColor": "#42a5f5",
+    "brandDark": "#1565c0",
+    "buttonStyle": "rounded",
+    "featuredProductIds": ["prod-001", "prod-002", "prod-003"]
+  },
+  "507f1f77bcf86cd799439022": {
+    "_id": "storefront-002",
+    "merchant": "507f1f77bcf86cd799439022",
+    "slug": "alsaeed-clothing",
+    "domain": null,
+    "storefrontUrl": "https://kaleem.ai/store/alsaeed-clothing",
+    "banners": [
+      {
+        "image": "https://lh7-us.googleusercontent.com/YuXkUwg5loYA-Q9G645dlWEpAEvqe7KoSGhOjNcGIjqZsd_AuQoud17GJStqj-NYnAawtbf5a95OeoFejO2VQg66tJhzJhCbKy4gR7mVH4tdt6F-9ddkmQActfeCKSG1Xjt7cuM4qDhDPoy6Xwwypw",
+        "text": "مجموعة جديدة من الملابس",
+        "url": "/products",
+        "color": "#d32f2f",
+        "active": true,
+        "order": 1,
+        "_id": "banner-003"
+      }
+    ],
+    "primaryColor": "#d32f2f",
+    "secondaryColor": "#f44336",
+    "brandDark": "#b71c1c",
+    "buttonStyle": "square",
+    "featuredProductIds": ["prod-004"]
+  }
+}
+

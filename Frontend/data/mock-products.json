@@ -1,0 +1,191 @@
+[
+  {
+    "_id": "prod-001",
+    "id": "prod-001",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "originalUrl": "https://salla.sa/product/123",
+    "platform": "salla",
+    "quantity": 50,
+    "lowQuantity": 5,
+    "name": "هاتف ذكي سامسونج جالاكسي S23",
+    "description": "هاتف ذكي متطور بكاميرا عالية الجودة وبطارية تدوم طويلاً. يأتي مع معالج Snapdragon 8 Gen 2 وشاشة Dynamic AMOLED 2X بدقة 6.1 بوصة.",
+    "price": 150000,
+    "currency": "YER",
+    "offer": {
+      "enabled": true,
+      "oldPrice": 180000,
+      "newPrice": 150000,
+      "startAt": "2024-11-01T00:00:00.000Z",
+      "endAt": "2024-11-30T23:59:59.000Z"
+    },
+    "hasActiveOffer": true,
+    "priceEffective": 150000,
+    "isAvailable": true,
+    "images": [
+      "https://images.samsung.com/eg/smartphones/galaxy-s23-ultra/buy/product_color_green.png",
+      "https://images.samsung.com/il/smartphones/galaxy-s23-ultra/images/galaxy-s23-ultra-highlights-colors-lavender-back-s.jpg",
+      "https://images.samsung.com/is/image/samsung/p6pim/ae_ar/feature/164361578/ae-ar-feature-galaxy-s23-s918-535238765?$FB_TYPE_A_MO_JPG$"
+    ],
+    "category": "cat-001",
+    "specsBlock": [
+      "شاشة 6.1 بوصة Dynamic AMOLED 2X",
+      "معالج Snapdragon 8 Gen 2",
+      "ذاكرة RAM 8 جيجابايت",
+      "مساحة تخزين 256 جيجابايت",
+      "كاميرا خلفية 50 ميجابيكسل",
+      "كاميرا أمامية 12 ميجابيكسل",
+      "بطارية 3900 مللي أمبير",
+      "نظام تشغيل Android 13"
+    ],
+    "keywords": ["سامسونج", "جالاكسي", "هاتف ذكي", "أندرويد", "كاميرا", "بطارية"],
+    "attributes": {
+      "اللون": ["أسود", "أبيض", "أزرق"],
+      "السعة": ["128 جيجابايت", "256 جيجابايت", "512 جيجابايت"]
+    },
+    "status": "active",
+    "source": "api",
+    "sourceUrl": "https://salla.sa/product/123",
+    "productSource": "salla",
+    "sourceDescription": "منتج مستورد من منصة سلة (Salla) - متجر كليم غير متاح",
+    "createdAt": "2024-10-01T10:00:00.000Z",
+    "updatedAt": "2024-11-15T14:30:00.000Z",
+    "slug": "samsung-galaxy-s23",
+    "storefrontSlug": "samsung-galaxy-s23"
+  },
+  {
+    "_id": "prod-002",
+    "id": "prod-002",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "originalUrl": "https://shopify.com/product/456",
+    "platform": "shopify",
+    "quantity": 25,
+    "lowQuantity": 3,
+    "name": "لابتوب ديل إكسبيريانس",
+    "description": "لابتوب احترافي للعمل والدراسة مع معالج Intel Core i7 وذاكرة RAM 16 جيجابايت. مثالي للمبرمجين والمصممين.",
+    "price": 350000,
+    "currency": "YER",
+    "offer": null,
+    "hasActiveOffer": false,
+    "priceEffective": 350000,
+    "isAvailable": true,
+    "images": [
+      "https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/dell-client-products/notebooks/dell-plus/db16250/media-gallery/fpr/notebook-db16250nt-fpr-bl-gallery-2.psd?fmt=png-alpha&pscan=auto&scl=1&hei=804&wid=979&qlt=100,1&resMode=sharp2&size=979,804&chrss=full",
+      "https://laapak.com/wp-content/uploads/2025/01/5540_0002_5540.jpg"
+    ],
+    "category": "cat-002",
+    "specsBlock": [
+      "معالج Intel Core i7-1165G7",
+      "ذاكرة RAM 16 جيجابايت",
+      "مساحة تخزين SSD 512 جيجابايت",
+      "شاشة 15.6 بوصة Full HD",
+      "نظام تشغيل Windows 11",
+      "بطارية تدوم حتى 8 ساعات",
+      "كاميرا ويب HD",
+      "منافذ USB-C و USB-A"
+    ],
+    "keywords": ["ديل", "لابتوب", "كمبيوتر", "Intel", "Windows", "احترافي"],
+    "attributes": {
+      "اللون": ["أسود", "فضي"],
+      "السعة": ["256 جيجابايت", "512 جيجابايت", "1 تيرابايت"]
+    },
+    "status": "active",
+    "source": "scraper",
+    "sourceUrl": "https://shopify.com/product/456",
+    "productSource": "external",
+    "sourceDescription": "منتج مستورد من Shopify - متجر كليم غير متاح",
+    "createdAt": "2024-09-15T09:00:00.000Z",
+    "updatedAt": "2024-11-10T16:45:00.000Z",
+    "slug": "dell-laptop-inspiron",
+    "storefrontSlug": "dell-laptop-inspiron"
+  },
+  {
+    "_id": "prod-003",
+    "id": "prod-003",
+    "merchantId": "507f1f77bcf86cd799439011",
+    "originalUrl": null,
+    "platform": null,
+    "quantity": 100,
+    "lowQuantity": 10,
+    "name": "سماعات سوني WH-1000XM4",
+    "description": "سماعات لاسلكية عالية الجودة مع إلغاء الضوضاء النشط. مثالية للاستماع للموسيقى والمكالمات.",
+    "price": 120000,
+    "currency": "YER",
+    "offer": {
+      "enabled": true,
+      "oldPrice": 140000,
+      "newPrice": 120000,
+      "startAt": "2024-11-10T00:00:00.000Z",
+      "endAt": "2024-12-10T23:59:59.000Z"
+    },
+    "hasActiveOffer": true,
+    "priceEffective": 120000,
+    "isAvailable": true,
+    "images": [
+      "https://www.sony.com/image/5d02da5df552836db894cead8a68f5f3?fmt=pjpeg&wid=330&bgcolor=FFFFFF&bgc=FFFFFF",
+      "https://www.google.com/url?sa=i&url=https%3A%2F%2Fsonyworld.ae%2Far%2Fproducts%2Fsony-wh-1000xm4-sama3at-ras-mane3a-leltashwish-leslkiya%3Fsrsltid%3DAfmBOorlx_LgdZEPkKUxPEJctdY4GCg2pPaEFaNQMtREWvExz6w5xADv&psig=AOvVaw2P_QX9zXY6xxeE-pXZAhpq&ust=1763331559824000&source=images&cd=vfe&opi=89978449&ved=0CBUQjRxqFwoTCMC7vo2Y9ZADFQAAAAAdAAAAABAU",
+      "https://d1ncau8tqf99kp.cloudfront.net/converted/106682_original_local_1200x1050_v3_converted.webp"
+    ],
+    "category": "cat-003",
+    "specsBlock": [
+      "إلغاء ضوضاء نشط",
+      "بطارية تدوم حتى 30 ساعة",
+      "شحن سريع 10 دقائق = 5 ساعات",
+      "ميكروفون مدمج للمكالمات",
+      "دعم Bluetooth 5.0",
+      "مقاومة للماء IPX4"
+    ],
+    "keywords": ["سوني", "سماعات", "لاسلكية", "إلغاء ضوضاء", "Bluetooth"],
+    "attributes": {
+      "اللون": ["أسود", "فضي", "أزرق"]
+    },
+    "status": "active",
+    "source": "manual",
+    "sourceUrl": null,
+    "productSource": "internal",
+    "sourceDescription": "منتج من متجر كليم الداخلي - متجر كليم متاح",
+    "createdAt": "2024-10-20T12:00:00.000Z",
+    "updatedAt": "2024-11-12T10:20:00.000Z",
+    "slug": "sony-wh-1000xm4",
+    "storefrontSlug": "sony-wh-1000xm4"
+  },
+  {
+    "_id": "prod-004",
+    "id": "prod-004",
+    "merchantId": "507f1f77bcf86cd799439022",
+    "originalUrl": null,
+    "platform": null,
+    "quantity": 0,
+    "lowQuantity": 5,
+    "name": "قميص قطني كلاسيكي",
+    "description": "قميص قطني ناعم ومريح بتصميم كلاسيكي. مناسب للارتداء اليومي والمناسبات.",
+    "price": 15000,
+    "currency": "YER",
+    "offer": null,
+    "hasActiveOffer": false,
+    "priceEffective": 15000,
+    "isAvailable": false,
+    "images": [
+      "https://mcprod.hyperone.com.eg/media/catalog/product/cache/8d4e6327d79fd11192282459179cc69e/g/r/group_4_1_6_1.jpg"
+    ],
+    "category": "cat-004",
+    "specsBlock": [
+      "100% قطن",
+      "قابل للغسيل في الغسالة",
+      "متوفر بمقاسات مختلفة",
+      "ألوان متعددة"
+    ],
+    "keywords": ["قميص", "قطن", "كلاسيكي", "ملابس"],
+    "attributes": {
+      "المقاس": ["S", "M", "L", "XL"],
+      "اللون": ["أبيض", "أسود", "أزرق", "رمادي"]
+    },
+    "status": "out_of_stock",
+    "source": "manual",
+    "sourceUrl": null,
+    "createdAt": "2024-09-01T08:00:00.000Z",
+    "updatedAt": "2024-11-01T15:00:00.000Z",
+    "slug": "classic-cotton-shirt",
+    "storefrontSlug": "classic-cotton-shirt"
+  }
+]
+

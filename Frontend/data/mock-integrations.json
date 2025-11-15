@@ -1,0 +1,32 @@
+{
+  "507f1f77bcf86cd799439011": {
+    "productSource": "salla",
+    "description": "المنتجات تأتي من منصة سلة (Salla) - قسم متجر كليم مخفي",
+    "salla": {
+      "active": true,
+      "connected": true,
+      "lastSync": "2024-11-15T10:30:00.000Z"
+    },
+    "zid": {
+      "active": false,
+      "connected": false,
+      "lastSync": null
+    }
+  },
+  "507f1f77bcf86cd799439022": {
+    "productSource": "internal",
+    "description": "المنتجات من متجر كليم الداخلي - قسم متجر كليم ظاهر",
+    "skipped": true,
+    "salla": {
+      "active": false,
+      "connected": false,
+      "lastSync": null
+    },
+    "zid": {
+      "active": false,
+      "connected": false,
+      "lastSync": null
+    }
+  }
+}
+

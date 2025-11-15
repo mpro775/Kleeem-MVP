@@ -1,0 +1,148 @@
+{
+  "sessions": {
+    "count": 1250,
+    "changePercent": 15.5
+  },
+  "productsCount": 85,
+  "messages": 8750,
+  "topKeywords": [
+    {
+      "keyword": "سعر",
+      "count": 450,
+      "percentage": 12.5
+    },
+    {
+      "keyword": "متوفر",
+      "count": 380,
+      "percentage": 10.6
+    },
+    {
+      "keyword": "شحن",
+      "count": 320,
+      "percentage": 8.9
+    },
+    {
+      "keyword": "جودة",
+      "count": 290,
+      "percentage": 8.1
+    },
+    {
+      "keyword": "ضمان",
+      "count": 250,
+      "percentage": 7.0
+    },
+    {
+      "keyword": "دفع",
+      "count": 220,
+      "percentage": 6.1
+    },
+    {
+      "keyword": "خصم",
+      "count": 200,
+      "percentage": 5.6
+    },
+    {
+      "keyword": "مواصفات",
+      "count": 180,
+      "percentage": 5.0
+    },
+    {
+      "keyword": "لون",
+      "count": 165,
+      "percentage": 4.6
+    },
+    {
+      "keyword": "مقاس",
+      "count": 150,
+      "percentage": 4.2
+    },
+    {
+      "keyword": "استرجاع",
+      "count": 140,
+      "percentage": 3.9
+    },
+    {
+      "keyword": "توصيل",
+      "count": 130,
+      "percentage": 3.6
+    },
+    {
+      "keyword": "عرض",
+      "count": 120,
+      "percentage": 3.3
+    },
+    {
+      "keyword": "كود خصم",
+      "count": 110,
+      "percentage": 3.1
+    },
+    {
+      "keyword": "متجر",
+      "count": 100,
+      "percentage": 2.8
+    }
+  ],
+  "topProducts": [
+    {
+      "productId": "prod-001",
+      "name": "هاتف ذكي سامسونج جالاكسي S23",
+      "count": 45
+    },
+    {
+      "productId": "prod-002",
+      "name": "لابتوب ديل إكسبيريانس",
+      "count": 32
+    },
+    {
+      "productId": "prod-003",
+      "name": "سماعات سوني WH-1000XM4",
+      "count": 28
+    },
+    {
+      "productId": "prod-004",
+      "name": "قميص قطني كلاسيكي",
+      "count": 15
+    }
+  ],
+  "channels": {
+    "total": 4,
+    "breakdown": [
+      {
+        "channel": "whatsapp",
+        "count": 520
+      },
+      {
+        "channel": "webchat",
+        "count": 380
+      },
+      {
+        "channel": "telegram",
+        "count": 280
+      },
+      {
+        "channel": "instagram",
+        "count": 70
+      }
+    ]
+  },
+  "storeExtras": {
+    "paidOrders": 156,
+    "aov": 285.50
+  },
+  "orders": {
+    "count": 890,
+    "changePercent": 8.2,
+    "byStatus": {
+      "pending": 12,
+      "confirmed": 45,
+      "shipped": 38,
+      "delivered": 780,
+      "cancelled": 15
+    },
+    "totalSales": 254000
+  },
+  "csat": 4.2,
+  "firstResponseTimeSec": 180,
+  "missingOpen": 3
+}
+

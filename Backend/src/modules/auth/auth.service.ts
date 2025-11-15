@@ -386,8 +386,13 @@ export class AuthService {
     email: string,
     code: string,
   ): Promise<UserDocument> {
+    console.log(`[DEBUG] Validating verification for email: ${email}, code: ${code}`);
+
     const user = await this.repo.findUserByEmailWithPassword(email || '');
+    console.log(`[DEBUG] User found: ${!!user}`);
+
     if (!user) {
+      console.log(`[DEBUG] User not found for email: ${email}`);
       throw new BadRequestException(
         this.translationService.translate(
           'auth.errors.invalidVerificationCode',
@@ -398,7 +403,20 @@ export class AuthService {
     const tokenDoc = await this.repo.latestEmailVerificationTokenByUser(
       user._id,
     );
+    console.log(`[DEBUG] Token found: ${!!tokenDoc}`);
+
+    if (tokenDoc) {
+      const inputHash = sha256(code || '');
+      console.log(`[DEBUG] Input code hash: ${inputHash}`);
+      console.log(`[DEBUG] Stored code hash: ${tokenDoc.codeHash}`);
+      console.log(`[DEBUG] Hashes match: ${tokenDoc.codeHash === inputHash}`);
+      console.log(`[DEBUG] Token expires at: ${tokenDoc.expiresAt}`);
+      console.log(`[DEBUG] Current time: ${new Date()}`);
+      console.log(`[DEBUG] Token expired: ${tokenDoc.expiresAt && tokenDoc.expiresAt.getTime() < Date.now()}`);
+    }
+
     if (!tokenDoc || tokenDoc.codeHash !== sha256(code || '')) {
+      console.log(`[DEBUG] Token validation failed`);
       throw new BadRequestException(
         this.translationService.translate(
           'auth.errors.invalidVerificationCode',
@@ -406,6 +424,7 @@ export class AuthService {
       );
     }
     if (!tokenDoc.expiresAt || tokenDoc.expiresAt.getTime() < Date.now()) {
+      console.log(`[DEBUG] Token expired`);
       throw new BadRequestException(
         this.translationService.translate(
           'auth.errors.verificationCodeExpired',
@@ -413,6 +432,7 @@ export class AuthService {
       );
     }
 
+    console.log(`[DEBUG] Validation successful`);
     return user;
   }
 

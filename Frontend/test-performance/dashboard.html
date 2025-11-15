@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test Performance Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    canvas { max-width: 800px; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>Test Performance Dashboard</h1>
+  <p>Charts below show historical test run performance.</p>
+  <canvas id="timeChart"></canvas>
+  <canvas id="scoreChart"></canvas>
+
+  <script>
+    async function loadData() {
+      try {
+        const res = await fetch('dashboard-data.json');
+        const data = await res.json();
+        const labels = data.map(d => new Date(d.timestamp).toLocaleString());
+        const totalTimes = data.map(d => d.totalTime);
+        const scores = data.map(d => d.performanceScore);
+
+        new Chart(document.getElementById('timeChart'), {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Total Time (ms)',
+              data: totalTimes,
+              borderColor: 'rgb(75, 192, 192)',
+              tension: 0.1
+            }]
+          }
+        });
+
+        new Chart(document.getElementById('scoreChart'), {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Performance Score',
+              data: scores,
+              borderColor: 'rgb(255, 99, 132)',
+              tension: 0.1
+            }]
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100
+              }
+            }
+          }
+        });
+      } catch (err) {
+        document.body.insertAdjacentHTML('beforeend', '<p>Failed to load performance data.</p>');
+        console.error(err);
+      }
+    }
+    loadData();
+  </script>
+</body>
+</html>
