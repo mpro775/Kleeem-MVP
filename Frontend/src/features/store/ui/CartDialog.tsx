@@ -404,7 +404,9 @@ export default function CartDialog({
                           color="text.secondary"
                           sx={{ fontSize: 14 }}
                         >
-                          {product.description?.substring(0, 50)}...
+                          {(product.shortDescription || product.richDescription || "")
+                            .substring(0, 50)}
+                          ...
                         </Typography>
                         <Typography
                           fontWeight="bold"

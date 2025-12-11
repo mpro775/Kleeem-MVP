@@ -17,6 +17,7 @@ import { CategoriesService } from '../../categories/categories.service';
 import { StorefrontService } from '../../storefront/storefront.service';
 import { CreateProductDto, ProductSource } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
+import { Currency } from '../enums/product.enums';
 
 import { ProductIndexService } from './product-index.service';
 import { ProductMediaService } from './product-media.service';
@@ -57,6 +58,53 @@ function toOffer(dto: CreateProductDto['offer']): Product['offer'] | undefined {
 
 function mapSource(s?: ProductSource): 'manual' | 'api' {
   return s === ProductSource.API ? 'api' : 'manual';
+}
+
+type BadgeArray = NonNullable<Product['badges']>;
+
+function normalizeBadge(raw: unknown): BadgeArray[number] | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const badgeInput = raw as {
+    label?: unknown;
+    color?: unknown;
+    showOnCard?: unknown;
+    order?: unknown;
+  };
+
+  if (typeof badgeInput.label !== 'string') return null;
+  const label = badgeInput.label.trim();
+  if (!label) return null;
+
+  const badge: BadgeArray[number] = { label };
+
+  const rawColor = badgeInput.color;
+  if (typeof rawColor === 'string' && rawColor.trim()) {
+    badge.color = rawColor.trim();
+  } else if (rawColor === null) {
+    badge.color = null;
+  }
+
+  if (typeof badgeInput.showOnCard === 'boolean') {
+    badge.showOnCard = badgeInput.showOnCard;
+  }
+
+  if (
+    typeof badgeInput.order === 'number' &&
+    Number.isFinite(badgeInput.order)
+  ) {
+    badge.order = badgeInput.order;
+  }
+
+  return badge;
+}
+
+function sanitizeBadges(badges: unknown): BadgeArray {
+  if (!Array.isArray(badges)) return [];
+
+  return badges
+    .map(normalizeBadge)
+    .filter((b): b is BadgeArray[number] => b !== null)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
 function oidToString(oid: Types.ObjectId): string {
@@ -111,8 +159,17 @@ export class ProductCommandsService {
     dto: CreateProductDto & { merchantId: string },
     merchantId: Types.ObjectId,
   ): Promise<void> {
+    const baseCurrency = dto.currency ?? Currency.YER;
+
     // التحقق من المتغيرات
-    this.validation.validateVariants(dto.hasVariants, dto.variants);
+    this.validation.validateVariants(
+      dto.hasVariants,
+      dto.variants,
+      baseCurrency,
+    );
+
+    // التحقق من الأسعار متعددة العملات (العملة الأساسية مطلوبة)
+    this.validation.normalizePrices(dto.prices, baseCurrency);
 
     // التحقق من SKU uniqueness
     if (dto.hasVariants && dto.variants && dto.variants.length > 0) {
@@ -167,15 +224,23 @@ export class ProductCommandsService {
     dto: CreateProductDto & { merchantId: string },
     merchantId: Types.ObjectId,
   ): Partial<Product> {
+    const baseCurrency = dto.currency ?? Currency.YER;
+    const { prices, basePrice } = this.validation.normalizePrices(
+      dto.prices,
+      baseCurrency,
+    );
+
     const data: Partial<Product> = {
       merchantId,
-      originalUrl: dto.originalUrl ?? null,
       sourceUrl: dto.sourceUrl ?? null,
       externalId: dto.externalId ?? null,
       platform: dto.platform ?? '',
       name: dto.name,
-      description: dto.description ?? '',
-      price: dto.price ?? 0,
+      shortDescription: dto.shortDescription ?? '',
+      richDescription: dto.richDescription ?? '',
+      prices,
+      currency: baseCurrency,
+      priceDefault: basePrice,
       isAvailable: dto.isAvailable ?? true,
       source: mapSource(dto.source),
       status: dto.status ?? 'published',
@@ -195,6 +260,11 @@ export class ProductCommandsService {
     data: Partial<Product>,
   ): void {
     if (dto.currency) data.currency = dto.currency;
+    if (dto.shortDescription !== undefined)
+      data.shortDescription = dto.shortDescription ?? '';
+    if (dto.richDescription !== undefined)
+      data.richDescription = dto.richDescription ?? '';
+
     const offer = toOffer(dto.offer);
     if (offer) data.offer = offer;
     if (dto.category) data.category = new Types.ObjectId(dto.category);
@@ -204,16 +274,28 @@ export class ProductCommandsService {
     dto: CreateProductDto & { merchantId: string },
     data: Partial<Product>,
   ): void {
+    const baseCurrency = dto.currency ?? Currency.YER;
     if (dto.hasVariants !== undefined) data.hasVariants = dto.hasVariants;
     if (dto.variants) {
-      data.variants = dto.variants.map((variant) => ({
-        ...variant,
-        images: variant.images ?? [],
-        isAvailable: variant.isAvailable ?? true,
-        barcode: variant.barcode ?? null,
-        lowStockThreshold: variant.lowStockThreshold ?? null,
-        weight: variant.weight ?? null,
-      }));
+      data.variants = dto.variants.map((variant) => {
+        const { prices: variantPrices, ...rest } = variant;
+        const normalized = this.validation.normalizePrices(
+          variantPrices,
+          baseCurrency,
+        );
+
+        return {
+          ...rest,
+          prices: normalized.prices,
+          priceDefault: normalized.basePrice,
+          currency: baseCurrency,
+          images: variant.images ?? [],
+          isAvailable: variant.isAvailable ?? true,
+          barcode: variant.barcode ?? null,
+          lowStockThreshold: variant.lowStockThreshold ?? null,
+          weight: variant.weight ?? null,
+        };
+      });
     }
   }
 
@@ -225,6 +307,10 @@ export class ProductCommandsService {
     if (dto.digitalAsset) data.digitalAsset = dto.digitalAsset;
     if (dto.isUnlimitedStock !== undefined)
       data.isUnlimitedStock = dto.isUnlimitedStock;
+    // نظام المخزون
+    if (dto.stock !== undefined) data.stock = dto.stock;
+    if (dto.lowStockThreshold !== undefined)
+      data.lowStockThreshold = dto.lowStockThreshold;
   }
 
   private applyPublishingData(
@@ -259,6 +345,7 @@ export class ProductCommandsService {
       specsBlock: Array.isArray(dto.specsBlock) ? dto.specsBlock : [],
       keywords: Array.isArray(dto.keywords) ? dto.keywords : [],
       images: Array.isArray(dto.images) ? dto.images : [],
+      badges: sanitizeBadges(dto.badges),
     };
   }
 
@@ -381,23 +468,76 @@ export class ProductCommandsService {
     return patch;
   }
 
+  private assignIfDefined<T extends keyof Product>(
+    patch: Partial<Product>,
+    key: T,
+    value: Product[T] | undefined,
+  ): void {
+    if (value !== undefined) {
+      patch[key] = value;
+    }
+  }
+
+  private applyPriceFieldsUpdate(
+    dto: UpdateProductDto,
+    patch: Partial<Product>,
+    baseCurrency: Currency,
+  ): void {
+    if (dto.prices !== undefined) {
+      const { prices, basePrice } = this.validation.normalizePrices(
+        dto.prices,
+        baseCurrency,
+      );
+      patch.prices = prices;
+      patch.priceDefault = basePrice;
+      patch.currency = baseCurrency;
+      return;
+    }
+
+    if (dto.currency !== undefined) {
+      patch.currency = dto.currency;
+    }
+  }
+
+  private applyOfferUpdate(
+    dto: UpdateProductDto,
+    patch: Partial<Product>,
+  ): void {
+    if (dto.offer === undefined) return;
+    const offer = toOffer(dto.offer);
+    if (offer) {
+      patch.offer = offer;
+    }
+  }
+
+  private applyCategoryUpdate(
+    dto: UpdateProductDto,
+    patch: Partial<Product>,
+  ): void {
+    if (dto.category !== undefined) {
+      patch.category = new Types.ObjectId(dto.category);
+    }
+  }
+
   private applyBasicFieldsUpdate(
     dto: UpdateProductDto,
     patch: Partial<Product>,
   ): void {
-    if (dto.name !== undefined) patch.name = dto.name;
-    if (dto.description !== undefined) patch.description = dto.description;
-    if (dto.price !== undefined) patch.price = dto.price;
-    if (dto.currency !== undefined) patch.currency = dto.currency;
-    if (dto.isAvailable !== undefined) patch.isAvailable = dto.isAvailable;
+    const baseCurrency = dto.currency ?? Currency.YER;
 
-    if (dto.offer !== undefined) {
-      const offer = toOffer(dto.offer);
-      if (offer) patch.offer = offer;
+    this.assignIfDefined(patch, 'name', dto.name);
+    if (dto.shortDescription !== undefined) {
+      patch.shortDescription = dto.shortDescription ?? '';
+    }
+    if (dto.richDescription !== undefined) {
+      patch.richDescription = dto.richDescription ?? '';
     }
 
-    if (dto.category !== undefined)
-      patch.category = new Types.ObjectId(dto.category);
+    this.applyPriceFieldsUpdate(dto, patch, baseCurrency);
+
+    this.assignIfDefined(patch, 'isAvailable', dto.isAvailable);
+    this.applyOfferUpdate(dto, patch);
+    this.applyCategoryUpdate(dto, patch);
   }
 
   private applyArrayFieldsUpdate(
@@ -407,22 +547,45 @@ export class ProductCommandsService {
     this.assignArrayField(patch, 'specsBlock', dto.specsBlock);
     this.assignArrayField(patch, 'keywords', dto.keywords);
     this.assignArrayField(patch, 'images', dto.images);
+    if (dto.badges !== undefined) {
+      patch.badges = sanitizeBadges(dto.badges);
+    }
   }
 
   private applyVariantsUpdate(
     dto: UpdateProductDto,
     patch: Partial<Product>,
   ): void {
+    const baseCurrency = dto.currency ?? Currency.YER;
     if (dto.hasVariants !== undefined) patch.hasVariants = dto.hasVariants;
     if (dto.variants !== undefined) {
-      patch.variants = dto.variants.map((variant) => ({
-        ...variant,
-        images: variant.images ?? [],
-        isAvailable: variant.isAvailable ?? true,
-        barcode: variant.barcode ?? null,
-        lowStockThreshold: variant.lowStockThreshold ?? null,
-        weight: variant.weight ?? null,
-      }));
+      patch.variants = dto.variants.map((variant) => {
+        const { prices: variantPrices, ...rest } = variant;
+        const normalized = variantPrices
+          ? this.validation.normalizePrices(variantPrices, baseCurrency)
+          : null;
+        const prices =
+          normalized?.prices ??
+          (variantPrices instanceof Map ? variantPrices : undefined);
+
+        if (!prices) {
+          throw new BadRequestException(
+            'variant prices are required when updating variants',
+          );
+        }
+
+        return {
+          ...rest,
+          prices,
+          ...(normalized ? { priceDefault: normalized.basePrice } : {}),
+          currency: baseCurrency,
+          images: variant.images ?? [],
+          isAvailable: variant.isAvailable ?? true,
+          barcode: variant.barcode ?? null,
+          lowStockThreshold: variant.lowStockThreshold ?? null,
+          weight: variant.weight ?? null,
+        };
+      });
     }
   }
 
@@ -434,6 +597,10 @@ export class ProductCommandsService {
     if (dto.digitalAsset !== undefined) patch.digitalAsset = dto.digitalAsset;
     if (dto.isUnlimitedStock !== undefined)
       patch.isUnlimitedStock = dto.isUnlimitedStock;
+    // نظام المخزون
+    if (dto.stock !== undefined) patch.stock = dto.stock;
+    if (dto.lowStockThreshold !== undefined)
+      patch.lowStockThreshold = dto.lowStockThreshold;
   }
 
   private applyPublishingUpdate(

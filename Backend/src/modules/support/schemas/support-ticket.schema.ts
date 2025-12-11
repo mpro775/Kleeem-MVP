@@ -17,9 +17,8 @@ export class AttachmentMeta {
   @Prop({ type: String, required: true }) mimeType!: string;
   @Prop({ type: Number, required: true }) size!: number;
   @Prop({ type: String }) url?: string;
-  @Prop({ type: String, enum: ['disk', 'minio'], default: 'disk' }) storage!:
-    | 'disk'
-    | 'minio';
+  @Prop({ type: String, enum: ['disk', 's3', 'minio'], default: 's3' })
+  storage!: 'disk' | 's3' | 'minio';
 }
 const AttachmentMetaSchema = SchemaFactory.createForClass(AttachmentMeta);
 

@@ -10,6 +10,7 @@ import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
 import { MerchantsModule } from '../merchants/merchants.module';
 import { Product, ProductSchema } from '../products/schemas/product.schema';
 import { PromotionsModule } from '../promotions/promotions.module';
+import { ProductsModule } from '../products/products.module';
 
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
@@ -29,6 +30,7 @@ import { PricingService } from './services/pricing.service';
     forwardRef(() => CouponsModule),
     forwardRef(() => PromotionsModule),
     forwardRef(() => MerchantsModule),
+    forwardRef(() => ProductsModule),
     CommonModule, // للوصول إلى TranslationService
   ],
   providers: [

@@ -99,4 +99,54 @@ describe('OffersService', () => {
     const res = await service.listAllOffers('m1', { limit: 1, offset: 0 });
     expect(res[0].url).toBeUndefined(); // لا يوجد publicSlug ولا storefront => undefined
   });
+
+  it('listAllOffers should handle percentage and quantity-based offers', async () => {
+    merchantRepo.getPublicSlug.mockResolvedValue('store-x');
+    const now = Date.now();
+    const start = new Date(now - 3600_000).toISOString();
+    const end = new Date(now + 3600_000).toISOString();
+
+    productRepo.findOffersByMerchant.mockResolvedValue([
+      {
+        _id: new Types.ObjectId(),
+        merchantId: new Types.ObjectId(),
+        name: 'Perc',
+        price: 200,
+        currency: 'SAR',
+        offer: {
+          enabled: true,
+          type: 'percentage',
+          discountValue: 10,
+          startAt: start,
+          endAt: end,
+        },
+      } as ProductLean,
+      {
+        _id: new Types.ObjectId(),
+        merchantId: new Types.ObjectId(),
+        name: 'Qty',
+        price: 50,
+        currency: 'SAR',
+        offer: {
+          enabled: true,
+          type: 'quantity_based',
+          quantityThreshold: 3,
+          quantityDiscount: 20,
+          startAt: start,
+          endAt: end,
+        },
+      } as ProductLean,
+    ]);
+
+    const res = await service.listAllOffers('m2', { limit: 10, offset: 0 });
+
+    const perc = res.find((r) => r.name === 'Perc')!;
+    expect(perc.isActive).toBe(true);
+    expect(perc.priceNew).toBe(180);
+    expect(perc.discountPct).toBe(10);
+
+    const qty = res.find((r) => r.name === 'Qty')!;
+    expect(qty.isActive).toBe(true);
+    expect(qty.priceNew).toBe(null); // سعر يعتمد على الكمية
+  });
 });

@@ -7,6 +7,7 @@ import { Readable } from 'stream';
 
 import { Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { InjectModel } from '@nestjs/mongoose';
 import { Job } from 'bull';
 import ExcelJS from 'exceljs';
@@ -17,8 +18,6 @@ import pdfParse from 'pdf-parse';
 import { VectorService } from '../../vector/vector.service';
 import { DocumentsService } from '../documents.service';
 import { DocumentSchemaClass } from '../schemas/document.schema';
-
-import type * as Minio from 'minio';
 
 // =================== Constants (no magic numbers) ===================
 const MAX_CHUNK_SIZE = 500;
@@ -79,17 +78,20 @@ function splitTextIntoChunks(text: string, size = MAX_CHUNK_SIZE): string[] {
   return text.match(re) ?? [];
 }
 
-async function downloadFromMinioToTemp(
-  minio: Minio.Client,
+async function downloadFromS3ToTemp(
+  s3: DocumentsService['s3'],
   key: string,
   bucket: string,
 ): Promise<string> {
   const safeKey = key.replace(/[\\/]/g, '_');
   const tempFile = join(tmpdir(), `${TMP_PREFIX}-${Date.now()}-${safeKey}`);
-  const stream = (await minio.getObject(bucket, key)) as unknown;
+  const response = await s3.send(
+    new GetObjectCommand({ Bucket: bucket, Key: key }),
+  );
+  const stream = response.Body as unknown;
 
   if (!isReadable(stream)) {
-    throw new Error('MinIO returned a non-readable stream');
+    throw new Error('S3 returned a non-readable stream');
   }
 
   const buffers: Buffer[] = [];
@@ -196,8 +198,8 @@ export class DocumentProcessor {
       const doc = await this.fetchLeanDoc(docId);
       const bucket = this.getBucketName();
 
-      filePath = await downloadFromMinioToTemp(
-        this.docsSvc.minio,
+      filePath = await downloadFromS3ToTemp(
+        this.docsSvc.s3,
         doc.storageKey,
         bucket,
       );
@@ -227,8 +229,9 @@ export class DocumentProcessor {
   // =================== Private helpers ===================
 
   private getBucketName(): string {
-    const bucket = process.env.MINIO_BUCKET ?? '';
-    if (!bucket) throw new Error('MINIO_BUCKET not configured');
+    const bucket =
+      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+    if (!bucket) throw new Error('S3_BUCKET_NAME not configured');
     return bucket;
   }
 

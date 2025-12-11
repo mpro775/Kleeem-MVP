@@ -6,21 +6,18 @@ import { CategoriesModule } from '../categories.module';
 import { CategoriesService } from '../categories.service';
 import { MongoCategoriesRepository } from '../repositories/mongo-categories.repository';
 import { Category } from '../schemas/category.schema';
+import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 
 describe('CategoriesModule', () => {
   let module: any;
+  const s3Mock = { send: jest.fn() };
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [CategoriesModule],
     })
-      .overrideProvider('MINIO_CLIENT')
-      .useValue({
-        bucketExists: jest.fn(),
-        makeBucket: jest.fn(),
-        fPutObject: jest.fn(),
-        presignedUrl: jest.fn(),
-      } as any)
+      .overrideProvider(S3_CLIENT_TOKEN)
+      .useValue(s3Mock)
       .compile();
 
     module = moduleRef;
@@ -48,13 +45,10 @@ describe('CategoriesModule', () => {
     expect(repository).toBeInstanceOf(MongoCategoriesRepository);
   });
 
-  it('should have MinIO client', () => {
-    const minioClient = module.get('MINIO_CLIENT');
-    expect(minioClient).toBeDefined();
-    expect(typeof minioClient.bucketExists).toBe('function');
-    expect(typeof minioClient.makeBucket).toBe('function');
-    expect(typeof minioClient.fPutObject).toBe('function');
-    expect(typeof minioClient.presignedUrl).toBe('function');
+  it('should have S3 client', () => {
+    const s3Client = module.get(S3_CLIENT_TOKEN);
+    expect(s3Client).toBeDefined();
+    expect(typeof s3Client.send).toBe('function');
   });
 
   it('should export CategoriesService', () => {
@@ -85,12 +79,11 @@ describe('CategoriesModule', () => {
     });
   });
 
-  describe('MinIO client factory', () => {
-    it('should create MinIO client with correct configuration', () => {
-      const minioClient = module.get('MINIO_CLIENT');
-      expect(minioClient).toBeDefined();
-      // The factory function should create a Minio.Client instance
-      // This is tested by verifying the client has the expected methods
+  describe('S3 client factory', () => {
+    it('should provide S3 client with send method', () => {
+      const s3Client = module.get(S3_CLIENT_TOKEN);
+      expect(s3Client).toBeDefined();
+      expect(typeof s3Client.send).toBe('function');
     });
   });
 

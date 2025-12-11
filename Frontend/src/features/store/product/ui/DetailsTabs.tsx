@@ -7,12 +7,28 @@ import {
   useTheme,
   Badge,
 } from "@mui/material";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
+type Props = {
+  specs?: string[];
+  richDescription?: string;
+};
 
-export default function DetailsTabs({ specs = [] }: { specs?: string[] }) {
+function sanitizeRichHtml(html: string): string {
+  // إزالة السكربت وأي on* attributes بشكل بسيط
+  const withoutScripts = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
+  return withoutScripts.replace(/\son\w+="[^"]*"/gi, "");
+}
+
+export default function DetailsTabs({ specs = [], richDescription }: Props) {
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState(0);
+
+  const cleanedRich = useMemo(
+    () => (richDescription ? sanitizeRichHtml(richDescription) : ""),
+    [richDescription],
+  );
+  const hasRich = Boolean(cleanedRich.trim());
 
   return (
     <Box sx={{ mb: 6 }}>
@@ -26,6 +42,7 @@ export default function DetailsTabs({ specs = [] }: { specs?: string[] }) {
           "& .MuiTab-root.Mui-selected": { color: "var(--brand)" },
         }}
       >
+        {hasRich && <Tab label="الوصف التفصيلي" />}
         <Tab label="المواصفات" />
         <Tab 
           label={
@@ -69,7 +86,25 @@ export default function DetailsTabs({ specs = [] }: { specs?: string[] }) {
         />
       </Tabs>
 
-      {activeTab === 0 && (
+      {hasRich && activeTab === 0 && (
+        <Paper
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            backgroundColor: theme.palette.grey[50],
+          }}
+        >
+          <Box
+            sx={{
+              "& p": { lineHeight: 1.7, mb: 1.5 },
+              "& ul": { paddingInlineStart: 3 },
+            }}
+            dangerouslySetInnerHTML={{ __html: cleanedRich }}
+          />
+        </Paper>
+      )}
+
+      {(!hasRich && activeTab === 0) || (hasRich && activeTab === 1) ? (
         <Paper
           sx={{
             p: 3,
@@ -102,9 +137,9 @@ export default function DetailsTabs({ specs = [] }: { specs?: string[] }) {
             </Typography>
           )}
         </Paper>
-      )}
+      ) : null}
 
-      {activeTab === 1 && (
+      {(hasRich ? activeTab === 2 : activeTab === 1) && (
         <Paper
           sx={{
             p: 4,
@@ -130,7 +165,7 @@ export default function DetailsTabs({ specs = [] }: { specs?: string[] }) {
         </Paper>
       )}
 
-      {activeTab === 2 && (
+      {(hasRich ? activeTab === 3 : activeTab === 2) && (
         <Paper
           sx={{
             p: 4,

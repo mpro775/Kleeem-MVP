@@ -1,4 +1,3 @@
-
 version: '3.8'
 
 services:
@@ -12,10 +11,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      mongo:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
     env_file:
       - ./Backend/.env
     environment:
@@ -24,6 +19,7 @@ services:
       EVOLUTION_API_URL: http://evolution-api:8080
       EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
       SENTRY_DSN: ${SENTRY_DSN}
+      # متغيرات Grafana Cloud ضرورية هنا إذا كان التطبيق يرسل Metrics مباشرة
       GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY}
       GRAFANA_CLOUD_INSTANCE_ID: ${GRAFANA_CLOUD_INSTANCE_ID}
     ports:
@@ -36,36 +32,6 @@ services:
     networks:
       - kaleem-net
 
-  mongo:
-    image: mongo:5
-    container_name: kaleem-mongo
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: kaleem
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-    command:
-      - --wiredTigerCacheSizeGB=1
-      - --quiet
-    ports:
-      - '127.0.0.1:27017:27017'
-    volumes:
-      - mongo_data:/data/db
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - |
-          echo "db.adminCommand({ ping: 1 })" | mongosh --quiet \
-            -u $$MONGO_INITDB_ROOT_USERNAME \
-            -p $$MONGO_INITDB_ROOT_PASSWORD \
-            --authenticationDatabase admin || exit 1
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
-    mem_limit: 1536m
-    cpus: 0.5
-    networks:
-      - kaleem-net
-
   redis:
     image: redis:7-alpine
     container_name: kaleem-redis
@@ -73,9 +39,6 @@ services:
       - redis-server
       - --maxmemory 256mb
       - --maxmemory-policy allkeys-lru
-      - --save 900 1
-      - --save 300 10
-      - --appendonly no
     ports:
       - '127.0.0.1:6379:6379'
     volumes:
@@ -117,31 +80,6 @@ services:
     networks:
       - kaleem-net
 
-  minio:
-    image: minio/minio:latest
-    container_name: kaleem-minio
-    command: server --console-address ':9001' /data
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
-      MINIO_SERVER_URL: https://cdn.kaleem-ai.com
-      MINIO_BROWSER_REDIRECT_URL: https://storage.kaleem-ai.com
-    ports:
-      - '127.0.0.1:9000:9000'
-      - '127.0.0.1:9001:9001'
-    volumes:
-      - minio_data:/data
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
-      interval: 60s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-    mem_limit: 512m
-    cpus: 0.2
-    networks:
-      - kaleem-net
-
   embedding:
     build:
       context: ./Backend/embedding-service
@@ -170,24 +108,6 @@ services:
     networks:
       - kaleem-net
 
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: kaleem-qdrant
-    ports:
-      - '127.0.0.1:6333:6333'
-    volumes:
-      - qdrant_data:/qdrant/storage
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:6333']
-      interval: 60s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-    mem_limit: 512m
-    cpus: 0.2
-    networks:
-      - kaleem-net
-
   n8n:
     build:
       context: ./Backend
@@ -204,9 +124,6 @@ services:
       N8N_LOG_LEVEL: warn
     ports:
       - '127.0.0.1:5678:5678'
-    depends_on:
-      mongo:
-        condition: service_healthy
     volumes:
       - n8n_data:/home/node/.n8n
     restart: unless-stopped
@@ -251,21 +168,25 @@ services:
     networks:
       - kaleem-net
 
+  # ✅ تم إبقاء الـ Agent لأنه الوسيط الذي سيرسل البيانات للكلاود
   grafana-agent:
     image: grafana/agent:v0.40.4
     container_name: kaleem-grafana-agent
     command:
       - --config.file=/etc/agent/grafana-agent.yaml
     environment:
+      # تأكد من تعبئة هذه القيم في ملف .env بناء على بيانات حسابك في Grafana Cloud
       - GRAFANA_CLOUD_METRICS_URL=${GRAFANA_CLOUD_METRICS_URL}
       - GRAFANA_CLOUD_METRICS_USERNAME=${GRAFANA_CLOUD_METRICS_USERNAME}
       - GRAFANA_CLOUD_API_KEY=${GRAFANA_CLOUD_API_KEY}
     volumes:
+      # تأكد من وجود ملف الإعدادات هذا وأنه معد لإرسال البيانات للكلاود
       - ./Backend/observability/grafana-agent.yaml:/etc/agent/grafana-agent.yaml:ro
     depends_on:
       - api
-      - rabbitmq
     restart: unless-stopped
+    # استهلاك خفيف جداً
+    mem_limit: 128m 
     networks:
       - kaleem-net
 
@@ -288,11 +209,8 @@ services:
       - kaleem-net
 
 volumes:
-  mongo_data:
   redis_data:
   rabbitmq_data:
-  minio_data:
-  qdrant_data:
   n8n_data:
   evolution_store:
   evolution_instances:
@@ -302,5 +220,3 @@ networks:
   kaleem-net:
     driver: bridge
     name: kaleem-net
-
-

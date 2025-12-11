@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 
 import { PaginationService } from '../../../common/services/pagination.service';
 import { GetProductsDto, SortOrder } from '../dto/get-products.dto';
+import { Currency } from '../enums/product.enums';
 import { Product, ProductDocument } from '../schemas/product.schema';
 
 import type { PaginationResult } from '../../../common/dto/pagination.dto';
@@ -40,19 +41,59 @@ function toPlainAttributes(attrs: unknown): StringArrayRecord | undefined {
 type PaginateModelParam = Parameters<PaginationService['paginate']>[0];
 
 /** يحوّل عنصرًا (Doc أو Lean) إلى ProductLean آمن */
+// eslint-disable-next-line complexity
 function toProductLean(p: unknown): ProductLean {
   if (!isObject(p)) {
     // نبني أقل شكل ممكن لتفادي any
-    return { attributes: {} } as ProductLean;
+    return {
+      attributes: [],
+      prices: new Map<string, number>(),
+      currency: Currency.YER,
+    } as ProductLean;
   }
 
-  const attributes = toPlainAttributes(p.attributes);
+  const attributesRecord = toPlainAttributes(
+    (p as { attributes?: unknown }).attributes,
+  );
+  const attributes: ProductLean['attributes'] = attributesRecord
+    ? Object.entries(attributesRecord).map(([keySlug, valueSlugs]) => ({
+        keySlug,
+        valueSlugs,
+      }))
+    : undefined;
+
+  const rawPrices = (p as { prices?: unknown }).prices;
+  const prices = new Map<string, number>();
+  if (rawPrices instanceof Map) {
+    for (const [k, v] of rawPrices.entries()) {
+      if (
+        typeof k === 'string' &&
+        typeof v === 'number' &&
+        Number.isFinite(v) &&
+        v >= 0
+      ) {
+        prices.set(k, v);
+      }
+    }
+  } else if (isObject(rawPrices)) {
+    for (const [k, v] of Object.entries(rawPrices)) {
+      if (typeof v === 'number' && Number.isFinite(v) && v >= 0) {
+        prices.set(String(k), v);
+      }
+    }
+  }
+
+  const currency =
+    ((p as { currency?: unknown }).currency as Currency | undefined) ??
+    Currency.YER;
 
   // مرّر باقي الحقول كما هي (lean سيعطيها Plain)،
   // ولو Doc فتبقى خصائص غير مستخدمة؛ أهم شيء attributes صار Record.
   return {
     ...(p as object),
     attributes,
+    prices,
+    currency,
   } as ProductLean;
 }
 @Injectable()
@@ -293,7 +334,12 @@ export class MongoProductsRepository {
       .find({
         merchantId,
         isAvailable: true,
-        $or: [{ name: rx }, { description: rx }, { keywords: { $in: [q] } }],
+        $or: [
+          { name: rx },
+          { shortDescription: rx },
+          { richDescription: rx },
+          { keywords: { $in: [q] } },
+        ],
       })
       .limit(limit)
       .lean()

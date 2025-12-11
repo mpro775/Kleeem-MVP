@@ -72,26 +72,30 @@ export class MongoPromotionsRepository implements PromotionsRepository {
     return this.promotionModel
       .find({
         merchantId: new Types.ObjectId(merchantId),
-        status: PromotionStatus.ACTIVE,
-        $or: [
-          { startDate: null },
-          { startDate: { $lte: now } },
-        ],
-        $and: [
-          {
-            $or: [
-              { endDate: null },
-              { endDate: { $gte: now } },
-            ],
-          },
-        ],
+        status: { $ne: PromotionStatus.INACTIVE },
+        // التاريخ: يجب أن يبدأ الآن أو بلا تاريخ بداية
+        $or: [{ startDate: null }, { startDate: { $lte: now } }],
+        // التاريخ: لم ينتهِ بعد أو بلا تاريخ نهاية
+        $and: [{ $or: [{ endDate: null }, { endDate: { $gte: now } }] }],
+        // حد الاستخدام: غير محدود أو لم يصل الحد
+        $expr: {
+          $or: [
+            { $eq: ['$usageLimit', null] },
+            {
+              $lt: [{ $ifNull: ['$timesUsed', 0] }, '$usageLimit'],
+            },
+          ],
+        },
       })
       .sort({ priority: -1 })
       .lean()
       .exec();
   }
 
-  async update(id: string, data: Partial<Promotion>): Promise<Promotion | null> {
+  async update(
+    id: string,
+    data: Partial<Promotion>,
+  ): Promise<Promotion | null> {
     if (!Types.ObjectId.isValid(id)) return null;
 
     return this.promotionModel
@@ -113,19 +117,52 @@ export class MongoPromotionsRepository implements PromotionsRepository {
   ): Promise<Promotion | null> {
     if (!Types.ObjectId.isValid(id)) return null;
 
-    return this.promotionModel
-      .findByIdAndUpdate(
-        id,
+    const updated = await this.promotionModel
+      .findOneAndUpdate(
         {
-          $inc: {
-            timesUsed: 1,
-            totalDiscountGiven: discountAmount,
-          },
+          _id: new Types.ObjectId(id),
+          $or: [
+            { usageLimit: null },
+            {
+              $expr: {
+                $lt: [{ $ifNull: ['$timesUsed', 0] }, '$usageLimit'],
+              },
+            },
+          ],
         },
+        [
+          {
+            $set: {
+              timesUsed: { $add: [{ $ifNull: ['$timesUsed', 0] }, 1] },
+              totalDiscountGiven: {
+                $add: [{ $ifNull: ['$totalDiscountGiven', 0] }, discountAmount],
+              },
+            },
+          },
+          {
+            $set: {
+              status: {
+                $cond: [
+                  {
+                    $and: [
+                      { $ne: ['$usageLimit', null] },
+                      {
+                        $gte: [{ $ifNull: ['$timesUsed', 0] }, '$usageLimit'],
+                      },
+                    ],
+                  },
+                  PromotionStatus.EXPIRED,
+                  '$status',
+                ],
+              },
+            },
+          },
+        ],
         { new: true },
       )
       .lean()
       .exec();
+
+    return updated;
   }
 }
-

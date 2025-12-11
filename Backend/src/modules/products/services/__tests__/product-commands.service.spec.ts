@@ -311,7 +311,7 @@ describe('ProductCommandsService', () => {
   describe('uploadProductImagesToMinio', () => {
     it('uploads images and returns result', async () => {
       const files = [{ filename: 'test.jpg' }] as Express.Multer.File[];
-      const urls = ['https://minio.example.com/test.jpg'];
+      const urls = ['https://cdn.example.com/test.jpg'];
 
       media.uploadMany.mockResolvedValue(urls);
       cfg.get.mockReturnValue(6);
@@ -338,7 +338,7 @@ describe('ProductCommandsService', () => {
 
     it('respects replace option', async () => {
       const files = [{ filename: 'test.jpg' }] as Express.Multer.File[];
-      const urls = ['https://minio.example.com/test.jpg'];
+      const urls = ['https://cdn.example.com/test.jpg'];
 
       media.uploadMany.mockResolvedValue(urls);
 
@@ -366,7 +366,7 @@ describe('ProductCommandsService', () => {
   describe('uploadImages', () => {
     it('uploads images using legacy method', async () => {
       const files = [{ filename: 'test.jpg' }] as Express.Multer.File[];
-      const urls = ['https://minio.example.com/test.jpg'];
+      const urls = ['https://cdn.example.com/test.jpg'];
 
       media.uploadMany.mockResolvedValue(urls);
 
@@ -387,7 +387,7 @@ describe('ProductCommandsService', () => {
 
     it('respects replace option in legacy method', async () => {
       const files = [{ filename: 'test.jpg' }] as Express.Multer.File[];
-      const urls = ['https://minio.example.com/test.jpg'];
+      const urls = ['https://cdn.example.com/test.jpg'];
 
       media.uploadMany.mockResolvedValue(urls);
 

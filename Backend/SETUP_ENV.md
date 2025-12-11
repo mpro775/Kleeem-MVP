@@ -59,15 +59,15 @@ MAIL_USER=your-email@gmail.com
 MAIL_PASS=your-app-password
 MAIL_FROM=noreply@kaleem-ai.com
 
-# MinIO/S3 Storage
-MINIO_ENDPOINT=localhost
-MINIO_PORT=9000
-MINIO_USE_SSL=false
-MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin
-MINIO_BUCKET=kaleem-uploads
-MINIO_REGION=us-east-1
-MINIO_PUBLIC_URL=http://localhost:9000
+# Cloudflare R2 (S3-compatible)
+AWS_ACCESS_KEY_ID=8b3520254704a5b33623378610a04f01
+AWS_SECRET_ACCESS_KEY=3cb75008b81f604e131c108961fde021373ce44a58a7c98ccd8e3b5cac8dc201
+AWS_REGION=auto
+AWS_ENDPOINT=https://56c86161349f5102ec103ae2ea495e01.r2.cloudflarestorage.com
+S3_BUCKET_NAME=kaleem-assets
+# (اختياري) CDN للملفات
+# ASSETS_CDN_BASE_URL=https://cdn.kaleem-ai.com
+# ملاحظة: يمكن الإبقاء على MINIO_* للاستخدام المحلي الاختياري، لكن الإنتاج يستخدم القيم أعلاه.
 
 # WhatsApp Integration
 EVOLUTION_API_URL=http://localhost:8080

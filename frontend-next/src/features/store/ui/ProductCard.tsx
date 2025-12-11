@@ -18,7 +18,6 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import ShareIcon from "@mui/icons-material/Share";
 import StarIcon from "@mui/icons-material/Star";
-import FlashOnIcon from "@mui/icons-material/FlashOn";
 import { useState } from "react";
 import { OfferBadge } from "../components/OfferBadge";
 import { CountdownTimer } from "../components/CountdownTimer";
@@ -103,24 +102,7 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
         </Box>
       )}
 
-      {/* شارة سريع البيع */}
-      {product.lowQuantity && product.lowQuantity < 10 && (
-        <Chip
-          label="ينفد سريعاً"
-          color="warning"
-          size="small"
-          icon={<FlashOnIcon fontSize="small" sx={{ fontSize: { xs: 14, sm: 18 } }} />}
-          sx={{
-            position: "absolute",
-            top: showOffer ? { xs: 36, sm: 50 } : { xs: 8, sm: 12 },
-            left: { xs: 8, sm: 12 },
-            zIndex: 2,
-            fontWeight: "bold",
-            fontSize: { xs: "0.7rem", sm: "inherit" },
-            height: { xs: 20, sm: 32 }
-          }}
-        />
-      )}
+      {/* شارة سريع البيع أزيلت مع حقل lowQuantity */}
 
       {/* صورة المنتج */}
               <Box

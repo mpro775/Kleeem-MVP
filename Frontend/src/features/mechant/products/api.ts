@@ -3,6 +3,7 @@ import type {
   CreateProductDto,
   UpdateProductDto,
   ProductResponse,
+  AttributeDefinition,
 } from "@/features/mechant/products/type";
 import { ensureIdString } from "@/shared/utils/ids";
 
@@ -16,6 +17,14 @@ export async function createProduct(
   };
   const { data } = await axiosInstance.post<ProductResponse>("/products", casted);
   return data;
+}
+
+// جلب تعريفات السمات للتاجر الحالي (من التوكن)
+export async function getAttributeDefinitions(): Promise<AttributeDefinition[]> {
+  const { data } = await axiosInstance.get<AttributeDefinition[]>(
+    "/attribute-definitions"
+  );
+  return data ?? [];
 }
 
 // تحديث منتج

@@ -1,16 +1,23 @@
+import { createReadStream } from 'fs';
 import { unlink } from 'node:fs/promises';
 
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable, NotFoundException, Logger, Inject } from '@nestjs/common';
 import { Queue } from 'bull';
-import { Client as MinioClient } from 'minio';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import { DocumentsRepository } from './repositories/documents.repository';
 import { DocumentSchemaClass } from './schemas/document.schema';
+import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
 
 @Injectable()
 export class DocumentsService {
-  public minio: MinioClient;
   private readonly logger = new Logger(DocumentsService.name);
 
   constructor(
@@ -18,15 +25,8 @@ export class DocumentsService {
     private readonly repo: DocumentsRepository,
     @InjectQueue('documents-processing-queue')
     private readonly queue: Queue,
-  ) {
-    this.minio = new MinioClient({
-      endPoint: process.env.MINIO_ENDPOINT!,
-      port: parseInt(process.env.MINIO_PORT ?? '9000', 10),
-      useSSL: process.env.MINIO_USE_SSL === 'true',
-      accessKey: process.env.MINIO_ACCESS_KEY!,
-      secretKey: process.env.MINIO_SECRET_KEY!,
-    });
-  }
+    @Inject(S3_CLIENT_TOKEN) public readonly s3: S3Client,
+  ) {}
 
   async uploadFile(
     merchantId: string,
@@ -34,15 +34,22 @@ export class DocumentsService {
   ): Promise<DocumentSchemaClass> {
     const storageKey = `${Date.now()}-${file.originalname}`;
     this.logger.log('=== رفع ملف جديد ===');
-    this.logger.log(`رفع إلى MinIO باسم: ${storageKey}`);
+    this.logger.log(`رفع إلى التخزين باسم: ${storageKey}`);
 
     try {
-      // 1) رفع الملف لـ MinIO
-      await this.minio.fPutObject(
-        process.env.MINIO_BUCKET!,
-        storageKey,
-        file.path,
-        { 'Content-Type': file.mimetype },
+      // 1) رفع الملف إلى R2/S3
+      const bucket =
+        process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+      if (!bucket) {
+        throw new Error('S3_BUCKET_NAME not configured');
+      }
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: storageKey,
+          Body: createReadStream(file.path),
+          ContentType: file.mimetype,
+        }),
       );
 
       // 2) حفظ السجل في Mongo عبر الـ Repository
@@ -82,11 +89,12 @@ export class DocumentsService {
 
     // ملاحظة: التعليق يقول "ساعة واحدة" لكن القيمة هي 24 ساعة (ضبطناها لتساوي 24 ساعة)
     const expires = 24 * 60 * 60; // 24 ساعة بالثواني
-    return this.minio.presignedUrl(
-      'GET',
-      process.env.MINIO_BUCKET!,
-      doc.storageKey,
-      expires,
+    const bucket =
+      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+    return getSignedUrl(
+      this.s3,
+      new GetObjectCommand({ Bucket: bucket, Key: doc.storageKey }),
+      { expiresIn: expires },
     );
   }
 
@@ -94,7 +102,15 @@ export class DocumentsService {
     const doc = await this.repo.findByIdForMerchant(docId, merchantId);
     if (!doc) throw new NotFoundException('Document not found');
 
-    await this.minio.removeObject(process.env.MINIO_BUCKET!, doc.storageKey);
+    const bucket =
+      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+    if (!bucket) {
+      throw new Error('S3_BUCKET_NAME not configured');
+    }
+
+    await this.s3.send(
+      new DeleteObjectCommand({ Bucket: bucket, Key: doc.storageKey }),
+    );
     await this.repo.deleteByIdForMerchant(docId, merchantId);
   }
 }

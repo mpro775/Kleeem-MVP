@@ -190,7 +190,9 @@ describe('ProductSyncService', () => {
       externalProduct as any,
     );
 
-    expect(repo.upsertExternal).toHaveBeenCalledWith(
+    const [, providerArg, payload] = repo.upsertExternal.mock.calls[0];
+    expect(providerArg).toBe('salla');
+    expect(payload).toEqual(
       expect.objectContaining({
         platform: 'salla',
       }),
@@ -226,14 +228,11 @@ describe('ProductSyncService', () => {
       externalProduct as any,
     );
 
-    expect(repo.upsertExternal).toHaveBeenCalledWith(
-      expect.objectContaining({
-        images: [
-          'http://example.com/image1.jpg',
-          'http://example.com/image2.jpg',
-        ],
-      }),
-    );
+    const [, , payload] = repo.upsertExternal.mock.calls[0];
+    expect(payload.images).toEqual([
+      'http://example.com/image1.jpg',
+      'http://example.com/image2.jpg',
+    ]);
   });
 
   it('upsertExternalProduct -> handles price conversion', async () => {
@@ -259,10 +258,10 @@ describe('ProductSyncService', () => {
       externalProduct as any,
     );
 
-    expect(repo.upsertExternal).toHaveBeenCalledWith(
-      expect.objectContaining({
-        price: 99.99,
-      }),
-    );
+    const [, , payload] = repo.upsertExternal.mock.calls[0];
+    expect(payload.currency).toBe('YER');
+    expect(payload.prices).toBeInstanceOf(Map);
+    expect(payload.prices.get('YER')).toBe(99.99);
+    expect(payload.priceDefault).toBe(99.99);
   });
 });

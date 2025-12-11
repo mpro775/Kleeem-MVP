@@ -1,7 +1,7 @@
 // src/modules/products/types.ts
 import type { Product } from './schemas/product.schema';
 
-// عدّل الحقول التي هي Map في الـ schema إلى Record في الـ Lean
+// عدّل الحقول المركبة إلى أنواع أبسط في الـ Lean
 export type ProductLean = Omit<Product, 'attributes'> & {
-  attributes?: Record<string, string[]>;
+  attributes?: { keySlug: string; valueSlugs: string[] }[];
 };

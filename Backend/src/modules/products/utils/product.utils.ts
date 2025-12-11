@@ -145,7 +145,8 @@ export interface EmbeddableProduct {
   id: string;
   merchantId: string;
   name?: string;
-  description?: string;
+  shortDescription?: string;
+  richDescription?: string;
 
   categoryId?: string;
   categoryName?: string;
@@ -157,8 +158,9 @@ export interface EmbeddableProduct {
 
   specsBlock?: unknown[];
   keywords?: unknown[];
-  attributes?: UnknownRecord;
+  attributes?: { keySlug?: unknown; valueSlugs?: unknown[] }[];
   images?: unknown[];
+  badges?: UnknownRecord[];
 
   price: number | null;
   priceEffective: number | null;
@@ -190,7 +192,7 @@ export function computePricing(doc: unknown): {
   hasOffer: boolean;
   discountPct: number | null;
 } {
-  const price = toNum(get(doc, ['price']));
+  const price = toNum(get(doc, ['priceDefault'])) ?? toNum(get(doc, ['price']));
   const priceOld = toNum(get(doc, ['offer', 'oldPrice']));
   const priceNew = toNum(get(doc, ['offer', 'newPrice']));
   const effective = toNum(get(doc, ['priceEffective'])) ?? price ?? null;
@@ -219,8 +221,16 @@ function extractBasicFields(doc: unknown) {
   const name = asString(get(doc, ['name']));
   if (name !== null) result.name = name;
 
-  const description = asString(get(doc, ['description']));
-  if (description !== null) result.description = description;
+  const shortDescription = asString(get(doc, ['shortDescription']));
+  if (shortDescription !== null) {
+    result.shortDescription = shortDescription;
+  } else {
+    const rich = asString(get(doc, ['richDescription']));
+    if (rich) result.shortDescription = rich.slice(0, 200);
+  }
+
+  const richDescription = asString(get(doc, ['richDescription']));
+  if (richDescription !== null) result.richDescription = richDescription;
 
   const categoryId = toIdStr(get(doc, ['category']));
   if (categoryId !== null) result.categoryId = categoryId;
@@ -261,10 +271,13 @@ function extractContentFields(doc: unknown) {
   if (Array.isArray(keywordsRaw)) result.keywords = keywordsRaw;
 
   const attributes = get(doc, ['attributes']);
-  if (isRecord(attributes)) result.attributes = attributes;
+  if (Array.isArray(attributes)) result.attributes = attributes;
 
   const imagesRaw = get(doc, ['images']);
   if (Array.isArray(imagesRaw)) result.images = imagesRaw.slice(0, MAX_IMAGES);
+
+  const badgesRaw = get(doc, ['badges']);
+  if (Array.isArray(badgesRaw)) result.badges = badgesRaw;
 
   const currency = asString(get(doc, ['currency']));
   if (currency !== null) result.currency = currency;

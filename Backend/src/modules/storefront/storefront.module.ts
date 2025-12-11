@@ -2,8 +2,8 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MulterModule } from '@nestjs/platform-express';
-import * as Minio from 'minio';
 
+import { StorageModule } from '../../common/storage/storage.module';
 import {
   Category,
   CategorySchema,
@@ -41,21 +41,11 @@ import {
     forwardRef(() => VectorModule),
     MulterModule.register({ dest: './uploads' }),
     LeadsModule,
+    StorageModule,
   ],
   controllers: [StorefrontController],
   providers: [
     StorefrontService,
-    {
-      provide: 'MINIO_CLIENT',
-      useFactory: () =>
-        new Minio.Client({
-          endPoint: process.env.MINIO_ENDPOINT!,
-          port: parseInt(process.env.MINIO_PORT ?? '9000', 10),
-          useSSL: process.env.MINIO_USE_SSL === 'true',
-          accessKey: process.env.MINIO_ACCESS_KEY!,
-          secretKey: process.env.MINIO_SECRET_KEY!,
-        }),
-    },
     { provide: STOREFRONT_REPOSITORY, useClass: StorefrontMongoRepository },
     {
       provide: STOREFRONT_PRODUCT_REPOSITORY,

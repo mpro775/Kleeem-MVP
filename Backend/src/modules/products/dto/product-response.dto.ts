@@ -4,6 +4,9 @@ import { IsMongoId, IsOptional } from 'class-validator';
 
 import { Currency } from '../enums/product.enums';
 import { ProductVariant } from '../schemas/product-variant.schema';
+const EXAMPLE_PRICE_YER = 5000;
+const EXAMPLE_PRICE_SAR = 75;
+const EXAMPLE_PRICE_USD = 20;
 export class ProductResponseDto {
   @ApiProperty({ description: 'المعرف الفريد للمنتج' })
   @Expose()
@@ -12,10 +15,6 @@ export class ProductResponseDto {
   @ApiProperty({ description: 'معرف التاجر مالك المنتج' })
   @Expose()
   merchantId?: string;
-
-  @ApiProperty({ description: 'الرابط الأصلي للمنتج' })
-  @Expose()
-  originalUrl?: string;
 
   // الحقول الجديدة
   @ApiProperty({ description: 'اسم المنصة المصدر', example: 'zid' })
@@ -26,17 +25,20 @@ export class ProductResponseDto {
   @Expose()
   name?: string;
 
-  @ApiProperty({ description: 'السعر', example: 0 })
+  @ApiPropertyOptional({ description: 'وصف قصير للمنتج' })
   @Expose()
-  price?: number;
+  shortDescription?: string;
 
   @ApiProperty({ description: 'هل المنتج متوفر؟', example: true })
   @Expose()
   isAvailable?: boolean;
 
-  @ApiProperty({ description: 'وصف المنتج', example: '' })
+  @ApiPropertyOptional({
+    description: 'وصف تفصيلي غني (HTML/JSON)',
+    example: '<p>تفاصيل المنتج...</p>',
+  })
   @Expose()
-  description?: string;
+  richDescription?: string;
 
   @ApiProperty({ description: 'الصور', type: [String] })
   @Expose()
@@ -47,10 +49,6 @@ export class ProductResponseDto {
   @Expose()
   category?: string;
 
-  @ApiProperty({ description: 'حالة التوفر المنخفض', example: '' })
-  @Expose()
-  lowQuantity?: string;
-
   @ApiProperty({ description: 'المواصفات الإضافية', type: [String] })
   @Expose()
   specsBlock?: string[];
@@ -59,11 +57,60 @@ export class ProductResponseDto {
   @Expose()
   keywords?: string[];
 
-  @ApiProperty({ description: 'المواصفات الإضافية', type: [String] })
+  @ApiPropertyOptional({
+    description: 'ملصقات العرض على الكارت',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        label: { type: 'string' },
+        color: { type: 'string' },
+        showOnCard: { type: 'boolean' },
+        order: { type: 'number' },
+      },
+    },
+  })
   @Expose()
-  attributes?: Record<string, string[]>;
+  badges?: {
+    label: string;
+    color?: string | null;
+    showOnCard?: boolean;
+    order?: number;
+  }[];
+
+  @ApiProperty({
+    description: 'سمات المنتج (keySlug/valueSlugs)',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        keySlug: { type: 'string' },
+        valueSlugs: { type: 'array', items: { type: 'string' } },
+      },
+    },
+  })
+  @Expose()
+  attributes?: { keySlug: string; valueSlugs: string[] }[];
 
   @Expose() currency?: Currency;
+  @ApiProperty({
+    description: 'أسعار متعددة العملات',
+    type: 'object',
+    additionalProperties: { type: 'number' },
+    example: {
+      YER: EXAMPLE_PRICE_YER,
+      SAR: EXAMPLE_PRICE_SAR,
+      USD: EXAMPLE_PRICE_USD,
+    },
+  })
+  @Expose()
+  prices?: Record<string, number>;
+  @ApiProperty({
+    description: 'السعر بالعملة الأساسية (YER)',
+    example: EXAMPLE_PRICE_YER,
+  })
+  @Expose()
+  priceDefault?: number;
 
   @Expose() offer?: {
     enabled: boolean;
@@ -74,30 +121,6 @@ export class ProductResponseDto {
   };
   @Expose() hasActiveOffer?: boolean;
   @Expose() priceEffective?: number;
-  @ApiProperty({
-    description: 'آخر تحديث جزئي (minimal)',
-    type: String,
-    format: 'date-time',
-  })
-  @Expose()
-  lastFetchedAt?: Date;
-
-  @ApiProperty({
-    description: 'آخر تحديث شامل (full)',
-    type: String,
-    format: 'date-time',
-  })
-  @Expose()
-  lastFullScrapedAt?: Date;
-
-  @ApiProperty({
-    description: 'حالة الخطأ عند السكريبينج إن وجدت',
-    example: null,
-    required: false,
-  })
-  @Expose()
-  errorState?: string;
-
   @ApiProperty({
     description: 'السلاج المخصص للمنتج',
     example: 'my-product-slug',
@@ -152,6 +175,15 @@ export class ProductResponseDto {
   @ApiPropertyOptional({ description: 'هل المخزون غير محدود؟' })
   @Expose()
   isUnlimitedStock?: boolean;
+
+  // ============ نظام المخزون ============
+  @ApiPropertyOptional({ description: 'كمية المخزون المتاحة' })
+  @Expose()
+  stock?: number;
+
+  @ApiPropertyOptional({ description: 'عتبة التنبيه للمخزون المنخفض' })
+  @Expose()
+  lowStockThreshold?: number | null;
 
   // ============ حالة النشر ============
   @ApiPropertyOptional({

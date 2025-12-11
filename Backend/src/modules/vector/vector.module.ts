@@ -6,14 +6,14 @@ import { CommonModule } from '../../common/config/common.module';
 import { ProductsModule } from '../products/products.module';
 
 import { EmbeddingsClient } from './utils/embeddings.client';
-import { QdrantWrapper } from './utils/qdrant.client';
+import { PineconeWrapper } from './utils/pinecone.client';
 import { VectorController } from './vector.controller';
 import { VectorService } from './vector.service';
 
 @Module({
   imports: [HttpModule, forwardRef(() => ProductsModule), CommonModule],
-  providers: [VectorService, QdrantWrapper, EmbeddingsClient],
+  providers: [VectorService, PineconeWrapper, EmbeddingsClient],
   controllers: [VectorController],
-  exports: [VectorService, QdrantWrapper, EmbeddingsClient],
+  exports: [VectorService, PineconeWrapper, EmbeddingsClient],
 })
 export class VectorModule {}

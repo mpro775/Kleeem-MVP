@@ -16,7 +16,6 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import ShareIcon from "@mui/icons-material/Share";
 import StarIcon from "@mui/icons-material/Star";
-import FlashOnIcon from "@mui/icons-material/FlashOn";
 import { useState } from "react";
 
 type Props = {
@@ -39,15 +38,20 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
   const [isHovered, setIsHovered] = useState(false);
   const rating = 4.5;
 
+  const availableStock = product.isUnlimitedStock
+    ? Number.POSITIVE_INFINITY
+    : product.stock ?? product.quantity ?? 0;
+  const isOutOfStock = availableStock <= 0;
+
   const statusColor =
-    product.status === "out_of_stock"
+    isOutOfStock || product.status === "out_of_stock"
       ? "error"
       : product.status === "inactive"
       ? "default"
       : "success";
 
   const statusText =
-    product.status === "out_of_stock"
+    isOutOfStock || product.status === "out_of_stock"
       ? "منتهي"
       : product.status === "inactive"
       ? "غير متوفر"
@@ -59,6 +63,12 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
     ? (product.offer!.newPrice as number)
     : product.price ?? 0;
   const oldPrice = showOffer ? (product.offer!.oldPrice as number) : undefined;
+
+  const visibleBadges =
+    product.badges
+      ?.filter((b) => b.showOnCard !== false)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      .slice(0, 3) || [];
 
   return (
     <Card
@@ -99,24 +109,38 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
         />
       )}
 
-      {/* شارة سريع البيع */}
-      {product.lowQuantity && product.lowQuantity < 10 && (
-        <Chip
-          label="ينفد سريعاً"
-          color="warning"
-          size="small"
-          icon={<FlashOnIcon fontSize="small" sx={{ fontSize: { xs: 14, sm: 18 } }} />}
+      {/* ملصقات مخصصة */}
+      {visibleBadges.length > 0 && (
+        <Box
           sx={{
             position: "absolute",
             top: showOffer ? { xs: 36, sm: 50 } : { xs: 8, sm: 12 },
             left: { xs: 8, sm: 12 },
             zIndex: 2,
-            fontWeight: "bold",
-            fontSize: { xs: "0.7rem", sm: "inherit" },
-            height: { xs: 20, sm: 32 }
+            display: "flex",
+            flexDirection: "column",
+            gap: 0.5,
           }}
-        />
+        >
+          {visibleBadges.map((b, i) => (
+            <Chip
+              key={`${b.label}-${i}`}
+              label={b.label}
+              size="small"
+              sx={{
+                bgcolor: b.color ? `${b.color}22` : "primary.50",
+                color: b.color || "primary.main",
+                borderColor: b.color ? `${b.color}55` : "primary.100",
+                borderWidth: 1,
+                borderStyle: "solid",
+                fontWeight: 600,
+              }}
+            />
+          ))}
+        </Box>
       )}
+
+      {/* شارة سريع البيع أزيلت مع حقل lowQuantity */}
 
       {/* صورة المنتج */}
               <Box
@@ -258,24 +282,11 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
               size="small"
               color={statusColor}
               variant="outlined"
-              sx={{ 
+              sx={{
                 fontSize: { xs: "0.7rem", sm: "inherit" },
-                height: { xs: 24, sm: 32 }
+                height: { xs: 24, sm: 32 },
               }}
             />
-
-            {product.source === "scraper" && (
-              <Chip
-                label="تحديث تلقائي"
-                size="small"
-                color="info"
-                variant="outlined"
-                sx={{ 
-                  fontSize: { xs: "0.7rem", sm: "inherit" },
-                  height: { xs: 24, sm: 32 }
-                }}
-              />
-            )}
           </Box>
 
           <Typography
@@ -309,7 +320,9 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
               lineHeight: 1.3
             }}
           >
-            {product.description || "لا يوجد وصف متوفر لهذا المنتج"}
+            {product.shortDescription ||
+              product.richDescription ||
+              "لا يوجد وصف متوفر لهذا المنتج"}
           </Typography>
 
           {viewMode === "list" &&
@@ -419,7 +432,7 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
               e.stopPropagation();
               onAddToCart(product);
             }}
-            disabled={product.status !== "active"}
+            disabled={product.status !== "active" || isOutOfStock}
             sx={{
               fontWeight: "bold",
               borderRadius: 2,

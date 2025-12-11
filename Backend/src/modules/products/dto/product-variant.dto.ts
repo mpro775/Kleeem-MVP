@@ -2,19 +2,31 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
+  IsNotEmptyObject,
   IsNumber,
   IsObject,
   IsOptional,
   IsString,
   Min,
-  IsArray,
 } from 'class-validator';
 
 import { I18nMessage } from '../../../common/validators/i18n-validator';
 
 const EXAMPLE_WEIGHT = 250;
 const EXAMPLE_PRICE = 99.99;
+const EXAMPLE_PRICE_SAR = 75;
+const PRICE_SCHEMA = {
+  description: 'أسعار المتغير بعملات متعددة (يجب تضمين YER على الأقل)',
+  type: 'object',
+  example: { YER: EXAMPLE_PRICE, SAR: EXAMPLE_PRICE_SAR },
+  additionalProperties: { type: 'number' },
+} as const;
+const VALIDATION_OBJECT = {
+  ...I18nMessage('validation.object'),
+  nullable: false,
+};
 
 export class CreateVariantDto {
   @ApiProperty({
@@ -41,14 +53,10 @@ export class CreateVariantDto {
   @IsObject(I18nMessage('validation.object'))
   attributes!: Record<string, string>;
 
-  @ApiProperty({
-    description: 'سعر المتغير',
-    example: EXAMPLE_PRICE,
-  })
-  @Type(() => Number)
-  @IsNumber({}, I18nMessage('validation.number'))
-  @Min(0, I18nMessage('validation.min'))
-  price!: number;
+  @ApiProperty(PRICE_SCHEMA)
+  @IsNotEmptyObject(VALIDATION_OBJECT)
+  @IsObject(VALIDATION_OBJECT)
+  prices!: Record<string, number>;
 
   @ApiProperty({
     description: 'المخزون المتاح',
@@ -124,15 +132,11 @@ export class UpdateVariantDto {
   @IsObject(I18nMessage('validation.object'))
   attributes?: Record<string, string>;
 
-  @ApiPropertyOptional({
-    description: 'سعر المتغير',
-    example: EXAMPLE_PRICE,
-  })
+  @ApiPropertyOptional(PRICE_SCHEMA)
   @IsOptional()
-  @Type(() => Number)
-  @IsNumber({}, I18nMessage('validation.number'))
-  @Min(0, I18nMessage('validation.min'))
-  price?: number;
+  @IsNotEmptyObject(VALIDATION_OBJECT)
+  @IsObject(VALIDATION_OBJECT)
+  prices?: Record<string, number>;
 
   @ApiPropertyOptional({
     description: 'المخزون المتاح',

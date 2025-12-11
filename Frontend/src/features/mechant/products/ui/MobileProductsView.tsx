@@ -41,16 +41,21 @@ export default function MobileProductsView({
       {products.map((p) => {
         const img = p.images?.[0];
         const hasActiveOffer = Boolean(p.hasActiveOffer && p.offer?.enabled);
-        const price = typeof p.price === "number" ? p.price : 0;
+        const price =
+          typeof p.priceDefault === "number"
+            ? p.priceDefault
+            : typeof p.price === "number"
+              ? p.price
+              : 0;
         const priceEffective =
           typeof p.priceEffective === "number" ? p.priceEffective : price;
         const money = formatMoney(
           hasActiveOffer ? priceEffective : price,
-          p.currency || "SAR"
+          p.currency || "YER"
         );
         const oldMoney =
           hasActiveOffer && p.offer?.oldPrice != null
-            ? formatMoney(p.offer.oldPrice, p.currency || "SAR")
+            ? formatMoney(p.offer.oldPrice, p.currency || "YER")
             : null;
 
         return (
@@ -161,8 +166,6 @@ export default function MobileProductsView({
                         ? "يدوي"
                         : p.source === "api"
                         ? "API"
-                        : p.source === "scraper"
-                        ? "رابط"
                         : p.source || "غير محدد"
                     }
                   />
@@ -170,7 +173,7 @@ export default function MobileProductsView({
               </Stack>
 
               {/* وصف مختصر */}
-              {p.description && (
+              {(p.shortDescription || p.richDescription) && (
                 <>
                   <Divider />
                   <Typography
@@ -183,7 +186,7 @@ export default function MobileProductsView({
                       overflow: "hidden",
                     }}
                   >
-                    {p.description}
+                    {p.shortDescription || p.richDescription}
                   </Typography>
                 </>
               )}

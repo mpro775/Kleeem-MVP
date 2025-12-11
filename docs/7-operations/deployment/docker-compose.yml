@@ -18,11 +18,11 @@ services:
   backend:
     image: ghcr.io/kaleem-ai/backend:latest
     env_file: ./env/backend.prod.env
+    # التخزين يستخدم Cloudflare R2 (S3 متوافق)، لا حاجة لحاوية MinIO محلية
     depends_on:
       - mongo
       - redis
       - qdrant
-      - minio
 
   frontend:
     image: ghcr.io/kaleem-ai/frontend:latest
@@ -49,18 +49,6 @@ services:
     image: qdrant/qdrant:latest
     volumes:
       - qdrant_data:/qdrant/storage
-
-  minio:
-    image: minio/minio:latest
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
-    command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
 
   prometheus:
     image: prom/prometheus:latest
@@ -100,6 +88,5 @@ volumes:
   mongo_data:
   redis_data:
   qdrant_data:
-  minio_data:
   grafana_data:
   loki_data:

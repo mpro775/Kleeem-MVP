@@ -3,8 +3,8 @@ import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MulterModule } from '@nestjs/platform-express';
-import * as Minio from 'minio';
 
+import { StorageModule } from '../../common/storage/storage.module';
 import { SupportMongoRepository } from './repositories/support.mongo.repository';
 import {
   SupportTicket,
@@ -21,21 +21,11 @@ import { SUPPORT_REPOSITORY } from './tokens';
     MongooseModule.forFeature([
       { name: SupportTicket.name, schema: SupportTicketSchema },
     ]),
+    StorageModule,
   ],
   controllers: [SupportController],
   providers: [
     SupportService,
-    {
-      provide: 'MINIO_CLIENT',
-      useFactory: () =>
-        new Minio.Client({
-          endPoint: process.env.MINIO_ENDPOINT!,
-          port: parseInt(process.env.MINIO_PORT ?? '9000', 10),
-          useSSL: process.env.MINIO_USE_SSL === 'true',
-          accessKey: process.env.MINIO_ACCESS_KEY!,
-          secretKey: process.env.MINIO_SECRET_KEY!,
-        }),
-    },
     { provide: SUPPORT_REPOSITORY, useClass: SupportMongoRepository },
   ],
   exports: [SupportService],

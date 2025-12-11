@@ -31,9 +31,29 @@ export class ProductIndexService {
   ): Promise<void> {
     try {
       const src = toEmbeddable(productDoc, storefront, categoryName ?? null);
+      const { attributes: srcAttributes, ...rest } = src;
+
+      const attributes =
+        Array.isArray(srcAttributes) && srcAttributes.length
+          ? srcAttributes.reduce<Record<string, unknown>>((acc, attr) => {
+              const key =
+                attr && typeof attr === 'object' && 'keySlug' in attr
+                  ? (attr as { keySlug?: unknown }).keySlug
+                  : undefined;
+              if (typeof key === 'string' && key) {
+                const val =
+                  attr && typeof attr === 'object' && 'valueSlugs' in attr
+                    ? (attr as { valueSlugs?: unknown[] }).valueSlugs
+                    : undefined;
+                acc[key] = val ?? attr;
+              }
+              return acc;
+            }, {})
+          : undefined;
 
       const ep: VectorEmbeddable = {
-        ...src,
+        ...rest,
+        ...(attributes ? { attributes } : {}),
         status: typeof src.status === 'string' ? src.status : null,
       };
 

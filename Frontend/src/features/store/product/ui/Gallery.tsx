@@ -4,12 +4,10 @@ import { useState } from "react";
 export default function Gallery({
   images = [],
   status,
-  lowQuantity,
   name,
 }: {
   images?: string[];
   status?: string;
-  lowQuantity?: number;
   name: string;
 }) {
   const theme = useTheme();
@@ -109,13 +107,6 @@ export default function Gallery({
               label="منتهي"
               color="error"
               sx={{ fontWeight: "bold", mr: 1 }}
-            />
-          )}
-          {lowQuantity && lowQuantity < 10 && (
-            <Chip
-              label="ينفد سريعاً"
-              color="warning"
-              sx={{ fontWeight: "bold" }}
             />
           )}
         </Box>

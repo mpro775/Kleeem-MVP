@@ -101,10 +101,9 @@ export class ProductsController {
     const input = {
       merchantId,
       name: dto.name || '',
-      price: dto.price || 0,
+      prices: dto.prices,
       isAvailable: dto.isAvailable ?? true,
       keywords: dto.keywords || [],
-      description: dto.description || '',
       images: dto.images || [],
       category: dto.category || '',
       specsBlock: dto.specsBlock || [],
@@ -118,7 +117,6 @@ export class ProductsController {
     dto: CreateProductDto,
   ) {
     const optionalMappings = {
-      originalUrl: dto.originalUrl,
       source: dto.source,
       sourceUrl: dto.sourceUrl,
       externalId: dto.externalId,

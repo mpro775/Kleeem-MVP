@@ -1,15 +1,14 @@
 // src/modules/products/products.module.ts
-import { BullModule } from '@nestjs/bull';
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MulterModule } from '@nestjs/platform-express';
 import { ScheduleModule } from '@nestjs/schedule';
-import * as Minio from 'minio';
 
 import { CacheModule } from '../../common/cache/cache.module';
 import { ErrorManagementModule } from '../../common/error-management.module';
 import { OutboxModule } from '../../common/outbox/outbox.module';
 import { CommonServicesModule } from '../../common/services/common-services.module';
+import { StorageModule } from '../../common/storage/storage.module';
 import { MetricsModule } from '../../metrics/metrics.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { CategoriesModule } from '../categories/categories.module';
@@ -18,7 +17,6 @@ import {
   CategorySchema,
 } from '../categories/schemas/category.schema';
 import { ZidModule } from '../integrations/zid/zid.module';
-import { ScraperModule } from '../scraper/scraper.module';
 import {
   Storefront,
   StorefrontSchema,
@@ -28,12 +26,20 @@ import { VectorModule } from '../vector/vector.module';
 
 import { ProductSetupConfigService } from './product-setup-config.service';
 import { ProductsController } from './products.controller';
+import { AttributeDefinitionsController } from './controllers/attribute-definitions.controller';
 import { ProductsService } from './products.service';
 import { MongoProductsRepository } from './repositories/mongo-products.repository';
+import { MongoAttributeDefinitionsRepository } from './repositories/mongo-attribute-definitions.repository';
+import { AttributeDefinitionsRepository } from './repositories/attribute-definitions.repository';
+import { AttributeDefinitionsService } from './services/attribute-definitions.service';
 import {
   ProductSetupConfig,
   ProductSetupConfigSchema,
 } from './schemas/product-setup-config.schema';
+import {
+  AttributeDefinition,
+  AttributeDefinitionSchema,
+} from './schemas/attribute-definition.schema';
 import { Product, ProductSchema } from './schemas/product.schema';
 import { ProductCommandsService } from './services/product-commands.service';
 import { ProductCsvService } from './services/product-csv.service';
@@ -43,6 +49,7 @@ import { ProductPublicService } from './services/product-public.service';
 import { ProductQueriesService } from './services/product-queries.service';
 import { ProductSyncService } from './services/product-sync.service';
 import { ProductValidationService } from './services/product-validation.service';
+import { InventoryService } from './services/inventory.service';
 import { ProductsCron } from './utils/products.cron';
 
 @Module({
@@ -54,31 +61,36 @@ import { ProductsCron } from './utils/products.cron';
     MongooseModule.forFeature([
       { name: Product.name, schema: ProductSchema },
       { name: ProductSetupConfig.name, schema: ProductSetupConfigSchema },
+      { name: AttributeDefinition.name, schema: AttributeDefinitionSchema },
       { name: Category.name, schema: CategorySchema },
       { name: Storefront.name, schema: StorefrontSchema },
     ]),
 
     // Using forwardRef to resolve circular dependencies
     forwardRef(() => VectorModule),
-    forwardRef(() => ScraperModule),
     AnalyticsModule,
     forwardRef(() => ZidModule),
     forwardRef(() => StorefrontModule),
     CategoriesModule,
     OutboxModule,
-    BullModule.registerQueue({ name: 'scrape' }),
     ErrorManagementModule,
     CacheModule,
     CommonServicesModule,
     MetricsModule,
+    StorageModule,
   ],
-  controllers: [ProductsController],
+  controllers: [ProductsController, AttributeDefinitionsController],
   providers: [
     // Service رشيقة (تستدعي repo/media/index)
     ProductsService,
+    AttributeDefinitionsService,
 
     // Repository binding
     { provide: 'ProductsRepository', useClass: MongoProductsRepository },
+    {
+      provide: AttributeDefinitionsRepository,
+      useClass: MongoAttributeDefinitionsRepository,
+    },
 
     // Helpers
     ProductIndexService,
@@ -90,23 +102,10 @@ import { ProductsCron } from './utils/products.cron';
     ProductPublicService,
     ProductValidationService,
     ProductCsvService,
+    InventoryService,
 
     // Product setup configuration service
     ProductSetupConfigService,
-
-    // MinIO client
-    {
-      provide: 'MINIO_CLIENT',
-      useFactory: () => {
-        return new Minio.Client({
-          endPoint: process.env.MINIO_ENDPOINT || 'localhost',
-          port: parseInt(process.env.MINIO_PORT || '9000', 10),
-          useSSL: process.env.MINIO_USE_SSL === 'true',
-          accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-          secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
-        });
-      },
-    },
   ],
   exports: [
     ProductsService,
@@ -114,8 +113,11 @@ import { ProductsCron } from './utils/products.cron';
     ProductSyncService,
     ProductQueriesService,
     ProductPublicService,
+    InventoryService,
+    AttributeDefinitionsService,
     // إن احتجت المستودع خارج الموديول (نادراً)
     'ProductsRepository',
+    AttributeDefinitionsRepository,
     MongooseModule,
   ],
 })

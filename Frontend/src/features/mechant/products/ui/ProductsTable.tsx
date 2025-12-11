@@ -215,7 +215,12 @@ export default function ProductsTable({
             products.map((p, index) => {
               console.log(`Rendering product ${index}:`, p);
               // Ensure we have valid data
-              const price = typeof p.price === "number" ? p.price : 0;
+              const price =
+                typeof p.priceDefault === "number"
+                  ? p.priceDefault
+                  : typeof p.price === "number"
+                    ? p.price
+                    : 0;
               const priceEffective =
                 typeof p.priceEffective === "number" ? p.priceEffective : price;
               const hasActiveOffer = Boolean(
@@ -224,11 +229,11 @@ export default function ProductsTable({
 
               const money = formatMoney(
                 hasActiveOffer ? priceEffective : price,
-                p.currency || "SAR"
+                p.currency || "YER"
               );
               const oldMoney =
                 hasActiveOffer && p.offer?.oldPrice != null
-                  ? formatMoney(p.offer.oldPrice, p.currency || "SAR")
+                  ? formatMoney(p.offer.oldPrice, p.currency || "YER")
                   : null;
 
               const offerChip = hasActiveOffer ? (
@@ -298,7 +303,7 @@ export default function ProductsTable({
                         overflow: "hidden",
                       }}
                     >
-                      {p.description || "لا يوجد وصف"}
+                    {p.shortDescription || p.richDescription || "لا يوجد وصف"}
                     </Typography>
                   </TableCell>
                   <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
@@ -336,8 +341,6 @@ export default function ProductsTable({
                           ? "يدوي"
                           : p.source === "api"
                           ? "API"
-                          : p.source === "scraper"
-                          ? "رابط"
                           : p.source || "غير محدد"
                       }
                       size="small"

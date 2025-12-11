@@ -154,11 +154,6 @@ export class PromotionsService {
     const applicablePromotions: ApplicablePromotion[] = [];
 
     for (const promotion of activePromotions) {
-      // التحقق من الحد الأدنى للسلة
-      if (promotion.minCartAmount && cartTotal < promotion.minCartAmount) {
-        continue;
-      }
-
       // التحقق من حد الاستخدام
       if (
         promotion.usageLimit &&
@@ -174,9 +169,22 @@ export class PromotionsService {
         continue;
       }
 
+      const applicableAmount = applicableItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0,
+      );
+
+      const thresholdBase =
+        promotion.applyTo === ApplyTo.ALL ? cartTotal : applicableAmount;
+
+      if (promotion.minCartAmount && thresholdBase < promotion.minCartAmount) {
+        continue;
+      }
+
       const discountAmount = this.calculateDiscount(
         promotion,
         applicableItems,
+        applicableAmount,
         cartTotal,
       );
 
@@ -261,15 +269,10 @@ export class PromotionsService {
   private calculateDiscount(
     promotion: Promotion,
     applicableItems: CartItem[],
+    applicableAmount: number,
     cartTotal: number,
   ): number {
     let discountAmount = 0;
-
-    // حساب المبلغ القابل للتطبيق
-    const applicableAmount = applicableItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
-    );
 
     // حساب الخصم حسب النوع
     switch (promotion.type) {

@@ -25,8 +25,8 @@ type BotFaqPayload = {
 };
 type BotFaqPoint = {
   id: string;
-  vector: number[];
-  payload: BotFaqPayload;
+  values: number[];
+  metadata: BotFaqPayload;
 };
 
 const BOT_FAQ_NAMESPACE =
@@ -54,8 +54,8 @@ export class BotFaqService {
     await this.vectorService.upsertBotFaqs([
       {
         id: this.pointId(String(doc.id)),
-        vector: embedding,
-        payload: {
+        values: embedding,
+        metadata: {
           faqId: String(doc.id),
           question: doc.question,
           answer: doc.answer,
@@ -231,8 +231,8 @@ export class BotFaqService {
 
         points.push({
           id: this.pointId(faqId),
-          vector: emb,
-          payload: {
+          values: emb,
+          metadata: {
             faqId,
             question: d.question,
             answer: d.answer,
@@ -265,8 +265,8 @@ export class BotFaqService {
 
       points.push({
         id: this.pointId(faqId),
-        vector: emb,
-        payload: {
+        values: emb,
+        metadata: {
           faqId,
           question: d.question,
           answer: d.answer,

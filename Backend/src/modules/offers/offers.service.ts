@@ -18,7 +18,18 @@ export class OffersService {
   ) {}
 
   private computeIsActive(offer: OfferInfo): boolean {
-    if (!offer?.enabled || offer?.newPrice == null) return false;
+    if (!offer?.enabled) return false;
+    const hasValue =
+      offer.newPrice != null ||
+      offer.discountValue != null ||
+      (offer.type === 'buy_x_get_y' &&
+        offer.buyQuantity != null &&
+        offer.getQuantity != null) ||
+      (offer.type === 'quantity_based' &&
+        offer.quantityThreshold != null &&
+        offer.quantityDiscount != null);
+
+    if (!hasValue) return false;
     const now = Date.now();
     const s = offer.startAt ? new Date(offer.startAt).getTime() : -Infinity;
     const e = offer.endAt ? new Date(offer.endAt).getTime() : Infinity;
@@ -92,7 +103,20 @@ export class OffersService {
     priceEffective: number;
   } {
     const priceOld = p.offer?.oldPrice ?? p.price ?? null;
-    const priceNew = p.offer?.newPrice ?? null;
+
+    let priceNew = p.offer?.newPrice ?? null;
+
+    if (isActive && priceOld != null && priceNew == null) {
+      if (p.offer?.type === 'percentage' && p.offer.discountValue != null) {
+        priceNew = Math.max(0, priceOld * (1 - p.offer.discountValue / 100));
+      } else if (
+        p.offer?.type === 'fixed_amount' &&
+        p.offer.discountValue != null
+      ) {
+        priceNew = Math.max(0, priceOld - p.offer.discountValue);
+      }
+    }
+
     const priceEffective =
       isActive && priceNew != null
         ? Number(priceNew)

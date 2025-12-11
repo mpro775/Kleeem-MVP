@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { Types } from 'mongoose';
 
 import { CategoriesService } from '../categories.service';
+import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 
 import type { CategoriesRepository } from '../repositories/categories.repository';
 
@@ -37,13 +38,8 @@ describe('CategoriesService', () => {
         CategoriesService,
         { provide: 'CategoriesRepository', useValue: repo },
         {
-          provide: 'MINIO_CLIENT',
-          useValue: {
-            bucketExists: jest.fn(),
-            makeBucket: jest.fn(),
-            fPutObject: jest.fn(),
-            presignedUrl: jest.fn(),
-          },
+          provide: S3_CLIENT_TOKEN,
+          useValue: { send: jest.fn() },
         },
       ],
     }).compile();

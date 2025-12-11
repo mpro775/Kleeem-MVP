@@ -13,10 +13,23 @@ import {
   Alert,
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
-import type { ProductResponse, Currency, UpdateProductDto } from "../type";
-import { updateProduct, uploadProductImages } from "../api";
+import type {
+  ProductResponse,
+  Currency,
+  UpdateProductDto,
+  Badge,
+  AttributeDefinition,
+  VariantInput,
+} from "../type";
+import {
+  updateProduct,
+  uploadProductImages,
+  getAttributeDefinitions,
+} from "../api";
 import OfferEditor, { type OfferForm } from "./OfferEditor";
-import AttributesEditor from "./AttributesEditor";
+import AttributesEditor, { type AttributeSelection } from "./AttributesEditor";
+import VariantsGenerator from "./VariantsGenerator";
+import BadgesEditor from "./BadgesEditor";
 import { ensureIdString } from "@/shared/utils/ids";
 import { useErrorHandler } from "@/shared/errors";
 
@@ -37,7 +50,11 @@ export default function EditProductDialog({
   const [form, setForm] = useState<UpdateProductDto>({});
   const [currency, setCurrency] = useState<Currency>("SAR");
   const [offer, setOffer] = useState<OfferForm>({ enabled: false });
-  const [attributes, setAttributes] = useState<Record<string, string[]>>({});
+  const [attributes, setAttributes] = useState<AttributeSelection[]>([]);
+  const [attributeDefs, setAttributeDefs] = useState<AttributeDefinition[]>([]);
+  const [variants, setVariants] = useState<VariantInput[]>([]);
+  const [hasVariants, setHasVariants] = useState<boolean>(false);
+  const [badges, setBadges] = useState<Badge[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
@@ -72,14 +89,15 @@ export default function EditProductDialog({
       setImages(product.images || []);
       setForm({
         name: product.name,
-        description: product.description,
-        price: product.price,
+        shortDescription: product.shortDescription,
+        richDescription: product.richDescription,
+        price: product.priceDefault ?? product.price ?? 0,
         isAvailable: product.isAvailable,
         category: toCategoryId(product.category), // ← مهم
         keywords: product.keywords,
         specsBlock: product.specsBlock,
       });
-      setCurrency(product.currency || "SAR");
+      setCurrency(product.currency || "YER");
       setOffer({
         enabled: !!product.offer?.enabled,
         oldPrice: product.offer?.oldPrice,
@@ -87,10 +105,23 @@ export default function EditProductDialog({
         startAt: product.offer?.startAt,
         endAt: product.offer?.endAt,
       });
-      setAttributes(product.attributes || {});
+      setAttributes(product.attributes || []);
+      setHasVariants(!!product.hasVariants);
+      setVariants(product.variants || []);
+      setBadges(product.badges || []);
       setError(null);
     }
+    } else if (!open) {
+      setAttributeDefs([]);
+    }
   }, [open, product]);
+
+  useEffect(() => {
+    if (!open) return;
+    getAttributeDefinitions()
+      .then(setAttributeDefs)
+      .catch(() => setAttributeDefs([]));
+  }, [open]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleChange = (
@@ -109,13 +140,18 @@ export default function EditProductDialog({
     setLoading(true);
     setError(null);
     try {
+      const { price, ...restForm } = form;
       const payload: UpdateProductDto = {
-        ...form,
+        ...restForm,
+        prices: { [currency || "YER"]: form.price ?? 0 },
         category: form.category ? ensureIdString(form.category) : undefined,
         currency,
         images,
         offer: offer.enabled ? { ...offer } : { enabled: false },
         attributes,
+        hasVariants,
+        variants: hasVariants ? variants : undefined,
+        badges,
       };
 
       await updateProduct(product._id, payload);
@@ -146,12 +182,22 @@ export default function EditProductDialog({
             fullWidth
           />
           <TextField
-            label="الوصف"
-            name="description"
-            value={form.description || ""}
+            label="وصف قصير"
+            name="shortDescription"
+            value={form.shortDescription || ""}
             onChange={handleChange}
             fullWidth
             multiline
+            inputProps={{ maxLength: 200 }}
+          />
+          <TextField
+            label="وصف تفصيلي (يمكن لصق HTML بسيط)"
+            name="richDescription"
+            value={form.richDescription || ""}
+            onChange={handleChange}
+            fullWidth
+            multiline
+            minRows={3}
           />
 
           <TextField
@@ -186,7 +232,45 @@ export default function EditProductDialog({
           <OfferEditor value={offer} onChange={setOffer} />
 
           {/* السمات */}
-          <AttributesEditor value={attributes} onChange={setAttributes} />
+          <AttributesEditor
+            value={attributes}
+            onChange={setAttributes}
+            definitions={attributeDefs}
+          />
+
+          {/* المتغيرات */}
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={hasVariants}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setHasVariants(checked);
+                    if (!checked) setVariants([]);
+                  }}
+                />
+              }
+              label="يحتوي على متغيرات"
+            />
+            {hasVariants && (
+              <Typography variant="body2" color="text.secondary">
+                اختر أبعاد المتغيرات في السمات (isVariantDimension) ثم اضغط توليد.
+              </Typography>
+            )}
+          </Stack>
+
+          {hasVariants && (
+            <VariantsGenerator
+              attributes={attributes}
+              definitions={attributeDefs}
+              value={variants}
+              onChange={setVariants}
+            />
+          )}
+
+          {/* الملصقات */}
+          <BadgesEditor value={badges} onChange={setBadges} />
 
           <Button
             variant="outlined"

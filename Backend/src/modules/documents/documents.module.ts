@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { MulterModule } from '@nestjs/platform-express';
 
 import { VectorModule } from '../vector/vector.module';
+import { StorageModule } from '../../common/storage/storage.module';
 
 import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
@@ -23,6 +24,7 @@ import { DocumentSchemaClass, DocumentSchema } from './schemas/document.schema';
       dest: './uploads', // فقط تخزين محلي مؤقت!
     }),
     VectorModule, // ✅ أضف هذا هنا
+    StorageModule,
   ],
   providers: [
     DocumentsService,

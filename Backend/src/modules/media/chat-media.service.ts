@@ -1,40 +1,28 @@
 // src/media/chat-media.service.ts
+import { createReadStream } from 'fs';
 import { unlink } from 'node:fs/promises';
 
-import { Injectable } from '@nestjs/common';
-import { Client as MinioClient } from 'minio';
+import { Inject, Injectable } from '@nestjs/common';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import { HOUR_IN_SECONDS } from '../../common/constants/common';
+import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
 function cdnBase() {
   return (
     process.env.ASSETS_CDN_BASE_URL ||
+    process.env.AWS_ENDPOINT ||
     process.env.MINIO_PUBLIC_URL ||
     ''
   ).replace(/\/+$/, '');
 }
 @Injectable()
 export class ChatMediaService {
-  public minio: MinioClient;
-
-  constructor() {
-    this.minio = new MinioClient({
-      endPoint: process.env.MINIO_ENDPOINT!,
-      port: parseInt(process.env.MINIO_PORT ?? '9000', 10),
-      useSSL: process.env.MINIO_USE_SSL === 'true',
-      accessKey: process.env.MINIO_ACCESS_KEY!,
-      secretKey: process.env.MINIO_SECRET_KEY!,
-    });
-  }
-
-  private async ensureBucket(bucket: string) {
-    const exists = await this.minio.bucketExists(bucket).catch(() => false);
-    if (!exists) {
-      await this.minio.makeBucket(
-        bucket,
-        process.env.MINIO_REGION || 'us-east-1',
-      );
-    }
-  }
+  constructor(@Inject(S3_CLIENT_TOKEN) public readonly s3: S3Client) {}
 
   private publicUrlFor(bucket: string, key: string) {
     const base = cdnBase();
@@ -45,19 +33,23 @@ export class ChatMediaService {
     bucket: string,
     key: string,
   ): Promise<string> {
-    const cdnBase = (process.env.ASSETS_CDN_BASE_URL || '').replace(/\/+$/, '');
-    const minioPublic = (process.env.MINIO_PUBLIC_URL || '').replace(
-      /\/+$/,
-      '',
-    );
+    const cdn = (process.env.ASSETS_CDN_BASE_URL || '').replace(/\/+$/, '');
+    const endpoint = (
+      process.env.AWS_ENDPOINT ||
+      process.env.MINIO_PUBLIC_URL ||
+      ''
+    ).replace(/\/+$/, '');
 
     // إن كان لديك CDN/Proxy (مثل cdn.kaleem-ai.com) استخدم رابطًا ثابتًا
-    if (cdnBase) return `${cdnBase}/${bucket}/${key}`;
-    if (minioPublic) return `${minioPublic}/${bucket}/${key}`;
+    if (cdn) return `${cdn}/${bucket}/${key}`;
+    if (endpoint) return `${endpoint}/${bucket}/${key}`;
 
     // وإلا ارجع رابطًا موقّعًا قصير الأجل (ساعة)
-    // ملاحظة: مع minio-js استخدم presignedGetObject وليس presignedUrl
-    return await this.minio.presignedGetObject(bucket, key, HOUR_IN_SECONDS);
+    return await getSignedUrl(
+      this.s3,
+      new GetObjectCommand({ Bucket: bucket, Key: key }),
+      { expiresIn: HOUR_IN_SECONDS },
+    );
   }
 
   async uploadChatMedia(
@@ -69,16 +61,24 @@ export class ChatMediaService {
     | { storageKey: string; url: string }
     | { storageKey: string; presignedUrl: string }
   > {
-    const bucket = process.env.MINIO_BUCKET!;
-    await this.ensureBucket(bucket);
+    const bucket =
+      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+    if (!bucket) {
+      throw new Error('S3_BUCKET_NAME not configured');
+    }
 
     const safeName = originalName.replace(/[^\w.-]+/g, '_');
     const storageKey = `chat-media/${merchantId}/${Date.now()}-${safeName}`;
 
-    await this.minio.fPutObject(bucket, storageKey, filePath, {
-      'Content-Type': mimeType,
-      'Cache-Control': 'public, max-age=31536000, immutable',
-    });
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: storageKey,
+        Body: createReadStream(filePath),
+        ContentType: mimeType,
+        CacheControl: 'public, max-age=31536000, immutable',
+      }),
+    );
 
     await unlink(filePath).catch(() => null);
 
@@ -89,11 +89,10 @@ export class ChatMediaService {
     }
 
     // وإلا: presigned (fallback)
-    const presignedUrl = await this.minio.presignedUrl(
-      'GET',
-      bucket,
-      storageKey,
-      7 * 24 * 60 * 60,
+    const presignedUrl = await getSignedUrl(
+      this.s3,
+      new GetObjectCommand({ Bucket: bucket, Key: storageKey }),
+      { expiresIn: 7 * 24 * 60 * 60 },
     );
     return { storageKey, presignedUrl };
   }

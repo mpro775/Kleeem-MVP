@@ -9,6 +9,9 @@ export class OrderProduct {
   @Prop({ type: Types.ObjectId, ref: 'Product', required: false })
   product?: Types.ObjectId;
 
+  @Prop({ type: String, default: null })
+  variantSku?: string | null;
+
   @Prop({ required: true })
   name?: string;
 

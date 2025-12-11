@@ -46,6 +46,17 @@ export async function getPublicProductBySlug(storeSlug: string, productSlug: str
   return data;
 }
 
+export async function getRelatedProducts(id: string): Promise<ProductResponse[]> {
+  try {
+    const { data } = await axiosInstance.get<ProductResponse[]>(
+      `/products/${encodeURIComponent(id)}/related`
+    );
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchCategories(merchantId: string): Promise<Category[]> {
   try {
     const { data } = await axiosInstance.get<Category[]>("/categories", { params: { merchantId } });

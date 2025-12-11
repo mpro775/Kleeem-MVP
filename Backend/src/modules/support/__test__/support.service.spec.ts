@@ -6,6 +6,7 @@ import { SupportService } from '../support.service';
 import { SUPPORT_REPOSITORY } from '../tokens';
 
 import type { SupportRepository } from '../repositories/support.repository';
+import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 
 describe('SupportService', () => {
   let service: SupportService;
@@ -20,19 +21,13 @@ describe('SupportService', () => {
     post: jest.fn(),
   } as unknown as jest.Mocked<HttpService>;
 
-  const minioMock = {
-    bucketExists: jest.fn().mockResolvedValue(true),
-    makeBucket: jest.fn(),
-    putObject: jest.fn().mockResolvedValue(undefined),
-    fPutObject: jest.fn().mockResolvedValue(undefined),
-    presignedGetObject: jest
-      .fn()
-      .mockResolvedValue('https://cdn.example.com/bucket/key'),
+  const s3Mock = {
+    send: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    process.env.MINIO_BUCKET = 'test-bucket';
+    process.env.S3_BUCKET_NAME = 'test-bucket';
     process.env.ASSETS_CDN_BASE_URL = 'https://cdn.example.com';
     process.env.RECAPTCHA_SECRET = 'secret';
 
@@ -47,7 +42,7 @@ describe('SupportService', () => {
         SupportService,
         { provide: SUPPORT_REPOSITORY, useValue: repo },
         { provide: HttpService, useValue: httpMock },
-        { provide: 'MINIO_CLIENT', useValue: minioMock },
+        { provide: S3_CLIENT_TOKEN, useValue: s3Mock },
       ],
     }).compile();
 
@@ -85,7 +80,7 @@ describe('SupportService', () => {
       { source: 'landing', ip: '1.1.1.1', userAgent: 'ua' },
     );
 
-    expect(minioMock.putObject).toHaveBeenCalled();
+    expect(s3Mock.send).toHaveBeenCalled();
     expect(repo.create.bind(repo)).toHaveBeenCalledWith(
       expect.objectContaining({
         attachments: expect.any(Array),

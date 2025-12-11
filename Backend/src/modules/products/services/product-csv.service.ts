@@ -21,13 +21,15 @@ function safeStringify(
 }
 
 import { TranslationService } from '../../../common/services/translation.service';
+import { Currency } from '../enums/product.enums';
 import { Product, ProductDocument } from '../schemas/product.schema';
 
 import { ProductValidationService } from './product-validation.service';
 
 interface CSVRow {
   name: string;
-  description?: string;
+  shortDescription?: string;
+  richDescription?: string;
   price: string;
   sku?: string;
   barcode?: string;
@@ -43,7 +45,8 @@ interface CSVRow {
 interface CSVExportRow {
   id: string;
   name: string;
-  description: string;
+  shortDescription: string;
+  richDescription: string;
   price: string;
   currency: string;
   category: string;
@@ -87,7 +90,7 @@ const parseCsvRows: CsvRowParser = parse as unknown as CsvRowParser;
 export class ProductCsvService {
   private readonly logger = new Logger(ProductCsvService.name);
 
-  private static readonly DEFAULT_CURRENCY = 'SAR';
+  private static readonly DEFAULT_CURRENCY = Currency.YER;
   private static readonly DEFAULT_PRODUCT_TYPE: Product['productType'] =
     'physical';
   private static readonly DEFAULT_STATUS: Product['status'] = 'published';
@@ -95,7 +98,8 @@ export class ProductCsvService {
   private static readonly EXPORT_COLUMNS: Array<keyof CSVExportRow> = [
     'id',
     'name',
-    'description',
+    'shortDescription',
+    'richDescription',
     'price',
     'currency',
     'category',
@@ -118,7 +122,8 @@ export class ProductCsvService {
 
   private static readonly TEMPLATE_COLUMNS: Array<keyof CSVRow> = [
     'name',
-    'description',
+    'shortDescription',
+    'richDescription',
     'price',
     'sku',
     'barcode',
@@ -134,7 +139,7 @@ export class ProductCsvService {
   private static readonly TEMPLATE_SAMPLE: CSVRow[] = [
     {
       name: 'Product Name Example',
-      description: 'Product description',
+      shortDescription: 'Product short description',
       price: '99.99',
       sku: 'SKU-001',
       barcode: '1234567890',
@@ -196,8 +201,9 @@ export class ProductCsvService {
     return {
       id: this.getProductId(product),
       name: product.name ?? '',
-      description: product.description ?? '',
-      price: this.formatPrice(product.price),
+      shortDescription: product.shortDescription ?? '',
+      richDescription: product.richDescription ?? '',
+      price: this.formatPrice(product.priceDefault),
       currency: product.currency ?? ProductCsvService.DEFAULT_CURRENCY,
       category: this.formatCategory(product.category),
       images: this.formatArrayField(product.images),
@@ -249,7 +255,7 @@ export class ProductCsvService {
       hasVariants: 'true',
       variantSku: variant.sku || '',
       variantBarcode: variant.barcode || '',
-      variantPrice: variant.price?.toString() || '0',
+      variantPrice: variant.priceDefault?.toString() || '0',
       variantStock: variant.stock?.toString() || '0',
       variantAttributes: JSON.stringify(variant.attributes || {}),
       variantImages: (variant.images || []).join('|'),
@@ -300,6 +306,11 @@ export class ProductCsvService {
     this.ensureRowHasRequiredFields(row);
 
     const price = this.parsePrice(row.price);
+    const baseCurrency = Currency.YER;
+    const { prices, basePrice } = this.validation.normalizePrices(
+      { [baseCurrency]: price },
+      baseCurrency,
+    );
 
     const status: Product['status'] = row.status
       ? (row.status as Product['status'])
@@ -312,8 +323,11 @@ export class ProductCsvService {
     const productData = {
       merchantId,
       name: row.name,
-      description: row.description || '',
-      price,
+      shortDescription: row.shortDescription || '',
+      richDescription: row.richDescription || '',
+      prices,
+      priceDefault: basePrice,
+      currency: baseCurrency,
       isAvailable: row.isAvailable === 'true',
       status,
       productType,
@@ -325,7 +339,13 @@ export class ProductCsvService {
     this.assignKeywords(row, productData);
 
     if (row.sku) {
-      await this.setupVariantData(merchantId, row, productData, price);
+      await this.setupVariantData(
+        merchantId,
+        row,
+        productData,
+        basePrice,
+        baseCurrency,
+      );
     }
 
     await this.productModel.create(productData);
@@ -385,6 +405,7 @@ export class ProductCsvService {
     row: CSVRow,
     productData: Partial<Product>,
     price: number,
+    currency: Currency,
   ): Promise<void> {
     const sku = row.sku as string;
 
@@ -396,7 +417,9 @@ export class ProductCsvService {
         sku,
         barcode: row.barcode || null,
         attributes: {},
-        price,
+        prices: new Map([[currency, price]]),
+        priceDefault: price,
+        currency,
         stock: row.stock ? parseInt(row.stock, 10) : 0,
         images: productData.images || [],
         isAvailable: productData.isAvailable ?? true,

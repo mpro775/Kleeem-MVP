@@ -10,6 +10,7 @@ import { Types } from 'mongoose';
 
 import { CategoriesService } from '../../categories/categories.service';
 import { StorefrontService } from '../../storefront/storefront.service';
+import { Currency } from '../enums/product.enums';
 
 import { ProductIndexService } from './product-index.service';
 
@@ -38,6 +39,16 @@ function toNumber(n: unknown, fallback = 0): number {
 
 function toBooleanFromStock(stock: unknown): boolean {
   return toNumber(stock, 0) > 0;
+}
+
+function normalizeCurrency(currency: unknown): Currency {
+  if (typeof currency === 'string') {
+    const code = currency.trim().toUpperCase();
+    if ((Object.values(Currency) as string[]).includes(code)) {
+      return code as Currency;
+    }
+  }
+  return Currency.YER;
 }
 
 type RawImage = { url?: unknown };
@@ -146,10 +157,14 @@ export class ProductSyncService {
 
     // بناء بيانات الوثيقة بدقّة وبدون any
     const price = toNumber(p.price, 0);
+    const currency = normalizeCurrency(p.currency);
+    const prices = new Map<string, number>([[currency, price]]);
     const isAvailable = toBooleanFromStock(p.stock);
     const images = extractImages(p.raw);
     const permalink = extractPermalink(p.raw);
     const description = extractDescription(p.raw);
+    const shortDescription =
+      description && description.length > 0 ? description.slice(0, 200) : '';
 
     const docData: Partial<Product> & { externalId: string } = {
       merchantId: mId,
@@ -158,13 +173,15 @@ export class ProductSyncService {
       platform: provider,
 
       name: typeof p.title === 'string' ? p.title : '',
-      description,
-      price,
+      shortDescription,
+      richDescription: description,
+      currency,
+      prices,
+      priceDefault: price,
       isAvailable,
       images,
 
       sourceUrl: permalink,
-      originalUrl: permalink,
 
       keywords: [],
       status: 'published',

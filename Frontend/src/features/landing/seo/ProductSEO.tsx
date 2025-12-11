@@ -144,11 +144,13 @@ export default function ProductSEO({
 
   // دالة مساعدة لإضافة Structured Data للمنتج
   const addProductStructuredData = () => {
+    const description =
+      product.shortDescription || product.richDescription || "";
     const productData = {
       "@context": "https://schema.org",
       "@type": "Product",
       "name": product.name,
-      "description": product.description,
+      "description": description,
       "image": product.images,
       "brand": {
         "@type": "Brand",
@@ -218,7 +220,7 @@ export default function ProductSEO({
           "@context": "https://schema.org",
           "@type": "Product",
           "name": product.name,
-          "description": product.description,
+          "description": product.shortDescription || product.richDescription || "",
           "image": product.images,
           "brand": product.brand,
           "category": product.category,

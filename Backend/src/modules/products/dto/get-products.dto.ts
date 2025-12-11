@@ -8,7 +8,7 @@ export enum ProductSortBy {
   CREATED_AT = 'createdAt',
   UPDATED_AT = 'updatedAt',
   NAME = 'name',
-  PRICE = 'price',
+  PRICE = 'priceDefault',
 }
 
 export enum SortOrder {

@@ -15,6 +15,7 @@ import {
   STOREFRONT_PRODUCT_REPOSITORY,
   STOREFRONT_REPOSITORY,
 } from '../tokens';
+import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 
 describe('StorefrontService', () => {
   let service: StorefrontService;
@@ -49,15 +50,11 @@ describe('StorefrontService', () => {
 
   const vectorMock = { upsertProducts: jest.fn() } as unknown as VectorService;
   const leadsMock = { getPhoneBySession: jest.fn() } as unknown as LeadsService;
-  const minioMock = {
-    bucketExists: jest.fn().mockResolvedValue(true),
-    makeBucket: jest.fn(),
-    putObject: jest.fn(),
-  };
+  const s3Mock = { send: jest.fn() };
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    process.env.MINIO_BUCKET = 'test-bucket';
+    process.env.S3_BUCKET_NAME = 'test-bucket';
     process.env.ASSETS_CDN_BASE_URL = 'https://cdn.example.com';
 
     const module: TestingModule = await Test.createTestingModule({
@@ -69,7 +66,7 @@ describe('StorefrontService', () => {
         { provide: STOREFRONT_CATEGORY_REPOSITORY, useValue: catRepo },
         { provide: STOREFRONT_ORDER_REPOSITORY, useValue: orderRepo },
         { provide: VectorService, useValue: vectorMock },
-        { provide: 'MINIO_CLIENT', useValue: minioMock },
+        { provide: S3_CLIENT_TOKEN, useValue: s3Mock },
         { provide: LeadsService, useValue: leadsMock },
       ],
     }).compile();

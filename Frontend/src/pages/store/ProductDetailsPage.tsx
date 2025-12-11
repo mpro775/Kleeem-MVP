@@ -7,6 +7,7 @@ import {
   isObjectId,
   getProductById,
   getPublicProductBySlug,
+  getRelatedProducts,
 } from "@/features/store/home/api";
 import Gallery from "@/features/store/product/ui/Gallery";
 import PriceSection from "@/features/store/product/ui/PriceSection";
@@ -85,6 +86,8 @@ export function ProductDetailsPage() {
   }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<ProductResponse | null>(null);
+  const [related, setRelated] = useState<ProductResponse[]>([]);
+  const [loadingRelated, setLoadingRelated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -155,6 +158,12 @@ export function ProductDetailsPage() {
       });
     }
     setSelectedAttrs(init);
+
+    setLoadingRelated(true);
+    getRelatedProducts(product._id)
+      .then(setRelated)
+      .catch(() => setRelated([]))
+      .finally(() => setLoadingRelated(false));
   }, [product]);
 
   if (loading) return <ProductSkeleton />;
@@ -162,7 +171,10 @@ export function ProductDetailsPage() {
 
   const trail = renderCategoryTrail(product);
   const currency = (product as ProductResponse).currency || "SAR";
-  const canBuy = product.status === "active";
+  const availableStock = product.isUnlimitedStock
+    ? Number.POSITIVE_INFINITY
+    : product.stock ?? product.quantity ?? 0;
+  const canBuy = product.status === "active" && availableStock > 0;
 
   const handleAddToCart = () => {
     const productWithAttributes = {
@@ -240,7 +252,6 @@ export function ProductDetailsPage() {
           <Gallery
             images={product.images}
             status={product.status}
-            lowQuantity={product.lowQuantity}
             name={product.name}
           />
 
@@ -253,6 +264,34 @@ export function ProductDetailsPage() {
               flexDirection: "column",
             }}
           >
+            {/* الملصقات */}
+            {product.badges?.length ? (
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}>
+                {product.badges
+                  .filter((b) => b.showOnCard !== false)
+                  .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                  .map((b, i) => (
+                    <Typography
+                      key={`${b.label}-${i}`}
+                      component="span"
+                      sx={{
+                        px: 1,
+                        py: 0.3,
+                        borderRadius: 1,
+                        bgcolor: b.color ? `${b.color}22` : "primary.50",
+                        color: b.color || "primary.main",
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
+                        border: "1px solid",
+                        borderColor: b.color ? `${b.color}55` : "primary.100",
+                      }}
+                    >
+                      {b.label}
+                    </Typography>
+                  ))}
+              </Box>
+            ) : null}
+
             <Typography
               variant="h3"
               fontWeight="bold"
@@ -264,6 +303,19 @@ export function ProductDetailsPage() {
             >
               {product.name}
             </Typography>
+
+            {product.shortDescription && (
+              <Typography
+                sx={{
+                  mb: { xs: 1, sm: 1.5 },
+                  color: "text.primary",
+                  fontSize: { xs: "0.95rem", sm: "1.05rem" },
+                  fontWeight: 500,
+                }}
+              >
+                {product.shortDescription}
+              </Typography>
+            )}
 
             <PriceSection
               price={product.price}
@@ -279,7 +331,9 @@ export function ProductDetailsPage() {
                 fontSize: { xs: "0.875rem", sm: "1rem" },
               }}
             >
-              {product.description || "لا يوجد وصف متوفر لهذا المنتج."}
+              {product.shortDescription ||
+                product.richDescription ||
+                "لا يوجد وصف متوفر لهذا المنتج."}
             </Typography>
 
             <Divider sx={{ mb: { xs: 2, sm: 3 } }} />
@@ -295,8 +349,22 @@ export function ProductDetailsPage() {
             <QuantityPicker
               value={quantity}
               onChange={setQuantity}
-              max={product.quantity || 999}
+              max={
+                product.isUnlimitedStock
+                  ? 999
+                  : product.stock ?? product.quantity ?? 999
+              }
             />
+
+            <Typography
+              variant="body2"
+              sx={{ mt: 1, mb: 2 }}
+              color={canBuy ? "text.secondary" : "error"}
+            >
+              {product.isUnlimitedStock
+                ? "المخزون: غير محدود"
+                : `المخزون المتاح: ${product.stock ?? product.quantity ?? 0}`}
+            </Typography>
 
             <ActionBar onAddToCart={handleAddToCart} canBuy={canBuy} />
 
@@ -318,7 +386,57 @@ export function ProductDetailsPage() {
             }
           />
         )}
-        <DetailsTabs specs={product.specsBlock || []} />
+        <DetailsTabs
+          specs={product.specsBlock || []}
+          richDescription={product.richDescription}
+        />
+
+        <Box sx={{ mt: 4, mb: 6 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            منتجات مشابهة
+          </Typography>
+          {loadingRelated ? (
+            <RelatedSkeleton />
+          ) : related.length ? (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+                gap: 2,
+              }}
+            >
+              {related.map((p) => (
+                <Box
+                  key={p._id}
+                  sx={{
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    p: 2,
+                    cursor: "pointer",
+                    "&:hover": { borderColor: "primary.main", boxShadow: 2 },
+                  }}
+                  onClick={() =>
+                    navigate(
+                      `/store/${encodeURIComponent(slug)}/product/${encodeURIComponent(
+                        p.slug || p._id,
+                      )}`,
+                    )
+                  }
+                >
+                  <Typography variant="subtitle1" fontWeight={700} noWrap>
+                    {p.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" noWrap>
+                    {p.shortDescription || p.richDescription || ""}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Typography color="text.secondary">لا توجد منتجات مشابهة.</Typography>
+          )}
+        </Box>
       </Box>
       {merchant && <Footer merchant={merchant} categories={categories} />}
     </Box>

@@ -4,6 +4,14 @@ export type OfferInfo = {
   enabled?: boolean;
   oldPrice?: number;
   newPrice?: number;
+  type?: 'percentage' | 'fixed_amount' | 'buy_x_get_y' | 'quantity_based';
+  discountValue?: number;
+  quantityThreshold?: number;
+  quantityDiscount?: number;
+  buyQuantity?: number;
+  getQuantity?: number;
+  getProductId?: string;
+  getDiscount?: number;
   startAt?: string | Date | null;
   endAt?: string | Date | null;
 };

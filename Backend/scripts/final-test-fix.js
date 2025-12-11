@@ -47,7 +47,6 @@ function removeProblematicTests() {
     'src/modules/analytics/__tests__/analytics.service.spec.ts',
     'src/modules/webhooks/__tests__/webhooks.service.spec.ts',
     'src/modules/users/__tests__/users.service.spec.ts',
-    'src/modules/scraper/scraper.service.spec.ts',
     'src/modules/extract/__tests__/extract.service.spec.ts',
     'src/modules/waitlist/__tests__/waitlist.service.spec.ts',
     'src/modules/usage/__tests__/usage.service.spec.ts',
@@ -61,7 +60,6 @@ function removeProblematicTests() {
     'src/modules/analytics/__tests__/analytics.controller.spec.ts',
     'src/modules/integrations/tests/integrations.controller.spec.ts',
     'src/modules/plans/plans.controller.spec.ts',
-    'src/modules/scraper/scraper.controller.spec.ts',
     // اختبارات modules معقدة
     'src/modules/plans/plans.module.spec.ts',
   ];

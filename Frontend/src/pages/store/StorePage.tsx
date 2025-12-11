@@ -113,7 +113,8 @@ export function StorePageInner() {
     (p) =>
       (!activeCategory || p.category === activeCategory) &&
       (p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.description?.toLowerCase().includes(search.toLowerCase()))
+        p.shortDescription?.toLowerCase().includes(search.toLowerCase()) ||
+        p.richDescription?.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (

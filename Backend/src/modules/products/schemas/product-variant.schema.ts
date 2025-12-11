@@ -1,6 +1,8 @@
 // src/modules/products/schemas/product-variant.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
+import { Currency } from '../enums/product.enums';
+
 @Schema({ _id: false, timestamps: false })
 export class ProductVariant {
   @Prop({ required: true, trim: true })
@@ -12,8 +14,14 @@ export class ProductVariant {
   @Prop({ type: Map, of: String, required: true })
   attributes!: Record<string, string>; // {color: 'أحمر', size: 'L'}
 
-  @Prop({ required: true, min: 0 })
-  price!: number;
+  @Prop({ type: String, enum: Object.values(Currency), default: Currency.YER })
+  currency?: Currency;
+
+  @Prop({ type: Map, of: Number, required: true })
+  prices!: Map<string, number>;
+
+  @Prop({ type: Number, default: 0, min: 0 })
+  priceDefault?: number;
 
   @Prop({ required: true, default: 0, min: 0 })
   stock!: number;

@@ -5,11 +5,13 @@ import {
   IsNotEmpty,
   IsEnum,
   IsNumber,
+  Max,
   Min,
   IsOptional,
   IsBoolean,
   IsArray,
   IsDateString,
+  ValidateIf,
 } from 'class-validator';
 
 import { PromotionType, ApplyTo } from '../schemas/promotion.schema';
@@ -55,6 +57,8 @@ export class CreatePromotionDto {
   })
   @IsNumber({}, { message: 'يجب أن تكون القيمة رقمية' })
   @Min(0, { message: 'القيمة يجب أن تكون أكبر من أو تساوي صفر' })
+  @ValidateIf((o) => o.type === PromotionType.PERCENTAGE)
+  @Max(100, { message: 'النسبة المئوية يجب ألا تتجاوز 100%' })
   discountValue!: number;
 
   @ApiPropertyOptional({
@@ -62,9 +66,9 @@ export class CreatePromotionDto {
     example: 500,
     minimum: 0,
   })
+  @IsOptional()
   @IsNumber({}, { message: 'يجب أن يكون الحد الأقصى رقمياً' })
   @Min(0, { message: 'الحد الأقصى يجب أن يكون أكبر من أو يساوي صفر' })
-  @IsOptional()
   maxDiscountAmount?: number | null;
 
   @ApiPropertyOptional({
@@ -73,9 +77,9 @@ export class CreatePromotionDto {
     minimum: 0,
     default: 0,
   })
+  @IsOptional()
   @IsNumber({}, { message: 'يجب أن يكون الحد الأدنى رقمياً' })
   @Min(0, { message: 'الحد الأدنى يجب أن يكون أكبر من أو يساوي صفر' })
-  @IsOptional()
   minCartAmount?: number;
 
   @ApiProperty({
@@ -149,8 +153,8 @@ export class CreatePromotionDto {
     example: TIMEOUT_MS,
     minimum: 1,
   })
+  @IsOptional()
   @IsNumber({}, { message: 'يجب أن يكون حد الاستخدام رقمياً' })
   @Min(1, { message: 'حد الاستخدام يجب أن يكون على الأقل 1' })
-  @IsOptional()
   usageLimit?: number | null;
 }

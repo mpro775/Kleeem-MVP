@@ -3,6 +3,10 @@ import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { PaginationResult } from '../../common/dto/pagination.dto';
 import { CouponsService } from '../coupons/coupons.service';
 import { LeadsService } from '../leads/leads.service';
+import {
+  InventoryService,
+  StockItem,
+} from '../products/services/inventory.service';
 import { PromotionsService } from '../promotions/promotions.service';
 
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -27,6 +31,7 @@ export class OrdersService {
     private readonly pricingService: PricingService,
     private readonly couponsService: CouponsService,
     private readonly promotionsService: PromotionsService,
+    private readonly inventoryService: InventoryService,
   ) {}
 
   async create(dto: CreateOrderDto): Promise<Order> {
@@ -41,6 +46,34 @@ export class OrdersService {
       ...p,
       product: p.product,
     }));
+
+    const stockItems: StockItem[] = products
+      .filter((p) => p.product)
+      .map((p) => {
+        const item: StockItem = {
+          productId: p.product || '',
+          quantity: p.quantity || 1,
+        };
+        if (p.variantSku !== undefined) {
+          item.variantSku = p.variantSku;
+        }
+        return item;
+      });
+
+    if (stockItems.length > 0) {
+      const availability =
+        await this.inventoryService.checkAvailability(stockItems);
+      if (!availability.available) {
+        // سيُرمي OutOfStockError داخل deduct أيضاً، لكن نوقف مبكراً
+        const first = availability.items.find(
+          (i) => !i.isUnlimited && i.available < i.requested,
+        );
+        if (first) {
+          throw new BadRequestException('Product out of stock');
+        }
+      }
+      await this.inventoryService.deductStock(stockItems);
+    }
 
     const cartItems: PricingCartItem[] = products.map((p) => ({
       productId: p.product || '',

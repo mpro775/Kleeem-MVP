@@ -4,6 +4,7 @@ import { NextFunction } from 'express';
 import { HydratedDocument, Types } from 'mongoose';
 
 import { Currency } from '../enums/product.enums';
+
 import { ProductVariant, ProductVariantSchema } from './product-variant.schema';
 
 export type ProductDocument = HydratedDocument<Product>;
@@ -23,10 +24,6 @@ export class Product {
   @Prop({ type: Types.ObjectId, ref: 'Merchant', required: true })
   merchantId?: Types.ObjectId;
 
-  // لم تعد مطلوبة للإنشاء اليدوي
-  @Prop({ type: String, default: null })
-  originalUrl?: string | null;
-
   @Prop({ default: '' })
   platform?: string;
 
@@ -34,10 +31,11 @@ export class Product {
   name?: string;
 
   @Prop({ default: '' })
-  description?: string;
+  shortDescription?: string;
 
-  @Prop({ default: 0 })
-  price?: number;
+  // محتوى غني (HTML/JSON) للوصف التفصيلي
+  @Prop({ type: String, default: '' })
+  richDescription?: string;
 
   @Prop({ default: true })
   isAvailable?: boolean;
@@ -48,20 +46,8 @@ export class Product {
   @Prop({ type: Types.ObjectId, ref: 'Category' })
   category?: Types.ObjectId;
 
-  @Prop({ default: '' })
-  lowQuantity?: string;
-
   @Prop({ default: [] })
   specsBlock?: string[];
-
-  @Prop({ type: Date, default: null })
-  lastFetchedAt?: Date | null;
-
-  @Prop({ type: Date, default: null })
-  lastFullScrapedAt?: Date | null;
-
-  @Prop({ type: String, default: null })
-  errorState?: string | null;
 
   @Prop({ enum: ['manual', 'api'], required: true })
   source?: 'manual' | 'api';
@@ -99,14 +85,30 @@ export class Product {
   @Prop({ sparse: true })
   uniqueKey?: string;
 
-  @Prop({ type: String, enum: Object.values(Currency), default: Currency.SAR })
+  @Prop({ type: String, enum: Object.values(Currency), default: Currency.YER })
   currency?: Currency;
 
-  @Prop({ type: Map, of: Number, default: undefined })
-  prices?: Map<string, number>; // أسعار بعملات متعددة {'SAR': 100, 'USD': 27}
+  @Prop({ type: Map, of: Number, required: true })
+  prices!: Map<string, number>; // أسعار بعملات متعددة {'YER': 5000, 'SAR': 75}
 
-  @Prop({ type: Map, of: [String], default: undefined })
-  attributes?: Map<string, string[]>;
+  @Prop({ type: Number, default: 0 })
+  priceDefault?: number; // السعر بالعملة الأساسية (YER) للفهرسة والترتيب
+
+  // سمات المنتج المهيكلة باستخدام keySlug/valueSlugs من attribute_definitions
+  @Prop({
+    type: [
+      {
+        keySlug: { type: String, required: true, lowercase: true, trim: true },
+        valueSlugs: { type: [String], required: true, default: [] },
+      },
+    ],
+    _id: false,
+    default: [],
+  })
+  attributes?: {
+    keySlug: string;
+    valueSlugs: string[];
+  }[];
 
   hasActiveOffer?: boolean;
   priceEffective?: number;
@@ -182,6 +184,26 @@ export class Product {
   @Prop({ default: false })
   hasVariants?: boolean;
 
+  // ============ ملصقات العرض (badges) ============
+  @Prop({
+    type: [
+      {
+        label: { type: String, required: true, trim: true },
+        color: { type: String, default: null },
+        showOnCard: { type: Boolean, default: true },
+        order: { type: Number, default: 0 },
+      },
+    ],
+    _id: false,
+    default: [],
+  })
+  badges?: {
+    label: string;
+    color?: string | null;
+    showOnCard?: boolean;
+    order?: number;
+  }[];
+
   // ============ نوع المنتج ============
   @Prop({
     type: String,
@@ -207,6 +229,13 @@ export class Product {
 
   @Prop({ default: false })
   isUnlimitedStock?: boolean;
+
+  // ============ نظام المخزون ============
+  @Prop({ type: Number, default: 0, min: 0 })
+  stock?: number; // للمنتجات بدون متغيرات
+
+  @Prop({ type: Number, default: null, min: 0 })
+  lowStockThreshold?: number | null; // عتبة التنبيه للمخزون المنخفض
 
   // ============ المنتجات الشبيهة ============
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Product' }], default: [] })
@@ -238,6 +267,7 @@ ProductSchema.virtual('publicUrl').get(function (this: ProductDocument) {
   return base ? `${base}/product/${pid}` : `/product/${pid}`;
 });
 // مشتقات جاهزة في الاسترجاع
+// eslint-disable-next-line complexity
 function computeDerived(doc: ProductDocument) {
   const now = new Date();
   const ofr = doc.offer;
@@ -256,14 +286,34 @@ function computeDerived(doc: ProductDocument) {
   doc.hasActiveOffer = active;
 
   // إذا كان المنتج يحتوي على variants، نحسب السعر من أقل variant متاح
-  let basePrice = Number(doc.price) || 0;
+  const baseCurrency = doc.currency || Currency.YER;
+  const getPrice = (
+    prices: Map<string, number> | Record<string, number> | undefined,
+    currency: string,
+  ): number | undefined => {
+    if (!prices) return undefined;
+    if (prices instanceof Map) return prices.get(currency);
+    if (typeof prices === 'object' && currency in prices) {
+      const val = (prices as Record<string, unknown>)[currency];
+      return typeof val === 'number' ? val : undefined;
+    }
+    return undefined;
+  };
+
+  let basePrice = getPrice(doc.prices, baseCurrency) ?? 0;
   if (doc.hasVariants && doc.variants && doc.variants.length > 0) {
     const availableVariants = doc.variants.filter((v) => v.isAvailable);
-    if (availableVariants.length > 0) {
-      basePrice = Math.min(...availableVariants.map((v) => v.price));
+    const variantPrices = availableVariants
+      .map((v) =>
+        getPrice((v as { prices?: Map<string, number> }).prices, baseCurrency),
+      )
+      .filter((p): p is number => typeof p === 'number' && p >= 0);
+    if (variantPrices.length > 0) {
+      basePrice = Math.min(...variantPrices);
     }
   }
 
+  doc.priceDefault = basePrice;
   doc.priceEffective = active ? Number(ofr!.newPrice) : basePrice;
 }
 function recomputePublicUrlStored(doc: ProductDocument) {
@@ -278,6 +328,7 @@ function recomputePublicUrlStored(doc: ProductDocument) {
 // @ts-expect-error Mongoose types are restrictive for pre-save hooks
 ProductSchema.pre('save', function (this: ProductDocument, next: NextFunction) {
   recomputePublicUrlStored(this);
+  computeDerived(this);
   next();
 });
 ProductSchema.pre('findOneAndUpdate', function (next) {
@@ -315,9 +366,9 @@ ProductSchema.index(
 
 // فهرس للبحث النصي
 ProductSchema.index(
-  { name: 'text', description: 'text' },
+  { name: 'text', richDescription: 'text', shortDescription: 'text' },
   {
-    weights: { name: 5, description: 1 },
+    weights: { name: 5, shortDescription: 3, richDescription: 1 },
     background: true,
   },
 );
@@ -380,7 +431,7 @@ ProductSchema.index(
 ProductSchema.index(
   {
     merchantId: 1,
-    price: 1,
+    priceDefault: 1,
     createdAt: -1,
     _id: -1,
   },
@@ -412,6 +463,17 @@ ProductSchema.index(
 ProductSchema.index(
   { merchantId: 1, 'variants.barcode': 1 },
   { sparse: true, background: true },
+);
+
+// فهرس للسمات المهيكلة
+ProductSchema.index(
+  {
+    merchantId: 1,
+    'attributes.keySlug': 1,
+    'attributes.valueSlugs': 1,
+    status: 1,
+  },
+  { background: true },
 );
 
 // ============ فهارس النشر والحالة ============
@@ -454,5 +516,18 @@ ProductSchema.index(
 // فهرس للمنتجات الرقمية
 ProductSchema.index(
   { merchantId: 1, productType: 1, isUnlimitedStock: 1 },
+  { background: true },
+);
+
+// ============ فهارس المخزون ============
+// فهرس للمخزون المنخفض
+ProductSchema.index(
+  { merchantId: 1, stock: 1, lowStockThreshold: 1, isUnlimitedStock: 1 },
+  { background: true },
+);
+
+// فهرس للمنتجات المتاحة حسب المخزون
+ProductSchema.index(
+  { merchantId: 1, isAvailable: 1, stock: 1, isUnlimitedStock: 1 },
   { background: true },
 );

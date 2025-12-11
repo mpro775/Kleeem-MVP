@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
@@ -6,11 +6,13 @@ import {
   IsDate,
   IsEnum,
   IsMongoId,
+  IsNotEmptyObject,
   IsNumber,
   IsObject,
   IsOptional,
   IsString,
   Max,
+  Min,
   ValidateNested,
 } from 'class-validator';
 
@@ -23,17 +25,32 @@ import { CreateVariantDto } from './product-variant.dto';
 export enum ProductSource {
   MANUAL = 'manual',
   API = 'api',
-  SCRAPER = 'scraper',
+}
+
+export class BadgeDto {
+  @IsString(I18nMessage('validation.string'))
+  label!: string;
+
+  @IsOptional()
+  @IsString(I18nMessage('validation.string'))
+  color?: string;
+
+  @IsOptional()
+  @IsBoolean(I18nMessage('validation.boolean'))
+  showOnCard?: boolean;
+
+  @IsOptional()
+  @IsNumber({}, I18nMessage('validation.number'))
+  order?: number;
 }
 
 const EXAMPLE_PRICE = 99.99;
+const EXAMPLE_PRICE_SAR = 75;
+const EXAMPLE_PRICE_USD = 20;
 const EXAMPLE_STOCK = 50;
 const EXAMPLE_WEIGHT = 250;
 const EXAMPLE_FILE_SIZE = 1024000;
 export class CreateProductDto {
-  @IsOptional()
-  @IsString(I18nMessage('validation.string'))
-  originalUrl?: string;
   @IsOptional() @IsString(I18nMessage('validation.string')) sourceUrl?: string;
   @IsOptional() @IsString(I18nMessage('validation.string')) externalId?: string;
   @IsOptional() @IsString(I18nMessage('validation.string')) platform?: string;
@@ -41,15 +58,28 @@ export class CreateProductDto {
   @IsString(I18nMessage('validation.string')) name!: string;
   @IsOptional()
   @IsString(I18nMessage('validation.string'))
-  description?: string;
+  shortDescription?: string;
+  @IsOptional()
+  @IsString(I18nMessage('validation.string'))
+  richDescription?: string;
 
-  @Type(() => Number)
-  @IsNumber({}, I18nMessage('validation.number'))
-  price!: number;
+  @ApiProperty({
+    description: 'أسعار متعددة العملات (يجب تضمين YER على الأقل)',
+    type: 'object',
+    additionalProperties: { type: 'number' },
+    example: {
+      YER: EXAMPLE_PRICE,
+      SAR: EXAMPLE_PRICE_SAR,
+      USD: EXAMPLE_PRICE_USD,
+    },
+  })
+  @IsNotEmptyObject({}, I18nMessage('validation.object'))
+  @IsObject(I18nMessage('validation.object'))
+  prices!: Record<string, number>;
 
   @IsOptional()
   @IsEnum(Currency, I18nMessage('validation.enum'))
-  currency?: Currency = Currency.SAR;
+  currency?: Currency = Currency.YER;
 
   @IsOptional()
   @ValidateNested()
@@ -73,6 +103,16 @@ export class CreateProductDto {
   @IsString(I18nMessage('validation.string', { each: true }))
   keywords?: string[] = [];
 
+  @ApiPropertyOptional({
+    description: 'ملصقات العرض على الكارت',
+    type: [BadgeDto],
+  })
+  @IsOptional()
+  @IsArray(I18nMessage('validation.array'))
+  @ValidateNested({ each: true })
+  @Type(() => BadgeDto)
+  badges?: BadgeDto[] = [];
+
   @IsOptional()
   @IsArray(I18nMessage('validation.array'))
   @IsString(I18nMessage('validation.string', { each: true }))
@@ -83,18 +123,23 @@ export class CreateProductDto {
   source?: ProductSource = ProductSource.MANUAL;
 
   @ApiPropertyOptional({
-    type: 'object',
-    additionalProperties: true,
-    example: { color: ['أسود', 'أزرق'], المقاس: ['M', 'L'] },
-    description: 'خصائص متعددة القيم: مفتاح → مصفوفة قيم',
+    description: 'سمات المنتج باستخدام keySlug/valueSlugs من القاموس',
+    type: 'array',
+    example: [
+      { keySlug: 'color', valueSlugs: ['red', 'blue'] },
+      { keySlug: 'size', valueSlugs: ['m', 'l'] },
+    ],
+    items: {
+      type: 'object',
+      properties: {
+        keySlug: { type: 'string' },
+        valueSlugs: { type: 'array', items: { type: 'string' } },
+      },
+    },
   })
   @IsOptional()
-  @IsObject(I18nMessage('validation.object'))
-  attributes?: Record<string, string[]>;
-
-  @IsOptional()
-  @IsString(I18nMessage('validation.string'))
-  lowQuantity?: string;
+  @IsArray(I18nMessage('validation.array'))
+  attributes?: { keySlug: string; valueSlugs: string[] }[];
 
   @IsOptional()
   @IsString(I18nMessage('validation.string'))
@@ -116,8 +161,8 @@ export class CreateProductDto {
       {
         sku: 'TSHIRT-RED-L',
         barcode: '1234567890123',
-        attributes: { color: 'أحمر', size: 'L' },
-        price: EXAMPLE_PRICE,
+        attributes: { color: 'red', size: 'l' },
+        prices: { YER: EXAMPLE_PRICE, SAR: EXAMPLE_PRICE_SAR },
         stock: EXAMPLE_STOCK,
         lowStockThreshold: 10,
         images: ['https://example.com/red-l.jpg'],
@@ -175,6 +220,27 @@ export class CreateProductDto {
   @IsOptional()
   @IsBoolean(I18nMessage('validation.boolean'))
   isUnlimitedStock?: boolean;
+
+  // ============ نظام المخزون ============
+  @ApiPropertyOptional({
+    description: 'كمية المخزون المتاحة (للمنتجات بدون متغيرات)',
+    example: EXAMPLE_STOCK,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({}, I18nMessage('validation.number'))
+  @Min(0, I18nMessage('validation.min'))
+  stock?: number;
+
+  @ApiPropertyOptional({
+    description: 'عتبة التنبيه للمخزون المنخفض',
+    example: 10,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({}, I18nMessage('validation.number'))
+  @Min(0, I18nMessage('validation.min'))
+  lowStockThreshold?: number;
 
   // ============ حالة النشر ============
   @ApiPropertyOptional({

@@ -2,13 +2,18 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  type PineconeRecord,
+  type RecordMetadata,
+  type ScoredPineconeRecord,
+} from '@pinecone-database/pinecone';
 import { I18nService } from 'nestjs-i18n';
 import { v5 as uuidv5 } from 'uuid';
 
 import { Collections, Namespaces } from './utils/collections';
 import { EmbeddingsClient } from './utils/embeddings.client';
 import { geminiRerankTopN } from './utils/geminiRerank';
-import { QdrantWrapper } from './utils/qdrant.client';
+import { PineconeWrapper } from './utils/pinecone.client';
 
 import type {
   BotFaqSearchItem,
@@ -36,22 +41,10 @@ const DEFAULT_MIN_SCORE = 0;
 const RERANK_MULTIPLIER = 4;
 const DEFAULT_PUBLIC_BASE = 'https://kaleem-ai.com';
 
-/** ===== أنواع Qdrant محلية خفيفة (min types) ===== */
-type MatchFilter = { key: string; match: { value: string | number | boolean } };
-type QdrantFilter = { filter: { must: MatchFilter[] } };
-type QdrantDeleteQuery = QdrantFilter | { points: (string | number)[] };
-
-type QdrantPoint<TPayload> = {
-  id: string;
-  vector: number[];
-  payload: TPayload;
-};
-
-type QdrantScoredPoint<TPayload> = {
-  id: string | number;
-  score: number;
-  payload: TPayload;
-};
+type PineconeFilter = Record<string, { $eq: string | number | boolean }>;
+type VectorRecord<TMetadata extends RecordMetadata> = PineconeRecord<TMetadata>;
+type ScoredRecord<TMetadata extends RecordMetadata> =
+  ScoredPineconeRecord<TMetadata>;
 
 type ProductResult = {
   id: string;
@@ -68,36 +61,36 @@ type ProductResult = {
   discountPct?: number | null;
 };
 
-/** ===== Payloads مبسّطة لما نخزّنه في Qdrant ===== */
-type ProductPayload = {
+/** ===== Payloads مبسّطة لما نخزّنه في Pinecone ===== */
+type ProductPayload = RecordMetadata & {
   mongoId: string;
   merchantId?: string;
   name: string;
   description: string;
-  categoryId: string | null;
-  categoryName: string | null;
-  specsBlock: unknown[];
-  keywords: unknown[];
-  images: string[];
-  slug: string | null;
-  storefrontSlug: string | null;
-  domain: string | null;
-  publicUrlStored: string | null;
-  price: number | null;
-  priceEffective: number | null;
-  currency: string | null;
-  hasOffer: boolean;
-  priceOld: number | null;
-  priceNew: number | null;
-  offerStart: string | Date | null;
-  offerEnd: string | Date | null;
-  discountPct: number | null;
-  isAvailable: boolean | null;
-  status: string | null;
-  quantity: number | null;
+  categoryId?: string;
+  categoryName?: string;
+  specsBlock?: string;
+  keywords?: string[];
+  images?: string[];
+  slug?: string;
+  storefrontSlug?: string;
+  domain?: string;
+  publicUrlStored?: string;
+  price?: number;
+  priceEffective?: number;
+  currency?: string;
+  hasOffer?: boolean;
+  priceOld?: number;
+  priceNew?: number;
+  offerStart?: string;
+  offerEnd?: string;
+  discountPct?: number;
+  isAvailable?: boolean;
+  status?: string;
+  quantity?: number;
 };
 
-type WebPayload = {
+type WebPayload = RecordMetadata & {
   merchantId: string;
   text: string;
   url?: string;
@@ -106,21 +99,25 @@ type WebPayload = {
   source?: string;
 };
 
-type DocChunkPayload = {
-  merchantId: string;
-  documentId: string;
-  text: string;
+type DocChunkPayload = RecordMetadata & {
+  merchantId?: string;
+  documentId?: string;
+  text?: string;
 };
 
-type BotFaqPayload = {
+type BotFaqPayload = RecordMetadata & {
   faqId: string;
   question: string;
   answer: string;
-  // حقول اختيارية مفيدة للفلترة/العرض
   type?: 'faq';
-  source?: string; // 'manual' | 'import' | 'crawl' | ... إلخ
+  source?: string;
   tags?: string[];
-  locale?: string; // 'ar' | 'en' | ...
+  locale?: string;
+};
+
+type FAQPayload = RecordMetadata & {
+  question?: string;
+  answer?: string;
 };
 
 /** ===== Helpers ثابتة للـ UUID ===== */
@@ -140,14 +137,6 @@ function isMongoHex(s: string): boolean {
   return /^[a-f0-9]{24}$/i.test(s);
 }
 
-function isQdrantDeleteQuery(x: unknown): x is QdrantDeleteQuery {
-  if (!isObject(x)) return false;
-  if ('points' in x && Array.isArray((x as { points: unknown }).points))
-    return true;
-  if ('filter' in x && isObject((x as { filter: unknown }).filter)) return true;
-  return false;
-}
-
 /** يحاول استدعاء toHexString إن وُجد */
 function toMaybeHexString(v: unknown): string | null {
   if (
@@ -157,6 +146,13 @@ function toMaybeHexString(v: unknown): string | null {
     return (v as { toHexString: () => string }).toHexString();
   }
   return null;
+}
+
+function buildEqFilter(
+  key: string,
+  value: string | number | boolean,
+): PineconeFilter {
+  return { [key]: { $eq: value } };
 }
 
 @Injectable()
@@ -173,7 +169,7 @@ export class VectorService implements OnModuleInit {
   private readonly minScore: number;
 
   constructor(
-    private readonly qdrant: QdrantWrapper,
+    private readonly pinecone: PineconeWrapper,
     private readonly embeddings: EmbeddingsClient,
     private readonly config: ConfigService,
     private readonly i18n: I18nService,
@@ -203,11 +199,18 @@ export class VectorService implements OnModuleInit {
 
   /** ===== Lifecycle ===== */
   public async onModuleInit(): Promise<void> {
-    const url = this.config.get<string>('QDRANT_URL');
-    if (!url) throw new Error('QDRANT_URL is required');
-    this.qdrant.init(url);
+    const apiKey = this.config.get<string>('PINECONE_API_KEY');
+    const host = this.config.get<string>('PINECONE_INDEX_HOST');
+    const indexName =
+      this.config.get<string>('PINECONE_INDEX_NAME') || 'kaleem-index';
+    if (!apiKey) throw new Error('PINECONE_API_KEY is required');
+    if (!host) throw new Error('PINECONE_INDEX_HOST is required');
+    this.pinecone.init({ apiKey, indexName, host });
 
-    await this.ensureCollections();
+    await this.ensureCollections().catch((e: unknown) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      this.logger.warn(`ensureCollections skipped/failed: ${msg}`);
+    });
     this.logger.log(
       `VectorService initialized (dim=${this.dim}, minScore=${this.minScore})`,
     );
@@ -215,12 +218,12 @@ export class VectorService implements OnModuleInit {
 
   private async ensureCollections(): Promise<void> {
     await Promise.all([
-      this.qdrant.ensureCollection(Collections.Products, this.dim),
-      this.qdrant.ensureCollection(Collections.Offers, this.dim),
-      this.qdrant.ensureCollection(Collections.FAQs, this.dim),
-      this.qdrant.ensureCollection(Collections.Documents, this.dim),
-      this.qdrant.ensureCollection(Collections.Web, this.dim),
-      this.qdrant.ensureCollection(Collections.BotFAQs, this.dim),
+      this.pinecone.ensureCollection(Collections.Products, this.dim),
+      this.pinecone.ensureCollection(Collections.Offers, this.dim),
+      this.pinecone.ensureCollection(Collections.FAQs, this.dim),
+      this.pinecone.ensureCollection(Collections.Documents, this.dim),
+      this.pinecone.ensureCollection(Collections.Web, this.dim),
+      this.pinecone.ensureCollection(Collections.BotFAQs, this.dim),
     ]);
   }
   // بدّل الدالة السابقة isPrimitiveType بهذه:
@@ -255,6 +258,74 @@ export class VectorService implements OnModuleInit {
     if (maybe === Object.prototype.toString) return null;
     const s = String((maybe as () => unknown).call(obj as object));
     return isMongoHex(s) ? s : null;
+  }
+
+  /**
+   * Pinecone يرفض null والقيم المركّبة؛ نقوم بتسطيح/تحويل القيم
+   */
+  private sanitizeMetadata(payload: Record<string, unknown>): RecordMetadata {
+    const clean: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(payload)) {
+      if (value === null || value === undefined) continue;
+      if (Array.isArray(value)) {
+        clean[key] = value.map((v) =>
+          typeof v === 'object' ? JSON.stringify(v) : String(v),
+        );
+        continue;
+      }
+      if (value instanceof Date) {
+        clean[key] = value.toISOString();
+        continue;
+      }
+      if (typeof value === 'object') {
+        clean[key] = JSON.stringify(value);
+        continue;
+      }
+      clean[key] = value;
+    }
+    return clean as RecordMetadata;
+  }
+
+  private toPineconeFilter(input: unknown): PineconeFilter | undefined {
+    const buildFromMust = (must: unknown[]): PineconeFilter => {
+      const out: PineconeFilter = {};
+      for (const cond of must) {
+        if (
+          isObject(cond) &&
+          typeof (cond as { key?: unknown }).key === 'string' &&
+          isObject((cond as { match?: unknown }).match) &&
+          'value' in (cond as { match: { value?: unknown } }).match
+        ) {
+          const key = (cond as { key: string }).key;
+          const val = (cond as { match: { value: unknown } }).match.value;
+          if (
+            typeof val === 'string' ||
+            typeof val === 'number' ||
+            typeof val === 'boolean'
+          ) {
+            out[key] = { $eq: val };
+          }
+        }
+      }
+      return out;
+    };
+
+    if (
+      isObject(input) &&
+      'filter' in input &&
+      isObject((input as { filter: unknown }).filter)
+    ) {
+      const must = (input as { filter: { must?: unknown } }).filter.must;
+      if (Array.isArray(must)) {
+        const out = buildFromMust(must);
+        if (Object.keys(out).length) return out;
+      }
+    }
+
+    const asPinecone = input as PineconeFilter;
+    if (Object.values(asPinecone).some((v) => isObject(v) && '$eq' in v))
+      return asPinecone;
+    return undefined;
   }
 
   /** ===== Utilities: تحويل إلى قائمة نصوص مع حماية الدورات ===== */
@@ -308,18 +379,16 @@ export class VectorService implements OnModuleInit {
   }
 
   private async deleteExistingProductPoint(mongoId: string): Promise<void> {
-    await this.qdrant
-      .delete(Collections.Products, {
-        filter: { must: [{ key: 'mongoId', match: { value: mongoId } }] },
-      } as unknown as Parameters<QdrantWrapper['delete']>[1])
+    await this.pinecone
+      .deleteMany(Collections.Products, [qdrantIdForProduct(mongoId)])
       .catch(() => undefined);
   }
 
   private computeDiscountPct(
     priceOld?: number | null,
     priceNew?: number | null,
-  ): number | null {
-    if (!priceOld || !priceNew || priceOld <= 0) return null;
+  ): number | undefined {
+    if (!priceOld || !priceNew || priceOld <= 0) return undefined;
     return Math.max(0, Math.round(((priceOld - priceNew) / priceOld) * 100));
   }
   private buildProductBasicInfo(
@@ -335,82 +404,123 @@ export class VectorService implements OnModuleInit {
 
   private buildProductCategoryInfo(
     p: EmbeddableProduct,
-  ): Pick<ProductPayload, 'categoryId' | 'categoryName'> {
-    return {
-      categoryId: p.categoryId ?? null,
-      categoryName: p.categoryName ?? null,
-    };
+  ): Partial<Pick<ProductPayload, 'categoryId' | 'categoryName'>> {
+    const out: Partial<Pick<ProductPayload, 'categoryId' | 'categoryName'>> =
+      {};
+    if (p.categoryId) out.categoryId = p.categoryId;
+    if (p.categoryName) out.categoryName = p.categoryName;
+    return out;
   }
 
   private buildProductContentInfo(
     p: EmbeddableProduct,
   ): Pick<ProductPayload, 'specsBlock' | 'keywords' | 'images'> {
-    return {
-      specsBlock: Array.isArray(p.specsBlock) ? p.specsBlock : [],
-      keywords: Array.isArray(p.keywords) ? p.keywords : [],
-      images: Array.isArray(p.images)
-        ? p.images.filter((img): img is string => typeof img === 'string')
-        : [],
-    };
+    const specsBlock = Array.isArray(p.specsBlock)
+      ? this.safeJoinComma(p.specsBlock)
+      : '';
+    const keywords = Array.isArray(p.keywords)
+      ? p.keywords
+          .map((k) => this.safeJoin(k, '/'))
+          .filter((k): k is string => typeof k === 'string' && k.length > 0)
+      : [];
+    const images = Array.isArray(p.images)
+      ? p.images.filter((img): img is string => typeof img === 'string')
+      : [];
+    return { specsBlock, keywords, images };
   }
 
   private buildProductStoreInfo(
     p: EmbeddableProduct,
-  ): Pick<
-    ProductPayload,
-    'slug' | 'storefrontSlug' | 'domain' | 'publicUrlStored'
+  ): Partial<
+    Pick<
+      ProductPayload,
+      'slug' | 'storefrontSlug' | 'domain' | 'publicUrlStored'
+    >
   > {
-    return {
-      slug: p.slug ?? null,
-      storefrontSlug: p.storefrontSlug ?? null,
-      domain: p.domain ?? null,
-      publicUrlStored: p.publicUrlStored ?? null,
-    };
+    const out: Partial<
+      Pick<
+        ProductPayload,
+        'slug' | 'storefrontSlug' | 'domain' | 'publicUrlStored'
+      >
+    > = {};
+    if (p.slug) out.slug = p.slug;
+    if (p.storefrontSlug) out.storefrontSlug = p.storefrontSlug;
+    if (p.domain) out.domain = p.domain;
+    if (p.publicUrlStored) out.publicUrlStored = p.publicUrlStored;
+    return out;
   }
 
   private buildProductPricingInfo(
     p: EmbeddableProduct,
-    discountPct: number | null,
-  ): Pick<
-    ProductPayload,
-    | 'price'
-    | 'priceEffective'
-    | 'currency'
-    | 'hasOffer'
-    | 'priceOld'
-    | 'priceNew'
-    | 'offerStart'
-    | 'offerEnd'
-    | 'discountPct'
+    discountPct: number | undefined,
+  ): Partial<
+    Pick<
+      ProductPayload,
+      | 'price'
+      | 'priceEffective'
+      | 'currency'
+      | 'hasOffer'
+      | 'priceOld'
+      | 'priceNew'
+      | 'offerStart'
+      | 'offerEnd'
+      | 'discountPct'
+    >
   > {
-    return {
-      price: Number.isFinite(p.price as number) ? (p.price as number) : null,
-      priceEffective: Number.isFinite(p.priceEffective as number)
-        ? (p.priceEffective as number)
-        : null,
-      currency: p.currency ?? null,
-      hasOffer: !!p.hasActiveOffer,
-      priceOld: p.priceOld ?? null,
-      priceNew: p.priceNew ?? null,
-      offerStart: p.offerStart ?? null,
-      offerEnd: p.offerEnd ?? null,
-      discountPct,
-    };
+    const out: Partial<
+      Pick<
+        ProductPayload,
+        | 'price'
+        | 'priceEffective'
+        | 'currency'
+        | 'hasOffer'
+        | 'priceOld'
+        | 'priceNew'
+        | 'offerStart'
+        | 'offerEnd'
+        | 'discountPct'
+      >
+    > = {};
+
+    if (Number.isFinite(p.price as number)) out.price = p.price as number;
+    if (Number.isFinite(p.priceEffective as number))
+      out.priceEffective = p.priceEffective as number;
+    if (p.currency) out.currency = p.currency;
+    if (typeof p.hasActiveOffer === 'boolean') out.hasOffer = p.hasActiveOffer;
+    if (p.priceOld != null) out.priceOld = p.priceOld;
+    if (p.priceNew != null) out.priceNew = p.priceNew;
+    if (p.offerStart) {
+      out.offerStart =
+        p.offerStart instanceof Date
+          ? p.offerStart.toISOString()
+          : String(p.offerStart);
+    }
+    if (p.offerEnd) {
+      out.offerEnd =
+        p.offerEnd instanceof Date
+          ? p.offerEnd.toISOString()
+          : String(p.offerEnd);
+    }
+    if (typeof discountPct === 'number') out.discountPct = discountPct;
+
+    return out;
   }
 
   private buildProductStatusInfo(
     p: EmbeddableProduct,
-  ): Pick<ProductPayload, 'isAvailable' | 'status' | 'quantity'> {
-    return {
-      isAvailable: typeof p.isAvailable === 'boolean' ? p.isAvailable : null,
-      status: p.status ?? null,
-      quantity: p.quantity ?? null,
-    };
+  ): Partial<Pick<ProductPayload, 'isAvailable' | 'status' | 'quantity'>> {
+    const out: Partial<
+      Pick<ProductPayload, 'isAvailable' | 'status' | 'quantity'>
+    > = {};
+    if (typeof p.isAvailable === 'boolean') out.isAvailable = p.isAvailable;
+    if (p.status) out.status = p.status;
+    if (p.quantity != null) out.quantity = p.quantity;
+    return out;
   }
 
   private buildProductPayload(
     p: EmbeddableProduct,
-    discountPct: number | null,
+    discountPct: number | undefined,
   ): ProductPayload {
     return {
       ...this.buildProductBasicInfo(p),
@@ -423,7 +533,7 @@ export class VectorService implements OnModuleInit {
   }
   private async buildProductVector(
     p: EmbeddableProduct,
-    discountPct: number | null,
+    discountPct: number | undefined,
   ): Promise<number[]> {
     const text = this.buildTextForEmbedding({
       ...p,
@@ -434,7 +544,7 @@ export class VectorService implements OnModuleInit {
 
   private async buildProductPoint(
     p: EmbeddableProduct,
-  ): Promise<QdrantPoint<ProductPayload>> {
+  ): Promise<VectorRecord<ProductPayload>> {
     await this.deleteExistingProductPoint(p.id);
     const discountPct = this.computeDiscountPct(
       p.priceOld ?? null,
@@ -443,8 +553,10 @@ export class VectorService implements OnModuleInit {
     const vector = await this.buildProductVector(p, discountPct);
     return {
       id: qdrantIdForProduct(p.id),
-      vector,
-      payload: this.buildProductPayload(p, discountPct),
+      values: vector,
+      metadata: this.sanitizeMetadata(
+        this.buildProductPayload(p, discountPct),
+      ) as ProductPayload,
     };
   }
   private isIndexObjArray(
@@ -553,7 +665,7 @@ export class VectorService implements OnModuleInit {
   }
 
   private buildBasicResult(
-    item: QdrantScoredPoint<ProductPayload>,
+    item: ScoredRecord<ProductPayload>,
     p: ProductPayload,
   ) {
     return {
@@ -586,12 +698,12 @@ export class VectorService implements OnModuleInit {
   }
 
   private assignUrlField(result: Partial<ProductResult>, p: ProductPayload) {
-    const url = this.resolveProductUrl({ ...p, slug: p.slug ?? null });
+    const url = this.resolveProductUrl(p);
     if (url) result.url = url;
   }
 
   private buildProductResult(
-    item: QdrantScoredPoint<ProductPayload>,
+    item: ScoredRecord<ProductPayload>,
     p: ProductPayload,
   ): ProductResult {
     const result = this.buildBasicResult(item, p);
@@ -690,19 +802,16 @@ export class VectorService implements OnModuleInit {
     for (let i = 0; i < valid.length; i += batchSize) {
       const chunk = valid.slice(i, i + batchSize);
       try {
-        const points = await Promise.all(
+        const records = await Promise.all(
           chunk.map((p) => this.buildProductPoint(p)),
         );
-        const validPoints = points.filter(
-          (pt) => Array.isArray(pt.vector) && pt.vector.length === this.dim,
+        const validRecords = records.filter(
+          (pt) => Array.isArray(pt.values) && pt.values.length === this.dim,
         );
-        if (validPoints.length > 0) {
-          await this.qdrant.upsert(Collections.Products, {
-            wait: true,
-            points: validPoints,
-          });
+        if (validRecords.length > 0) {
+          await this.pinecone.upsert(Collections.Products, validRecords);
           this.logger.log(
-            `Upserted ${validPoints.length} product vectors (batch ${i / batchSize + 1})`,
+            `Upserted ${validRecords.length} product vectors (batch ${i / batchSize + 1})`,
           );
         }
       } catch (e: unknown) {
@@ -735,20 +844,22 @@ export class VectorService implements OnModuleInit {
     }>
   > {
     const vector = await this.embed(text);
-    const raw = (await this.qdrant.search(Collections.Products, {
+    const res = await this.pinecone.query(Collections.Products, {
       vector,
-      limit: Math.max(1, topK) * RERANK_MULTIPLIER,
-      with_payload: true,
-      filter: { must: [{ key: 'merchantId', match: { value: merchantId } }] },
-    })) as QdrantScoredPoint<ProductPayload>[] | null;
+      topK: Math.max(1, topK) * RERANK_MULTIPLIER,
+      includeMetadata: true,
+      filter: buildEqFilter('merchantId', merchantId),
+    });
+    const raw =
+      (res.matches as ScoredRecord<ProductPayload>[] | undefined) ?? [];
 
-    const filtered = (raw ?? []).filter((r) =>
+    const filtered = raw.filter((r) =>
       typeof r.score === 'number' ? r.score >= this.minScore : true,
     );
     if (!filtered.length) return [];
 
     const candidates = filtered.map((item) => {
-      const p = item.payload;
+      const p = item.metadata as ProductPayload;
       return `اسم المنتج: ${p.name ?? ''}${p.price ? ` - السعر: ${p.price}` : ''}`;
     });
 
@@ -762,7 +873,7 @@ export class VectorService implements OnModuleInit {
 
     const pick = (i: number) => {
       const item = filtered[i];
-      const p = item.payload;
+      const p = item.metadata as ProductPayload;
       return this.buildProductResult(item, p);
     };
 
@@ -787,27 +898,31 @@ export class VectorService implements OnModuleInit {
 
   public async upsertWebKnowledge(
     points: Array<
-      Partial<QdrantPoint<WebPayload>> & {
+      Partial<VectorRecord<WebPayload>> & {
         payload: Partial<WebPayload> & { text: unknown; merchantId: unknown };
       }
     >,
   ): Promise<{ success: true }> {
     if (!Array.isArray(points) || points.length === 0) return { success: true };
 
-    const validated: QdrantPoint<WebPayload>[] = points.map((p) => ({
+    const validated: VectorRecord<WebPayload>[] = points.map((p) => ({
       id: p.id ?? uuidv5(String(p.payload.text ?? ''), Namespaces.Product),
-      vector: Array.isArray(p.vector) ? p.vector : [],
-      payload: {
+      values: Array.isArray(p.values)
+        ? p.values
+        : Array.isArray((p as { vector?: number[] }).vector)
+          ? ((p as { vector?: number[] }).vector as number[])
+          : [],
+      metadata: this.sanitizeMetadata({
         ...('payload' in p ? (p.payload as Partial<WebPayload>) : {}),
         merchantId: String(p.payload.merchantId ?? ''),
         text: String(p.payload.text ?? '').slice(0, 500),
-      },
+      }) as WebPayload,
     }));
 
     const batchSize = Math.max(1, this.upsertBatchWeb);
     for (let i = 0; i < validated.length; i += batchSize) {
       const batch = validated.slice(i, i + batchSize);
-      await this.qdrant.upsert(Collections.Web, { wait: true, points: batch });
+      await this.pinecone.upsert(Collections.Web, batch);
       this.logger.log(
         `Upserted web knowledge batch ${i / batchSize + 1}/${Math.ceil(validated.length / batchSize)}`,
       );
@@ -816,12 +931,9 @@ export class VectorService implements OnModuleInit {
   }
 
   async deleteWebKnowledgeByFilter(filter: unknown): Promise<unknown> {
-    // تحقّق runtime
-    if (!isQdrantDeleteQuery(filter)) throw new Error('Invalid delete filter');
-    return this.qdrant.delete(
-      Collections.Web,
-      filter as unknown as Parameters<QdrantWrapper['delete']>[1],
-    );
+    const pineconeFilter = this.toPineconeFilter(filter);
+    if (!pineconeFilter) throw new Error('Invalid delete filter');
+    return this.pinecone.deleteByFilter(Collections.Web, pineconeFilter);
   }
   /** ===== BOT FAQs ===== */
   public generateFaqId(faqId: string): string {
@@ -829,23 +941,23 @@ export class VectorService implements OnModuleInit {
   }
 
   public async upsertBotFaqs(
-    points: Array<QdrantPoint<BotFaqPayload>>,
+    points: Array<VectorRecord<BotFaqPayload>>,
   ): Promise<void> {
     if (!Array.isArray(points) || points.length === 0) return;
     const batchSize = Math.max(1, this.upsertBatchWeb);
     for (let i = 0; i < points.length; i += batchSize) {
-      const batch = points.slice(i, i + batchSize);
-      await this.qdrant.upsert(Collections.BotFAQs, {
-        wait: true,
-        points: batch,
-      });
+      const batch = points.slice(i, i + batchSize).map((p) => ({
+        ...p,
+        metadata: this.sanitizeMetadata(
+          (p.metadata ?? {}) as Record<string, unknown>,
+        ) as BotFaqPayload,
+      }));
+      await this.pinecone.upsert(Collections.BotFAQs, batch);
     }
   }
 
   async deleteBotFaqPoint(pointId: string): Promise<unknown> {
-    return this.qdrant.delete(Collections.BotFAQs, {
-      points: [pointId],
-    } as unknown as Parameters<QdrantWrapper['delete']>[1]);
+    return this.pinecone.deleteMany(Collections.BotFAQs, [pointId]);
   }
 
   public async searchBotFaqs(
@@ -853,18 +965,22 @@ export class VectorService implements OnModuleInit {
     topK = 5,
   ): Promise<BotFaqSearchItem[]> {
     const vector = await this.embed(text);
-    const results = (await this.qdrant.search(Collections.BotFAQs, {
+    const results = await this.pinecone.query(Collections.BotFAQs, {
       vector,
-      limit: Math.max(1, topK),
-      with_payload: true,
-    })) as QdrantScoredPoint<Partial<BotFaqPayload>>[] | null;
+      topK: Math.max(1, topK),
+      includeMetadata: true,
+    });
 
-    return (results ?? []).map((item) => ({
+    const matches = (results.matches ?? []) as ScoredRecord<RecordMetadata>[];
+
+    return matches.map((item) => ({
       id: String(item.id),
       question:
-        typeof item.payload?.question === 'string' ? item.payload.question : '',
+        typeof item.metadata?.question === 'string'
+          ? item.metadata.question
+          : '',
       answer:
-        typeof item.payload?.answer === 'string' ? item.payload.answer : '',
+        typeof item.metadata?.answer === 'string' ? item.metadata.answer : '',
       score: Number(item.score ?? 0),
     }));
   }
@@ -873,7 +989,7 @@ export class VectorService implements OnModuleInit {
   async upsertDocumentChunks(
     chunks: Array<{
       id: string;
-      vector: number[];
+      vector?: number[];
       payload: Partial<DocChunkPayload> & {
         text?: unknown;
         merchantId?: unknown;
@@ -883,59 +999,59 @@ export class VectorService implements OnModuleInit {
   ): Promise<void> {
     if (!Array.isArray(chunks) || chunks.length === 0) return;
 
-    const points: QdrantPoint<DocChunkPayload>[] = chunks.map((c) => ({
+    const points: VectorRecord<DocChunkPayload>[] = chunks.map((c) => ({
       id: c.id || uuidv5(String(c.payload.text ?? ''), Namespaces.Product),
-      vector:
+      values:
         Array.isArray(c.vector) && c.vector.length === this.dim ? c.vector : [],
-      payload: {
+      metadata: this.sanitizeMetadata({
         merchantId: String(c.payload.merchantId ?? ''),
         documentId: String(c.payload.documentId ?? ''),
         text: String(c.payload.text ?? '').slice(0, MAX_EMBED_TEXT_FALLBACK),
-      },
+      }),
     }));
 
     const valid = points.filter(
-      (p) => Array.isArray(p.vector) && p.vector.length === this.dim,
+      (p) => Array.isArray(p.values) && p.values.length === this.dim,
     );
     if (!valid.length) throw new Error('No valid document vectors to upsert');
 
     const batchSize = Math.max(1, this.upsertBatchDocs);
     for (let i = 0; i < valid.length; i += batchSize) {
       const batch = valid.slice(i, i + batchSize);
-      await this.qdrant.upsert(Collections.Documents, {
-        wait: true,
-        points: batch,
-      });
+      await this.pinecone.upsert(Collections.Documents, batch);
     }
   }
 
   /** ===== FAQs عامة ===== */
   private async ensureFaqCollection(): Promise<void> {
-    await this.qdrant.ensureCollection(Collections.FAQs, this.dim);
+    await this.pinecone.ensureCollection(Collections.FAQs, this.dim);
   }
 
-  public async upsertFaqs(points: Array<QdrantPoint<FAQData>>): Promise<void> {
+  public async upsertFaqs(
+    points: Array<VectorRecord<FAQPayload>>,
+  ): Promise<void> {
     await this.ensureFaqCollection();
     if (!Array.isArray(points) || points.length === 0) return;
     const batchSize = Math.max(1, this.upsertBatchWeb);
     for (let i = 0; i < points.length; i += batchSize) {
-      const batch = points.slice(i, i + batchSize);
-      await this.qdrant.upsert(Collections.FAQs, { wait: true, points: batch });
+      const batch = points.slice(i, i + batchSize).map((p) => ({
+        ...p,
+        metadata: this.sanitizeMetadata(
+          (p.metadata ?? {}) as Record<string, unknown>,
+        ) as FAQPayload,
+      }));
+      await this.pinecone.upsert(Collections.FAQs, batch);
     }
   }
 
   async deleteFaqsByFilter(filter: unknown): Promise<unknown> {
-    if (!isQdrantDeleteQuery(filter)) throw new Error('Invalid delete filter');
-    return this.qdrant.delete(
-      Collections.FAQs,
-      filter as unknown as Parameters<QdrantWrapper['delete']>[1],
-    );
+    const pineconeFilter = this.toPineconeFilter(filter);
+    if (!pineconeFilter) throw new Error('Invalid delete filter');
+    return this.pinecone.deleteByFilter(Collections.FAQs, pineconeFilter);
   }
   async deleteFaqPointByFaqId(faqMongoId: string): Promise<unknown> {
     const id = this.generateFaqId(faqMongoId);
-    return this.qdrant.delete(Collections.FAQs, {
-      points: [id],
-    } as unknown as Parameters<QdrantWrapper['delete']>[1]);
+    return this.pinecone.deleteMany(Collections.FAQs, [id]);
   }
 
   /** ===== Unified Semantic Search (FAQ + Documents + Web) ===== */
@@ -956,22 +1072,26 @@ export class VectorService implements OnModuleInit {
     await Promise.all(
       targets.map(async (t) => {
         try {
-          const res = (await this.qdrant.search(t.name, {
+          const res = await this.pinecone.query(t.name, {
             vector,
-            limit: Math.max(1, topK) * 2,
-            with_payload: true,
-            filter: {
-              must: [{ key: 'merchantId', match: { value: merchantId } }],
-            },
-          })) as QdrantScoredPoint<FAQData | DocumentData | WebData>[] | null;
+            topK: Math.max(1, topK) * 2,
+            includeMetadata: true,
+            filter: buildEqFilter('merchantId', merchantId),
+          });
 
-          for (const item of res ?? []) {
+          for (const item of (res.matches ??
+            []) as ScoredRecord<RecordMetadata>[]) {
             if (typeof item?.score === 'number' && item.score < this.minScore)
               continue;
             all.push({
               type: t.type,
-              score: item.score,
-              data: item.payload ?? {},
+              score: typeof item.score === 'number' ? item.score : 0,
+              data:
+                (item.metadata as
+                  | FAQData
+                  | DocumentData
+                  | WebData
+                  | undefined) ?? {},
               id: item.id,
             });
           }
@@ -1004,7 +1124,7 @@ export class VectorService implements OnModuleInit {
           .map((i) => all[i]);
       }
     } catch {
-      // استخدم ترتيب Qdrant الأصلي
+      // استخدم ترتيب Pinecone الأصلي
     }
 
     return all.slice(0, topK);
@@ -1019,18 +1139,13 @@ export class VectorService implements OnModuleInit {
       .filter((s) => s.length > 0)
       .map((id) => qdrantIdForProduct(id));
     if (!pointIds.length) return;
-    await this.qdrant.delete(Collections.Products, {
-      points: pointIds,
-    } as unknown as Parameters<QdrantWrapper['delete']>[1]);
+    await this.pinecone.deleteMany(Collections.Products, pointIds);
   }
 
   public async deleteProductsByMerchant(merchantId: string): Promise<void> {
-    const filter: QdrantFilter = {
-      filter: { must: [{ key: 'merchantId', match: { value: merchantId } }] },
-    };
-    await this.qdrant.delete(
+    await this.pinecone.deleteByFilter(
       Collections.Products,
-      filter as unknown as Parameters<QdrantWrapper['delete']>[1],
+      buildEqFilter('merchantId', merchantId),
     );
   }
 
@@ -1038,27 +1153,16 @@ export class VectorService implements OnModuleInit {
     merchantId: string,
     categoryId: string,
   ): Promise<void> {
-    const filter: QdrantFilter = {
-      filter: {
-        must: [
-          { key: 'merchantId', match: { value: merchantId } },
-          { key: 'categoryId', match: { value: categoryId } },
-        ],
-      },
-    };
-    await this.qdrant.delete(
-      Collections.Products,
-      filter as unknown as Parameters<QdrantWrapper['delete']>[1],
-    );
+    await this.pinecone.deleteByFilter(Collections.Products, {
+      ...buildEqFilter('merchantId', merchantId),
+      ...buildEqFilter('categoryId', categoryId),
+    });
   }
 
   public async deleteProductByMongoId(mongoId: string): Promise<void> {
-    const filter: QdrantFilter = {
-      filter: { must: [{ key: 'mongoId', match: { value: mongoId } }] },
-    };
-    await this.qdrant.delete(
+    await this.pinecone.deleteByFilter(
       Collections.Products,
-      filter as unknown as Parameters<QdrantWrapper['delete']>[1],
+      buildEqFilter('mongoId', mongoId),
     );
   }
 

@@ -345,7 +345,7 @@ export class KnowledgeService {
             merchantId,
             `${rec.url}#${i}`,
           ),
-          vector: embedding,
+          values: embedding,
           payload: {
             merchantId,
             url: rec.url ?? '',

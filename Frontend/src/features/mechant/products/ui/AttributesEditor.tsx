@@ -1,117 +1,263 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Stack, TextField, IconButton, Chip, Typography, Paper, Divider, Button,
+  Stack,
+  TextField,
+  IconButton,
+  Chip,
+  Typography,
+  Paper,
+  Divider,
+  Button,
+  Autocomplete,
+  Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 
-type Attributes = Record<string, string[]>;
+import type { AttributeDefinition } from "../type";
 
-interface Props {
-  value?: Attributes;
-  onChange?: (val: Attributes) => void;
-  label?: string;
+export interface AttributeSelection {
+  keySlug: string;
+  valueSlugs: string[];
 }
 
-export default function AttributesEditor({ value, onChange, label = "السمات" }: Props) {
-  const [attrs, setAttrs] = useState<Attributes>(value || {});
-  const [keyInput, setKeyInput] = useState("");
-  const [valInput, setValInput] = useState<Record<string, string>>({});
+interface Props {
+  value?: AttributeSelection[];
+  onChange?: (val: AttributeSelection[]) => void;
+  label?: string;
+  definitions?: AttributeDefinition[];
+}
 
-  const emit = (next: Attributes) => {
+export default function AttributesEditor({
+  value,
+  onChange,
+  label = "السمات",
+  definitions = [],
+}: Props) {
+  const [attrs, setAttrs] = useState<AttributeSelection[]>(value || []);
+  const [selectedKey, setSelectedKey] = useState<string>("");
+  const [customValue, setCustomValue] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    setAttrs(value || []);
+  }, [value]);
+
+  const emit = (next: AttributeSelection[]) => {
     setAttrs(next);
     onChange?.(next);
   };
 
-  const addKey = () => {
-    const k = keyInput.trim();
-    if (!k) return;
-    if (!attrs[k]) {
-      const next = { ...attrs, [k]: [] };
-      setValInput((v) => ({ ...v, [k]: "" }));
-      emit(next);
-    }
-    setKeyInput("");
-  };
+  const availableDefs = useMemo(
+    () =>
+      definitions.filter(
+        (d) => !attrs.some((a) => a.keySlug === d.keySlug)
+      ),
+    [definitions, attrs]
+  );
 
-  const removeKey = (k: string) => {
-    const next = { ...attrs };
-    delete next[k];
-    const nv = { ...valInput };
-    delete nv[k];
-    setValInput(nv);
-    emit(next);
-  };
-
-  const addValue = (k: string) => {
-    const val = (valInput[k] || "").trim();
-    if (!val) return;
-    const cur = attrs[k] || [];
-    if (cur.includes(val)) {
-      setValInput((v) => ({ ...v, [k]: "" }));
+  const addAttribute = () => {
+    const key = selectedKey.trim();
+    if (!key) return;
+    if (attrs.some((a) => a.keySlug === key)) {
+      setSelectedKey("");
       return;
     }
-    const next = { ...attrs, [k]: [...cur, val].slice(0, 50) };
-    emit(next);
-    setValInput((v) => ({ ...v, [k]: "" }));
+    emit([...attrs, { keySlug: key, valueSlugs: [] }]);
+    setSelectedKey("");
   };
 
-  const removeValue = (k: string, val: string) => {
-    const next = { ...attrs, [k]: (attrs[k] || []).filter((x) => x !== val) };
-    emit(next);
+  const removeAttribute = (keySlug: string) => {
+    emit(attrs.filter((a) => a.keySlug !== keySlug));
+  };
+
+  const handleValuesChange = (
+    keySlug: string,
+    slugs: string[],
+  ) => {
+    emit(
+      attrs.map((a) =>
+        a.keySlug === keySlug ? { ...a, valueSlugs: slugs } : a
+      )
+    );
+  };
+
+  const renderAttribute = (attr: AttributeSelection) => {
+    const def = definitions.find((d) => d.keySlug === attr.keySlug);
+    const options =
+      def?.allowedValues?.map((v) => ({
+        valueSlug: v.valueSlug,
+        label: v.label,
+      })) ?? [];
+
+    const toOption = (slug: string) =>
+      options.find((o) => o.valueSlug === slug) || {
+        valueSlug: slug,
+        label: slug,
+      };
+
+    const valueOptions = attr.valueSlugs.map(toOption);
+
+    const isFreeSolo = !options.length || def?.type !== "list";
+
+    return (
+      <Paper key={attr.keySlug} variant="outlined" sx={{ p: 1.5 }}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+        >
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography fontWeight={600}>{def?.label || attr.keySlug}</Typography>
+            <Tooltip title={attr.keySlug}>
+              <Typography variant="caption" color="text.secondary">
+                ({attr.keySlug})
+              </Typography>
+            </Tooltip>
+          </Stack>
+          <IconButton color="error" onClick={() => removeAttribute(attr.keySlug)}>
+            <DeleteForeverIcon />
+          </IconButton>
+        </Stack>
+
+        <Stack mt={1} spacing={1}>
+          <Autocomplete
+            multiple
+            freeSolo={isFreeSolo}
+            options={options}
+            value={valueOptions}
+            onChange={(_, newOptions) => {
+              const next = newOptions
+                .map((opt: any) =>
+                  typeof opt === "string"
+                    ? opt
+                    : opt?.valueSlug || opt?.label || ""
+                )
+                .filter(Boolean);
+              handleValuesChange(attr.keySlug, Array.from(new Set(next)));
+            }}
+            getOptionLabel={(opt) =>
+              typeof opt === "string" ? opt : opt.label || opt.valueSlug
+            }
+            isOptionEqualToValue={(opt, val) =>
+              (opt as any).valueSlug === (val as any).valueSlug ||
+              (typeof opt === "string" && opt === (val as any).valueSlug)
+            }
+            renderTags={(tagValue, getTagProps) =>
+              tagValue.map((option, index) => (
+                <Chip
+                  {...getTagProps({ index })}
+                  key={(option as any).valueSlug || option}
+                  label={
+                    typeof option === "string"
+                      ? option
+                      : option.label || option.valueSlug
+                  }
+                />
+              ))
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                size="small"
+                label="القيم"
+                placeholder="اختر أو اكتب قيمة"
+                helperText={
+                  isFreeSolo
+                    ? "يمكنك كتابة قيم جديدة"
+                    : "اختر من القيم المتاحة"
+                }
+              />
+            )}
+          />
+
+          {isFreeSolo && (
+            <Stack direction="row" spacing={1}>
+              <TextField
+                size="small"
+                label="قيمة جديدة ثم Enter"
+                value={customValue[attr.keySlug] || ""}
+                onChange={(e) =>
+                  setCustomValue((prev) => ({
+                    ...prev,
+                    [attr.keySlug]: e.target.value,
+                  }))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const next = (customValue[attr.keySlug] || "").trim();
+                    if (next) {
+                      handleValuesChange(
+                        attr.keySlug,
+                        Array.from(new Set([...attr.valueSlugs, next]))
+                      );
+                      setCustomValue((prev) => ({ ...prev, [attr.keySlug]: "" }));
+                    }
+                  }
+                }}
+                fullWidth
+              />
+              <Button
+                onClick={() => {
+                  const next = (customValue[attr.keySlug] || "").trim();
+                  if (!next) return;
+                  handleValuesChange(
+                    attr.keySlug,
+                    Array.from(new Set([...attr.valueSlugs, next]))
+                  );
+                  setCustomValue((prev) => ({ ...prev, [attr.keySlug]: "" }));
+                }}
+              >
+                إضافة
+              </Button>
+            </Stack>
+          )}
+        </Stack>
+      </Paper>
+    );
   };
 
   return (
     <Paper variant="outlined" sx={{ p: 2 }}>
-      <Typography fontWeight={600} mb={1}>{label}</Typography>
+      <Typography fontWeight={600} mb={1}>
+        {label}
+      </Typography>
 
-      {/* إضافة مفتاح جديد */}
       <Stack direction="row" spacing={1} mb={1}>
         <TextField
-          label="أضف مفتاحًا (مثال: اللون)"
-          value={keyInput}
-          onChange={(e) => setKeyInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addKey()}
+          select
+          label="اختر سمة لإضافتها"
+          value={selectedKey}
+          onChange={(e) => setSelectedKey(e.target.value)}
           size="small"
           fullWidth
-        />
-        <IconButton color="primary" onClick={addKey}><AddIcon /></IconButton>
+          SelectProps={{ native: true }}
+        >
+          <option value="">-- اختر --</option>
+          {availableDefs.map((d) => (
+            <option key={d.keySlug} value={d.keySlug}>
+              {d.label} ({d.keySlug})
+            </option>
+          ))}
+        </TextField>
+        <IconButton color="primary" onClick={addAttribute} disabled={!selectedKey}>
+          <AddIcon />
+        </IconButton>
       </Stack>
 
       <Divider sx={{ my: 1 }} />
 
-      {/* كل مفتاح مع تعدد القيم */}
       <Stack spacing={2}>
-        {Object.entries(attrs).map(([k, values]) => (
-          <Paper key={k} variant="outlined" sx={{ p: 1.5 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography fontWeight={600}>{k}</Typography>
-              <IconButton color="error" onClick={() => removeKey(k)}><DeleteForeverIcon /></IconButton>
-            </Stack>
+        {attrs.map(renderAttribute)}
 
-            <Stack direction="row" spacing={1} mt={1} flexWrap="wrap">
-              {values.map((v) => (
-                <Chip key={v} label={v} onDelete={() => removeValue(k, v)} sx={{ mb: 1 }} />
-              ))}
-            </Stack>
-
-            <Stack direction="row" spacing={1} mt={1}>
-              <TextField
-                size="small"
-                label={`أضف قيمة لـ ${k} ثم Enter`}
-                value={valInput[k] || ""}
-                onChange={(e) => setValInput((prev) => ({ ...prev, [k]: e.target.value }))}
-                onKeyDown={(e) => e.key === "Enter" && addValue(k)}
-                fullWidth
-              />
-              <Button onClick={() => addValue(k)}>إضافة</Button>
-            </Stack>
-          </Paper>
-        ))}
-
-        {!Object.keys(attrs).length && (
+        {!attrs.length && (
           <Typography variant="body2" color="text.secondary">
-            أضف مفتاحًا أولًا (مثال: اللون، المقاس…)
+            أضف سمة من القائمة أعلاه ثم اختر قيمها.
+          </Typography>
+        )}
+
+        {!definitions.length && (
+          <Typography variant="body2" color="warning.main">
+            لا توجد تعريفات سمات متاحة. أنشئها أولاً في لوحة السمات.
           </Typography>
         )}
       </Stack>

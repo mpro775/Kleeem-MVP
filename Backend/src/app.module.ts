@@ -76,7 +76,6 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { ProductsModule } from './modules/products/products.module';
 import { PublicModule } from './modules/public/public.module';
-import { ScraperModule } from './modules/scraper/scraper.module';
 import { StorefrontModule } from './modules/storefront/storefront.module';
 import { SupportModule } from './modules/support/support.module';
 import { SystemModule } from './modules/system/system.module';
@@ -354,7 +353,6 @@ const getHeader = (req: IncomingMessage, name: string): string | undefined => {
           ZidModule,
           LeadsModule,
           IntegrationsModule,
-          ScraperModule,
           KleemModule,
           InstructionsModule,
           OffersModule,

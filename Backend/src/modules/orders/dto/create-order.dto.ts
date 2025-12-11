@@ -1,4 +1,4 @@
-﻿// src/modules/orders/dto/create-order.dto.ts
+// src/modules/orders/dto/create-order.dto.ts
 import {
   ApiProperty,
   ApiPropertyOptional,
@@ -55,6 +55,14 @@ class OrderProductDto {
   @IsString({ message: 'يجب أن يكون معرّف المنتج نصيًا' })
   @IsOptional()
   product?: string; // ← يتوافق مع schema (Types.ObjectId)
+
+  @ApiPropertyOptional({
+    description: 'معرّف متغير المنتج (SKU) عند وجود متغيرات',
+    example: 'TSHIRT-RED-L',
+  })
+  @IsString({ message: 'يجب أن يكون معرف المتغير نصيًا' })
+  @IsOptional()
+  variantSku?: string;
 
   @ApiProperty({ description: 'اسم المنتج', example: 'منتج مميز' })
   @IsString({ message: 'يجب أن يكون اسم المنتج نصيًا' })

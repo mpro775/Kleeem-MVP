@@ -1,5 +1,5 @@
 // ============ External imports ============
-import { promises as fs } from 'fs';
+import { promises as fs, createReadStream } from 'fs';
 
 import {
   Injectable,
@@ -8,6 +8,12 @@ import {
   Logger,
   Inject,
 } from '@nestjs/common';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Types } from 'mongoose';
 import sharp from 'sharp';
 import slugify from 'slugify';
@@ -21,13 +27,11 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoriesRepository } from './repositories/categories.repository';
 
 import type { Category, CategoryDocument } from './schemas/category.schema';
-import type * as Minio from 'minio';
+import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
 
 // ============ Constants ============
 const BYTES_PER_MB = 1_048_576;
 const TWO_MB = 2 * BYTES_PER_MB;
-const DEFAULT_MINIO_REGION = 'us-east-1';
-
 const MIN_WEBP_QUALITY = 50;
 const DEFAULT_WEBP_QUALITY = 40;
 const MAX_WEBP_QUALITY = 90;
@@ -86,7 +90,7 @@ export class CategoriesService {
 
   constructor(
     @Inject('CategoriesRepository') private readonly repo: CategoriesRepository,
-    @Inject('MINIO_CLIENT') private readonly minio: Minio.Client,
+    @Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client,
   ) {}
 
   // -------- path/ancestors calculation --------
@@ -474,11 +478,11 @@ export class CategoriesService {
       throw new BadRequestException('صيغة الصورة غير مدعومة');
     }
 
-    const bucket = (process.env.MINIO_BUCKET ?? '').trim();
+    const bucket = (
+      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || ''
+    ).trim();
     if (!bucket)
-      throw new InternalServerErrorException('MINIO_BUCKET not configured');
-
-    await this.ensureBucket(bucket);
+      throw new InternalServerErrorException('S3_BUCKET_NAME not configured');
 
     const processedPath = await this.encodeSquareWebpUnder2MB(
       file.path,
@@ -487,16 +491,22 @@ export class CategoriesService {
     const key = `merchants/${merchantId}/categories/${categoryId}/image-${Date.now()}.webp`;
 
     try {
-      await this.minio.fPutObject(bucket, key, processedPath, {
-        'Content-Type': 'image/webp',
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      });
+      const body = createReadStream(processedPath);
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: key,
+          Body: body,
+          ContentType: 'image/webp',
+          CacheControl: 'public, max-age=31536000, immutable',
+        }),
+      );
       const url = await this.publicUrlFor(bucket, key);
       cat.image = url;
       await cat.save();
       return url;
     } catch (e) {
-      this.logger.error('MinIO upload failed', e);
+      this.logger.error('S3 upload failed', e);
       throw new InternalServerErrorException('STORAGE_UPLOAD_FAILED');
     } finally {
       await unlink(file.path).catch(() => null);
@@ -504,26 +514,24 @@ export class CategoriesService {
     }
   }
 
-  private async ensureBucket(bucket: string): Promise<void> {
-    const exists = await this.minio.bucketExists(bucket).catch(() => false);
-    if (!exists) {
-      await this.minio.makeBucket(
-        bucket,
-        process.env.MINIO_REGION || DEFAULT_MINIO_REGION,
-      );
-    }
-  }
-
   private async publicUrlFor(bucket: string, key: string): Promise<string> {
     const cdnBase = (process.env.ASSETS_CDN_BASE_URL || '').replace(/\/+$/, '');
-    const minioPublic = (process.env.MINIO_PUBLIC_URL || '').replace(
+    const publicBase = (
+      process.env.AWS_ENDPOINT ||
+      process.env.MINIO_PUBLIC_URL ||
+      ''
+    ).replace(
       /\/+$/,
       '',
     );
     if (cdnBase) return `${cdnBase}/${bucket}/${key}`;
-    if (minioPublic) return `${minioPublic}/${bucket}/${key}`;
-    // 7 days
-    return this.minio.presignedUrl('GET', bucket, key, 7 * 24 * 60 * 60);
+    if (publicBase) return `${publicBase}/${bucket}/${key}`;
+    // 7 days presigned
+    return getSignedUrl(
+      this.s3,
+      new GetObjectCommand({ Bucket: bucket, Key: key }),
+      { expiresIn: 7 * 24 * 60 * 60 },
+    );
   }
 
   async getDescendantIds(

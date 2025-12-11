@@ -29,14 +29,26 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { LoadingButton } from "@mui/lab";
 import type { SelectChangeEvent } from "@mui/material";
 
-import { createProduct, uploadProductImages } from "../api";
+import {
+  createProduct,
+  uploadProductImages,
+  getAttributeDefinitions,
+} from "../api";
 import { getCategoriesFlat } from "../../categories/api";
 import type { Category } from "../../categories/type";
-import type { Currency, CreateProductDto } from "../type";
+import type {
+  Currency,
+  CreateProductDto,
+  Badge,
+  AttributeDefinition,
+  VariantInput,
+} from "../type";
 
 import TagsInput from "@/shared/ui/TagsInput";
 import OfferEditor, { type OfferForm } from "./OfferEditor";
-import AttributesEditor from "./AttributesEditor";
+import AttributesEditor, { type AttributeSelection } from "./AttributesEditor";
+import VariantsGenerator from "./VariantsGenerator";
+import BadgesEditor from "./BadgesEditor";
 import { toMessageString } from "@/shared/utils/text";
 import { ensureIdString } from "@/shared/utils/ids";
 import { useErrorHandler } from '@/shared/errors';
@@ -64,10 +76,13 @@ export default function AddProductDialog({
   // ---------- الفئات (Leaf فقط) ----------
   const [categories, setCategories] = useState<Category[]>([]);
   useEffect(() => {
-    if (open)
-      getCategoriesFlat(merchantId)
-        .then(setCategories)
-        .catch(() => setCategories([]));
+    if (!open) return;
+    getCategoriesFlat(merchantId)
+      .then(setCategories)
+      .catch(() => setCategories([]));
+    getAttributeDefinitions()
+      .then(setAttributeDefs)
+      .catch(() => setAttributeDefs([]));
   }, [open, merchantId]);
 
   const leafCategories = useMemo(() => {
@@ -92,7 +107,8 @@ const openSnack = (message: unknown, severity: 'success'|'info'|'warning'|'error
   // ---------- نموذج المنتج ----------
   const [form, setForm] = useState<CreateProductDto>({
     name: "",
-    description: "",
+    shortDescription: "",
+    richDescription: "",
     category: "",
     price: 0,
     isAvailable: true,
@@ -124,9 +140,13 @@ const openSnack = (message: unknown, severity: 'success'|'info'|'warning'|'error
   const [specTags, setSpecTags] = useState<string[]>([]);
 
   // ---------- العملة + العرض + السمات ----------
-  const [currency, setCurrency] = useState<Currency>("SAR");
+  const [currency, setCurrency] = useState<Currency>("YER");
   const [offer, setOffer] = useState<OfferForm>({ enabled: false });
-  const [attributes, setAttributes] = useState<Record<string, string[]>>({});
+  const [attributes, setAttributes] = useState<AttributeSelection[]>([]);
+  const [attributeDefs, setAttributeDefs] = useState<AttributeDefinition[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [variants, setVariants] = useState<VariantInput[]>([]);
+  const [hasVariants, setHasVariants] = useState<boolean>(false);
 
   // ---------- الصور ----------
   const MAX_FILES = 6;
@@ -220,12 +240,17 @@ const openSnack = (message: unknown, severity: 'success'|'info'|'warning'|'error
     setError(null);
     startKaleemSimulation();
     try {
+      const { price, ...restForm } = form;
       const payload: CreateProductDto = {
-        ...form,
+        ...restForm,
+        prices: { [currency || "YER"]: form.price ?? 0 },
         category: ensureIdString(form.category), 
         currency,
         offer: offer.enabled ? { ...offer } : { enabled: false },
         attributes,
+        hasVariants,
+        variants: hasVariants ? variants : undefined,
+        badges,
         keywords: keywordTags,
         specsBlock: [...specTags],
         source: "manual",
@@ -283,7 +308,8 @@ const openSnack = (message: unknown, severity: 'success'|'info'|'warning'|'error
       revokeAll();
       setForm({
         name: "",
-        description: "",
+        shortDescription: "",
+        richDescription: "",
         category: "",
         price: 0,
         isAvailable: true,
@@ -296,6 +322,7 @@ const openSnack = (message: unknown, severity: 'success'|'info'|'warning'|'error
       setCurrency("SAR");
       setOffer({ enabled: false });
       setAttributes({});
+      setBadges([]);
       setFiles([]);
       setPreviews([]);
       setFileErrors([]);
@@ -354,15 +381,26 @@ const openSnack = (message: unknown, severity: 'success'|'info'|'warning'|'error
               fullWidth
               required
             />
+          <TextField
+            label="وصف قصير"
+            name="shortDescription"
+            value={form.shortDescription}
+            onChange={handleChange}
+            fullWidth
+            multiline
+            inputProps={{ maxLength: 200 }}
+            helperText={`${form.shortDescription?.length ?? 0}/200`}
+          />
 
-            <TextField
-              label="الوصف"
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              fullWidth
-              multiline
-            />
+          <TextField
+            label="وصف تفصيلي (يمكن لصق HTML بسيط)"
+            name="richDescription"
+            value={form.richDescription}
+            onChange={handleChange}
+            fullWidth
+            multiline
+            minRows={3}
+          />
 
             {/* الفئة (Leaf فقط) */}
             <TextField
@@ -433,7 +471,45 @@ const openSnack = (message: unknown, severity: 'success'|'info'|'warning'|'error
             />
 
             {/* السمات متعددة القيم */}
-            <AttributesEditor value={attributes} onChange={setAttributes} />
+            <AttributesEditor
+              value={attributes}
+              onChange={setAttributes}
+              definitions={attributeDefs}
+            />
+
+            {/* المتغيرات */}
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={hasVariants}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setHasVariants(checked);
+                      if (!checked) setVariants([]);
+                    }}
+                  />
+                }
+                label="يحتوي على متغيرات"
+              />
+              {hasVariants && (
+                <Typography variant="body2" color="text.secondary">
+                  اختر أبعاد المتغيرات في السمات (isVariantDimension) ثم اضغط توليد.
+                </Typography>
+              )}
+            </Stack>
+
+            {hasVariants && (
+              <VariantsGenerator
+                attributes={attributes}
+                definitions={attributeDefs}
+                value={variants}
+                onChange={setVariants}
+              />
+            )}
+
+          {/* الملصقات */}
+          <BadgesEditor value={badges} onChange={setBadges} />
 
             {/* رفع صور (حد 6 × 2MB) */}
             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">

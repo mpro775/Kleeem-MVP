@@ -2,8 +2,14 @@ import { getQueueToken } from '@nestjs/bull';
 import { Test } from '@nestjs/testing';
 
 import { DocumentsService } from '../documents.service';
+import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 
 import type { DocumentsRepository } from '../repositories/documents.repository';
+
+jest.mock('@aws-sdk/s3-request-presigner', () => ({
+  __esModule: true,
+  getSignedUrl: jest.fn().mockResolvedValue('https://s3/presigned'),
+}));
 
 describe('DocumentsService', () => {
   let service: DocumentsService;
@@ -19,6 +25,7 @@ describe('DocumentsService', () => {
     } as any;
 
     queue = { add: jest.fn() };
+    const s3Mock = { send: jest.fn().mockResolvedValue({}) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -28,20 +35,15 @@ describe('DocumentsService', () => {
           provide: getQueueToken('documents-processing-queue'),
           useValue: queue,
         },
+        { provide: S3_CLIENT_TOKEN, useValue: s3Mock },
       ],
     }).compile();
 
     service = moduleRef.get(DocumentsService);
-
-    // استبدال عميل MinIO داخل الخدمة بمُجس
-    (service as any).minio = {
-      fPutObject: jest.fn().mockResolvedValue(undefined),
-      presignedUrl: jest.fn().mockResolvedValue('https://minio/presigned'),
-      removeObject: jest.fn().mockResolvedValue(undefined),
-    };
+    (service as any).s3 = s3Mock;
   });
 
-  it('uploadFile: يرفع إلى MinIO، ينشئ مستند، ويدفع مهمة للـ Queue', async () => {
+  it('uploadFile: يرفع إلى التخزين، ينشئ مستند، ويدفع مهمة للـ Queue', async () => {
     const file = {
       originalname: 'file.pdf',
       mimetype: 'application/pdf',
@@ -55,7 +57,7 @@ describe('DocumentsService', () => {
 
     const res = await service.uploadFile('m1', file);
 
-    expect((service as any).minio.fPutObject).toHaveBeenCalled();
+    expect((service as any).s3.send).toHaveBeenCalled();
     expect(repo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         merchantId: 'm1',
@@ -83,20 +85,17 @@ describe('DocumentsService', () => {
     } as any);
 
     const url = await service.getPresignedUrl('m1', 'd1');
-    expect(url).toBe('https://minio/presigned');
+    expect(url).toBe('https://s3/presigned');
   });
 
-  it('delete: يحذف من MinIO ثم من الريبو', async () => {
+  it('delete: يحذف من التخزين ثم من الريبو', async () => {
     repo.findByIdForMerchant.mockResolvedValue({
       storageKey: 'k',
     } as any);
 
     await service.delete('m1', 'd1');
 
-    expect((service as any).minio.removeObject).toHaveBeenCalledWith(
-      process.env.MINIO_BUCKET!,
-      'k',
-    );
+    expect((service as any).s3.send).toHaveBeenCalled();
     expect(repo.deleteByIdForMerchant).toHaveBeenCalledWith('d1', 'm1');
   });
 });

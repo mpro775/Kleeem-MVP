@@ -78,7 +78,7 @@ export class MerchantProfileService {
   ): Promise<string> {
     // TODO: اربط مع media service الفعلي
     await Promise.resolve(); // Placeholder for future async implementation
-    return `https://minio.example.com/logos/${merchantId}/${file.originalname}`;
+    return `https://assets.example.com/logos/${merchantId}/${file.originalname}`;
   }
 
   // تغيير مصدر المنتجات

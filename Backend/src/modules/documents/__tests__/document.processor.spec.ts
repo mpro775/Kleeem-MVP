@@ -43,11 +43,11 @@ type DocumentJobData = { docId: string; merchantId: string };
 describe('DocumentProcessor', () => {
   const fixedNow = 1712345678901;
 
-  const minio = {
-    getObject: jest.fn(),
+  const s3 = {
+    send: jest.fn(),
   };
 
-  const docsSvc = { minio } as unknown as DocumentsService;
+  const docsSvc = { s3 } as unknown as DocumentsService;
   const docModel = mock<Model<DocumentSchemaClass>>();
   const vectorService = {
     embed: jest.fn(),
@@ -58,9 +58,12 @@ describe('DocumentProcessor', () => {
     jest.useFakeTimers().setSystemTime(fixedNow);
     jest.spyOn(Date, 'now').mockReturnValue(fixedNow);
 
-    process.env.MINIO_BUCKET = 'test-bucket';
+    process.env.S3_BUCKET_NAME = 'test-bucket';
 
-    minio.getObject.mockReset();
+    s3.send.mockReset();
+    s3.send.mockResolvedValue({
+      Body: Readable.from([Buffer.from('file')]),
+    });
     (readFileSync as jest.Mock).mockReturnValue(Buffer.from('PDFDATA'));
     (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
     (fs.unlink as jest.Mock).mockResolvedValue(undefined);
@@ -110,10 +113,10 @@ describe('DocumentProcessor', () => {
       lean: jest.fn().mockResolvedValue(doc),
     });
 
-    // تنزيل من MinIO
-    minio.getObject.mockResolvedValue(
-      Readable.from([Buffer.from('file-bytes')]),
-    );
+    // تنزيل من S3
+    s3.send.mockResolvedValue({
+      Body: Readable.from([Buffer.from('file-bytes')]),
+    });
 
     // نص طويل لعمل 3 قطع (maxChunkSize=500)
     (pdfParse as jest.Mock).mockResolvedValue({ text: 'a'.repeat(1201) });
@@ -159,7 +162,7 @@ describe('DocumentProcessor', () => {
     (docModel.findById as unknown as jest.Mock).mockReturnValue({
       lean: jest.fn().mockResolvedValue(null),
     });
-    minio.getObject.mockResolvedValue(Readable.from([Buffer.from('x')]));
+    s3.send.mockResolvedValue({ Body: Readable.from([Buffer.from('x')]) });
 
     const processor = new DocumentProcessor(
       docsSvc,
@@ -191,7 +194,7 @@ describe('DocumentProcessor', () => {
         storageKey: 's1',
       }),
     });
-    minio.getObject.mockResolvedValue(Readable.from([Buffer.from('file')]));
+    s3.send.mockResolvedValue({ Body: Readable.from([Buffer.from('file')]) });
     (pdfParse as jest.Mock).mockResolvedValue({ text: 'b'.repeat(900) }); // قطعتان
 
     // أول embed ينجح، الثاني يفشل
@@ -231,7 +234,7 @@ describe('DocumentProcessor', () => {
         storageKey: 's2',
       }),
     });
-    minio.getObject.mockResolvedValue(Readable.from([Buffer.from('x')]));
+    s3.send.mockResolvedValue({ Body: Readable.from([Buffer.from('x')]) });
 
     const processor = new DocumentProcessor(
       docsSvc,
@@ -265,7 +268,7 @@ describe('DocumentProcessor', () => {
         storageKey: 's3',
       }),
     });
-    minio.getObject.mockResolvedValue(Readable.from([Buffer.from('x')]));
+    s3.send.mockResolvedValue({ Body: Readable.from([Buffer.from('x')]) });
     (mammoth as any).extractRawText.mockResolvedValue({ value: 'Hello DOCX' });
 
     const processor = new DocumentProcessor(

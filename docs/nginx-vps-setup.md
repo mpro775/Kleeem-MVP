@@ -27,7 +27,7 @@
 | واجهة الـ API | `api.kaleem-ai.com` | يوجه إلى خدمة `api` خلف Nginx |
 | أتمتة n8n | `n8n.kaleem-ai.com` | يوجه إلى خدمة `n8n` |
 | Evolution API | `evolution.kaleem-ai.com` أو `wa.kaleem-ai.com` | يوجه إلى الخدمة `evolution-api` |
-| MinIO Console | `storage.kaleem-ai.com` (اختياري) | يوجه إلى MinIO (للإدارة) |
+| CDN للأصول (R2) | `cdn.kaleem-ai.com` (اختياري) | يوجه إلى Cloudflare R2/Worker |
 
 يمكنك تعديل الأسماء بما يتناسب مع البنية لديك، لكن تأكد من أن كل نطاق يشير إلى عنوان الـ VPS الجديد (`72.61.5.166`).
 
@@ -197,36 +197,7 @@ http {
 }
 ```
 
-> ✍️ عدّل أسماء النطاقات ومسارات الشهادات حسب احتياجك. إضافة خدمات أخرى (MinIO مثلًا) تتم بإضافة `upstream` و `server` جديدين.
-
-#### 4.4 تفعيل MinIO عبر `cdn.kaleem-ai.com`
-
-```nginx
-  upstream minio_upstream {
-      server minio:9000 resolve;
-      keepalive 16;
-  }
-
-  server {
-      listen 443 ssl http2;
-      server_name cdn.kaleem-ai.com;
-
-      ssl_certificate     /etc/nginx/ssl/cdn.kaleem-ai.com.crt;
-      ssl_certificate_key /etc/nginx/ssl/cdn.kaleem-ai.com.key;
-
-      location / {
-          proxy_pass http://minio_upstream;
-          proxy_set_header Host $host;
-          proxy_set_header X-Real-IP $remote_addr;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto $scheme;
-      }
-  }
-```
-
-- احتفظ بمنافذ MinIO (`9000` و`9001`) مربوطة على `127.0.0.1` داخل Docker كما هي.
-- عند استخدام Cloudflare أو CDN آخر أمام `cdn.kaleem-ai.com`، يكفي ضبط DNS من دون أي تغيير في Docker.
-- حدّث `MINIO_PUBLIC_URL` في ملف `.env` إلى `https://cdn.kaleem-ai.com`.
+> ✍️ عدّل أسماء النطاقات ومسارات الشهادات حسب احتياجك. إذا احتجت خدمة إضافية أضف `upstream` و `server` جديدين. التخزين الافتراضي الآن عبر Cloudflare R2 (لا حاجة لـ MinIO داخل الـ VPS؛ اربط `cdn.kaleem-ai.com` مباشرة بـ R2 أو Worker).
 
 ---
 

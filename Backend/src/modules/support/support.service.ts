@@ -1,3 +1,4 @@
+import { createReadStream } from 'fs';
 import { unlink } from 'node:fs/promises';
 
 import { HttpService } from '@nestjs/axios';
@@ -8,7 +9,12 @@ import {
   Inject,
   InternalServerErrorException,
 } from '@nestjs/common';
-import * as Minio from 'minio';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Types } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
 
@@ -18,6 +24,7 @@ import {
   SupportTicketEntity,
 } from './repositories/support.repository';
 import { SUPPORT_REPOSITORY } from './tokens';
+import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
 
 // ثوابت لتجنب الأرقام السحرية
 const BASE_36 = 36;
@@ -31,7 +38,7 @@ interface Attachment {
   filename: string;
   mimeType: string;
   size: number;
-  storage: 'minio';
+  storage: 's3';
   url: string;
 }
 
@@ -54,7 +61,7 @@ export class SupportService {
     @Inject(SUPPORT_REPOSITORY)
     private readonly repo: SupportRepository,
     private readonly http: HttpService,
-    @Inject('MINIO_CLIENT') private readonly minio: Minio.Client,
+    @Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client,
   ) {}
 
   private generateTicketNumber() {
@@ -63,16 +70,6 @@ export class SupportService {
       .toString()
       .padStart(3, '0');
     return `KT-${a}-${b}`;
-  }
-
-  private async ensureBucket(bucket: string) {
-    const exists = await this.minio.bucketExists(bucket).catch(() => false);
-    if (!exists) {
-      await this.minio.makeBucket(
-        bucket,
-        process.env.MINIO_REGION || 'us-east-1',
-      );
-    }
   }
 
   private sanitizeName(name: string) {
@@ -84,14 +81,15 @@ export class SupportService {
   private async publicOrSignedUrl(bucket: string, key: string) {
     const cdn = (
       process.env.ASSETS_CDN_BASE_URL ||
+      process.env.AWS_ENDPOINT ||
       process.env.MINIO_PUBLIC_URL ||
       ''
     ).replace(/\/+$/, '');
     if (cdn) return `${cdn}/${bucket}/${key}`;
-    return await this.minio.presignedGetObject(
-      bucket,
-      key,
-      PRESIGNED_URL_EXPIRY,
+    return getSignedUrl(
+      this.s3,
+      new GetObjectCommand({ Bucket: bucket, Key: key }),
+      { expiresIn: PRESIGNED_URL_EXPIRY },
     );
   }
 
@@ -191,12 +189,15 @@ export class SupportService {
     }
   }
 
-  private async uploadFilesToMinio(
+  private async uploadFilesToS3(
     ticketNumber: string,
     files: Express.Multer.File[],
   ) {
-    const bucket = process.env.MINIO_BUCKET!;
-    await this.ensureBucket(bucket);
+    const bucket =
+      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+    if (!bucket) {
+      throw new InternalServerErrorException('S3_BUCKET_NAME not configured');
+    }
 
     const attachments: Attachment[] = [];
     for (const f of files) {
@@ -205,19 +206,25 @@ export class SupportService {
 
       try {
         if (f.buffer && f.buffer.length) {
-          await this.minio.putObject(bucket, key, f.buffer, f.buffer.length, {
-            'Content-Type': f.mimetype,
-            'Cache-Control': 'private, max-age=0, no-store',
-          });
+          await this.s3.send(
+            new PutObjectCommand({
+              Bucket: bucket,
+              Key: key,
+              Body: f.buffer,
+              ContentType: f.mimetype,
+              CacheControl: 'private, max-age=0, no-store',
+            }),
+          );
         } else if ((f as Express.Multer.File & { path?: string }).path) {
-          await this.minio.fPutObject(
-            bucket,
-            key,
-            (f as Express.Multer.File & { path?: string }).path,
-            {
-              'Content-Type': f.mimetype,
-              'Cache-Control': 'private, max-age=0, no-store',
-            },
+          const filePath = (f as Express.Multer.File & { path?: string }).path;
+          await this.s3.send(
+            new PutObjectCommand({
+              Bucket: bucket,
+              Key: key,
+              Body: createReadStream(filePath),
+              ContentType: f.mimetype,
+              CacheControl: 'private, max-age=0, no-store',
+            }),
           );
         } else {
           throw new Error('Empty file');
@@ -229,7 +236,7 @@ export class SupportService {
           filename: safe,
           mimeType: f.mimetype,
           size: f.size,
-          storage: 'minio' as const,
+          storage: 's3' as const,
           url,
         });
       } catch (e) {
@@ -265,7 +272,7 @@ export class SupportService {
     },
   ): Promise<Partial<SupportTicketEntity>> {
     const ticketNumber = this.generateTicketNumber();
-    const attachments = await this.uploadFilesToMinio(ticketNumber, files);
+    const attachments = await this.uploadFilesToS3(ticketNumber, files);
 
     const result: Partial<SupportTicketEntity> = {
       ...(dto as Partial<SupportTicketEntity>),

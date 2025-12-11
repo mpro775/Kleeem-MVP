@@ -59,7 +59,7 @@ describe('DocumentsController', () => {
   test('GET /:merchantId/documents/:docId → download() يعيد توجيه المتصفح', async () => {
     const merchantId = 'm1';
     const docId = 'd1';
-    const url = 'https://minio/presigned';
+    const url = 'https://s3/presigned';
     svc.getPresignedUrl.mockResolvedValue(url);
     const redirect = jest.fn();
     const res: any = { redirect };

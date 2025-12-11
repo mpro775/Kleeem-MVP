@@ -13,13 +13,12 @@ export interface ProductResponse {
   _id: string;
   id?: string;
   merchantId: string;
-  originalUrl?: string;
   platform?: string;
   quantity?: number;
-  lowQuantity?: number;
 
   name: string;
-  description?: string;
+  shortDescription?: string;
+  richDescription?: string;
 
   price: number;
   currency?: Currency;
@@ -68,7 +67,8 @@ export type ProductView = {
 export interface CreateProductDto {
   // أساسي
   name?: string;
-  description?: string;
+  shortDescription?: string;
+  richDescription?: string;
   price?: number;
   currency?: Currency; // NEW
   isAvailable?: boolean;
@@ -81,7 +81,6 @@ export interface CreateProductDto {
   attributes?: Record<string, string[]>; // NEW
 
   // مصادر
-  originalUrl?: string;
   sourceUrl?: string;
   externalId?: string;
   platform?: string;

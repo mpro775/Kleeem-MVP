@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
 import { TranslationService } from '../../../common/services/translation.service';
+import { Currency } from '../enums/product.enums';
 import { Product, ProductDocument } from '../schemas/product.schema';
 
 @Injectable()
@@ -199,7 +200,14 @@ export class ProductValidationService {
    */
   validateVariants(
     hasVariants: boolean | undefined,
-    variants?: Array<{ sku: string; price: number; stock: number }>,
+    variants:
+      | Array<{
+          sku: string;
+          prices: Record<string, number> | Map<string, number>;
+          stock: number;
+        }>
+      | undefined,
+    baseCurrency: Currency = Currency.YER,
   ): void {
     if (hasVariants && (!variants || variants.length === 0)) {
       throw new BadRequestException(
@@ -214,5 +222,60 @@ export class ProductValidationService {
         ),
       );
     }
+
+    if (variants && variants.length > 0) {
+      variants.forEach((variant) => {
+        const { prices } = this.normalizePrices(variant.prices, baseCurrency);
+        const basePrice = prices.get(baseCurrency);
+        if (basePrice === undefined) {
+          throw new BadRequestException(
+            `سعر العملة الأساسية ${baseCurrency} مطلوب لكل متغير`,
+          );
+        }
+      });
+    }
+  }
+
+  /**
+   * يحوّل خريطة الأسعار إلى Map مع التحقق من وجود العملة الأساسية
+   */
+  normalizePrices(
+    prices: Record<string, number> | Map<string, number> | undefined,
+    baseCurrency: Currency = Currency.YER,
+  ): { prices: Map<string, number>; basePrice: number } {
+    if (!prices) {
+      throw new BadRequestException(
+        this.translationService.translate('products.errors.priceRequired') ||
+          'حقل الأسعار مطلوب',
+      );
+    }
+
+    const entries =
+      prices instanceof Map
+        ? Array.from(prices.entries())
+        : Object.entries(prices);
+    if (!entries.length) {
+      throw new BadRequestException('يجب توفير سعر واحد على الأقل');
+    }
+
+    const normalized = new Map<string, number>();
+    for (const [codeRaw, value] of entries) {
+      const code = String(codeRaw).toUpperCase();
+      if (typeof value !== 'number' || Number.isNaN(value) || value < 0) {
+        throw new BadRequestException(
+          `قيمة غير صالحة للعملة ${code}: يجب أن تكون رقمًا غير سالب`,
+        );
+      }
+      normalized.set(code, value);
+    }
+
+    const basePrice = normalized.get(baseCurrency);
+    if (basePrice === undefined) {
+      throw new BadRequestException(
+        `السعر بالعملة الأساسية ${baseCurrency} مطلوب`,
+      );
+    }
+
+    return { prices: normalized, basePrice };
   }
 }

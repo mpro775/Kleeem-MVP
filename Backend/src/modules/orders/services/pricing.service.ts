@@ -316,6 +316,12 @@ export class PricingService {
       discountValue?: number;
       newPrice?: number;
       oldPrice?: number;
+      quantityThreshold?: number;
+      quantityDiscount?: number;
+      buyQuantity?: number;
+      getQuantity?: number;
+      getProductId?: string;
+      getDiscount?: number;
     },
     item: PricingCartItem,
   ): number {
@@ -335,6 +341,36 @@ export class PricingService {
       return (oldPrice - offer.newPrice) * item.quantity;
     }
 
+    if (
+      offer.type === 'quantity_based' &&
+      offer.quantityThreshold &&
+      offer.quantityDiscount
+    ) {
+      if (item.quantity < offer.quantityThreshold) {
+        return 0;
+      }
+      return item.price * item.quantity * (offer.quantityDiscount / 100);
+    }
+
+    if (
+      offer.type === 'buy_x_get_y' &&
+      offer.buyQuantity &&
+      offer.getQuantity
+    ) {
+      // دعم حالة نفس المنتج فقط
+      if (offer.getProductId && offer.getProductId !== item.productId) {
+        return 0;
+      }
+      const bundleSize = offer.buyQuantity + offer.getQuantity;
+      if (bundleSize <= 0) {
+        return 0;
+      }
+      const freeBundles = Math.floor(item.quantity / bundleSize);
+      const freeUnits = freeBundles * offer.getQuantity;
+      const pct = offer.getDiscount ?? 100;
+      return freeUnits * item.price * (pct / 100);
+    }
+
     return 0;
   }
 
@@ -343,12 +379,8 @@ export class PricingService {
     cartItems: PricingCartItem[],
     cartTotal: number,
   ): Promise<OrderDiscount[]> {
-    const cartItemsForPromotion: CartItem[] = cartItems.map((item) => ({
-      productId: item.productId,
-      categoryId: item.categoryId ?? '',
-      price: item.price,
-      quantity: item.quantity,
-    }));
+    const cartItemsForPromotion: CartItem[] =
+      await this.enrichCartItemsWithCategory(cartItems);
 
     const applicablePromotions =
       await this.promotionsService.getApplicablePromotions(
@@ -364,6 +396,54 @@ export class PricingService {
         ...(ap.promotion.name && { name: ap.promotion.name }),
         amount: ap.discountAmount,
       }));
+  }
+
+  private async enrichCartItemsWithCategory(
+    cartItems: PricingCartItem[],
+  ): Promise<CartItem[]> {
+    const missingCategoryIds = cartItems
+      .filter((item) => !item.categoryId)
+      .map((item) => item.productId)
+      .filter((pid) => Types.ObjectId.isValid(pid));
+
+    const categoryMap = new Map<string, string>();
+
+    if (missingCategoryIds.length) {
+      const products = await this.productModel
+        .find(
+          {
+            _id: {
+              $in: missingCategoryIds.map((id) => new Types.ObjectId(id)),
+            },
+          },
+          { _id: 1, category: 1 },
+        )
+        .lean()
+        .exec();
+
+      for (const p of products) {
+        if (p._id && p.category) {
+          categoryMap.set(String(p._id), String(p.category));
+        }
+      }
+    }
+
+    return cartItems.map((item) => {
+      const categoryId =
+        item.categoryId || categoryMap.get(item.productId.toString());
+
+      const cartItem: CartItem = {
+        productId: item.productId,
+        price: item.price,
+        quantity: item.quantity,
+      };
+
+      if (categoryId !== undefined) {
+        cartItem.categoryId = categoryId;
+      }
+
+      return cartItem;
+    });
   }
 
   private async applyCoupon(

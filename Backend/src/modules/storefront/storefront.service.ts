@@ -6,7 +6,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import * as Minio from 'minio';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { FilterQuery, Types } from 'mongoose';
 import sharp from 'sharp';
 
@@ -38,6 +43,7 @@ import {
   STOREFRONT_PRODUCT_REPOSITORY,
   STOREFRONT_REPOSITORY,
 } from './tokens';
+import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
 
 // ========= Types & helpers =========
 type Json = Record<string, unknown>;
@@ -72,7 +78,6 @@ const HOVER_PERCENT = 8;
 const PCT_MIN = -100;
 const PCT_MAX = 100;
 const YEAR_SECONDS = 31_536_000;
-const DEFAULT_REGION = 'us-east-1';
 const DEFAULT_CDN = 'https://cdn.kaleem-ai.com';
 const DEFAULT_ORDERS_LIMIT = 50;
 const MB_PER_PIXEL = 1_000_000;
@@ -92,7 +97,7 @@ export class StorefrontService {
     @Inject(STOREFRONT_ORDER_REPOSITORY)
     private readonly ordersRepo: StorefrontOrderRepository,
     private readonly vectorService: VectorService,
-    @Inject('MINIO_CLIENT') private readonly minio: Minio.Client,
+    @Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client,
     private readonly leads: LeadsService,
   ) {}
 
@@ -164,22 +169,23 @@ export class StorefrontService {
     return { buffer, mime: 'image/webp', ext: 'webp' };
   }
 
-  private async ensureBucket(bucket: string): Promise<void> {
-    const exists = await this.minio.bucketExists(bucket).catch(() => false);
-    if (!exists) {
-      await this.minio.makeBucket(
-        bucket,
-        process.env.MINIO_REGION || DEFAULT_REGION,
-      );
-    }
-  }
-
-  private publicUrlFor(bucket: string, key: string): string {
+  private async publicUrlFor(bucket: string, key: string): Promise<string> {
     const cdnBase = (process.env.ASSETS_CDN_BASE_URL || DEFAULT_CDN).replace(
       /\/+$/,
       '',
     );
-    return `${cdnBase}/${bucket}/${key}`;
+    const endpoint = (
+      process.env.AWS_ENDPOINT ||
+      process.env.MINIO_PUBLIC_URL ||
+      ''
+    ).replace(/\/+$/, '');
+    if (cdnBase) return `${cdnBase}/${bucket}/${key}`;
+    if (endpoint) return `${endpoint}/${bucket}/${key}`;
+    return getSignedUrl(
+      this.s3,
+      new GetObjectCommand({ Bucket: bucket, Key: key }),
+      { expiresIn: YEAR_SECONDS },
+    );
   }
 
   private merchantFilter(merchantId: string): FilterQuery<Storefront> {
@@ -318,14 +324,18 @@ export class StorefrontService {
 
     // banners -> URLs عامة
     if (isRecord(sf) && isBannerArray(sf.banners)) {
-      const bucket = process.env.MINIO_BUCKET || '';
-      sf.banners = sf.banners.map((b: unknown) => {
-        const img = asString((b as Json)?.image);
-        if (img && !img.startsWith('http')) {
-          return { ...(b as Json), image: this.publicUrlFor(bucket, img) };
-        }
-        return b;
-      }) as unknown as typeof sf.banners;
+      const bucket =
+        process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+      sf.banners = (await Promise.all(
+        sf.banners.map(async (b: unknown) => {
+          const img = asString((b as Json)?.image);
+          if (img && !img.startsWith('http') && bucket) {
+            const url = await this.publicUrlFor(bucket, img);
+            return { ...(b as Json), image: url };
+          }
+          return b;
+        }),
+      )) as unknown as typeof sf.banners;
     }
 
     const merchantId = String((sf as unknown as Json).merchant);
@@ -451,8 +461,11 @@ export class StorefrontService {
     max: number;
   }> {
     const allowed = ['image/png', 'image/jpeg', 'image/webp'] as const;
-    const bucket = process.env.MINIO_BUCKET || '';
-    await this.ensureBucket(bucket);
+    const bucket =
+      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+    if (!bucket) {
+      throw new BadRequestException('S3_BUCKET_NAME غير مضبوط.');
+    }
 
     const sf = await this.findByMerchant(merchantId);
     const currentCount =
@@ -489,12 +502,17 @@ export class StorefrontService {
         const key = `merchants/${merchantId}/storefront/banners/banner-${Date.now()}-${i}.${out.ext}`;
         i += 1;
 
-        await this.minio.putObject(bucket, key, out.buffer, out.buffer.length, {
-          'Content-Type': out.mime,
-          'Cache-Control': `public, max-age=${YEAR_SECONDS}, immutable`,
-        });
+        await this.s3.send(
+          new PutObjectCommand({
+            Bucket: bucket,
+            Key: key,
+            Body: out.buffer,
+            ContentType: out.mime,
+            CacheControl: `public, max-age=${YEAR_SECONDS}, immutable`,
+          }),
+        );
 
-        const url = this.publicUrlFor(bucket, key);
+        const url = await this.publicUrlFor(bucket, key);
         urls.push(url);
       } finally {
         await unlink(file.path).catch(() => undefined);

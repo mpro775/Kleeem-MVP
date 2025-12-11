@@ -88,18 +88,20 @@ MAIL_PASS=your-app-password
 MAIL_FROM=noreply@kaleem-ai.com
 
 # =============================================================================
-# Object Storage - MinIO/S3
+# Object Storage - Cloudflare R2 (S3 Compatible)
 # =============================================================================
-MINIO_ENDPOINT=http://127.0.0.1:9000
-MINIO_PORT=9000
-# استخدام SSL (true/false)
-MINIO_USE_SSL=false
-MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin
-MINIO_BUCKET=kaleem-uploads
-MINIO_REGION=us-east-1
-# رابط عام لـ MinIO (للوصول للملفات المرفوعة)
-MINIO_PUBLIC_URL=http://localhost:9000
+# مفاتيح حساب R2
+AWS_ACCESS_KEY_ID=change-me
+AWS_SECRET_ACCESS_KEY=change-me
+# R2 يقبل المنطقة auto
+AWS_REGION=auto
+# Endpoint الخاص بحساب R2 (بدون / في النهاية)
+AWS_ENDPOINT=https://56c86161349f5102ec103ae2ea495e01.r2.cloudflarestorage.com
+# اسم الحاوية
+S3_BUCKET_NAME=kaleem-assets
+# يُستخدم لروابط عامة إن كان هناك CDN أو دومين مخصص (اختياري)
+# ASSETS_CDN_BASE_URL=https://cdn.kaleem-ai.com
+# ملاحظة: يمكن الإبقاء على MINIO_* فقط للتوافق المحلي القديم، لكن الإنتاج يستخدم القيم أعلاه.
 
 # =============================================================================
 # Vector Database - Qdrant

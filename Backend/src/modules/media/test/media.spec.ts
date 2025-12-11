@@ -24,6 +24,8 @@ import { MediaService } from '../media.service';
 
 import type { MediaHandlerDto } from '../dto/media-handler.dto';
 import type { Response } from 'express';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 
 // ====== Mocks ======
 jest.mock('axios', () => ({
@@ -68,14 +70,9 @@ jest.mock('mime-types', () => ({
   lookup: jest.fn(),
 }));
 
-// MinIO + unlink (node:fs/promises) لمكوّن ChatMediaService
-const fPutObjectMock = jest.fn();
-const presignedUrlMock = jest.fn();
-jest.mock('minio', () => ({
-  Client: jest.fn().mockImplementation(() => ({
-    fPutObject: fPutObjectMock,
-    presignedUrl: presignedUrlMock,
-  })),
+jest.mock('@aws-sdk/s3-request-presigner', () => ({
+  __esModule: true,
+  getSignedUrl: jest.fn(),
 }));
 jest.mock('node:fs/promises', () => ({
   unlink: jest.fn(),
@@ -346,6 +343,7 @@ describe('MediaController', () => {
 
 describe('ChatMediaService', () => {
   let service: ChatMediaService;
+  const s3Mock = { send: jest.fn() };
 
   const ENV = process.env;
 
@@ -353,15 +351,17 @@ describe('ChatMediaService', () => {
     jest.clearAllMocks();
     process.env = {
       ...ENV,
-      MINIO_ENDPOINT: 'minio.local',
-      MINIO_PORT: '9000',
-      MINIO_USE_SSL: 'false',
-      MINIO_ACCESS_KEY: 'ak',
-      MINIO_SECRET_KEY: 'sk',
-      MINIO_BUCKET: 'bucket1',
+      AWS_ENDPOINT: 'https://r2.example.com',
+      AWS_REGION: 'auto',
+      AWS_ACCESS_KEY_ID: 'ak',
+      AWS_SECRET_ACCESS_KEY: 'sk',
+      S3_BUCKET_NAME: 'bucket1',
     };
     setDateNow(1_700_000_111_000);
-    service = new ChatMediaService(); // سيستخدم Minio.Client الموك
+    (getSignedUrl as jest.Mock).mockResolvedValue(
+      'https://signed.example.com/file',
+    );
+    service = new ChatMediaService(s3Mock as any); // سيستخدم موك S3
   });
 
   afterAll(() => {
@@ -369,10 +369,9 @@ describe('ChatMediaService', () => {
     jest.restoreAllMocks();
   });
 
-  it('يرفع الملف إلى MinIO، ينشئ مفتاح تخزين ثابت، يولد URL موقّت، ويحذف الملف المؤقت', async () => {
-    presignedUrlMock.mockResolvedValue('https://signed.example.com/file');
+  it('يرفع الملف إلى التخزين، ينشئ مفتاح تخزين ثابت، يولد URL موقّت، ويحذف الملف المؤقت', async () => {
     (unlinkNodeFs as jest.Mock).mockResolvedValue(undefined);
-    fPutObjectMock.mockResolvedValue(undefined);
+    (s3Mock.send as jest.Mock).mockResolvedValue({});
 
     const out = await service.uploadChatMedia(
       'm_1',
@@ -382,17 +381,17 @@ describe('ChatMediaService', () => {
     );
 
     const expectedKey = `chat-media/m_1/1700000111000-image.png`;
-    expect(fPutObjectMock).toHaveBeenCalledWith(
-      'bucket1',
-      expectedKey,
-      '/tmp/tmp-1.png',
-      { 'Content-Type': 'image/png' },
-    );
-    expect(presignedUrlMock).toHaveBeenCalledWith(
-      'GET',
-      'bucket1',
-      expectedKey,
-      7 * 24 * 60 * 60,
+    expect(s3Mock.send).toHaveBeenCalled();
+    const sentCmd = (s3Mock.send as jest.Mock).mock.calls[0][0] as PutObjectCommand;
+    expect(sentCmd.input).toMatchObject({
+      Bucket: 'bucket1',
+      Key: expectedKey,
+      ContentType: 'image/png',
+    });
+    expect(getSignedUrl).toHaveBeenCalledWith(
+      s3Mock,
+      expect.anything(),
+      expect.objectContaining({ expiresIn: 7 * 24 * 60 * 60 }),
     );
     expect(unlinkNodeFs).toHaveBeenCalledWith('/tmp/tmp-1.png');
     expect(out).toEqual({

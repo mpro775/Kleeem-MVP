@@ -1,6 +1,11 @@
 // src/modules/products/services/product-media.service.ts
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
-import * as Minio from 'minio';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import sharp from 'sharp';
 
 import {
@@ -12,10 +17,10 @@ import {
   IMAGE_QUALITY_MEDIUM_LOW,
   IMAGE_QUALITY_LOW,
 } from '../../../common/constants/common';
+import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 
 /** ثوابت لتجنّب الأرقام السحرية */
 const MAX_PIXELS = 5_000_000; // حد أقصى لعدد البكسلات قبل التصغير
-const DEFAULT_REGION = 'us-east-1' as const;
 const ALLOWED_MIME_TYPES = new Set<string>([
   'image/png',
   'image/jpeg',
@@ -29,23 +34,22 @@ function isPositiveInt(n: unknown): n is number {
 
 @Injectable()
 export class ProductMediaService {
-  constructor(@Inject('MINIO_CLIENT') private readonly minio: Minio.Client) {}
-
-  private async ensureBucket(bucket: string): Promise<void> {
-    const ok = await this.minio.bucketExists(bucket).catch(() => false);
-    if (!ok) {
-      const region = process.env.MINIO_REGION || DEFAULT_REGION;
-      await this.minio.makeBucket(bucket, region);
-    }
-  }
+  constructor(@Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client) {}
 
   private async publicUrl(bucket: string, key: string): Promise<string> {
     const cdn = (process.env.ASSETS_CDN_BASE_URL || '').replace(/\/+$/, '');
-    const pub = (process.env.MINIO_PUBLIC_URL || '').replace(/\/+$/, '');
+    const endpoint = (
+      process.env.AWS_ENDPOINT ||
+      process.env.MINIO_PUBLIC_URL ||
+      ''
+    ).replace(/\/+$/, '');
     if (cdn) return `${cdn}/${bucket}/${key}`;
-    if (pub) return `${pub}/${bucket}/${key}`;
-    // presignedGetObject يُرجع Promise<string>
-    return this.minio.presignedGetObject(bucket, key, HOUR_IN_SECONDS);
+    if (endpoint) return `${endpoint}/${bucket}/${key}`;
+    return getSignedUrl(
+      this.s3,
+      new GetObjectCommand({ Bucket: bucket, Key: key }),
+      { expiresIn: HOUR_IN_SECONDS },
+    );
   }
 
   /**
@@ -105,11 +109,12 @@ export class ProductMediaService {
     productId: string,
     files: ReadonlyArray<Express.Multer.File>,
   ): Promise<string[]> {
-    const bucket = String(process.env.MINIO_BUCKET ?? '').trim();
+    const bucket = String(
+      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '',
+    ).trim();
     if (!bucket) {
-      throw new BadRequestException('إعداد MINIO_BUCKET مفقود.');
+      throw new BadRequestException('إعداد S3_BUCKET_NAME مفقود.');
     }
-    await this.ensureBucket(bucket);
 
     const urls: string[] = [];
     let i = 0;
@@ -120,10 +125,15 @@ export class ProductMediaService {
       const out = await this.compressUnder2MB(f.path);
       const key = `merchants/${merchantId}/products/${productId}/image-${Date.now()}-${i++}.${out.ext}`;
 
-      await this.minio.putObject(bucket, key, out.buffer, out.buffer.length, {
-        'Content-Type': out.mime,
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      });
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: key,
+          Body: out.buffer,
+          ContentType: out.mime,
+          CacheControl: 'public, max-age=31536000, immutable',
+        }),
+      );
 
       const url = await this.publicUrl(bucket, key);
       urls.push(url);

@@ -14,7 +14,8 @@ vi.mock("./JsonLd", () => ({
 describe("ProductSEO", () => {
   const mockProduct = {
     name: "هاتف ذكي جديد",
-    description: "هاتف ذكي متطور مع كاميرا عالية الجودة",
+    shortDescription: "هاتف ذكي متطور مع كاميرا عالية الجودة",
+    richDescription: "<p>هاتف ذكي متطور مع كاميرا عالية الجودة</p>",
     price: 999.99,
     currency: "SAR",
     availability: "InStock" as const,
@@ -239,7 +240,9 @@ describe("ProductSEO", () => {
     const structuredData = JSON.parse(structuredDataScript!.textContent!);
     expect(structuredData["@type"]).toBe("Product");
     expect(structuredData.name).toBe(mockProduct.name);
-    expect(structuredData.description).toBe(mockProduct.description);
+    expect(structuredData.description).toBe(
+      mockProduct.shortDescription || mockProduct.richDescription,
+    );
     expect(structuredData.brand.name).toBe(mockProduct.brand);
     expect(structuredData.category).toBe(mockProduct.category);
   });
