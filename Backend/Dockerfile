@@ -15,7 +15,7 @@ RUN apk add --no-cache \
 # تحسين الكاش: نسخ ملفات الحزم أولاً لتسريع البناء اللاحق
 COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm install --legacy-peer-deps && npm cache clean --force
+    npm install --legacy-peer-deps && npm install amqplib --save && npm cache clean --force
 
 # نسخ ملفات التكوين
 COPY tsconfig*.json nest-cli.json ./
