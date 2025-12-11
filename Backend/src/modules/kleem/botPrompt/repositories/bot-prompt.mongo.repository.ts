@@ -14,7 +14,7 @@ export class BotPromptMongoRepository implements BotPromptRepository {
 
   async create(data: Partial<BotPrompt>): Promise<BotPromptLean> {
     const doc = await this.model.create(data);
-    return doc.toObject() as BotPromptLean;
+    return doc.toObject() as unknown as BotPromptLean;
   }
 
   async findAll(filter?: {

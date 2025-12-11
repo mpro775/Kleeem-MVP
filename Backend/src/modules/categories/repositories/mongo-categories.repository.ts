@@ -33,7 +33,7 @@ export class MongoCategoriesRepository implements CategoriesRepository {
     return this.categoryModel
       .find({ merchantId })
       .sort({ depth: 1, order: 1, name: 1 })
-      .lean();
+      .lean() as unknown as Promise<CategoryDocument[]>;
   }
 
   async findByIdForMerchant(
@@ -47,7 +47,7 @@ export class MongoCategoriesRepository implements CategoriesRepository {
     id: string | Types.ObjectId,
     merchantId: Types.ObjectId,
   ): Promise<CategoryDocument | null> {
-    return this.categoryModel.findOne({ _id: id, merchantId }).lean();
+    return this.categoryModel.findOne({ _id: id, merchantId }).lean() as unknown as Promise<CategoryDocument | null>;
   }
 
   async updateCategoryFields(
@@ -94,7 +94,7 @@ export class MongoCategoriesRepository implements CategoriesRepository {
     return this.categoryModel
       .find({ merchantId, parent: parentId })
       .sort({ order: 1, name: 1 })
-      .lean();
+      .lean() as unknown as Promise<CategoryDocument[]>;
   }
 
   async updateOrder(
@@ -136,7 +136,7 @@ export class MongoCategoriesRepository implements CategoriesRepository {
     ids: Types.ObjectId[],
     fields?: Record<string, 1 | 0>,
   ): Promise<CategoryDocument[]> {
-    return this.categoryModel.find({ _id: { $in: ids } }, fields).lean();
+    return this.categoryModel.find({ _id: { $in: ids } }, fields).lean() as unknown as Promise<CategoryDocument[]>;
   }
 
   async findSubtreeIds(

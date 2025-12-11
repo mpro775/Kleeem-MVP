@@ -381,7 +381,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .lean(),
+        .lean() as unknown as Promise<MissingResponseDocument[]>,
       this.missingResponseModel.countDocuments(filter),
     ]);
     return { items, total };
@@ -516,7 +516,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .lean(),
+        .lean() as unknown as Promise<KleemMissingResponseDocument[]>,
       this.kleemMissingModel.countDocuments(filter),
     ]);
     return { items, total };
@@ -546,7 +546,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
         },
         { new: true },
       )
-      .lean();
+      .lean() as unknown as KleemMissingResponseDocument;
     return updated!;
   }
 

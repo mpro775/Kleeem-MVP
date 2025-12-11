@@ -23,7 +23,7 @@ export class WorkflowHistoryService {
     return this.workflowHistoryModel
       .find({ workflowId })
       .sort({ version: -1 })
-      .lean();
+      .lean() as unknown as Promise<WorkflowHistory[]>;
   }
 
   // جلب نسخة محددة
@@ -31,6 +31,6 @@ export class WorkflowHistoryService {
     workflowId: string,
     version: number,
   ): Promise<WorkflowHistory | null> {
-    return this.workflowHistoryModel.findOne({ workflowId, version }).lean();
+    return this.workflowHistoryModel.findOne({ workflowId, version }).lean() as unknown as Promise<WorkflowHistory | null>;
   }
 }
