@@ -18,7 +18,7 @@ type MiddlewareHandler = (
 type AppLite = {
   use?: {
     (handler: MiddlewareHandler): void;
-    (path: string, handler: MiddlewareHandler): void;
+    (path: string | RegExp, handler: MiddlewareHandler): void;
   };
   get?<T = unknown>(token: unknown): T;
 };
