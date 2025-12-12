@@ -76,7 +76,7 @@ export class EnvironmentValidatorService {
 
       // Database
       {
-        key: 'DATABASE_URL',
+        key: 'MONGODB_URI',
         description: 'MongoDB connection URL',
         validation: (value) =>
           value.startsWith('mongodb://') || value.startsWith('mongodb+srv://'),
