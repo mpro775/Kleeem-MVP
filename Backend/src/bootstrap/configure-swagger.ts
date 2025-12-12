@@ -80,7 +80,7 @@ function protectSwaggerWithJwt(app: INestApplication): void {
   if (typeof a.use !== 'function') return;
 
   a.use(
-    '/api/docs*',
+    /^\/api\/docs(\/.*)?$/,
     (req: Request, res: Response, next: NextFunction): void => {
       const h = req.headers.authorization;
       if (!h || !h.startsWith('Bearer ')) {
