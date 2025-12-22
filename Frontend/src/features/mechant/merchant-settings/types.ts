@@ -9,6 +9,7 @@ export interface SocialLinks {
     [key: string]: string | undefined;
   }
   export interface Address {
+    label: string;      // تسمية العنوان (إجباري)
     street?: string;
     city?: string;
     state?: string;

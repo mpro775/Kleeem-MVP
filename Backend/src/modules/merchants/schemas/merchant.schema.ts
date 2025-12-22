@@ -181,11 +181,11 @@ export class Merchant {
       baseCurrency: {
         type: String,
         enum: ['SAR', 'USD', 'YER', 'EUR', 'GBP', 'AED'],
-        default: 'SAR',
+        default: 'YER',
       },
       supportedCurrencies: {
         type: [String],
-        default: ['SAR'],
+        default: ['YER'],
       },
       exchangeRates: {
         type: Map,
@@ -201,8 +201,8 @@ export class Merchant {
     },
     _id: false,
     default: () => ({
-      baseCurrency: 'SAR',
-      supportedCurrencies: ['SAR'],
+      baseCurrency: 'YER',
+      supportedCurrencies: ['YER'],
       exchangeRates: {},
       roundingStrategy: 'round',
       roundToNearest: 1,

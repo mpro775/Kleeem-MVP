@@ -12,4 +12,3 @@ import { S3_CLIENT_TOKEN, createS3Client } from './s3-client.provider';
   exports: [S3_CLIENT_TOKEN],
 })
 export class StorageModule {}
-

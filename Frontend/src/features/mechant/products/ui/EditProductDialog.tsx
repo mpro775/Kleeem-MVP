@@ -11,6 +11,7 @@ import {
   FormControlLabel,
   MenuItem,
   Alert,
+  Typography,
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 import type {
@@ -110,7 +111,6 @@ export default function EditProductDialog({
       setVariants(product.variants || []);
       setBadges(product.badges || []);
       setError(null);
-    }
     } else if (!open) {
       setAttributeDefs([]);
     }

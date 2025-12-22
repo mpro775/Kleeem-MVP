@@ -11,10 +11,96 @@ import {
   MinLength,
   MaxLength,
   IsNotEmpty,
+  IsEnum,
+  IsNumber,
+  IsObject,
+  Min,
 } from 'class-validator';
 
 import { MAX_DESCRIPTION_LENGTH } from '../../constants';
 import { AddressDto } from '../shared/address.dto';
+
+/**
+ * العملات المدعومة في النظام
+ */
+export enum SupportedCurrency {
+  SAR = 'SAR',
+  USD = 'USD',
+  YER = 'YER',
+  EUR = 'EUR',
+  GBP = 'GBP',
+  AED = 'AED',
+}
+
+/**
+ * استراتيجيات التقريب
+ */
+export enum RoundingStrategy {
+  NONE = 'none',
+  CEIL = 'ceil',
+  FLOOR = 'floor',
+  ROUND = 'round',
+}
+
+/**
+ * إعدادات العملة للتاجر
+ */
+export class CurrencySettingsDto {
+  @ApiProperty({
+    description: 'العملة الأساسية للتاجر',
+    enum: SupportedCurrency,
+    example: SupportedCurrency.YER,
+    default: SupportedCurrency.YER,
+  })
+  @IsEnum(SupportedCurrency, { message: 'يجب اختيار عملة صحيحة' })
+  baseCurrency!: SupportedCurrency;
+
+  @ApiPropertyOptional({
+    description: 'العملات المدعومة (بالإضافة للعملة الأساسية)',
+    type: [String],
+    enum: SupportedCurrency,
+    example: [SupportedCurrency.YER, SupportedCurrency.SAR],
+    default: [],
+  })
+  @IsOptional()
+  @IsArray({ message: 'يجب أن تكون العملات المدعومة مصفوفة' })
+  @IsEnum(SupportedCurrency, {
+    each: true,
+    message: 'يجب أن تكون كل عملة من العملات المدعومة',
+  })
+  supportedCurrencies?: SupportedCurrency[];
+
+  @ApiPropertyOptional({
+    description: 'أسعار الصرف (مقابل العملة الأساسية)',
+    type: 'object',
+    additionalProperties: { type: 'number' },
+    example: { SAR: 0.0067, USD: 0.004 },
+  })
+  @IsOptional()
+  @IsObject({ message: 'يجب أن تكون أسعار الصرف كائن' })
+  exchangeRates?: Record<string, number>;
+
+  @ApiPropertyOptional({
+    description: 'استراتيجية التقريب',
+    enum: RoundingStrategy,
+    example: RoundingStrategy.ROUND,
+    default: RoundingStrategy.ROUND,
+  })
+  @IsOptional()
+  @IsEnum(RoundingStrategy, { message: 'يجب اختيار استراتيجية تقريب صحيحة' })
+  roundingStrategy?: RoundingStrategy;
+
+  @ApiPropertyOptional({
+    description: 'التقريب لأقرب قيمة (مثل 1، 5، 10، 100)',
+    example: 1,
+    minimum: 1,
+    default: 1,
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'يجب أن تكون قيمة التقريب رقم' })
+  @Min(1, { message: 'يجب أن تكون قيمة التقريب 1 على الأقل' })
+  roundToNearest?: number;
+}
 
 /**
  * بيانات التسجيل الأساسية للتاجر
@@ -110,4 +196,14 @@ export class OnboardingBasicDto {
   @ValidateNested({ each: true })
   @Type(() => AddressDto)
   addresses?: AddressDto[];
+
+  @ApiPropertyOptional({
+    description: 'إعدادات العملة',
+    type: () => CurrencySettingsDto,
+    required: false,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CurrencySettingsDto)
+  currencySettings?: CurrencySettingsDto;
 }

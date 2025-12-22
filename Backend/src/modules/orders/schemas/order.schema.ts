@@ -76,9 +76,13 @@ export class Order {
   @Prop({ required: true })
   sessionId?: string;
 
-  // اتركها مرنة لكن احرص أن تضيف phoneNormalized لاحقًا بالخدمة
-  @Prop({ required: true, type: Object })
-  customer?: Record<string, unknown>;
+  // ربط بالعميل (إن وُجد)
+  @Prop({ type: Types.ObjectId, ref: 'Customer', index: true })
+  customerId?: Types.ObjectId;
+
+  // snapshot لبيانات العميل لحظة الشراء (للمحافظة على التاريخ)
+  @Prop({ type: Object, default: null })
+  customerSnapshot?: Record<string, unknown> | null;
 
   // ✅ استخدم الـSchema الفرعي بدل class مباشرة
   @Prop({ type: [OrderProductSchema], required: true })
@@ -138,6 +142,17 @@ OrderSchema.index(
     _id: -1,
   },
   { background: true },
+);
+
+// فهرس للعميل (customerId)
+OrderSchema.index(
+  {
+    merchantId: 1,
+    customerId: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true, sparse: true },
 );
 
 // فهرس للعميل (البحث بالهاتف)

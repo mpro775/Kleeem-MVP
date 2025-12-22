@@ -16,12 +16,14 @@ import { TranslationService } from '../../../common/services/translation.service
 import { CategoriesService } from '../../categories/categories.service';
 import { StorefrontService } from '../../storefront/storefront.service';
 import { CreateProductDto, ProductSource } from '../dto/create-product.dto';
+import { BulkSetPricesDto, SetManualPriceDto } from '../dto/currency-price.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { Currency } from '../enums/product.enums';
 
 import { ProductIndexService } from './product-index.service';
 import { ProductMediaService } from './product-media.service';
 import { ProductValidationService } from './product-validation.service';
+import { PriceSyncService } from './price-sync.service';
 
 import type { Storefront } from '../../storefront/schemas/storefront.schema';
 import type { ProductsRepository } from '../repositories/products.repository';
@@ -132,6 +134,7 @@ export class ProductCommandsService {
     private readonly outbox: OutboxService,
     private readonly config: ConfigService,
     private readonly validation: ProductValidationService,
+    private readonly priceSync: PriceSyncService,
   ) {}
 
   /** إنشاء منتج جديد مع outbox + فهرسة + كنس كاش */
@@ -826,5 +829,156 @@ export class ProductCommandsService {
       accepted: urls.length,
       remaining: Math.max(0, max - urls.length),
     };
+  }
+
+  // ============ إدارة الأسعار المتعددة ============
+
+  /**
+   * تعيين سعر يدوي لعملة معينة
+   * السعر اليدوي لا يتزامن مع تغييرات سعر الصرف
+   */
+  async setManualPrice(
+    productId: string,
+    currency: string,
+    dto: SetManualPriceDto,
+  ): Promise<ProductDocument> {
+    ensureValidObjectId(
+      productId,
+      this.translationService.translate('validation.mongoId'),
+    );
+
+    const updated = await this.priceSync.setManualPrice({
+      productId,
+      currency,
+      amount: dto.amount,
+    });
+
+    await this.handlePostUpdateTasks(updated);
+    return updated;
+  }
+
+  /**
+   * تعيين سعر يدوي لمتغير معين
+   */
+  async setVariantManualPrice(
+    productId: string,
+    variantSku: string,
+    currency: string,
+    dto: SetManualPriceDto,
+  ): Promise<ProductDocument> {
+    ensureValidObjectId(
+      productId,
+      this.translationService.translate('validation.mongoId'),
+    );
+
+    const updated = await this.priceSync.setManualPrice({
+      productId,
+      currency,
+      amount: dto.amount,
+      variantSku,
+    });
+
+    await this.handlePostUpdateTasks(updated);
+    return updated;
+  }
+
+  /**
+   * إعادة السعر للوضع التلقائي
+   * سيتزامن مع تغييرات سعر الصرف
+   */
+  async resetToAutoPrice(
+    productId: string,
+    currency: string,
+    recalculate: boolean = true,
+  ): Promise<ProductDocument> {
+    ensureValidObjectId(
+      productId,
+      this.translationService.translate('validation.mongoId'),
+    );
+
+    const updated = await this.priceSync.resetToAutoPrice({
+      productId,
+      currency,
+      recalculate,
+    });
+
+    await this.handlePostUpdateTasks(updated);
+    return updated;
+  }
+
+  /**
+   * إعادة سعر المتغير للوضع التلقائي
+   */
+  async resetVariantToAutoPrice(
+    productId: string,
+    variantSku: string,
+    currency: string,
+    recalculate: boolean = true,
+  ): Promise<ProductDocument> {
+    ensureValidObjectId(
+      productId,
+      this.translationService.translate('validation.mongoId'),
+    );
+
+    const updated = await this.priceSync.resetToAutoPrice({
+      productId,
+      currency,
+      variantSku,
+      recalculate,
+    });
+
+    await this.handlePostUpdateTasks(updated);
+    return updated;
+  }
+
+  /**
+   * تعيين أسعار متعددة دفعة واحدة
+   */
+  async setBulkPrices(
+    productId: string,
+    dto: BulkSetPricesDto,
+  ): Promise<ProductDocument> {
+    ensureValidObjectId(
+      productId,
+      this.translationService.translate('validation.mongoId'),
+    );
+
+    const pricesInput = dto.prices.map((p) => ({
+      currency: p.currency,
+      amount: p.amount,
+      isManual: p.isManual ?? true,
+    }));
+
+    const updated = await this.priceSync.setBulkPrices(productId, pricesInput);
+    await this.handlePostUpdateTasks(updated);
+    return updated;
+  }
+
+  /**
+   * تعيين أسعار متعددة لمتغير دفعة واحدة
+   */
+  async setVariantBulkPrices(
+    productId: string,
+    variantSku: string,
+    dto: BulkSetPricesDto,
+  ): Promise<ProductDocument> {
+    ensureValidObjectId(
+      productId,
+      this.translationService.translate('validation.mongoId'),
+    );
+
+    const pricesInput = dto.prices.map((p) => ({
+      currency: p.currency,
+      amount: p.amount,
+      isManual: p.isManual ?? true,
+    }));
+
+    const updated = await this.priceSync.setBulkPrices(
+      productId,
+      pricesInput,
+      variantSku,
+    );
+    await this.handlePostUpdateTasks(updated);
+    return updated;
   }
 }

@@ -21,7 +21,7 @@ export default function AddressForm({
   const [addresses, setAddresses] = useState<Address[]>(
     initialData.addresses?.length
       ? initialData.addresses
-      : [{ street: "", city: "", state: "", postalCode: "", country: "" }]
+      : [{ label: "", street: "", city: "", state: "", postalCode: "", country: "" }]
   );
 
   const handleChange = (idx: number, key: keyof Address, value: string) => {
@@ -33,7 +33,7 @@ export default function AddressForm({
   const handleAdd = () => {
     setAddresses((addrs) => [
       ...addrs,
-      { street: "", city: "", state: "", postalCode: "", country: "" },
+      { label: "", street: "", city: "", state: "", postalCode: "", country: "" },
     ]);
   };
 
@@ -41,7 +41,12 @@ export default function AddressForm({
     setAddresses((addrs) => addrs.filter((_, i) => i !== idx));
   };
 
-  const handleSave = () => onSave({ addresses });
+  const isValid = addresses.every((addr) => addr.label?.trim());
+
+  const handleSave = () => {
+    if (!isValid) return;
+    onSave({ addresses });
+  };
 
   return (
     <Box dir="rtl">
@@ -68,7 +73,9 @@ export default function AddressForm({
               flexWrap="wrap"
               gap={1}
             >
-              <Typography fontWeight="bold">عنوان {idx + 1}</Typography>
+              <Typography fontWeight="bold">
+                {address.label || `عنوان ${idx + 1}`}
+              </Typography>
               {addresses.length > 1 && (
                 <IconButton
                   color="error"
@@ -81,6 +88,16 @@ export default function AddressForm({
             </Stack>
 
             <Stack spacing={2}>
+              <TextField
+                label="تسمية العنوان *"
+                placeholder="مثال: الفرع الرئيسي، مستودع الشحن"
+                value={address.label}
+                onChange={(e) => handleChange(idx, "label", e.target.value)}
+                fullWidth
+                required
+                error={!address.label}
+                helperText={!address.label ? "تسمية العنوان مطلوبة" : ""}
+              />
               <TextField
                 label="الشارع"
                 value={address.street}
@@ -133,7 +150,7 @@ export default function AddressForm({
       <Button
         variant="contained"
         onClick={handleSave}
-        disabled={loading}
+        disabled={loading || !isValid}
         sx={{ minWidth: 140 }}
       >
         حفظ العناوين

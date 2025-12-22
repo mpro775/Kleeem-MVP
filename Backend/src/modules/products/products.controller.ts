@@ -4,6 +4,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Param,
   Body,
@@ -42,6 +43,11 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TranslationService } from '../../common/services/translation.service';
 
 import { CreateProductDto } from './dto/create-product.dto';
+import {
+  SetManualPriceDto,
+  BulkSetPricesDto,
+  ResetPriceDto,
+} from './dto/currency-price.dto';
 import { GetProductsDto } from './dto/get-products.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
 import { ProductSetupConfigDto } from './dto/product-setup-config.dto';
@@ -665,5 +671,242 @@ export class ProductsController {
   exportCsvTemplate(): { csv: string } {
     const csv = this.csvService.exportTemplate();
     return { csv };
+  }
+
+  // ============ إدارة الأسعار المتعددة ============
+
+  /**
+   * تعيين سعر يدوي لعملة معينة
+   * السعر اليدوي لا يتزامن مع تغييرات سعر الصرف
+   */
+  @Patch(':id/prices/:currency')
+  @ApiParam({ name: 'id', type: 'string', description: 'معرّف المنتج' })
+  @ApiParam({
+    name: 'currency',
+    type: 'string',
+    description: 'رمز العملة (مثل: SAR, USD)',
+  })
+  @ApiOperation({
+    summary: 'تعيين سعر يدوي لعملة معينة',
+    description:
+      'تعيين سعر يدوي لعملة معينة. السعر اليدوي لا يتزامن مع تغييرات سعر الصرف',
+  })
+  @ApiBody({ type: SetManualPriceDto })
+  async setManualPrice(
+    @Param('id') id: string,
+    @Param('currency') currency: string,
+    @Body() dto: SetManualPriceDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+    @CurrentUser() user: { role: string; merchantId: string },
+  ): Promise<ProductResponseDto> {
+    const product = await this.productsService.findOne(id);
+    if (
+      user.role !== 'ADMIN' &&
+      String(product.merchantId) !== String(jwtMerchantId)
+    ) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.accessDenied'),
+      );
+    }
+
+    const updated = await this.productsService.setManualPrice(
+      id,
+      currency,
+      dto,
+    );
+    return plainToInstance(ProductResponseDto, updated, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  /**
+   * إعادة السعر للوضع التلقائي
+   */
+  @Delete(':id/prices/:currency/manual')
+  @ApiParam({ name: 'id', type: 'string', description: 'معرّف المنتج' })
+  @ApiParam({ name: 'currency', type: 'string', description: 'رمز العملة' })
+  @ApiOperation({
+    summary: 'إعادة السعر للوضع التلقائي',
+    description:
+      'إعادة السعر للوضع التلقائي. السعر سيتزامن مع تغييرات سعر الصرف',
+  })
+  async resetToAutoPrice(
+    @Param('id') id: string,
+    @Param('currency') currency: string,
+    @Body() dto: ResetPriceDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+    @CurrentUser() user: { role: string; merchantId: string },
+  ): Promise<ProductResponseDto> {
+    const product = await this.productsService.findOne(id);
+    if (
+      user.role !== 'ADMIN' &&
+      String(product.merchantId) !== String(jwtMerchantId)
+    ) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.accessDenied'),
+      );
+    }
+
+    const updated = await this.productsService.resetToAutoPrice(
+      id,
+      currency,
+      dto?.recalculate ?? true,
+    );
+    return plainToInstance(ProductResponseDto, updated, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  /**
+   * تعيين أسعار متعددة دفعة واحدة
+   */
+  @Patch(':id/prices/bulk')
+  @ApiParam({ name: 'id', type: 'string', description: 'معرّف المنتج' })
+  @ApiOperation({
+    summary: 'تعيين أسعار متعددة دفعة واحدة',
+    description: 'تعيين أسعار لعملات متعددة في طلب واحد',
+  })
+  @ApiBody({ type: BulkSetPricesDto })
+  async setBulkPrices(
+    @Param('id') id: string,
+    @Body() dto: BulkSetPricesDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+    @CurrentUser() user: { role: string; merchantId: string },
+  ): Promise<ProductResponseDto> {
+    const product = await this.productsService.findOne(id);
+    if (
+      user.role !== 'ADMIN' &&
+      String(product.merchantId) !== String(jwtMerchantId)
+    ) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.accessDenied'),
+      );
+    }
+
+    const updated = await this.productsService.setBulkPrices(id, dto);
+    return plainToInstance(ProductResponseDto, updated, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  // ============ أسعار المتغيرات ============
+
+  /**
+   * تعيين سعر يدوي لمتغير
+   */
+  @Patch(':id/variants/:sku/prices/:currency')
+  @ApiParam({ name: 'id', type: 'string', description: 'معرّف المنتج' })
+  @ApiParam({ name: 'sku', type: 'string', description: 'SKU للمتغير' })
+  @ApiParam({ name: 'currency', type: 'string', description: 'رمز العملة' })
+  @ApiOperation({
+    summary: 'تعيين سعر يدوي لمتغير',
+    description: 'تعيين سعر يدوي لعملة معينة لمتغير محدد',
+  })
+  @ApiBody({ type: SetManualPriceDto })
+  async setVariantManualPrice(
+    @Param('id') id: string,
+    @Param('sku') sku: string,
+    @Param('currency') currency: string,
+    @Body() dto: SetManualPriceDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+    @CurrentUser() user: { role: string; merchantId: string },
+  ): Promise<ProductResponseDto> {
+    const product = await this.productsService.findOne(id);
+    if (
+      user.role !== 'ADMIN' &&
+      String(product.merchantId) !== String(jwtMerchantId)
+    ) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.accessDenied'),
+      );
+    }
+
+    const updated = await this.productsService.setVariantManualPrice(
+      id,
+      sku,
+      currency,
+      dto,
+    );
+    return plainToInstance(ProductResponseDto, updated, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  /**
+   * إعادة سعر المتغير للوضع التلقائي
+   */
+  @Delete(':id/variants/:sku/prices/:currency/manual')
+  @ApiParam({ name: 'id', type: 'string', description: 'معرّف المنتج' })
+  @ApiParam({ name: 'sku', type: 'string', description: 'SKU للمتغير' })
+  @ApiParam({ name: 'currency', type: 'string', description: 'رمز العملة' })
+  @ApiOperation({
+    summary: 'إعادة سعر المتغير للوضع التلقائي',
+    description: 'إعادة سعر المتغير للوضع التلقائي',
+  })
+  async resetVariantToAutoPrice(
+    @Param('id') id: string,
+    @Param('sku') sku: string,
+    @Param('currency') currency: string,
+    @Body() dto: ResetPriceDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+    @CurrentUser() user: { role: string; merchantId: string },
+  ): Promise<ProductResponseDto> {
+    const product = await this.productsService.findOne(id);
+    if (
+      user.role !== 'ADMIN' &&
+      String(product.merchantId) !== String(jwtMerchantId)
+    ) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.accessDenied'),
+      );
+    }
+
+    const updated = await this.productsService.resetVariantToAutoPrice(
+      id,
+      sku,
+      currency,
+      dto?.recalculate ?? true,
+    );
+    return plainToInstance(ProductResponseDto, updated, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  /**
+   * تعيين أسعار متعددة لمتغير دفعة واحدة
+   */
+  @Patch(':id/variants/:sku/prices/bulk')
+  @ApiParam({ name: 'id', type: 'string', description: 'معرّف المنتج' })
+  @ApiParam({ name: 'sku', type: 'string', description: 'SKU للمتغير' })
+  @ApiOperation({
+    summary: 'تعيين أسعار متعددة لمتغير دفعة واحدة',
+    description: 'تعيين أسعار لعملات متعددة لمتغير محدد في طلب واحد',
+  })
+  @ApiBody({ type: BulkSetPricesDto })
+  async setVariantBulkPrices(
+    @Param('id') id: string,
+    @Param('sku') sku: string,
+    @Body() dto: BulkSetPricesDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+    @CurrentUser() user: { role: string; merchantId: string },
+  ): Promise<ProductResponseDto> {
+    const product = await this.productsService.findOne(id);
+    if (
+      user.role !== 'ADMIN' &&
+      String(product.merchantId) !== String(jwtMerchantId)
+    ) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.accessDenied'),
+      );
+    }
+
+    const updated = await this.productsService.setVariantBulkPrices(
+      id,
+      sku,
+      dto,
+    );
+    return plainToInstance(ProductResponseDto, updated, {
+      excludeExtraneousValues: true,
+    });
   }
 }

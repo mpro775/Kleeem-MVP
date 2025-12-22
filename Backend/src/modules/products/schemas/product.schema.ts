@@ -5,6 +5,7 @@ import { HydratedDocument, Types } from 'mongoose';
 
 import { Currency } from '../enums/product.enums';
 
+import { CurrencyPrice, CurrencyPriceSchema } from './currency-price.schema';
 import { ProductVariant, ProductVariantSchema } from './product-variant.schema';
 
 export type ProductDocument = HydratedDocument<Product>;
@@ -88,11 +89,46 @@ export class Product {
   @Prop({ type: String, enum: Object.values(Currency), default: Currency.YER })
   currency?: Currency;
 
-  @Prop({ type: Map, of: Number, required: true })
-  prices!: Map<string, number>; // أسعار بعملات متعددة {'YER': 5000, 'SAR': 75}
+  // ============ نظام الأسعار المتعددة المحسّن ============
+  /**
+   * العملة الأساسية للمنتج (يرث من التاجر افتراضياً)
+   * هذه العملة هي المرجع لحساب باقي العملات
+   */
+  @Prop({ type: String, enum: Object.values(Currency), default: Currency.YER })
+  basePriceCurrency?: Currency;
+
+  /**
+   * السعر الأساسي بالعملة الأساسية
+   * يُستخدم كمرجع لحساب أسعار العملات الأخرى
+   */
+  @Prop({ type: Number, default: 0, min: 0 })
+  basePrice?: number;
+
+  /**
+   * أسعار بعملات متعددة مع metadata
+   * كل سعر يحتوي على:
+   * - amount: السعر
+   * - isManual: هل السعر مُعدّل يدوياً؟
+   * - lastAutoSync: آخر تزامن تلقائي
+   * - manualOverrideAt: تاريخ التعديل اليدوي
+   */
+  @Prop({
+    type: Map,
+    of: {
+      type: {
+        amount: { type: Number, required: true, min: 0 },
+        isManual: { type: Boolean, default: false },
+        lastAutoSync: { type: Date, default: null },
+        manualOverrideAt: { type: Date, default: null },
+      },
+      _id: false,
+    },
+    required: true,
+  })
+  prices!: Map<string, CurrencyPrice>;
 
   @Prop({ type: Number, default: 0 })
-  priceDefault?: number; // السعر بالعملة الأساسية (YER) للفهرسة والترتيب
+  priceDefault?: number; // السعر بالعملة الأساسية للفهرسة والترتيب
 
   // سمات المنتج المهيكلة باستخدام keySlug/valueSlugs من attribute_definitions
   @Prop({
@@ -286,26 +322,56 @@ function computeDerived(doc: ProductDocument) {
   doc.hasActiveOffer = active;
 
   // إذا كان المنتج يحتوي على variants، نحسب السعر من أقل variant متاح
-  const baseCurrency = doc.currency || Currency.YER;
+  const baseCurrency = doc.basePriceCurrency || doc.currency || Currency.YER;
+
+  /**
+   * دالة مساعدة للحصول على السعر من خريطة الأسعار
+   * تدعم الشكل القديم (Map<string, number>) والجديد (Map<string, CurrencyPrice>)
+   */
   const getPrice = (
-    prices: Map<string, number> | Record<string, number> | undefined,
+    prices:
+      | Map<string, CurrencyPrice>
+      | Map<string, number>
+      | Record<string, CurrencyPrice | number>
+      | undefined,
     currency: string,
   ): number | undefined => {
     if (!prices) return undefined;
-    if (prices instanceof Map) return prices.get(currency);
-    if (typeof prices === 'object' && currency in prices) {
-      const val = (prices as Record<string, unknown>)[currency];
-      return typeof val === 'number' ? val : undefined;
+
+    let priceData: CurrencyPrice | number | undefined;
+
+    if (prices instanceof Map) {
+      priceData = prices.get(currency);
+    } else if (typeof prices === 'object' && currency in prices) {
+      priceData = (prices as Record<string, CurrencyPrice | number>)[currency];
     }
+
+    if (priceData === undefined) return undefined;
+
+    // دعم الشكل الجديد (CurrencyPrice object)
+    if (typeof priceData === 'object' && 'amount' in priceData) {
+      return priceData.amount;
+    }
+
+    // دعم الشكل القديم (number مباشرة)
+    if (typeof priceData === 'number') {
+      return priceData;
+    }
+
     return undefined;
   };
 
-  let basePrice = getPrice(doc.prices, baseCurrency) ?? 0;
+  // الحصول على السعر الأساسي
+  let basePrice = doc.basePrice ?? getPrice(doc.prices, baseCurrency) ?? 0;
+
   if (doc.hasVariants && doc.variants && doc.variants.length > 0) {
     const availableVariants = doc.variants.filter((v) => v.isAvailable);
     const variantPrices = availableVariants
       .map((v) =>
-        getPrice((v as { prices?: Map<string, number> }).prices, baseCurrency),
+        getPrice(
+          v.prices as Map<string, CurrencyPrice> | undefined,
+          baseCurrency,
+        ),
       )
       .filter((p): p is number => typeof p === 'number' && p >= 0);
     if (variantPrices.length > 0) {

@@ -1,5 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 
+import { CurrencyPrice } from '../products/schemas/currency-price.schema';
+
 import { MerchantRepository } from './repositories/merchant.repository';
 import {
   ProductRepository,
@@ -7,6 +9,22 @@ import {
   OfferInfo,
 } from './repositories/product.repository';
 import { PRODUCT_REPOSITORY, MERCHANT_REPOSITORY } from './tokens';
+
+/**
+ * نتيجة حساب أسعار العرض لجميع العملات
+ */
+export interface MultiCurrencyOfferPrices {
+  /** العملة */
+  currency: string;
+  /** السعر القديم */
+  priceOld: number;
+  /** السعر الجديد بعد العرض */
+  priceNew: number;
+  /** نسبة الخصم */
+  discountPct: number | null;
+  /** هل السعر يدوي؟ */
+  isManual: boolean;
+}
 
 @Injectable()
 export class OffersService {
@@ -127,5 +145,147 @@ export class OffersService {
       priceNew,
       priceEffective,
     };
+  }
+
+  // ============ حساب أسعار العرض لجميع العملات ============
+
+  /**
+   * حساب أسعار العرض لجميع العملات
+   * الأسعار اليدوية: يُطبق عليها نفس نسبة الخصم
+   * الأسعار التلقائية: تُحسب من السعر المخصوم بالعملة الأساسية
+   */
+  calculateMultiCurrencyOfferPrices(
+    prices: Map<string, CurrencyPrice> | Record<string, CurrencyPrice | number>,
+    baseCurrency: string,
+    offer: OfferInfo | undefined,
+  ): MultiCurrencyOfferPrices[] {
+    const isActive = this.computeIsActive(offer ?? {});
+    const results: MultiCurrencyOfferPrices[] = [];
+
+    // تحويل الأسعار إلى Map إن لزم
+    const pricesMap = this.normalizePricesMap(prices);
+
+    // الحصول على السعر الأساسي
+    const basePriceData = pricesMap.get(baseCurrency);
+    const basePrice = this.extractAmount(basePriceData);
+
+    if (basePrice === undefined) {
+      return results;
+    }
+
+    // حساب الخصم على العملة الأساسية
+    const baseOfferPrice = this.calculateOfferPrice(basePrice, offer, isActive);
+    const discountPercentage =
+      basePrice > 0 ? ((basePrice - baseOfferPrice) / basePrice) * 100 : 0;
+
+    // حساب أسعار جميع العملات
+    pricesMap.forEach((priceData, currency) => {
+      const amount = this.extractAmount(priceData);
+      if (amount === undefined) return;
+
+      const isManual =
+        typeof priceData === 'object' && 'isManual' in priceData
+          ? priceData.isManual
+          : false;
+
+      let offerPrice: number;
+
+      if (isManual) {
+        // الأسعار اليدوية: تطبيق نفس نسبة الخصم
+        offerPrice = isActive
+          ? Math.max(0, amount * (1 - discountPercentage / 100))
+          : amount;
+      } else if (currency === baseCurrency) {
+        // العملة الأساسية
+        offerPrice = baseOfferPrice;
+      } else {
+        // العملات الأخرى: نفس نسبة الخصم
+        offerPrice = isActive
+          ? Math.max(0, amount * (1 - discountPercentage / 100))
+          : amount;
+      }
+
+      results.push({
+        currency,
+        priceOld: amount,
+        priceNew: Math.round(offerPrice * 100) / 100,
+        discountPct: this.discountPct(amount, offerPrice),
+        isManual,
+      });
+    });
+
+    return results;
+  }
+
+  /**
+   * حساب سعر العرض لعملة واحدة
+   */
+  calculateSingleCurrencyOfferPrice(
+    originalPrice: number,
+    offer: OfferInfo | undefined,
+  ): { priceNew: number; discountPct: number | null; isActive: boolean } {
+    const isActive = this.computeIsActive(offer ?? {});
+    const priceNew = this.calculateOfferPrice(originalPrice, offer, isActive);
+
+    return {
+      priceNew,
+      discountPct: this.discountPct(originalPrice, priceNew),
+      isActive,
+    };
+  }
+
+  /**
+   * حساب السعر بعد تطبيق العرض
+   */
+  private calculateOfferPrice(
+    originalPrice: number,
+    offer: OfferInfo | undefined,
+    isActive: boolean,
+  ): number {
+    if (!isActive || !offer) return originalPrice;
+
+    // إذا كان هناك سعر جديد محدد
+    if (offer.newPrice != null) {
+      return offer.newPrice;
+    }
+
+    // حساب الخصم حسب النوع
+    if (offer.type === 'percentage' && offer.discountValue != null) {
+      return Math.max(0, originalPrice * (1 - offer.discountValue / 100));
+    }
+
+    if (offer.type === 'fixed_amount' && offer.discountValue != null) {
+      return Math.max(0, originalPrice - offer.discountValue);
+    }
+
+    // أنواع العروض الأخرى (buy_x_get_y, quantity_based) لا تغير السعر الأساسي
+    return originalPrice;
+  }
+
+  /**
+   * تحويل الأسعار إلى Map موحد
+   */
+  private normalizePricesMap(
+    prices: Map<string, CurrencyPrice> | Record<string, CurrencyPrice | number>,
+  ): Map<string, CurrencyPrice | number> {
+    if (prices instanceof Map) {
+      return prices;
+    }
+
+    return new Map(Object.entries(prices));
+  }
+
+  /**
+   * استخراج القيمة من CurrencyPrice أو number
+   */
+  private extractAmount(
+    priceData: CurrencyPrice | number | undefined,
+  ): number | undefined {
+    if (priceData === undefined) return undefined;
+    if (typeof priceData === 'number') return priceData;
+    if (typeof priceData === 'object' && 'amount' in priceData) {
+      return priceData.amount;
+    }
+    return undefined;
   }
 }

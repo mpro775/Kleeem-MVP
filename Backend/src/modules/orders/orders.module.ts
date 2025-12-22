@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CommonModule } from '../../common/config/common.module';
 import { PaginationService } from '../../common/services/pagination.service';
 import { CouponsModule } from '../coupons/coupons.module';
+import { CustomersModule } from '../customers/customers.module';
 import { ZidModule } from '../integrations/zid/zid.module';
 import { LeadsModule } from '../leads/leads.module';
 import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
@@ -25,6 +26,7 @@ import { PricingService } from './services/pricing.service';
       { name: Order.name, schema: OrderSchema },
       { name: Product.name, schema: ProductSchema },
     ]),
+    CustomersModule,
     LeadsModule,
     forwardRef(() => ZidModule),
     forwardRef(() => CouponsModule),

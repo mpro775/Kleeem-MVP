@@ -64,9 +64,21 @@ export class CreateProductDto {
   richDescription?: string;
 
   @ApiProperty({
-    description: 'أسعار متعددة العملات (يجب تضمين YER على الأقل)',
+    description:
+      'أسعار متعددة العملات. يمكن إدخال السعر كرقم بسيط أو ككائن CurrencyPrice مع isManual',
     type: 'object',
-    additionalProperties: { type: 'number' },
+    additionalProperties: {
+      oneOf: [
+        { type: 'number' },
+        {
+          type: 'object',
+          properties: {
+            amount: { type: 'number' },
+            isManual: { type: 'boolean' },
+          },
+        },
+      ],
+    },
     example: {
       YER: EXAMPLE_PRICE,
       SAR: EXAMPLE_PRICE_SAR,
@@ -75,7 +87,26 @@ export class CreateProductDto {
   })
   @IsNotEmptyObject({}, I18nMessage('validation.object'))
   @IsObject(I18nMessage('validation.object'))
-  prices!: Record<string, number>;
+  prices!: Record<string, number | { amount: number; isManual?: boolean }>;
+
+  @ApiPropertyOptional({
+    description: 'العملة الأساسية للمنتج (يرث من التاجر افتراضياً)',
+    enum: Currency,
+    example: Currency.YER,
+  })
+  @IsOptional()
+  @IsEnum(Currency, I18nMessage('validation.enum'))
+  basePriceCurrency?: Currency;
+
+  @ApiPropertyOptional({
+    description: 'السعر الأساسي (يُستخرج من prices إن لم يُحدد)',
+    example: EXAMPLE_PRICE,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber({}, I18nMessage('validation.number'))
+  @Min(0, I18nMessage('validation.min'))
+  basePrice?: number;
 
   @IsOptional()
   @IsEnum(Currency, I18nMessage('validation.enum'))

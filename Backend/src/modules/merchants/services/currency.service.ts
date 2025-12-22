@@ -1,9 +1,47 @@
 // src/modules/merchants/services/currency.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { FlattenMaps, Model, Types } from 'mongoose';
 
 import { Merchant, MerchantDocument } from '../schemas/merchant.schema';
+
+/**
+ * أحداث تغيير العملات
+ */
+export const CURRENCY_EVENTS = {
+  EXCHANGE_RATES_UPDATED: 'exchange-rates.updated',
+  BASE_CURRENCY_CHANGED: 'base-currency.changed',
+  SUPPORTED_CURRENCIES_CHANGED: 'supported-currencies.changed',
+} as const;
+
+/**
+ * بيانات حدث تغيير أسعار الصرف
+ */
+export interface ExchangeRatesUpdatedEvent {
+  merchantId: string;
+  affectedCurrencies: string[];
+  previousRates?: Record<string, number>;
+  newRates: Record<string, number>;
+}
+
+/**
+ * بيانات حدث تغيير العملة الأساسية
+ */
+export interface BaseCurrencyChangedEvent {
+  merchantId: string;
+  previousCurrency: string;
+  newCurrency: string;
+}
+
+/**
+ * بيانات حدث تغيير العملات المدعومة
+ */
+export interface SupportedCurrenciesChangedEvent {
+  merchantId: string;
+  addedCurrencies: string[];
+  removedCurrencies: string[];
+}
 
 export interface ConvertPriceOptions {
   fromCurrency: string;
@@ -21,9 +59,12 @@ export interface DisplayPriceOptions {
 
 @Injectable()
 export class CurrencyService {
+  private readonly logger = new Logger(CurrencyService.name);
+
   constructor(
     @InjectModel(Merchant.name)
     private readonly merchantModel: Model<MerchantDocument>,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async convertPrice(
@@ -121,6 +162,12 @@ export class CurrencyService {
       throw new NotFoundException('التاجر غير موجود');
     }
 
+    // جلب الأسعار السابقة للمقارنة
+    const merchant = await this.getMerchant(merchantId);
+    const previousRates = this.normalizeExchangeRates(
+      merchant.currencySettings?.exchangeRates,
+    );
+
     const exchangeRates = new Map(Object.entries(rates));
 
     await this.merchantModel
@@ -130,6 +177,34 @@ export class CurrencyService {
         },
       })
       .exec();
+
+    // تحديد العملات المتأثرة (المتغيرة)
+    const affectedCurrencies = Object.keys(rates).filter((currency) => {
+      const oldRate = previousRates?.get(currency);
+      const newRate = rates[currency];
+      return oldRate !== newRate;
+    });
+
+    // إطلاق حدث تغيير أسعار الصرف
+    if (affectedCurrencies.length > 0) {
+      const eventPayload: ExchangeRatesUpdatedEvent = {
+        merchantId,
+        affectedCurrencies,
+        previousRates: previousRates
+          ? Object.fromEntries(previousRates)
+          : undefined,
+        newRates: rates,
+      };
+
+      this.logger.log(
+        `إطلاق حدث تغيير أسعار الصرف للتاجر ${merchantId}، العملات المتأثرة: ${affectedCurrencies.join(', ')}`,
+      );
+
+      this.eventEmitter.emit(
+        CURRENCY_EVENTS.EXCHANGE_RATES_UPDATED,
+        eventPayload,
+      );
+    }
   }
 
   async updateCurrencySettings(
@@ -145,6 +220,10 @@ export class CurrencyService {
     if (!Types.ObjectId.isValid(merchantId)) {
       throw new NotFoundException('التاجر غير موجود');
     }
+
+    // جلب الإعدادات الحالية للمقارنة
+    const merchant = await this.getMerchant(merchantId);
+    const currentSettings = merchant.currencySettings;
 
     const updateData: Record<string, unknown> = {};
 
@@ -175,6 +254,92 @@ export class CurrencyService {
     await this.merchantModel
       .findByIdAndUpdate(merchantId, { $set: updateData })
       .exec();
+
+    // إطلاق الأحداث المناسبة
+
+    // 1. تغيير العملة الأساسية
+    if (
+      settings.baseCurrency &&
+      settings.baseCurrency !== currentSettings?.baseCurrency
+    ) {
+      const eventPayload: BaseCurrencyChangedEvent = {
+        merchantId,
+        previousCurrency: currentSettings?.baseCurrency || 'YER',
+        newCurrency: settings.baseCurrency,
+      };
+
+      this.logger.log(
+        `إطلاق حدث تغيير العملة الأساسية للتاجر ${merchantId}: ${eventPayload.previousCurrency} → ${eventPayload.newCurrency}`,
+      );
+
+      this.eventEmitter.emit(
+        CURRENCY_EVENTS.BASE_CURRENCY_CHANGED,
+        eventPayload,
+      );
+    }
+
+    // 2. تغيير العملات المدعومة
+    if (settings.supportedCurrencies) {
+      const currentCurrencies = currentSettings?.supportedCurrencies || [];
+      const newCurrencies = settings.supportedCurrencies;
+
+      const addedCurrencies = newCurrencies.filter(
+        (c) => !currentCurrencies.includes(c),
+      );
+      const removedCurrencies = currentCurrencies.filter(
+        (c) => !newCurrencies.includes(c),
+      );
+
+      if (addedCurrencies.length > 0 || removedCurrencies.length > 0) {
+        const eventPayload: SupportedCurrenciesChangedEvent = {
+          merchantId,
+          addedCurrencies,
+          removedCurrencies,
+        };
+
+        this.logger.log(
+          `إطلاق حدث تغيير العملات المدعومة للتاجر ${merchantId}`,
+        );
+
+        this.eventEmitter.emit(
+          CURRENCY_EVENTS.SUPPORTED_CURRENCIES_CHANGED,
+          eventPayload,
+        );
+      }
+    }
+
+    // 3. تغيير أسعار الصرف
+    if (settings.exchangeRates) {
+      const previousRates = this.normalizeExchangeRates(
+        currentSettings?.exchangeRates,
+      );
+
+      const affectedCurrencies = Object.keys(settings.exchangeRates).filter(
+        (currency) => {
+          const oldRate = previousRates?.get(currency);
+          const newRate = settings.exchangeRates![currency];
+          return oldRate !== newRate;
+        },
+      );
+
+      if (affectedCurrencies.length > 0) {
+        const eventPayload: ExchangeRatesUpdatedEvent = {
+          merchantId,
+          affectedCurrencies,
+          previousRates: previousRates
+            ? Object.fromEntries(previousRates)
+            : undefined,
+          newRates: settings.exchangeRates,
+        };
+
+        this.logger.log(`إطلاق حدث تغيير أسعار الصرف للتاجر ${merchantId}`);
+
+        this.eventEmitter.emit(
+          CURRENCY_EVENTS.EXCHANGE_RATES_UPDATED,
+          eventPayload,
+        );
+      }
+    }
   }
 
   async getCurrencySettings(
@@ -182,6 +347,97 @@ export class CurrencyService {
   ): Promise<LeanMerchant['currencySettings']> {
     const merchant = await this.getMerchant(merchantId);
     return merchant.currencySettings;
+  }
+
+  /**
+   * تحويل أسعار متعددة دفعة واحدة
+   * @param amounts الأسعار المراد تحويلها
+   * @param options خيارات التحويل
+   * @returns الأسعار المحولة
+   */
+  async batchConvertPrices(
+    amounts: number[],
+    options: ConvertPriceOptions,
+  ): Promise<number[]> {
+    // إذا كانت العملتان نفسهما، لا حاجة للتحويل
+    if (options.fromCurrency === options.toCurrency) {
+      return amounts;
+    }
+
+    const merchant = await this.getMerchant(options.merchantId);
+    this.ensureCurrencySupported(merchant, options.toCurrency);
+
+    const exchangeRates = this.normalizeExchangeRates(
+      merchant.currencySettings?.exchangeRates,
+    );
+
+    if (!exchangeRates) {
+      throw new Error('أسعار الصرف غير متوفرة');
+    }
+
+    const baseCurrency = merchant.currencySettings?.baseCurrency || 'SAR';
+    const roundingStrategy =
+      merchant.currencySettings?.roundingStrategy || 'round';
+    const roundToNearest = merchant.currencySettings?.roundToNearest || 1;
+
+    return amounts.map((amount) => {
+      const amountInBase = this.toBaseCurrency(
+        amount,
+        options.fromCurrency,
+        baseCurrency,
+        exchangeRates,
+      );
+
+      const convertedAmount = this.fromBaseCurrency(
+        amountInBase,
+        options.toCurrency,
+        baseCurrency,
+        exchangeRates,
+      );
+
+      return this.roundPrice(convertedAmount, roundingStrategy, roundToNearest);
+    });
+  }
+
+  /**
+   * تحويل سعر لجميع العملات المدعومة
+   * @param amount السعر
+   * @param fromCurrency العملة المصدر
+   * @param merchantId معرف التاجر
+   * @returns خريطة الأسعار بجميع العملات
+   */
+  async convertToAllCurrencies(
+    amount: number,
+    fromCurrency: string,
+    merchantId: string,
+  ): Promise<Map<string, number>> {
+    const merchant = await this.getMerchant(merchantId);
+    const supportedCurrencies = merchant.currencySettings
+      ?.supportedCurrencies || [fromCurrency];
+
+    const results = new Map<string, number>();
+
+    for (const currency of supportedCurrencies) {
+      if (currency === fromCurrency) {
+        results.set(currency, amount);
+        continue;
+      }
+
+      try {
+        const convertedAmount = await this.convertPrice(amount, {
+          fromCurrency,
+          toCurrency: currency,
+          merchantId,
+        });
+        results.set(currency, convertedAmount);
+      } catch (error) {
+        this.logger.warn(
+          `فشل تحويل ${amount} من ${fromCurrency} إلى ${currency}: ${error}`,
+        );
+      }
+    }
+
+    return results;
   }
 
   private async getMerchant(merchantId: string): Promise<LeanMerchant> {

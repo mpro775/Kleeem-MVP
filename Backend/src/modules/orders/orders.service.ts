@@ -2,6 +2,7 @@ import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 
 import { PaginationResult } from '../../common/dto/pagination.dto';
 import { CouponsService } from '../coupons/coupons.service';
+import { CustomersService } from '../customers/customers.service';
 import { LeadsService } from '../leads/leads.service';
 import {
   InventoryService,
@@ -27,6 +28,7 @@ export class OrdersService {
   constructor(
     @Inject('OrdersRepository')
     private readonly ordersRepository: OrdersRepository,
+    private readonly customersService: CustomersService,
     private readonly leadsService: LeadsService,
     private readonly pricingService: PricingService,
     private readonly couponsService: CouponsService,
@@ -34,7 +36,7 @@ export class OrdersService {
     private readonly inventoryService: InventoryService,
   ) {}
 
-  async create(dto: CreateOrderDto): Promise<Order> {
+  async create(dto: CreateOrderDto, customerId?: string): Promise<Order> {
     const merchantId = dto.merchantId;
 
     if (!merchantId) {
@@ -87,11 +89,36 @@ export class OrdersService {
     const pricingResult =
       await this.pricingService.calculateOrderPricing(pricingOptions);
 
+    // تحضير بيانات العميل
+    let orderCustomerId = customerId;
+    let customerSnapshot = dto.customer ? { ...dto.customer, phoneNormalized } : undefined;
+
+    // إذا كان هناك customerId من JWT، احصل على بيانات العميل الحالية
+    if (customerId) {
+      try {
+        const customer = await this.customersService.findById(customerId);
+        if (customer) {
+          customerSnapshot = {
+            id: customer._id,
+            name: customer.name,
+            email: customer.emailLower,
+            phone: customer.phoneNormalized,
+            phoneNormalized: customer.phoneNormalized,
+            // أي بيانات إضافية تحتاجها
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching customer data:', error);
+        // نواصل بدون customer data إذا فشل
+      }
+    }
+
     const created = await this.ordersRepository.create({
       ...dto,
       products,
       source: dto.source ?? 'storefront',
-      customer: dto.customer ? { ...dto.customer, phoneNormalized } : undefined,
+      customerId: orderCustomerId,
+      customerSnapshot,
       pricing: pricingResult.pricing,
       currency: pricingResult.currency,
       exchangeRate: pricingResult.exchangeRate,
@@ -106,6 +133,19 @@ export class OrdersService {
     );
     await this.handlePromotionUsage(pricingResult);
     await this.createLeadFromOrder(merchantId, dto.sessionId, dto.customer);
+
+    // تحديث إحصائيات العميل إذا كان هناك customerId
+    if (orderCustomerId && pricingResult.pricing.total) {
+      try {
+        await this.customersService.updateCustomerStats(
+          orderCustomerId,
+          pricingResult.pricing.total,
+        );
+      } catch (error) {
+        console.error('Error updating customer stats:', error);
+        // لا نتوقف عن إنشاء الطلب بسبب فشل تحديث الإحصائيات
+      }
+    }
 
     return created;
   }

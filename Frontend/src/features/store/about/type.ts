@@ -7,6 +7,7 @@ export type WorkingHour = {
   };
   
   export type Address = {
+    label?: string;     // تسمية العنوان
     street?: string;
     city?: string;
     state?: string;

@@ -35,4 +35,18 @@ export interface LeadRepository {
     merchantId: string,
     sessionId: string,
   ): Promise<string | undefined>;
+
+  // دوال خاصة بتحويل leads إلى customers
+  findByContact(
+    merchantId: string,
+    contact: string,
+    contactType: 'phone' | 'email',
+  ): Promise<LeadEntity | null>;
+
+  markAsConverted(leadId: string, customerId: string): Promise<void>;
+
+  findUnconvertedBySession(
+    merchantId: string,
+    sessionId: string,
+  ): Promise<LeadEntity[]>;
 }

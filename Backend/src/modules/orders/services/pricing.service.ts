@@ -1,5 +1,5 @@
 // src/modules/orders/services/pricing.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
@@ -9,6 +9,7 @@ import {
   MerchantDocument,
 } from '../../merchants/schemas/merchant.schema';
 import { CurrencyService } from '../../merchants/services/currency.service';
+import { CurrencyPrice } from '../../products/schemas/currency-price.schema';
 import {
   Product,
   ProductDocument,
@@ -46,6 +47,8 @@ export interface PricingResult {
 
 @Injectable()
 export class PricingService {
+  private readonly logger = new Logger(PricingService.name);
+
   constructor(
     @InjectModel(Merchant.name)
     private readonly merchantModel: Model<MerchantDocument>,
@@ -517,5 +520,116 @@ export class PricingService {
     }
 
     return merchant as unknown as Merchant;
+  }
+
+  // ============ Helper Methods للأسعار المتعددة ============
+
+  /**
+   * استخراج السعر من بنية CurrencyPrice أو number
+   */
+  private extractPriceAmount(
+    priceData: CurrencyPrice | number | undefined,
+  ): number | undefined {
+    if (priceData === undefined || priceData === null) return undefined;
+    if (typeof priceData === 'number') return priceData;
+    if (typeof priceData === 'object' && 'amount' in priceData) {
+      return priceData.amount;
+    }
+    return undefined;
+  }
+
+  /**
+   * الحصول على سعر المنتج بعملة معينة
+   * يدعم كلا الشكلين القديم (Map<string, number>) والجديد (Map<string, CurrencyPrice>)
+   */
+  getProductPriceForCurrency(
+    product: Product,
+    currency: string,
+  ): number | undefined {
+    const prices = product.prices;
+    if (!prices) return undefined;
+
+    let priceData: CurrencyPrice | number | undefined;
+
+    if (prices instanceof Map) {
+      priceData = prices.get(currency);
+    } else if (typeof prices === 'object') {
+      priceData = (prices as Record<string, CurrencyPrice | number>)[currency];
+    }
+
+    return this.extractPriceAmount(priceData);
+  }
+
+  /**
+   * الحصول على سعر المنتج الأساسي (بالعملة الأساسية)
+   */
+  getProductBasePrice(product: Product): number {
+    // أولاً: استخدم basePrice إن وجد
+    if (product.basePrice !== undefined && product.basePrice !== null) {
+      return product.basePrice;
+    }
+
+    // ثانياً: استخدم priceDefault
+    if (product.priceDefault !== undefined && product.priceDefault !== null) {
+      return product.priceDefault;
+    }
+
+    // ثالثاً: ابحث عن سعر العملة الأساسية
+    const baseCurrency = product.basePriceCurrency || product.currency || 'YER';
+    const price = this.getProductPriceForCurrency(product, baseCurrency);
+
+    return price ?? 0;
+  }
+
+  /**
+   * تحويل سعر من عملة لأخرى مع دعم الأسعار اليدوية
+   * إذا كان المنتج لديه سعر يدوي للعملة المستهدفة، يُستخدم مباشرة
+   */
+  async getDisplayPriceForProduct(
+    product: Product,
+    targetCurrency: string,
+    merchantId: string,
+  ): Promise<number> {
+    const prices = product.prices;
+
+    // التحقق من وجود سعر للعملة المستهدفة
+    if (prices) {
+      let priceData: CurrencyPrice | number | undefined;
+
+      if (prices instanceof Map) {
+        priceData = prices.get(targetCurrency);
+      } else if (typeof prices === 'object') {
+        priceData = (prices as Record<string, CurrencyPrice | number>)[
+          targetCurrency
+        ];
+      }
+
+      // إذا وجد سعر (يدوي أو تلقائي)، استخدمه
+      const amount = this.extractPriceAmount(priceData);
+      if (amount !== undefined) {
+        return amount;
+      }
+    }
+
+    // إذا لم يوجد سعر، حوّل من السعر الأساسي
+    const basePrice = this.getProductBasePrice(product);
+    const baseCurrency = product.basePriceCurrency || product.currency || 'YER';
+
+    if (targetCurrency === baseCurrency) {
+      return basePrice;
+    }
+
+    try {
+      return await this.currencyService.convertPrice(basePrice, {
+        fromCurrency: baseCurrency,
+        toCurrency: targetCurrency,
+        merchantId,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `فشل تحويل السعر من ${baseCurrency} إلى ${targetCurrency}: ${error}`,
+      );
+      return basePrice;
+    }
   }
 }

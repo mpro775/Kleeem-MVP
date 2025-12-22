@@ -13,6 +13,7 @@ import { TranslationService } from '../../../common/services/translation.service
 
 import type { ProductsRepository } from '../repositories/products.repository';
 import type { ProductDocument } from '../schemas/product.schema';
+import { BackInStockService } from './back-in-stock.service';
 
 export interface StockItem {
   productId: string;
@@ -54,6 +55,7 @@ export class InventoryService {
     @Inject('ProductsRepository')
     private readonly repo: ProductsRepository,
     private readonly translationService: TranslationService,
+    private readonly backInStockService: BackInStockService,
   ) {}
 
   /** تحقق من توفر مجموعة عناصر */
@@ -264,6 +266,20 @@ export class InventoryService {
       this.logger.log(
         `Updated variant ${variantSku} stock to ${quantity}. Reason: ${reason || 'N/A'}`,
       );
+
+      // إرسال إشعارات back-in-stock إذا أصبح المنتج متوفراً
+      if (quantity > 0 && !product.variants![idx].isAvailable) {
+        try {
+          await this.backInStockService.processBackInStockNotifications(
+            product.merchantId!,
+            productId,
+            variantSku,
+          );
+        } catch (error) {
+          this.logger.error('Failed to process back-in-stock notifications:', error);
+        }
+      }
+
       return updated!;
     }
 
@@ -271,6 +287,7 @@ export class InventoryService {
     if (!productIdObj) {
       throw new BadRequestException('Product id is missing');
     }
+    const wasAvailable = product.isAvailable;
     const updated = await this.repo.updateById(productIdObj, {
       stock: quantity,
       isAvailable: quantity > 0 || product.isUnlimitedStock === true,
@@ -278,6 +295,19 @@ export class InventoryService {
     this.logger.log(
       `Updated product ${productId} stock to ${quantity}. Reason: ${reason || 'N/A'}`,
     );
+
+    // إرسال إشعارات back-in-stock إذا أصبح المنتج متوفراً
+    if (!wasAvailable && (quantity > 0 || product.isUnlimitedStock === true)) {
+      try {
+        await this.backInStockService.processBackInStockNotifications(
+          product.merchantId!,
+          productId,
+        );
+      } catch (error) {
+        this.logger.error('Failed to process back-in-stock notifications:', error);
+      }
+    }
+
     return updated!;
   }
 

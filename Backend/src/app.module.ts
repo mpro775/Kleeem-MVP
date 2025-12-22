@@ -56,6 +56,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { CustomersModule } from './modules/customers/customers.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { ChannelsModule } from './modules/channels/channels.module';
 import { ChatModule } from './modules/chat/chat.module';
@@ -331,6 +332,7 @@ const getHeader = (req: IncomingMessage, name: string): string | undefined => {
       : [
           AnalyticsModule,
           AuthModule,
+          CustomersModule,
           UsersModule,
           ProductsModule,
           MessagingModule,

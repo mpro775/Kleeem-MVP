@@ -8,6 +8,18 @@ import {
 } from '../../constants';
 
 export class AddressDto {
+  @IsString({ message: 'يجب أن تكون تسمية العنوان نصية' })
+  @IsNotEmpty({ message: 'تسمية العنوان مطلوبة' })
+  @Length(2, 100, { message: 'يجب أن يكون طول تسمية العنوان بين 2 و 100 حرف' })
+  @ApiProperty({
+    description: 'تسمية العنوان للتمييز (مثل: الفرع الرئيسي، مستودع الشحن)',
+    example: 'الفرع الرئيسي',
+    minLength: 2,
+    maxLength: 100,
+    required: true,
+  })
+  label!: string;
+
   @IsString({ message: 'يجب أن يكون اسم الشارع نصيًا' })
   @IsNotEmpty({ message: 'اسم الشارع مطلوب' })
   @Length(3, 200, { message: 'يجب أن يكون طول اسم الشارع بين 3 و 200 حرف' })

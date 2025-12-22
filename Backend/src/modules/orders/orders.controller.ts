@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -83,8 +84,10 @@ export class OrdersController {
       },
     },
   })
-  async create(@Body() dto: CreateOrderDto): Promise<Order> {
-    return this.ordersService.create(dto);
+  async create(@Body() dto: CreateOrderDto, @Req() req: any): Promise<Order> {
+    // استخراج customerId من JWT إذا كان متوفراً
+    const customerId = req.customer?.customerId;
+    return this.ordersService.create(dto, customerId);
   }
 
   // جلب جميع الطلبات

@@ -65,4 +65,35 @@ export class LeadsService {
   ): Promise<string | undefined> {
     return this.leadsRepo.getPhoneBySession(merchantId, sessionId);
   }
+
+  /**
+   * البحث عن lead بناءً على رقم الهاتف أو البريد الإلكتروني
+   */
+  async findLeadByContact(
+    merchantId: string,
+    contact: string,
+    contactType: 'phone' | 'email',
+  ): Promise<Lead | null> {
+    return this.leadsRepo.findByContact(merchantId, contact, contactType);
+  }
+
+  /**
+   * تحويل lead إلى customer
+   */
+  async convertLeadToCustomer(
+    leadId: string,
+    customerId: string,
+  ): Promise<void> {
+    await this.leadsRepo.markAsConverted(leadId, customerId);
+  }
+
+  /**
+   * البحث عن leads غير محوّلة بناءً على sessionId
+   */
+  async findUnconvertedLeadsBySession(
+    merchantId: string,
+    sessionId: string,
+  ): Promise<Lead[]> {
+    return this.leadsRepo.findUnconvertedBySession(merchantId, sessionId);
+  }
 }

@@ -9,6 +9,7 @@ export interface MinimalChannel {
 }
 
 export interface AddressLite {
+  label?: string;
   street?: string;
   city?: string;
   country?: string;
@@ -32,6 +33,12 @@ export interface QuickConfigLite {
   customInstructions?: string[];
 }
 
+export interface CurrencySettingsLite {
+  baseCurrency?: string;
+  supportedCurrencies?: string[];
+  exchangeRates?: Map<string, number> | Record<string, number>;
+}
+
 export interface MinimalMerchant {
   publicSlug?: string;
   publicSlugEnabled?: boolean;
@@ -44,6 +51,7 @@ export interface MinimalMerchant {
   quickConfig?: QuickConfigLite;
   skippedChecklistItems?: string[];
   productSourceConfig?: ProductSourceConfig;
+  currencySettings?: CurrencySettingsLite;
 }
 
 export interface ChecklistItem {
@@ -66,7 +74,8 @@ export interface ChecklistItem {
     | 'workingHours'
     | 'returnPolicy'
     | 'exchangePolicy'
-    | 'shippingPolicy';
+    | 'shippingPolicy'
+    | 'currencySettings';
   title: string;
   isComplete: boolean;
   message?: string;
@@ -91,6 +100,7 @@ export const ACTION_PATHS = {
   createProduct: '/dashboard/products/new',
   banners: '/dashboard/banners',
   sync: '/onboarding/sync',
+  currencySettings: '/dashboard/settings/currency',
 } as const;
 
 export const CHECK_KEYS = {
@@ -113,6 +123,7 @@ export const CHECK_KEYS = {
   returnPolicy: 'returnPolicy',
   exchangePolicy: 'exchangePolicy',
   shippingPolicy: 'shippingPolicy',
+  currencySettings: 'currencySettings',
 } as const;
 
 // utilities

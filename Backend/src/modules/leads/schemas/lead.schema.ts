@@ -23,8 +23,16 @@ export class Lead {
 
   @Prop()
   name?: string;
+
+  // تحويل الـ lead إلى customer
+  @Prop({ type: Boolean, default: false })
+  converted?: boolean;
+
+  @Prop({ type: String, ref: 'Customer', default: null })
+  customerId?: string;
 }
 
 export const LeadSchema = SchemaFactory.createForClass(Lead);
 LeadSchema.index({ merchantId: 1, phoneNormalized: 1 });
 LeadSchema.index({ merchantId: 1, sessionId: 1 });
+LeadSchema.index({ merchantId: 1, converted: 1 });

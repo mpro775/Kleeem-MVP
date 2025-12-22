@@ -100,4 +100,60 @@ export class LeadMongoRepository implements LeadRepository {
       .exec();
     return doc?.phoneNormalized;
   }
+
+  async findByContact(
+    merchantId: string,
+    contact: string,
+    contactType: 'phone' | 'email',
+  ): Promise<LeadEntity | null> {
+    const query: any = {
+      merchantId,
+      converted: { $ne: true },
+      ...this.notDeleted(),
+    };
+
+    if (contactType === 'phone') {
+      query.phoneNormalized = contact;
+    } else {
+      // للبريد الإلكتروني، نبحث في data object
+      query['data.email'] = contact.toLowerCase();
+    }
+
+    return this.model
+      .findOne(query)
+      .sort({ createdAt: -1 })
+      .lean<LeadEntity>()
+      .exec();
+  }
+
+  async markAsConverted(leadId: string, customerId: string): Promise<void> {
+    if (!Types.ObjectId.isValid(leadId)) return;
+
+    await this.model.updateOne(
+      { _id: leadId, ...this.notDeleted() },
+      {
+        $set: {
+          converted: true,
+          customerId,
+          updatedAt: new Date(),
+        },
+      },
+    );
+  }
+
+  async findUnconvertedBySession(
+    merchantId: string,
+    sessionId: string,
+  ): Promise<LeadEntity[]> {
+    return this.model
+      .find({
+        merchantId,
+        sessionId,
+        converted: { $ne: true },
+        ...this.notDeleted(),
+      })
+      .sort({ createdAt: -1 })
+      .lean<LeadEntity[]>()
+      .exec();
+  }
 }

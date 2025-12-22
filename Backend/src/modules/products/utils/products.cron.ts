@@ -4,6 +4,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Model } from 'mongoose';
 
 import { Product, ProductDocument } from '../schemas/product.schema';
+import { BackInStockService } from '../services/back-in-stock.service';
 
 @Injectable()
 export class ProductsCron {
@@ -12,6 +13,7 @@ export class ProductsCron {
   constructor(
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
+    private readonly backInStockService: BackInStockService,
   ) {}
 
   @Cron(CronExpression.EVERY_10_MINUTES)
@@ -60,6 +62,25 @@ export class ProductsCron {
     } catch (error) {
       this.logger.error(
         'Error publishing scheduled products',
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
+  /**
+   * تنظيف طلبات back-in-stock القديمة
+   * يعمل مرة يومياً في منتصف الليل
+   */
+  @Cron('0 0 * * *') // كل يوم في منتصف الليل
+  async cleanupOldBackInStockRequests(): Promise<void> {
+    try {
+      const deletedCount = await this.backInStockService.cleanupOldRequests(90); // 90 يوم
+      if (deletedCount > 0) {
+        this.logger.log(`Cleaned up ${deletedCount} old back-in-stock requests`);
+      }
+    } catch (error) {
+      this.logger.error(
+        'Error cleaning up old back-in-stock requests',
         error instanceof Error ? error.stack : String(error),
       );
     }

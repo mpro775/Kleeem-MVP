@@ -90,6 +90,13 @@ function hasValidAddress(m: MinimalMerchant): boolean {
   );
 }
 
+function hasCurrencySettings(m: MinimalMerchant): boolean {
+  const cs = m.currencySettings;
+  if (!cs) return false;
+  // يعتبر مكتمل إذا تم تحديد العملة الأساسية
+  return hasNonEmptyString(cs.baseCurrency);
+}
+
 /** يبني عناصر "معلومات المتجر" */
 function buildStoreInfo(
   m: MinimalMerchant,
@@ -137,6 +144,20 @@ function buildStoreInfo(
         item.message = 'عيِّن السلاج العام من "معلومات المتجر"';
       } else if (!slugState.enabled) {
         item.message = 'فعّل الرابط العام للسلاج';
+      }
+      return item;
+    })(),
+    (() => {
+      const item: ChecklistItem = {
+        key: CHECK_KEYS.currencySettings,
+        title: 'إعدادات العملة',
+        isComplete: hasCurrencySettings(m),
+        isSkipped: skipped.includes(CHECK_KEYS.currencySettings),
+        actionPath: ACTION_PATHS.currencySettings,
+        skippable: true,
+      };
+      if (!hasCurrencySettings(m)) {
+        item.message = 'حدد العملة الافتراضية وأسعار الصرف';
       }
       return item;
     })(),

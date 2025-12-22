@@ -13,6 +13,7 @@ import { MerchantsModule } from '../merchants/merchants.module';
 import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema'; // ← استيراد الـ schema
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { UsersModule } from '../users/users.module';
+import { CustomersModule } from '../customers/customers.module';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -29,6 +30,7 @@ import {
 import { CookieService } from './services/cookie.service';
 import { TokenService } from './services/token.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { CustomerJwtStrategy } from './strategies/customer-jwt.strategy';
 
 @Module({
   imports: [
@@ -57,6 +59,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 
     UsersModule,
     forwardRef(() => MerchantsModule), // لازمه ل AuthController الذي يستعمل MerchantsService
+    forwardRef(() => CustomersModule), // للـ CustomerJwtStrategy
     MetricsModule,
     CommonServicesModule,
   ],
@@ -65,6 +68,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   providers: [
     AuthService,
     JwtStrategy,
+    CustomerJwtStrategy,
     TokenService,
     CookieService,
     {

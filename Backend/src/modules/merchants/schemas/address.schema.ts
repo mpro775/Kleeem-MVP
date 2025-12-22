@@ -4,6 +4,9 @@ import { Document } from 'mongoose';
 
 @Schema({ _id: false })
 export class Address {
+  @Prop({ required: true, trim: true })
+  label!: string; // تسمية العنوان مثل: "الفرع الرئيسي"، "مستودع الشحن"
+
   @Prop({ default: '' })
   street!: string;
 

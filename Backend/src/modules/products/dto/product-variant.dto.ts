@@ -4,6 +4,7 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsEnum,
   IsNotEmptyObject,
   IsNumber,
   IsObject,
@@ -13,15 +14,28 @@ import {
 } from 'class-validator';
 
 import { I18nMessage } from '../../../common/validators/i18n-validator';
+import { Currency } from '../enums/product.enums';
 
 const EXAMPLE_WEIGHT = 250;
 const EXAMPLE_PRICE = 99.99;
 const EXAMPLE_PRICE_SAR = 75;
 const PRICE_SCHEMA = {
-  description: 'أسعار المتغير بعملات متعددة (يجب تضمين YER على الأقل)',
+  description:
+    'أسعار المتغير بعملات متعددة. يمكن إدخال السعر كرقم بسيط أو ككائن مع isManual',
   type: 'object',
   example: { YER: EXAMPLE_PRICE, SAR: EXAMPLE_PRICE_SAR },
-  additionalProperties: { type: 'number' },
+  additionalProperties: {
+    oneOf: [
+      { type: 'number' },
+      {
+        type: 'object',
+        properties: {
+          amount: { type: 'number' },
+          isManual: { type: 'boolean' },
+        },
+      },
+    ],
+  },
 } as const;
 const VALIDATION_OBJECT = {
   ...I18nMessage('validation.object'),
@@ -56,7 +70,26 @@ export class CreateVariantDto {
   @ApiProperty(PRICE_SCHEMA)
   @IsNotEmptyObject(VALIDATION_OBJECT)
   @IsObject(VALIDATION_OBJECT)
-  prices!: Record<string, number>;
+  prices!: Record<string, number | { amount: number; isManual?: boolean }>;
+
+  @ApiPropertyOptional({
+    description: 'العملة الأساسية للمتغير (يرث من المنتج الأب افتراضياً)',
+    enum: Currency,
+    example: Currency.YER,
+  })
+  @IsOptional()
+  @IsEnum(Currency, I18nMessage('validation.enum'))
+  basePriceCurrency?: Currency;
+
+  @ApiPropertyOptional({
+    description: 'السعر الأساسي (يُستخرج من prices إن لم يُحدد)',
+    example: EXAMPLE_PRICE,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber({}, I18nMessage('validation.number'))
+  @Min(0, I18nMessage('validation.min'))
+  basePrice?: number;
 
   @ApiProperty({
     description: 'المخزون المتاح',
@@ -136,7 +169,26 @@ export class UpdateVariantDto {
   @IsOptional()
   @IsNotEmptyObject(VALIDATION_OBJECT)
   @IsObject(VALIDATION_OBJECT)
-  prices?: Record<string, number>;
+  prices?: Record<string, number | { amount: number; isManual?: boolean }>;
+
+  @ApiPropertyOptional({
+    description: 'العملة الأساسية للمتغير',
+    enum: Currency,
+    example: Currency.YER,
+  })
+  @IsOptional()
+  @IsEnum(Currency, I18nMessage('validation.enum'))
+  basePriceCurrency?: Currency;
+
+  @ApiPropertyOptional({
+    description: 'السعر الأساسي',
+    example: EXAMPLE_PRICE,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber({}, I18nMessage('validation.number'))
+  @Min(0, I18nMessage('validation.min'))
+  basePrice?: number;
 
   @ApiPropertyOptional({
     description: 'المخزون المتاح',

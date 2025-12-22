@@ -3,6 +3,8 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 import { Currency } from '../enums/product.enums';
 
+import { CurrencyPrice } from './currency-price.schema';
+
 @Schema({ _id: false, timestamps: false })
 export class ProductVariant {
   @Prop({ required: true, trim: true })
@@ -17,8 +19,41 @@ export class ProductVariant {
   @Prop({ type: String, enum: Object.values(Currency), default: Currency.YER })
   currency?: Currency;
 
-  @Prop({ type: Map, of: Number, required: true })
-  prices!: Map<string, number>;
+  // ============ نظام الأسعار المتعددة المحسّن ============
+  /**
+   * العملة الأساسية للمتغير (يرث من المنتج الأب افتراضياً)
+   */
+  @Prop({ type: String, enum: Object.values(Currency), default: Currency.YER })
+  basePriceCurrency?: Currency;
+
+  /**
+   * السعر الأساسي بالعملة الأساسية
+   */
+  @Prop({ type: Number, default: 0, min: 0 })
+  basePrice?: number;
+
+  /**
+   * أسعار بعملات متعددة مع metadata
+   * كل سعر يحتوي على:
+   * - amount: السعر
+   * - isManual: هل السعر مُعدّل يدوياً؟
+   * - lastAutoSync: آخر تزامن تلقائي
+   * - manualOverrideAt: تاريخ التعديل اليدوي
+   */
+  @Prop({
+    type: Map,
+    of: {
+      type: {
+        amount: { type: Number, required: true, min: 0 },
+        isManual: { type: Boolean, default: false },
+        lastAutoSync: { type: Date, default: null },
+        manualOverrideAt: { type: Date, default: null },
+      },
+      _id: false,
+    },
+    required: true,
+  })
+  prices!: Map<string, CurrencyPrice>;
 
   @Prop({ type: Number, default: 0, min: 0 })
   priceDefault?: number;

@@ -7,6 +7,7 @@ import { ProductMetrics } from '../../metrics/product.metrics';
 import { ExternalProduct } from '../integrations/types';
 
 import { CreateProductDto } from './dto/create-product.dto';
+import { SetManualPriceDto, BulkSetPricesDto } from './dto/currency-price.dto';
 import { GetProductsDto } from './dto/get-products.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductsRepository } from './repositories/products.repository';
@@ -151,5 +152,66 @@ export class ProductsService {
 
   async getAllTags(merchantId: string): Promise<string[]> {
     return this.queries.getAllTags(merchantId);
+  }
+
+  // ============ إدارة الأسعار المتعددة ============
+
+  async setManualPrice(
+    productId: string,
+    currency: string,
+    dto: SetManualPriceDto,
+  ): Promise<ProductDocument> {
+    return this.commands.setManualPrice(productId, currency, dto);
+  }
+
+  async setVariantManualPrice(
+    productId: string,
+    variantSku: string,
+    currency: string,
+    dto: SetManualPriceDto,
+  ): Promise<ProductDocument> {
+    return this.commands.setVariantManualPrice(
+      productId,
+      variantSku,
+      currency,
+      dto,
+    );
+  }
+
+  async resetToAutoPrice(
+    productId: string,
+    currency: string,
+    recalculate: boolean = true,
+  ): Promise<ProductDocument> {
+    return this.commands.resetToAutoPrice(productId, currency, recalculate);
+  }
+
+  async resetVariantToAutoPrice(
+    productId: string,
+    variantSku: string,
+    currency: string,
+    recalculate: boolean = true,
+  ): Promise<ProductDocument> {
+    return this.commands.resetVariantToAutoPrice(
+      productId,
+      variantSku,
+      currency,
+      recalculate,
+    );
+  }
+
+  async setBulkPrices(
+    productId: string,
+    dto: BulkSetPricesDto,
+  ): Promise<ProductDocument> {
+    return this.commands.setBulkPrices(productId, dto);
+  }
+
+  async setVariantBulkPrices(
+    productId: string,
+    variantSku: string,
+    dto: BulkSetPricesDto,
+  ): Promise<ProductDocument> {
+    return this.commands.setVariantBulkPrices(productId, variantSku, dto);
   }
 }
