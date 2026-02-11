@@ -1,6 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
 
+import { MAX_LIMIT } from '../../../common/constants/common';
 import { CursorDto } from '../../../common/dto/pagination.dto';
 
 export enum OrderSortBy {
@@ -61,4 +63,40 @@ export class GetOrdersDto extends CursorDto {
   @IsOptional()
   @IsEnum(SortOrder)
   sortOrder?: SortOrder = SortOrder.DESC;
+}
+
+/** DTO for merchant orders list with offset pagination (page/limit) */
+export class ListOrdersDto {
+  @ApiPropertyOptional({ description: 'رقم الصفحة', default: 1, minimum: 1 })
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined && value !== '' ? parseInt(value as string, 10) : 1))
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({
+    description: 'عدد العناصر في الصفحة',
+    default: 20,
+    minimum: 1,
+    maximum: MAX_LIMIT,
+  })
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined && value !== '' ? parseInt(value as string, 10) : 20))
+  @IsInt()
+  @Min(1)
+  @Max(MAX_LIMIT)
+  limit?: number = 20;
+
+  @ApiPropertyOptional({
+    description: 'حالة الطلب',
+    enum: ['pending', 'paid', 'canceled', 'shipped', 'delivered', 'refunded'],
+  })
+  @IsOptional()
+  @IsEnum(['pending', 'paid', 'canceled', 'shipped', 'delivered', 'refunded'])
+  status?: string;
+
+  @ApiPropertyOptional({ description: 'رقم جوال العميل للبحث' })
+  @IsOptional()
+  @IsString()
+  phone?: string;
 }
