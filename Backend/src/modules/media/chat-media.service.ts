@@ -22,11 +22,12 @@ function cdnBase() {
 }
 @Injectable()
 export class ChatMediaService {
-  constructor(@Inject(S3_CLIENT_TOKEN) public readonly s3: S3Client) {}
+  constructor(@Inject(S3_CLIENT_TOKEN) public readonly s3: S3Client) { }
 
-  private publicUrlFor(bucket: string, key: string) {
+  private publicUrlFor(_bucket: string, key: string) {
     const base = cdnBase();
-    return base ? `${base}/${bucket}/${key}` : '';
+    // For R2 public buckets, bucket is implied by the domain
+    return base ? `${base}/${key}` : '';
   }
 
   private async buildPublicOrSignedUrl(
@@ -41,7 +42,8 @@ export class ChatMediaService {
     ).replace(/\/+$/, '');
 
     // إن كان لديك CDN/Proxy (مثل cdn.kaleem-ai.com) استخدم رابطًا ثابتًا
-    if (cdn) return `${cdn}/${bucket}/${key}`;
+    // For R2 public buckets, bucket is implied by the domain
+    if (cdn) return `${cdn}/${key}`;
     if (endpoint) return `${endpoint}/${bucket}/${key}`;
 
     // وإلا ارجع رابطًا موقّعًا قصير الأجل (ساعة)

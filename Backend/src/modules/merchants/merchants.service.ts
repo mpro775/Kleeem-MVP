@@ -36,7 +36,7 @@ export class MerchantsService {
     private readonly promptSvc: MerchantPromptService,
     private readonly profileSvc: MerchantProfileService,
     private readonly deletionSvc: MerchantDeletionService,
-  ) {}
+  ) { }
 
   async create(dto: CreateMerchantDto): Promise<MerchantDocument> {
     return this.provisioning.create(dto);
@@ -156,7 +156,34 @@ export class MerchantsService {
     userId: Types.ObjectId,
     opts?: { name?: string; slugBase?: string },
   ): Promise<MerchantDocument> {
-    return this.merchantsRepository.ensureForUser(userId, opts);
+    const existing = await this.merchantsRepository.findByUserId(
+      userId.toString(),
+    );
+    if (existing) return existing;
+
+    const dto: CreateMerchantDto = {
+      userId: userId.toString(),
+      name: opts?.name ?? 'متجر جديد',
+      subscription: {
+        tier: 'free' as any,
+        startDate: new Date().toISOString(),
+        features: [],
+      },
+      addresses: [],
+      categories: [],
+      quickConfig: {
+        dialect: 'خليجي',
+        tone: 'ودّي',
+        customInstructions: [],
+        includeClosingPhrase: true,
+        customerServicePhone: '',
+        customerServiceWhatsapp: '',
+        closingText: 'هل أقدر أساعدك بشي ثاني؟ 😊',
+      },
+      ...(opts?.slugBase ? { publicSlug: opts.slugBase } : {}),
+    };
+
+    return this.create(dto);
   }
 
   // Check if public slug exists

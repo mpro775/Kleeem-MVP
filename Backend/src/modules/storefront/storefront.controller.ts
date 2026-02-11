@@ -28,10 +28,10 @@ import {
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
-} from '../../common';
-import { DEFAULT_LIMIT } from '../../common/constants/common';
-import { Public } from '../../common/decorators/public.decorator';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+} from 'src/common/decorators/api-response.decorator';
+import { DEFAULT_LIMIT } from 'src/common/constants/common';
+import { Public } from 'src/common/decorators/public.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
 import {
   CreateStorefrontDto,
@@ -51,7 +51,7 @@ import { StorefrontService } from './storefront.service';
 @ApiBearerAuth()
 @ApiExtraModels(BannerDto)
 export class StorefrontController {
-  constructor(private svc: StorefrontService) {}
+  constructor(private svc: StorefrontService) { }
   @Public() @Get('merchant') badMerchantReq(): never {
     throw new BadRequestException('merchantId is required');
   }

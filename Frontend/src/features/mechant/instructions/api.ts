@@ -3,26 +3,33 @@ import axiosInstance from '@/shared/api/axios';
 import type { Instruction } from './type';
 
 
+export type ListInstructionsResponse = {
+  items: Instruction[];
+  total: number;
+};
+
 export async function listInstructions(params: {
   active?: 'all' | 'true' | 'false';
   page?: number;
   limit?: number;
-}) {
+}): Promise<ListInstructionsResponse> {
   const p: { page: number; limit: number; active?: 'true' | 'false' } = { page: params.page ?? 1, limit: params.limit ?? 20 };
   if (params.active && params.active !== 'all') p.active = params.active;
-  const { data } = await axiosInstance.get('/instructions', { params: p });
-  
-  // Handle different response structures
-  if (Array.isArray(data)) {
-    return data as Instruction[];
-  } else if (data && Array.isArray(data.items)) {
-    return data.items as Instruction[];
-  } else if (data && Array.isArray(data.data)) {
-    return data.data as Instruction[];
-  } else {
-    console.warn('Unexpected API response structure:', data);
-    return [] as Instruction[];
+  const { data } = await axiosInstance.get<{ items?: Instruction[]; total?: number } | Instruction[]>('/instructions', { params: p });
+
+  // Backend returns { items, total }
+  if (data && typeof data === 'object' && 'items' in data && Array.isArray(data.items)) {
+    return { items: data.items as Instruction[], total: typeof data.total === 'number' ? data.total : data.items.length };
   }
+  // Legacy: plain array
+  if (Array.isArray(data)) {
+    return { items: data as Instruction[], total: data.length };
+  }
+  if (data && typeof data === 'object' && Array.isArray((data as { data?: unknown }).data)) {
+    const arr = (data as { data: Instruction[] }).data;
+    return { items: arr, total: arr.length };
+  }
+  return { items: [], total: 0 };
 }
 
 export async function createInstruction(payload: { instruction: string; type?: 'auto'|'manual' }) {

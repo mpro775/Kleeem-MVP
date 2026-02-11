@@ -16,7 +16,7 @@ import { CUSTOMER_OTP_REPOSITORY } from '../tokens';
 import { CustomerOtpRepository } from '../repositories/customer-otp.repository';
 import { CustomerOtp, ContactType } from '../schemas/customer-otp.schema';
 
-import { generateNumericCode, sha256 } from '../../../common/utils/verification-code';
+import { generateNumericCode, sha256 } from '../../auth/utils/verification-code';
 
 const OTP_EXPIRY_MINUTES = 10;
 const MAX_ATTEMPTS = 5;
@@ -31,7 +31,7 @@ export class OtpService {
     private readonly smsService: SmsService,
     @Inject(CUSTOMER_OTP_REPOSITORY)
     private readonly otpRepo: CustomerOtpRepository,
-  ) {}
+  ) { }
 
   /**
    * إرسال OTP للعميل
@@ -82,7 +82,7 @@ export class OtpService {
       contact,
       contactType,
       codeHash,
-      code: process.env.NODE_ENV === 'development' ? code : undefined, // للاختبار فقط
+      ...(process.env.NODE_ENV === 'development' ? { code } : {}),
       expiresAt,
       attempts: 0,
       maxAttempts: MAX_ATTEMPTS,
@@ -204,7 +204,8 @@ export class OtpService {
       // await this.mailService.sendOtpEmail(email, code, html);
 
     } catch (error) {
-      this.logger.error(`Failed to send OTP email to ${email}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to send OTP email to ${email}: ${errorMessage}`);
       throw new BadRequestException('فشل في إرسال رمز التحقق عبر البريد الإلكتروني');
     }
   }
@@ -216,7 +217,8 @@ export class OtpService {
     try {
       await this.smsService.sendOtpSms(phone, merchantId, code);
     } catch (error) {
-      this.logger.error(`Failed to send OTP SMS to ${phone}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to send OTP SMS to ${phone}: ${errorMessage}`);
       throw new BadRequestException('فشل في إرسال رمز التحقق عبر SMS');
     }
   }

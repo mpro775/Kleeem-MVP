@@ -37,8 +37,8 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 
-import { CurrentUser } from '../../common';
-import { TranslationService } from '../../common/services/translation.service';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { TranslationService } from 'src/common/services/translation.service';
 
 import { AuthService } from './auth.service';
 import { AccessOnlyDto } from './dto/access-only.dto';
@@ -139,7 +139,7 @@ export class AuthController {
     private readonly jwtService: JwtService,
     private readonly translationService: TranslationService,
     private readonly config: ConfigService,
-  ) {}
+  ) { }
 
   // ---------- Register ----------
   @Public()
@@ -501,6 +501,44 @@ export class AuthController {
     };
   }> {
     const result = await this.authService.ensureMerchant(userId);
+    return {
+      ...result,
+      user: {
+        ...result.user,
+        id: String(result.user.id),
+        role: String(result.user.role),
+        merchantId:
+          result.user.merchantId != null
+            ? String(result.user.merchantId)
+            : null,
+      },
+    };
+  }
+
+  // ---------- Complete onboarding ----------
+  @Post('onboarding-complete')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({
+    operationId: 'auth_completeOnboarding',
+    summary: 'Complete onboarding',
+    description: 'Marks user onboarding as complete and sets firstLogin to false',
+  })
+  @ApiOkResponse({ type: AccessOnlyDto })
+  @ApiUnauthorizedResponse({ type: ErrorResponse })
+  async completeOnboarding(@CurrentUser('userId') userId: string): Promise<{
+    accessToken: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      merchantId: string | null;
+      firstLogin: boolean;
+      emailVerified: boolean;
+    };
+  }> {
+    const result = await this.authService.completeOnboarding(userId);
     return {
       ...result,
       user: {

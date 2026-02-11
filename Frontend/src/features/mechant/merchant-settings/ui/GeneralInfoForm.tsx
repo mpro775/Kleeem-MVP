@@ -89,7 +89,8 @@ export default function GeneralInfoForm({
       });
 
       // الباك إند يرسل الآن: { success, data: { url }, requestId, timestamp }
-      const url = (res.data as any)?.url;
+      // axios يضع الـ body في res.data، لذا URL موجود في res.data.data.url
+      const url = (res.data as any)?.data?.url;
 
       if (!url) throw new Error("لم يتم استلام رابط الشعار");
       handleChange("logoUrl", url);
@@ -142,7 +143,7 @@ export default function GeneralInfoForm({
     try {
       await navigator.clipboard.writeText(text);
       setSuccess(true);
-    } catch {}
+    } catch { }
   };
 
   const handleSave = async () => {
@@ -272,12 +273,12 @@ export default function GeneralInfoForm({
           slugStatus === "checking"
             ? "جاري التحقق من التوفر..."
             : slugStatus === "ok"
-            ? `متاح ✓ — روابطك: ${chatPreview} ، ${storePreview}`
-            : slugStatus === "taken"
-            ? "السلاج محجوز. جرّب اسمًا آخر."
-            : slugStatus === "invalid"
-            ? "السلاج غير صالح: يجب أن يبدأ بحرف إنجليزي، ويحتوي على حروف/أرقام/شرطة فقط، وطوله 3–50، وبدون شرطة في النهاية."
-            : "اكتب سلاج مثل: acme-store (3–50 حرفًا)."
+              ? `متاح ✓ — روابطك: ${chatPreview} ، ${storePreview}`
+              : slugStatus === "taken"
+                ? "السلاج محجوز. جرّب اسمًا آخر."
+                : slugStatus === "invalid"
+                  ? "السلاج غير صالح: يجب أن يبدأ بحرف إنجليزي، ويحتوي على حروف/أرقام/شرطة فقط، وطوله 3–50، وبدون شرطة في النهاية."
+                  : "اكتب سلاج مثل: acme-store (3–50 حرفًا)."
         }
         error={slugStatus === "taken" || slugStatus === "invalid"}
       />

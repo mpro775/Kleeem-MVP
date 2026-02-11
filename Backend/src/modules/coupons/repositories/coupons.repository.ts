@@ -8,6 +8,7 @@ export interface CouponsRepository {
     merchantId: string,
     options: {
       status?: string;
+      search?: string;
       limit?: number;
       skip?: number;
     },

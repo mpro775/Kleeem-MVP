@@ -11,7 +11,7 @@ export class SmsService {
   constructor(
     private readonly config: ConfigService,
     private readonly whatsappCloudService: WhatsappCloudService,
-  ) {}
+  ) { }
 
   /**
    * إرسال OTP عبر SMS
@@ -27,8 +27,9 @@ export class SmsService {
 
       this.logger.log(`OTP SMS sent to ${this.maskPhone(phone)} for merchant ${merchantId}`);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Failed to send OTP SMS to ${this.maskPhone(phone)}: ${error.message}`,
+        `Failed to send OTP SMS to ${this.maskPhone(phone)}: ${errorMessage}`,
       );
       throw error;
     }
@@ -50,8 +51,9 @@ export class SmsService {
       await this.whatsappCloudService.sendText(merchantId, phone, message);
       this.logger.log(`Notification SMS sent to ${this.maskPhone(phone)} for merchant ${merchantId}`);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Failed to send notification SMS to ${this.maskPhone(phone)}: ${error.message}`,
+        `Failed to send notification SMS to ${this.maskPhone(phone)}: ${errorMessage}`,
       );
       throw error;
     }

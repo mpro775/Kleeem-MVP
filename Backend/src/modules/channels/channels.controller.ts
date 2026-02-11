@@ -24,6 +24,8 @@ import {
   ApiForbiddenResponse,
   ApiCreatedResponse,
 } from '@nestjs/swagger';
+import { Types } from 'mongoose';
+
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
 
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -38,6 +40,8 @@ import { UpdateChannelDto } from './dto/update-channel.dto';
 import { ChannelDocument, ChannelProvider } from './schemas/channel.schema';
 
 // Example constants for API documentation
+const EXAMPLE_MERCHANT_ID = '507f1f77bcf86cd799439011';
+const EXAMPLE_CHANNEL_ID = '507f1f77bcf86cd799439012';
 const EXAMPLE_RESPONSE_TIME_MS = 150;
 const EXAMPLE_MESSAGES_SENT = 1250;
 const EXAMPLE_MESSAGES_RECEIVED = 980;
@@ -59,8 +63,8 @@ export class ChannelsController {
   })
   @ApiParam({
     name: 'merchantId',
-    description: 'معرف التاجر',
-    example: 'm_12345',
+    description: 'معرف التاجر (ObjectId)',
+    example: EXAMPLE_MERCHANT_ID,
     type: 'string',
   })
   @ApiBody({ type: CreateChannelDto })
@@ -74,8 +78,8 @@ export class ChannelsController {
         channel: {
           type: 'object',
           properties: {
-            id: { type: 'string', example: 'ch_66f1a2b3c4d5e6f7g8h9i0j' },
-            merchantId: { type: 'string', example: 'm_12345' },
+            id: { type: 'string', example: EXAMPLE_CHANNEL_ID },
+            merchantId: { type: 'string', example: EXAMPLE_MERCHANT_ID },
             provider: {
               type: 'string',
               enum: ['whatsapp', 'telegram', 'webchat'],
@@ -105,11 +109,11 @@ export class ChannelsController {
     @Param('merchantId') merchantId: string,
     @Body() dto: Omit<CreateChannelDto, 'merchantId'>,
   ): Promise<ChannelDocument> {
-    if (!merchantId || !merchantId.startsWith('m_')) {
+    if (!merchantId || !Types.ObjectId.isValid(merchantId)) {
       throw new BadRequestException({
         code: 'INVALID_MERCHANT_ID',
-        message: 'معرف التاجر يجب أن يبدأ بـ m_',
-        details: ['merchantId must start with m_'],
+        message: 'معرف التاجر غير صالح',
+        details: ['merchantId must be a valid ObjectId'],
       });
     }
 
@@ -124,8 +128,8 @@ export class ChannelsController {
   })
   @ApiParam({
     name: 'merchantId',
-    description: 'معرف التاجر',
-    example: 'm_12345',
+    description: 'معرف التاجر (ObjectId)',
+    example: EXAMPLE_MERCHANT_ID,
     type: 'string',
   })
   @ApiQuery({
@@ -142,8 +146,8 @@ export class ChannelsController {
       items: {
         type: 'object',
         properties: {
-          id: { type: 'string', example: 'ch_66f1a2b3c4d5e6f7g8h9i0j' },
-          merchantId: { type: 'string', example: 'm_12345' },
+          id: { type: 'string', example: EXAMPLE_CHANNEL_ID },
+          merchantId: { type: 'string', example: EXAMPLE_MERCHANT_ID },
           provider: {
             type: 'string',
             enum: ['whatsapp', 'telegram', 'webchat'],
@@ -174,11 +178,11 @@ export class ChannelsController {
     @Param('merchantId') merchantId: string,
     @Query('provider') provider?: ChannelProvider,
   ): Promise<ChannelLean[]> {
-    if (!merchantId || !merchantId.startsWith('m_')) {
+    if (!merchantId || !Types.ObjectId.isValid(merchantId)) {
       throw new BadRequestException({
         code: 'INVALID_MERCHANT_ID',
-        message: 'معرف التاجر يجب أن يبدأ بـ m_',
-        details: ['merchantId must start with m_'],
+        message: 'معرف التاجر غير صالح',
+        details: ['merchantId must be a valid ObjectId'],
       });
     }
 
@@ -193,8 +197,8 @@ export class ChannelsController {
   })
   @ApiParam({
     name: 'id',
-    description: 'معرف القناة',
-    example: 'ch_66f1a2b3c4d5e6f7g8h9i0j',
+    description: 'معرف القناة (ObjectId)',
+    example: EXAMPLE_CHANNEL_ID,
     type: 'string',
   })
   @ApiOkResponse({
@@ -202,8 +206,8 @@ export class ChannelsController {
     schema: {
       type: 'object',
       properties: {
-        id: { type: 'string', example: 'ch_66f1a2b3c4d5e6f7g8h9i0j' },
-        merchantId: { type: 'string', example: 'm_12345' },
+        id: { type: 'string', example: EXAMPLE_CHANNEL_ID },
+        merchantId: { type: 'string', example: EXAMPLE_MERCHANT_ID },
         provider: {
           type: 'string',
           enum: ['whatsapp', 'telegram', 'webchat'],
@@ -241,11 +245,11 @@ export class ChannelsController {
     type: ErrorResponse,
   })
   get(@Param('id') id: string): Promise<ChannelDocument> {
-    if (!id || !id.startsWith('ch_')) {
+    if (!id || !Types.ObjectId.isValid(id)) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
-        message: 'معرف القناة يجب أن يبدأ بـ ch_',
-        details: ['channelId must start with ch_'],
+        message: 'معرف القناة غير صالح',
+        details: ['channel id must be a valid ObjectId'],
       });
     }
 
@@ -261,7 +265,7 @@ export class ChannelsController {
   @ApiParam({
     name: 'id',
     description: 'معرف القناة',
-    example: 'ch_66f1a2b3c4d5e6f7g8h9i0j',
+    example: EXAMPLE_CHANNEL_ID,
     type: 'string',
   })
   @ApiBody({ type: UpdateChannelDto })
@@ -275,7 +279,7 @@ export class ChannelsController {
         channel: {
           type: 'object',
           properties: {
-            id: { type: 'string', example: 'ch_66f1a2b3c4d5e6f7g8h9i0j' },
+            id: { type: 'string', example: EXAMPLE_CHANNEL_ID },
             name: { type: 'string', example: 'قناة واتساب محدثة' },
             status: {
               type: 'string',
@@ -304,11 +308,11 @@ export class ChannelsController {
     @Param('id') id: string,
     @Body() dto: UpdateChannelDto,
   ): Promise<ChannelDocument> {
-    if (!id || !id.startsWith('ch_')) {
+    if (!id || !Types.ObjectId.isValid(id)) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
-        message: 'معرف القناة يجب أن يبدأ بـ ch_',
-        details: ['channelId must start with ch_'],
+        message: 'معرف القناة غير صالح',
+        details: ['channel id must be a valid ObjectId'],
       });
     }
 
@@ -325,7 +329,7 @@ export class ChannelsController {
   @ApiParam({
     name: 'id',
     description: 'معرف القناة',
-    example: 'ch_66f1a2b3c4d5e6f7g8h9i0j',
+    example: EXAMPLE_CHANNEL_ID,
     type: 'string',
   })
   @ApiBody({ type: ConnectActionDto })
@@ -364,7 +368,7 @@ export class ChannelsController {
         channel: {
           type: 'object',
           properties: {
-            id: { type: 'string', example: 'ch_66f1a2b3c4d5e6f7g8h9i0j' },
+            id: { type: 'string', example: EXAMPLE_CHANNEL_ID },
             status: {
               type: 'string',
               enum: ['connecting'],
@@ -391,11 +395,11 @@ export class ChannelsController {
     @Param('id') id: string,
     @Body() body: ConnectActionDto,
   ): Promise<ConnectResult> {
-    if (!id || !id.startsWith('ch_')) {
+    if (!id || !Types.ObjectId.isValid(id)) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
-        message: 'معرف القناة يجب أن يبدأ بـ ch_',
-        details: ['channelId must start with ch_'],
+        message: 'معرف القناة غير صالح',
+        details: ['channel id must be a valid ObjectId'],
       });
     }
 
@@ -411,7 +415,7 @@ export class ChannelsController {
   @ApiParam({
     name: 'id',
     description: 'معرف القناة',
-    example: 'ch_66f1a2b3c4d5e6f7g8h9i0j',
+    example: EXAMPLE_CHANNEL_ID,
     type: 'string',
   })
   @ApiOkResponse({
@@ -424,7 +428,7 @@ export class ChannelsController {
         channel: {
           type: 'object',
           properties: {
-            id: { type: 'string', example: 'ch_66f1a2b3c4d5e6f7g8h9i0j' },
+            id: { type: 'string', example: EXAMPLE_CHANNEL_ID },
             status: {
               type: 'string',
               enum: ['connected'],
@@ -449,11 +453,11 @@ export class ChannelsController {
     type: ErrorResponse,
   })
   refresh(@Param('id') id: string): Promise<{ ok: boolean }> {
-    if (!id || !id.startsWith('ch_')) {
+    if (!id || !Types.ObjectId.isValid(id)) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
-        message: 'معرف القناة يجب أن يبدأ بـ ch_',
-        details: ['channelId must start with ch_'],
+        message: 'معرف القناة غير صالح',
+        details: ['channel id must be a valid ObjectId'],
       });
     }
 
@@ -469,7 +473,7 @@ export class ChannelsController {
   @ApiParam({
     name: 'id',
     description: 'معرف القناة',
-    example: 'ch_66f1a2b3c4d5e6f7g8h9i0j',
+    example: EXAMPLE_CHANNEL_ID,
     type: 'string',
   })
   @ApiOkResponse({
@@ -482,7 +486,7 @@ export class ChannelsController {
         channel: {
           type: 'object',
           properties: {
-            id: { type: 'string', example: 'ch_66f1a2b3c4d5e6f7g8h9i0j' },
+            id: { type: 'string', example: EXAMPLE_CHANNEL_ID },
             isDefault: { type: 'boolean', example: true },
             provider: { type: 'string', example: 'whatsapp' },
           },
@@ -491,7 +495,7 @@ export class ChannelsController {
           type: 'object',
           nullable: true,
           properties: {
-            id: { type: 'string', example: 'ch_66f1a2b3c4d5e6f7g8h9i0jk' },
+            id: { type: 'string', example: EXAMPLE_CHANNEL_ID },
             isDefault: { type: 'boolean', example: false },
           },
         },
@@ -511,11 +515,11 @@ export class ChannelsController {
     type: ErrorResponse,
   })
   setDefault(@Param('id') id: string): Promise<ChannelDocument> {
-    if (!id || !id.startsWith('ch_')) {
+    if (!id || !Types.ObjectId.isValid(id)) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
-        message: 'معرف القناة يجب أن يبدأ بـ ch_',
-        details: ['channelId must start with ch_'],
+        message: 'معرف القناة غير صالح',
+        details: ['channel id must be a valid ObjectId'],
       });
     }
 
@@ -531,7 +535,7 @@ export class ChannelsController {
   @ApiParam({
     name: 'id',
     description: 'معرف القناة',
-    example: 'ch_66f1a2b3c4d5e6f7g8h9i0j',
+    example: EXAMPLE_CHANNEL_ID,
     type: 'string',
   })
   @ApiQuery({
@@ -557,7 +561,7 @@ export class ChannelsController {
         channel: {
           type: 'object',
           properties: {
-            id: { type: 'string', example: 'ch_66f1a2b3c4d5e6f7g8h9i0j' },
+            id: { type: 'string', example: EXAMPLE_CHANNEL_ID },
             status: {
               type: 'string',
               enum: ['disabled', 'disconnected'],
@@ -590,11 +594,11 @@ export class ChannelsController {
     )
     mode?: 'disable' | 'disconnect' | 'wipe',
   ): Promise<{ deleted: boolean } | { ok: boolean }> {
-    if (!id || !id.startsWith('ch_')) {
+    if (!id || !Types.ObjectId.isValid(id)) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
-        message: 'معرف القناة يجب أن يبدأ بـ ch_',
-        details: ['channelId must start with ch_'],
+        message: 'معرف القناة غير صالح',
+        details: ['channel id must be a valid ObjectId'],
       });
     }
 
@@ -610,7 +614,7 @@ export class ChannelsController {
   @ApiParam({
     name: 'id',
     description: 'معرف القناة',
-    example: 'ch_66f1a2b3c4d5e6f7g8h9i0j',
+    example: EXAMPLE_CHANNEL_ID,
     type: 'string',
   })
   @ApiOkResponse({
@@ -618,7 +622,7 @@ export class ChannelsController {
     schema: {
       type: 'object',
       properties: {
-        id: { type: 'string', example: 'ch_66f1a2b3c4d5e6f7g8h9i0j' },
+        id: { type: 'string', example: EXAMPLE_CHANNEL_ID },
         status: {
           type: 'string',
           enum: ['disconnected', 'connecting', 'connected', 'error'],
@@ -670,11 +674,11 @@ export class ChannelsController {
     type: ErrorResponse,
   })
   status(@Param('id') id: string): Promise<Status> {
-    if (!id || !id.startsWith('ch_')) {
+    if (!id || !Types.ObjectId.isValid(id)) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
-        message: 'معرف القناة يجب أن يبدأ بـ ch_',
-        details: ['channelId must start with ch_'],
+        message: 'معرف القناة غير صالح',
+        details: ['channel id must be a valid ObjectId'],
       });
     }
 
@@ -690,7 +694,7 @@ export class ChannelsController {
   @ApiParam({
     name: 'id',
     description: 'معرف القناة',
-    example: 'ch_66f1a2b3c4d5e6f7g8h9i0j',
+    example: EXAMPLE_CHANNEL_ID,
     type: 'string',
   })
   @ApiBody({ type: SendMessageDto })
@@ -702,7 +706,7 @@ export class ChannelsController {
         success: { type: 'boolean', example: true },
         message: { type: 'string', example: 'تم إرسال الرسالة بنجاح' },
         messageId: { type: 'string', example: 'msg_66f1a2b3c4d5e6f7g8h9i0j' },
-        channelId: { type: 'string', example: 'ch_66f1a2b3c4d5e6f7g8h9i0j' },
+        channelId: { type: 'string', example: EXAMPLE_CHANNEL_ID },
         recipient: { type: 'string', example: '+966501234567' },
         sentAt: { type: 'string', example: '2023-09-18T16:25:00Z' },
         status: {
@@ -729,11 +733,11 @@ export class ChannelsController {
     @Param('id') id: string,
     @Body() body: SendMessageDto,
   ): Promise<{ ok: boolean }> {
-    if (!id || !id.startsWith('ch_')) {
+    if (!id || !Types.ObjectId.isValid(id)) {
       throw new BadRequestException({
         code: 'INVALID_CHANNEL_ID',
-        message: 'معرف القناة يجب أن يبدأ بـ ch_',
-        details: ['channelId must start with ch_'],
+        message: 'معرف القناة غير صالح',
+        details: ['channel id must be a valid ObjectId'],
       });
     }
 

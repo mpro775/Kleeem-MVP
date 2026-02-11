@@ -12,15 +12,14 @@ type CsrfRequest = Request & {
   /** تضيفها cookie-parser */
   secret?: string;
 };
-const CSRF_BYPASS_PREFIXES = ['/webhooks', '/docs', '/integrations/n8n'];
-const CSRF_BYPASS_EXACT = [
-  '/docs-json',
-  '/health',
-  '/metrics',
-  '/auth/register',
-  '/auth/verify-email',
-  '/auth/resend-verification',
+const CSRF_BYPASS_PREFIXES = [
+  '/webhooks',
+  '/docs',
+  '/integrations/n8n',
+  '/merchants',
+  '/auth',
 ];
+const CSRF_BYPASS_EXACT = ['/docs-json', '/health', '/metrics'];
 
 function isPrefixBoundaryMatch(pathname: string, prefix: string): boolean {
   if (pathname === prefix) return true; // "/webhooks"
@@ -71,13 +70,30 @@ export function configureCsrf(app: INestApplication): void {
   // ✅ bypass middleware
   expressApp.use(
     '/api',
-    (req: CsrfRequest, res: Response, next: NextFunction): void => {
-      const pathname = req.path ?? '';
-      if (isCsrfBypassPath(pathname)) {
-        next();
-      } else {
-        csrfMiddleware(req, res, next);
+    (req: Request, res: Response, next: NextFunction): void => {
+      const r = req as CsrfRequest;
+      const pathname = r.path ?? '';
+      const isBypassed = isCsrfBypassPath(pathname);
+
+      if (isBypassed) {
+        // إذا كان المسار مستثنى، نحول الطريقة مؤقتاً إلى GET
+        // لضمان استدعاء csurf وتوفير التوكن دون إجراء التحقق (verification)
+        const originalMethod = r.method;
+        const isDangerous = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(
+          originalMethod.toUpperCase(),
+        );
+
+        if (isDangerous) {
+          (r as any).method = 'GET';
+          csrfMiddleware(r, res, (err) => {
+            (r as any).method = originalMethod;
+            next(err);
+          });
+          return;
+        }
       }
+
+      csrfMiddleware(r, res, next);
     },
   );
 

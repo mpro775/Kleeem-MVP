@@ -40,6 +40,7 @@ export interface Overview {
   topKeywords: KeywordCount[];
   topProducts: TopProduct[];
   channels: { total: number; breakdown: ChannelCount[] };
+  productsCount: number;
   orders: {
     count: number;
     changePercent: number | null;
@@ -49,7 +50,7 @@ export interface Overview {
   csat?: number;
   firstResponseTimeSec?: number | null;
   missingOpen?: number;
-  storeExtras?: { paidOrders: number; aov: number | null };
+  storeExtras: { paidOrders: number; aov: number | null };
 }
 
 type ListParams = {
@@ -220,12 +221,13 @@ export class AnalyticsService {
       count: channelsUsage.find((c) => c.channel === ch)?.count || 0,
     }));
 
-    const [csat, frt, missingOpen, paidOrders, revenue] = await Promise.all([
+    const [csat, frt, missingOpen, paidOrders, revenue, productsCount] = await Promise.all([
       this.repo.getCsat(mId, start, end),
       this.repo.getFirstResponseTimeSec(mId, start, end),
       this.repo.countMissingOpen(mId),
       this.repo.countPaidOrders(mId, start, end),
       this.repo.sumNonCanceledSales(mId, start, end),
+      this.repo.countProducts(mId),
     ]);
     const aov =
       paidOrders > 0 ? Number((revenue / paidOrders).toFixed(2)) : null;
@@ -236,6 +238,7 @@ export class AnalyticsService {
       topKeywords,
       topProducts,
       channels: { total: enabledSet.size, breakdown },
+      productsCount,
       orders: {
         count: currOrders,
         changePercent: ordersChangePercent,

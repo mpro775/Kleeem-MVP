@@ -28,7 +28,7 @@ export class MongoAuthRepository implements AuthRepository {
     private readonly tokenModel: Model<EmailVerificationTokenDocument>,
     @InjectModel(PasswordResetToken.name)
     private readonly prtModel: Model<PasswordResetTokenDocument>,
-  ) {}
+  ) { }
 
   // ===== Users =====
   async createUser(data: {
@@ -82,10 +82,10 @@ export class MongoAuthRepository implements AuthRepository {
       .findById(_id)
       .select('_id active deletedAt')
       .lean() as Promise<{
-      _id: Types.ObjectId;
-      active?: boolean;
-      deletedAt?: Date | null;
-    } | null>;
+        _id: Types.ObjectId;
+        active?: boolean;
+        deletedAt?: Date | null;
+      } | null>;
   }
 
   // ===== Email verification tokens =====
@@ -163,5 +163,14 @@ export class MongoAuthRepository implements AuthRepository {
 
   async deletePasswordResetTokensByUser(userId: Types.ObjectId): Promise<void> {
     await this.prtModel.deleteMany({ userId });
+  }
+
+  // ===== User updates =====
+  async setFirstLoginFalse(
+    userId: Types.ObjectId,
+  ): Promise<UserDocument | null> {
+    return this.userModel
+      .findByIdAndUpdate(userId, { firstLogin: false }, { new: true })
+      .exec();
   }
 }

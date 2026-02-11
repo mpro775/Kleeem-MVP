@@ -102,12 +102,16 @@ export const corsOptions: CorsOptions = {
     'X-Kaleem-Nonce',
     'X-Kaleem-Signature',
     'x-client',
+    'X-CSRF-Token',
+    'x-csrf-token',
   ]),
 
   exposedHeaders: parseList(process.env.CORS_EXPOSED_HEADERS, [
     'x-request-id',
     'X-RateLimit-Remaining',
     'X-RateLimit-Reset',
+    'X-CSRF-Token',
+    'x-csrf-token',
   ]),
 
   maxAge: parseNum(process.env.CORS_MAX_AGE, CORS_DEFAULT_MAX_AGE_SECONDS),

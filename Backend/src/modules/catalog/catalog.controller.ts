@@ -23,7 +23,7 @@ import {
   ApiCreatedResponse,
   ApiExtraModels,
 } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, Matches } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsMongoId } from 'class-validator';
 // ================== Internal imports ==================
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
 
@@ -66,8 +66,7 @@ export enum SyncSourceEnum {
 }
 
 export class MerchantIdParamDto {
-  @IsString()
-  @Matches(/^m_.+/, { message: 'merchantId must start with m_' })
+  @IsMongoId({ message: 'معرف التاجر غير صالح (ObjectId مطلوب)' })
   merchantId!: string;
 }
 
@@ -181,7 +180,7 @@ export class CatalogController {
   @ApiParam({
     name: 'merchantId',
     description: 'معرف التاجر لمزامنة الكتالوج',
-    example: 'm_12345',
+    example: '507f1f77bcf86cd799439011',
     type: 'string',
   })
   @ApiCreatedResponse({
@@ -252,7 +251,7 @@ export class CatalogController {
   @ApiParam({
     name: 'merchantId',
     description: 'معرف التاجر',
-    example: 'm_12345',
+    example: '507f1f77bcf86cd799439011',
     type: 'string',
   })
   @ApiOkResponse({ description: 'حالة المزامنة', type: SyncStatusResponseDto })
@@ -316,7 +315,7 @@ export class CatalogController {
   @ApiParam({
     name: 'merchantId',
     description: 'معرف التاجر',
-    example: 'm_12345',
+    example: '507f1f77bcf86cd799439011',
     type: 'string',
   })
   @ApiOkResponse({

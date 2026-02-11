@@ -86,6 +86,7 @@ export class CouponsService {
 
     const result = await this.couponsRepository.findByMerchant(merchantId, {
       ...(query.status !== undefined && { status: query.status }),
+      ...(query.search?.trim() && { search: query.search.trim() }),
       limit,
       skip,
     });

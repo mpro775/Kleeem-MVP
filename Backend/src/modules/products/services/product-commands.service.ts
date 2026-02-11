@@ -19,6 +19,10 @@ import { CreateProductDto, ProductSource } from '../dto/create-product.dto';
 import { BulkSetPricesDto, SetManualPriceDto } from '../dto/currency-price.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { Currency } from '../enums/product.enums';
+import {
+  CurrencyPrice,
+  createCurrencyPrice,
+} from '../schemas/currency-price.schema';
 
 import { ProductIndexService } from './product-index.service';
 import { ProductMediaService } from './product-media.service';
@@ -116,6 +120,40 @@ function oidToString(oid: Types.ObjectId): string {
     : String(oid);
 }
 
+/**
+ * تحويل Map<string, number> إلى Map<string, CurrencyPrice>
+ * لتوافق مع نظام الأسعار المحسّن
+ */
+function numberMapToCurrencyPriceMap(
+  numberMap: Map<string, number>,
+): Map<string, CurrencyPrice> {
+  const result = new Map<string, CurrencyPrice>();
+  numberMap.forEach((amount, currency) => {
+    result.set(currency, createCurrencyPrice(amount, false));
+  });
+  return result;
+}
+
+/**
+ * استخراج الأرقام من خريطة الأسعار المختلطة
+ * تدعم الشكل البسيط (number) والموسّع ({amount, isManual})
+ */
+function extractPriceNumbers(
+  prices: Record<string, number | { amount: number; isManual?: boolean }> | undefined,
+): Record<string, number> | undefined {
+  if (!prices) return undefined;
+
+  const result: Record<string, number> = {};
+  for (const [currency, value] of Object.entries(prices)) {
+    if (typeof value === 'number') {
+      result[currency] = value;
+    } else if (value && typeof value === 'object' && typeof value.amount === 'number') {
+      result[currency] = value.amount;
+    }
+  }
+  return result;
+}
+
 /* ===================================================================== */
 @Injectable()
 export class ProductCommandsService {
@@ -135,7 +173,7 @@ export class ProductCommandsService {
     private readonly config: ConfigService,
     private readonly validation: ProductValidationService,
     private readonly priceSync: PriceSyncService,
-  ) {}
+  ) { }
 
   /** إنشاء منتج جديد مع outbox + فهرسة + كنس كاش */
   async create(
@@ -164,15 +202,20 @@ export class ProductCommandsService {
   ): Promise<void> {
     const baseCurrency = dto.currency ?? Currency.YER;
 
-    // التحقق من المتغيرات
+    // التحقق من المتغيرات - تحويل الأسعار المختلطة إلى أرقام بسيطة
+    const transformedVariants = dto.variants?.map((v) => ({
+      sku: v.sku,
+      prices: extractPriceNumbers(v.prices) ?? {},
+      stock: v.stock,
+    }));
     this.validation.validateVariants(
       dto.hasVariants,
-      dto.variants,
+      transformedVariants,
       baseCurrency,
     );
 
     // التحقق من الأسعار متعددة العملات (العملة الأساسية مطلوبة)
-    this.validation.normalizePrices(dto.prices, baseCurrency);
+    this.validation.normalizePrices(extractPriceNumbers(dto.prices), baseCurrency);
 
     // التحقق من SKU uniqueness
     if (dto.hasVariants && dto.variants && dto.variants.length > 0) {
@@ -228,10 +271,11 @@ export class ProductCommandsService {
     merchantId: Types.ObjectId,
   ): Partial<Product> {
     const baseCurrency = dto.currency ?? Currency.YER;
-    const { prices, basePrice } = this.validation.normalizePrices(
-      dto.prices,
+    const { prices: numberPrices, basePrice } = this.validation.normalizePrices(
+      extractPriceNumbers(dto.prices),
       baseCurrency,
     );
+    const prices = numberMapToCurrencyPriceMap(numberPrices);
 
     const data: Partial<Product> = {
       merchantId,
@@ -283,13 +327,13 @@ export class ProductCommandsService {
       data.variants = dto.variants.map((variant) => {
         const { prices: variantPrices, ...rest } = variant;
         const normalized = this.validation.normalizePrices(
-          variantPrices,
+          extractPriceNumbers(variantPrices),
           baseCurrency,
         );
 
         return {
           ...rest,
-          prices: normalized.prices,
+          prices: numberMapToCurrencyPriceMap(normalized.prices),
           priceDefault: normalized.basePrice,
           currency: baseCurrency,
           images: variant.images ?? [],
@@ -429,9 +473,9 @@ export class ProductCommandsService {
       created,
       sf
         ? {
-            ...(sf.slug && { slug: sf.slug }),
-            ...(sf.domain && { domain: sf.domain }),
-          }
+          ...(sf.slug && { slug: sf.slug }),
+          ...(sf.domain && { domain: sf.domain }),
+        }
         : undefined,
       catName?.name ?? null,
     );
@@ -487,11 +531,11 @@ export class ProductCommandsService {
     baseCurrency: Currency,
   ): void {
     if (dto.prices !== undefined) {
-      const { prices, basePrice } = this.validation.normalizePrices(
-        dto.prices,
+      const { prices: numberPrices, basePrice } = this.validation.normalizePrices(
+        extractPriceNumbers(dto.prices),
         baseCurrency,
       );
-      patch.prices = prices;
+      patch.prices = numberMapToCurrencyPriceMap(numberPrices);
       patch.priceDefault = basePrice;
       patch.currency = baseCurrency;
       return;
@@ -565,17 +609,16 @@ export class ProductCommandsService {
       patch.variants = dto.variants.map((variant) => {
         const { prices: variantPrices, ...rest } = variant;
         const normalized = variantPrices
-          ? this.validation.normalizePrices(variantPrices, baseCurrency)
+          ? this.validation.normalizePrices(extractPriceNumbers(variantPrices), baseCurrency)
           : null;
-        const prices =
-          normalized?.prices ??
-          (variantPrices instanceof Map ? variantPrices : undefined);
 
-        if (!prices) {
+        if (!normalized) {
           throw new BadRequestException(
             'variant prices are required when updating variants',
           );
         }
+
+        const prices = numberMapToCurrencyPriceMap(normalized.prices);
 
         return {
           ...rest,
@@ -688,9 +731,9 @@ export class ProductCommandsService {
       updated,
       sf
         ? {
-            ...(sf.slug && { slug: sf.slug }),
-            ...(sf.domain && { domain: sf.domain }),
-          }
+          ...(sf.slug && { slug: sf.slug }),
+          ...(sf.domain && { domain: sf.domain }),
+        }
         : undefined,
       catName?.name ?? null,
     );

@@ -39,7 +39,7 @@ describe('RegisterDto', () => {
     // Arrange
     const dto = new RegisterDto();
     dto.email = 'user@example.com';
-    dto.password = '123'; // Less than MIN_PASSWORD_LENGTH (6)
+    dto.password = '123'; // Less than MIN_PASSWORD_LENGTH (8)
     dto.confirmPassword = '123';
     dto.name = 'أحمد محمد';
 

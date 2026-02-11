@@ -265,8 +265,8 @@ export default function ErrorTestPage() {
                 {...register('password', { 
                   required: 'كلمة المرور مطلوبة',
                   minLength: {
-                    value: 6,
-                    message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'
+                    value: 8,
+                    message: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'
                   }
                 })}
                 label="كلمة المرور"

@@ -26,7 +26,7 @@ import { PricingService } from './services/pricing.service';
       { name: Order.name, schema: OrderSchema },
       { name: Product.name, schema: ProductSchema },
     ]),
-    CustomersModule,
+    forwardRef(() => CustomersModule),
     LeadsModule,
     forwardRef(() => ZidModule),
     forwardRef(() => CouponsModule),
@@ -47,4 +47,4 @@ import { PricingService } from './services/pricing.service';
   controllers: [OrdersController],
   exports: [OrdersService, PricingService],
 })
-export class OrdersModule {}
+export class OrdersModule { }

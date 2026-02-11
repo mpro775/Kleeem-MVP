@@ -1,6 +1,7 @@
 // src/modules/customers/dto/verify-otp.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum } from 'class-validator';
+import { ContactType } from '../schemas/customer-otp.schema';
 
 export class VerifyOtpDto {
   @ApiProperty({
@@ -26,4 +27,12 @@ export class VerifyOtpDto {
   @IsString({ message: 'يجب أن يكون رمز OTP نصيًا' })
   @IsNotEmpty({ message: 'رمز OTP مطلوب' })
   code!: string;
+
+  @ApiProperty({
+    description: 'نوع التواصل',
+    example: 'email',
+    enum: ContactType,
+  })
+  @IsEnum(ContactType, { message: 'نوع التواصل يجب أن يكون email أو phone' })
+  contactType!: ContactType;
 }

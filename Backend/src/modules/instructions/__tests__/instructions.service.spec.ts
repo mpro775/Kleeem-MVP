@@ -47,14 +47,14 @@ describe('InstructionsService', () => {
   });
 
   it('findAll → delegates with pagination', async () => {
-    repo.findAll.mockResolvedValue([{ _id: 'a' } as any]);
+    repo.findAll.mockResolvedValue({ items: [{ _id: 'a' } as any], total: 1 });
     const out = await service.findAll({ merchantId: 'm1', limit: 10, page: 2 });
     expect(repo.findAll).toHaveBeenCalledWith({
       merchantId: 'm1',
       limit: 10,
       page: 2,
     });
-    expect(out).toEqual([{ _id: 'a' }]);
+    expect(out).toEqual({ items: [{ _id: 'a' }], total: 1 });
   });
 
   it('activate/deactivate → setActive', async () => {

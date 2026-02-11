@@ -87,7 +87,7 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly translationService: TranslationService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto): Promise<{
     accessToken: string;
@@ -790,4 +790,54 @@ export class AuthService {
       },
     };
   }
+
+  async completeOnboarding(userId: string): Promise<{
+    accessToken: string;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      merchantId: string | null;
+      firstLogin: boolean;
+      emailVerified: boolean;
+    };
+  }> {
+    const userDoc = await this.repo.setFirstLoginFalse(
+      new Types.ObjectId(userId),
+    );
+    if (!userDoc) {
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.userNotFound'),
+      );
+    }
+
+    // ✅ تأكد من أن firstLogin تم تحديثه بشكل صحيح
+    if (userDoc.firstLogin !== false) {
+      // Log warning if firstLogin wasn't updated correctly
+      console.warn(
+        `Warning: firstLogin was not set to false for user ${userId}. Current value: ${userDoc.firstLogin}`,
+      );
+    }
+
+    const { accessToken } = this.tokenService.createAccessOnly({
+      userId: String(userDoc._id),
+      role: (userDoc.role || 'MERCHANT') as 'MERCHANT' | 'ADMIN' | 'MEMBER',
+      merchantId: userDoc.merchantId ? String(userDoc.merchantId) : null,
+    });
+
+    return {
+      accessToken,
+      user: {
+        id: String(userDoc._id),
+        name: userDoc.name || '',
+        email: userDoc.email || '',
+        role: userDoc.role || 'MERCHANT',
+        merchantId: userDoc.merchantId ? String(userDoc.merchantId) : null,
+        firstLogin: false,
+        emailVerified: userDoc.emailVerified ?? false,
+      },
+    };
+  }
 }
+

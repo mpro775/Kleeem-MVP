@@ -16,7 +16,8 @@ import {
   Category,
   CategorySchema,
 } from '../categories/schemas/category.schema';
-import { ZidModule } from '../integrations/zid/zid.module';
+import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
+import { MerchantsModule } from '../merchants/merchants.module';
 import {
   Storefront,
   StorefrontSchema,
@@ -47,6 +48,7 @@ import {
 import { Product, ProductSchema } from './schemas/product.schema';
 import { BackInStockRequest, BackInStockRequestSchema } from './schemas/back-in-stock-request.schema';
 import { ProductReview, ProductReviewSchema } from './schemas/product-review.schema';
+import { StockChangeLog, StockChangeLogSchema } from './schemas/stock-change-log.schema';
 import { ProductCommandsService } from './services/product-commands.service';
 import { BackInStockService } from './services/back-in-stock.service';
 import { ReviewsService } from './services/reviews.service';
@@ -56,15 +58,17 @@ import { ProductMediaService } from './services/product-media.service';
 import { ProductPublicService } from './services/product-public.service';
 import { ProductQueriesService } from './services/product-queries.service';
 import { ProductSyncService } from './services/product-sync.service';
+import { PriceSyncService } from './services/price-sync.service';
 import { ProductValidationService } from './services/product-validation.service';
 import { InventoryService } from './services/inventory.service';
+import { StockChangeLogService } from './services/stock-change-log.service';
 import { ProductsCron } from './utils/products.cron';
-import { BACK_IN_STOCK_REQUEST_REPOSITORY } from './tokens';
+import { BACK_IN_STOCK_REQUEST_REPOSITORY, PRODUCT_REVIEW_REPOSITORY } from './tokens';
+import { ZidModule } from '../integrations/zid/zid.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
-    // ملاحظة: يفضّل وضع ScheduleModule.forRoot() مرة واحدة في AppModule.
-    ScheduleModule.forRoot(),
     MulterModule.register({ dest: './uploads' }),
 
     MongooseModule.forFeature([
@@ -75,18 +79,22 @@ import { BACK_IN_STOCK_REQUEST_REPOSITORY } from './tokens';
       { name: Storefront.name, schema: StorefrontSchema },
       { name: BackInStockRequest.name, schema: BackInStockRequestSchema },
       { name: ProductReview.name, schema: ProductReviewSchema },
+      { name: Merchant.name, schema: MerchantSchema },
+      { name: StockChangeLog.name, schema: StockChangeLogSchema },
     ]),
 
     // Using forwardRef to resolve circular dependencies
     forwardRef(() => VectorModule),
-    AnalyticsModule,
+    forwardRef(() => AnalyticsModule),
     forwardRef(() => ZidModule),
     forwardRef(() => StorefrontModule),
+    forwardRef(() => MerchantsModule),
+    forwardRef(() => CommonServicesModule),
     CategoriesModule,
+    MailModule,
     OutboxModule,
     ErrorManagementModule,
     CacheModule,
-    CommonServicesModule,
     MetricsModule,
     StorageModule,
   ],
@@ -117,11 +125,13 @@ import { BACK_IN_STOCK_REQUEST_REPOSITORY } from './tokens';
     ProductsCron,
     ProductCommandsService,
     ProductSyncService,
+    PriceSyncService,
     ProductQueriesService,
     ProductPublicService,
     ProductValidationService,
     ProductCsvService,
     InventoryService,
+    StockChangeLogService,
     BackInStockService,
     ReviewsService,
 
@@ -132,9 +142,11 @@ import { BACK_IN_STOCK_REQUEST_REPOSITORY } from './tokens';
     ProductsService,
     ProductCommandsService,
     ProductSyncService,
+    PriceSyncService,
     ProductQueriesService,
     ProductPublicService,
     InventoryService,
+    StockChangeLogService,
     AttributeDefinitionsService,
     BackInStockService,
     ReviewsService,
@@ -144,4 +156,4 @@ import { BACK_IN_STOCK_REQUEST_REPOSITORY } from './tokens';
     MongooseModule,
   ],
 })
-export class ProductsModule {}
+export class ProductsModule { }

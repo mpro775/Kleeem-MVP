@@ -13,6 +13,8 @@ export enum SignupSource {
 
 @Schema({ timestamps: true })
 export class Customer {
+  _id?: Types.ObjectId;
+  createdAt!: Date;
   @Prop({ required: true, index: true })
   merchantId!: string;
 

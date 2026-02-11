@@ -90,9 +90,20 @@ export default function BannersManagementPage() {
     } catch (e: unknown) {
       handleError(e);
       console.error("Error saving banners:", e);
+
+      const resp = (e as { response?: { data?: { message?: unknown } } })?.response;
+      const rawMessage = resp?.data?.message;
+      let message = "فشل حفظ البنرات";
+
+      if (Array.isArray(rawMessage) && rawMessage.length > 0) {
+        message = rawMessage.join("، ");
+      } else if (typeof rawMessage === "string" && rawMessage.trim()) {
+        message = rawMessage;
+      }
+
       setSnackbar({
         open: true,
-        message: (e as { response?: { data?: { message?: string } } })?.response?.data?.message || "فشل حفظ البنرات",
+        message,
         severity: "error",
       });
     } finally {

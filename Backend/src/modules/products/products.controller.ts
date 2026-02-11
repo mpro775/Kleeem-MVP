@@ -34,13 +34,15 @@ import { Types } from 'mongoose';
 
 import {
   ApiCreatedResponse as CommonApiCreatedResponse,
-  CurrentUser, // ✅ موجود عندك
+} from 'src/common/decorators/api-response.decorator';
+import {
+  CurrentUser,
   CurrentMerchantId,
-  PaginationResult, // ✅ موجود عندك
-} from '../../common';
-import { Public } from '../../common/decorators/public.decorator';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { TranslationService } from '../../common/services/translation.service';
+} from 'src/common/decorators/current-user.decorator';
+import { PaginationResult } from 'src/common/dto/pagination.dto';
+import { Public } from 'src/common/decorators/public.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { TranslationService } from 'src/common/services/translation.service';
 
 import { CreateProductDto } from './dto/create-product.dto';
 import {
@@ -55,6 +57,14 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductSetupConfigService } from './product-setup-config.service';
 import { ProductsService } from './products.service';
 import { ProductCsvService } from './services/product-csv.service';
+import { InventoryService } from './services/inventory.service';
+import { StockChangeLogService } from './services/stock-change-log.service';
+import { StockChangeType } from './schemas/stock-change-log.schema';
+import {
+  UpdateStockDto,
+  BulkUpdateStockDto,
+  InventoryQueryDto,
+} from './dto/update-stock.dto';
 
 const MAX_IMAGES = 6;
 
@@ -69,7 +79,9 @@ export class ProductsController {
     private readonly productSetupConfigService: ProductSetupConfigService,
     private readonly translationService: TranslationService,
     private readonly csvService: ProductCsvService,
-  ) {}
+    private readonly inventoryService: InventoryService,
+    private readonly stockChangeLogService: StockChangeLogService,
+  ) { }
 
   @Post()
   @ApiOperation({
@@ -908,5 +920,487 @@ export class ProductsController {
     return plainToInstance(ProductResponseDto, updated, {
       excludeExtraneousValues: true,
     });
+  }
+
+  // ============ إدارة المخزون ============
+
+  /**
+   * جلب قائمة المخزون مع الفلترة
+   */
+  @Get('inventory')
+  @ApiOperation({
+    summary: 'جلب قائمة المخزون',
+    description: 'جلب قائمة المنتجات مع معلومات المخزون والفلترة حسب الحالة',
+  })
+  @ApiOkResponse({
+    description: 'قائمة المخزون',
+    schema: {
+      type: 'object',
+      properties: {
+        items: { type: 'array' },
+        meta: {
+          type: 'object',
+          properties: {
+            total: { type: 'number' },
+            page: { type: 'number' },
+            limit: { type: 'number' },
+            hasMore: { type: 'boolean' },
+          },
+        },
+      },
+    },
+  })
+  async getInventory(
+    @Query() query: InventoryQueryDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+  ): Promise<{
+    items: Array<{
+      productId: string;
+      name: string;
+      stock: number;
+      lowStockThreshold: number | null;
+      isUnlimitedStock: boolean;
+      isAvailable: boolean;
+      isLowStock: boolean;
+      isOutOfStock: boolean;
+      hasVariants: boolean;
+      variants?: Array<{
+        sku: string;
+        stock: number;
+        lowStockThreshold: number | null;
+        isLowStock: boolean;
+        isAvailable: boolean;
+      }>;
+      images: string[];
+    }>;
+    meta: { total: number; page: number; limit: number; hasMore: boolean };
+  }> {
+    if (!jwtMerchantId) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.merchantRequired'),
+      );
+    }
+
+    const limit = query.limit ?? 20;
+    const page = query.page ?? 1;
+
+    // جلب المنتجات
+    const result = await this.productsService.listByMerchant(jwtMerchantId, {
+      limit,
+      cursor: undefined,
+    });
+
+    // تحويل البيانات لشكل المخزون
+    let items = result.items.map((product) => {
+      const stock = product.stock ?? 0;
+      const threshold = product.lowStockThreshold ?? null;
+      const isUnlimited = product.isUnlimitedStock ?? false;
+      const isLowStock = !isUnlimited && threshold !== null && stock <= threshold;
+      const isOutOfStock = !isUnlimited && stock <= 0;
+
+      return {
+        productId: String(product._id),
+        name: product.name ?? '',
+        stock,
+        lowStockThreshold: threshold,
+        isUnlimitedStock: isUnlimited,
+        isAvailable: product.isAvailable ?? false,
+        isLowStock,
+        isOutOfStock,
+        hasVariants: product.hasVariants ?? false,
+        variants: product.variants?.map((v) => ({
+          sku: v.sku,
+          stock: v.stock ?? 0,
+          lowStockThreshold: v.lowStockThreshold ?? null,
+          isLowStock:
+            v.lowStockThreshold !== null &&
+            v.lowStockThreshold !== undefined &&
+            (v.stock ?? 0) <= v.lowStockThreshold,
+          isAvailable: v.isAvailable ?? false,
+        })),
+        images: product.images ?? [],
+      };
+    });
+
+    // تطبيق الفلترة
+    if (query.status && query.status !== 'all') {
+      items = items.filter((item) => {
+        switch (query.status) {
+          case 'low':
+            return item.isLowStock && !item.isOutOfStock;
+          case 'out':
+            return item.isOutOfStock;
+          case 'unlimited':
+            return item.isUnlimitedStock;
+          case 'available':
+            return item.isAvailable && !item.isOutOfStock;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // تطبيق البحث
+    if (query.search) {
+      const searchLower = query.search.toLowerCase();
+      items = items.filter((item) =>
+        item.name.toLowerCase().includes(searchLower),
+      );
+    }
+
+    const total = items.length;
+    const startIdx = (page - 1) * limit;
+    const paginatedItems = items.slice(startIdx, startIdx + limit);
+
+    return {
+      items: paginatedItems,
+      meta: {
+        total,
+        page,
+        limit,
+        hasMore: startIdx + paginatedItems.length < total,
+      },
+    };
+  }
+
+  /**
+   * تحديث مخزون منتج واحد
+   */
+  @Patch(':id/stock')
+  @ApiParam({ name: 'id', type: 'string', description: 'معرّف المنتج' })
+  @ApiOperation({
+    summary: 'تحديث مخزون منتج',
+    description: 'تحديث كمية المخزون لمنتج واحد أو متغير محدد',
+  })
+  @ApiBody({ type: UpdateStockDto })
+  @ApiOkResponse({ type: ProductResponseDto })
+  async updateStock(
+    @Param('id') id: string,
+    @Body() dto: UpdateStockDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+    @CurrentUser() user: { userId: string; role: string; merchantId: string; name?: string },
+  ): Promise<ProductResponseDto> {
+    if (!jwtMerchantId) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.merchantRequired'),
+      );
+    }
+
+    const product = await this.productsService.findOne(id);
+    if (
+      user.role !== 'ADMIN' &&
+      String(product.merchantId) !== String(jwtMerchantId)
+    ) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.accessDenied'),
+      );
+    }
+
+    // الحصول على المخزون السابق
+    const previousStock = dto.variantSku
+      ? product.variants?.find((v) => v.sku === dto.variantSku)?.stock ?? 0
+      : product.stock ?? 0;
+
+    // تحديث المخزون
+    const updated = await this.inventoryService.updateStock(
+      id,
+      dto.quantity,
+      dto.variantSku,
+      dto.reason,
+    );
+
+    // تسجيل التغيير
+    await this.stockChangeLogService.logChange({
+      merchantId: jwtMerchantId,
+      productId: id,
+      productName: product.name ?? '',
+      variantSku: dto.variantSku ?? null,
+      previousStock,
+      newStock: dto.quantity,
+      changeType: StockChangeType.MANUAL,
+      reason: dto.reason ?? null,
+      changedBy: user.userId,
+      changedByName: user.name ?? 'Unknown',
+    });
+
+    return plainToInstance(ProductResponseDto, updated, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  /**
+   * تحديث مخزون عدة منتجات دفعة واحدة
+   */
+  @Patch('stock/bulk')
+  @ApiOperation({
+    summary: 'تحديث مخزون عدة منتجات',
+    description: 'تحديث كمية المخزون لعدة منتجات في طلب واحد',
+  })
+  @ApiBody({ type: BulkUpdateStockDto })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'number' },
+        failed: { type: 'number' },
+        results: { type: 'array' },
+      },
+    },
+  })
+  async bulkUpdateStock(
+    @Body() dto: BulkUpdateStockDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+    @CurrentUser() user: { userId: string; role: string; merchantId: string; name?: string },
+  ): Promise<{
+    success: number;
+    failed: number;
+    results: Array<{ productId: string; success: boolean; error?: string }>;
+  }> {
+    if (!jwtMerchantId) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.merchantRequired'),
+      );
+    }
+
+    const results: Array<{ productId: string; success: boolean; error?: string }> = [];
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (const item of dto.items) {
+      try {
+        const product = await this.productsService.findOne(item.productId);
+
+        // التحقق من الملكية
+        if (
+          user.role !== 'ADMIN' &&
+          String(product.merchantId) !== String(jwtMerchantId)
+        ) {
+          results.push({
+            productId: item.productId,
+            success: false,
+            error: 'Access denied',
+          });
+          failedCount++;
+          continue;
+        }
+
+        // الحصول على المخزون السابق
+        const previousStock = item.variantSku
+          ? product.variants?.find((v) => v.sku === item.variantSku)?.stock ?? 0
+          : product.stock ?? 0;
+
+        // تحديث المخزون
+        await this.inventoryService.updateStock(
+          item.productId,
+          item.quantity,
+          item.variantSku,
+          item.reason,
+        );
+
+        // تسجيل التغيير
+        await this.stockChangeLogService.logChange({
+          merchantId: jwtMerchantId,
+          productId: item.productId,
+          productName: product.name ?? '',
+          variantSku: item.variantSku ?? null,
+          previousStock,
+          newStock: item.quantity,
+          changeType: StockChangeType.MANUAL,
+          reason: item.reason ?? null,
+          changedBy: user.userId,
+          changedByName: user.name ?? 'Unknown',
+        });
+
+        results.push({ productId: item.productId, success: true });
+        successCount++;
+      } catch (error) {
+        results.push({
+          productId: item.productId,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        failedCount++;
+      }
+    }
+
+    return {
+      success: successCount,
+      failed: failedCount,
+      results,
+    };
+  }
+
+  /**
+   * جلب سجل تغييرات المخزون لمنتج
+   */
+  @Get(':id/stock-history')
+  @ApiParam({ name: 'id', type: 'string', description: 'معرّف المنتج' })
+  @ApiOperation({
+    summary: 'سجل تغييرات المخزون',
+    description: 'جلب سجل تغييرات المخزون لمنتج معين',
+  })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        items: { type: 'array' },
+        total: { type: 'number' },
+        page: { type: 'number' },
+        limit: { type: 'number' },
+        hasMore: { type: 'boolean' },
+      },
+    },
+  })
+  async getStockHistory(
+    @Param('id') id: string,
+    @Query('limit') limit?: number,
+    @Query('page') page?: number,
+    @CurrentMerchantId() jwtMerchantId?: string | null,
+    @CurrentUser() user?: { role: string; merchantId: string },
+  ): Promise<{
+    items: Array<{
+      id: string;
+      productName: string;
+      variantSku: string | null;
+      previousStock: number;
+      newStock: number;
+      changeAmount: number;
+      changeType: string;
+      reason: string | null;
+      changedByName: string;
+      changedAt: Date;
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+    hasMore: boolean;
+  }> {
+    if (!jwtMerchantId) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.merchantRequired'),
+      );
+    }
+
+    // التحقق من ملكية المنتج
+    const product = await this.productsService.findOne(id);
+    if (
+      user?.role !== 'ADMIN' &&
+      String(product.merchantId) !== String(jwtMerchantId)
+    ) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.accessDenied'),
+      );
+    }
+
+    const result = await this.stockChangeLogService.getProductHistory(
+      id,
+      limit ?? 50,
+      page ?? 1,
+    );
+
+    return {
+      items: result.items.map((log) => ({
+        id: String(log._id),
+        productName: log.productName,
+        variantSku: log.variantSku ?? null,
+        previousStock: log.previousStock,
+        newStock: log.newStock,
+        changeAmount: log.changeAmount,
+        changeType: log.changeType,
+        reason: log.reason ?? null,
+        changedByName: log.changedByName,
+        changedAt: log.changedAt,
+      })),
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      hasMore: result.hasMore,
+    };
+  }
+
+  /**
+   * تصدير المخزون إلى CSV
+   */
+  @Get('inventory/export')
+  @ApiOperation({
+    summary: 'تصدير المخزون إلى CSV',
+    description: 'تصدير بيانات المخزون إلى ملف CSV',
+  })
+  async exportInventoryCsv(
+    @CurrentMerchantId() jwtMerchantId: string | null,
+  ): Promise<{ csv: string; filename: string }> {
+    if (!jwtMerchantId) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.merchantRequired'),
+      );
+    }
+
+    // جلب جميع المنتجات
+    const merchantObjectId = new Types.ObjectId(jwtMerchantId);
+    const products = await this.productsService.findAllByMerchant(merchantObjectId);
+
+    // بناء CSV
+    const headers = [
+      'معرف المنتج',
+      'اسم المنتج',
+      'SKU المتغير',
+      'المخزون',
+      'عتبة التنبيه',
+      'غير محدود',
+      'متاح',
+      'الحالة',
+    ].join(',');
+
+    const rows: string[] = [];
+
+    for (const product of products) {
+      const isUnlimited = product.isUnlimitedStock ?? false;
+      const stock = product.stock ?? 0;
+      const threshold = product.lowStockThreshold ?? '';
+      const isLow = !isUnlimited && threshold !== '' && stock <= Number(threshold);
+      const isOut = !isUnlimited && stock <= 0;
+      const status = isUnlimited ? 'غير محدود' : isOut ? 'منتهي' : isLow ? 'منخفض' : 'جيد';
+
+      if (product.hasVariants && product.variants) {
+        for (const variant of product.variants) {
+          const vStock = variant.stock ?? 0;
+          const vThreshold = variant.lowStockThreshold ?? '';
+          const vIsLow = vThreshold !== '' && vStock <= Number(vThreshold);
+          const vIsOut = vStock <= 0;
+          const vStatus = vIsOut ? 'منتهي' : vIsLow ? 'منخفض' : 'جيد';
+
+          rows.push(
+            [
+              String(product._id),
+              `"${(product.name ?? '').replace(/"/g, '""')}"`,
+              variant.sku,
+              vStock,
+              vThreshold,
+              'لا',
+              variant.isAvailable ? 'نعم' : 'لا',
+              vStatus,
+            ].join(','),
+          );
+        }
+      } else {
+        rows.push(
+          [
+            String(product._id),
+            `"${(product.name ?? '').replace(/"/g, '""')}"`,
+            '',
+            stock,
+            threshold,
+            isUnlimited ? 'نعم' : 'لا',
+            product.isAvailable ? 'نعم' : 'لا',
+            status,
+          ].join(','),
+        );
+      }
+    }
+
+    const csv = '\uFEFF' + headers + '\n' + rows.join('\n'); // BOM for Excel Arabic support
+    const filename = `inventory_${new Date().toISOString().split('T')[0]}.csv`;
+
+    return { csv, filename };
   }
 }

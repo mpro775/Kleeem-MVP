@@ -119,13 +119,13 @@ export function useFaqs(merchantId: string) {
     await refresh();
   };
 
-  const remove = async (id: string) => {
-    await faqsApi.remove(merchantId, id);
+  const remove = async (id: string, hard?: boolean) => {
+    await faqsApi.remove(merchantId, id, { hard });
     setFaqs((prev) => prev.filter((f) => f._id !== id));
   };
 
-  const removeAll = async () => {
-    // TODO: implement bulk delete if API supports it
+  const removeAll = async (hard?: boolean) => {
+    await faqsApi.removeAll(merchantId, { hard });
     setFaqs([]);
   };
 
@@ -134,8 +134,11 @@ export function useFaqs(merchantId: string) {
     await refresh();
   };
 
-  const update = async (_id: string, _data: Partial<Pick<FaqItem, "question" | "answer">>) => {
-    // TODO: implement update if API supports it
+  const update = async (
+    id: string,
+    data: Partial<Pick<FaqItem, "question" | "answer">>
+  ) => {
+    await faqsApi.update(merchantId, id, data);
     await refresh();
   };
 

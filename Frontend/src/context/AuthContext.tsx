@@ -45,6 +45,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     setHydrated(true);
     setIsLoading(false);
+
+    // 👇 استلام حدث تحديث التوكن من Axios
+    const handleTokenRefresh = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { token: newToken, user: newUser } = customEvent.detail;
+
+      setToken(newToken);
+      if (newUser) setUser(newUser);
+
+      // تحديث الهيدر احتياطياً
+      axiosInstance.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${newToken}`;
+    };
+
+    window.addEventListener("auth:token-refreshed", handleTokenRefresh);
+
     // sync عبر التبويبات (اختياري)
     const onStorage = (e: StorageEvent) => {
       if (e.key === "token") {
@@ -67,7 +84,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("auth:token-refreshed", handleTokenRefresh);
+      window.removeEventListener("storage", onStorage);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // مرة واحدة
 

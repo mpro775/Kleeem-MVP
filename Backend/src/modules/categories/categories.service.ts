@@ -91,7 +91,7 @@ export class CategoriesService {
   constructor(
     @Inject('CategoriesRepository') private readonly repo: CategoriesRepository,
     @Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client,
-  ) {}
+  ) { }
 
   // -------- path/ancestors calculation --------
   private async computePathAncestors(
@@ -520,11 +520,9 @@ export class CategoriesService {
       process.env.AWS_ENDPOINT ||
       process.env.MINIO_PUBLIC_URL ||
       ''
-    ).replace(
-      /\/+$/,
-      '',
-    );
-    if (cdnBase) return `${cdnBase}/${bucket}/${key}`;
+    ).replace(/\/+$/, '');
+    // For R2 public buckets (CDN), bucket is implied by the domain
+    if (cdnBase) return `${cdnBase}/${key}`;
     if (publicBase) return `${publicBase}/${bucket}/${key}`;
     // 7 days presigned
     return getSignedUrl(

@@ -9,7 +9,7 @@ import {
 } from './n8n-client.repository';
 
 const N8N_API_KEY_LENGTH = 4;
-const N8N_TIMEOUT = 5000;
+const N8N_TIMEOUT = 30000;
 @Injectable()
 export class N8nAxiosRepository implements N8nClientRepository {
   private api: AxiosInstance;
@@ -17,7 +17,7 @@ export class N8nAxiosRepository implements N8nClientRepository {
 
   constructor() {
     const keyName = 'X-N8N-API-KEY';
-    const apiKey = process.env.N8N_API_KEY!;
+    const apiKey = (process.env.N8N_API_KEY || '').replace(/"/g, '').trim();
     const baseUrl = (
       process.env.N8N_API_URL || 'https://n8n.kaleem-ai.com'
     ).replace(/\/+$/, '');
@@ -26,7 +26,7 @@ export class N8nAxiosRepository implements N8nClientRepository {
     this.logger.log(
       `[n8n.header]  = ${keyName}: ${apiKey ? apiKey.slice(0, N8N_API_KEY_LENGTH) + '***' : 'MISSING'}`,
     );
-
+    this.logger.log(`[n8n.keyCheck] Length: ${apiKey.length}, First4: ${apiKey.slice(0, 4)}`);
     this.api = axios.create({
       baseURL: `${baseUrl}`,
       headers: { [keyName]: apiKey },

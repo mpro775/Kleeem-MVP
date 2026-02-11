@@ -2,11 +2,12 @@
 // يغطي DocumentsController: تفويض الاستدعاءات للخدمة والتعامل مع Response.redirect
 // Arrange–Act–Assert
 
-import { faker } from '@faker-js/faker';
 import { Test } from '@nestjs/testing';
 
 import { DocumentsController } from '../documents.controller';
 import { DocumentsService } from '../documents.service';
+
+const MERCHANT_ID = '507f1f77bcf86cd799439011';
 
 describe('DocumentsController', () => {
   let controller: DocumentsController;
@@ -31,7 +32,7 @@ describe('DocumentsController', () => {
   });
 
   test('POST /:merchantId/documents → upload() يستدعي الخدمة بالقيم الصحيحة', async () => {
-    const merchantId = 'm_123';
+    const merchantId = MERCHANT_ID;
     const file: any = {
       originalname: 'a.pdf',
       mimetype: 'application/pdf',
@@ -47,7 +48,7 @@ describe('DocumentsController', () => {
   });
 
   test('GET /:merchantId/documents → list()', async () => {
-    const merchantId = faker.string.uuid();
+    const merchantId = MERCHANT_ID;
     const items = [{ _id: 'd1' }];
     svc.list.mockResolvedValue(items);
 
@@ -57,7 +58,7 @@ describe('DocumentsController', () => {
   });
 
   test('GET /:merchantId/documents/:docId → download() يعيد توجيه المتصفح', async () => {
-    const merchantId = 'm1';
+    const merchantId = MERCHANT_ID;
     const docId = 'd1';
     const url = 'https://s3/presigned';
     svc.getPresignedUrl.mockResolvedValue(url);
@@ -71,7 +72,7 @@ describe('DocumentsController', () => {
   });
 
   test('DELETE /:merchantId/documents/:docId → remove()', async () => {
-    const merchantId = 'm1';
+    const merchantId = MERCHANT_ID;
     const docId = 'd1';
     svc.delete.mockResolvedValue(undefined);
 

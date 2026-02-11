@@ -19,7 +19,7 @@ export interface InstructionsRepository {
 
   findAll(
     params: FindAllParams,
-  ): Promise<Array<Instruction & { _id: Types.ObjectId }>>;
+  ): Promise<{ items: Array<Instruction & { _id: Types.ObjectId }>; total: number }>;
 
   findById(id: string): Promise<(Instruction & { _id: Types.ObjectId }) | null>;
 

@@ -1,5 +1,5 @@
 // src/modules/customers/customers.module.ts
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 
@@ -12,14 +12,16 @@ import { CustomerOtpMongoRepository } from './repositories/customer-otp.mongo.re
 import { CustomerAddressMongoRepository } from './repositories/customer-address.mongo.repository';
 
 import { CUSTOMER_REPOSITORY, CUSTOMER_OTP_REPOSITORY, CUSTOMER_ADDRESS_REPOSITORY } from './tokens';
+import { User, UserSchema } from '../users/schemas/user.schema';
+import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
 
 import { CustomersService } from './customers.service';
 import { CustomersController } from './customers.controller';
 import { OtpService } from './services/otp.service';
 
 import { MailModule } from '../mail/mail.module';
-import { ChannelsModule } from '../channels/channels.module';
 import { AuthModule } from '../auth/auth.module';
+import { ChannelsModule } from '../channels/channels.module';
 import { CommonServicesModule } from '../../common/services/common-services.module';
 import { LeadsModule } from '../leads/leads.module';
 
@@ -29,12 +31,14 @@ import { LeadsModule } from '../leads/leads.module';
       { name: Customer.name, schema: CustomerSchema },
       { name: CustomerOtp.name, schema: CustomerOtpSchema },
       { name: CustomerAddress.name, schema: CustomerAddressSchema },
+      { name: User.name, schema: UserSchema },
+      { name: Merchant.name, schema: MerchantSchema },
     ]),
     JwtModule.register({}),
     MailModule,
-    ChannelsModule,
-    AuthModule,
-    CommonServicesModule,
+    forwardRef(() => ChannelsModule),
+    forwardRef(() => AuthModule),
+    forwardRef(() => CommonServicesModule),
     LeadsModule,
   ],
   providers: [
@@ -61,4 +65,4 @@ import { LeadsModule } from '../leads/leads.module';
     CUSTOMER_ADDRESS_REPOSITORY,
   ],
 })
-export class CustomersModule {}
+export class CustomersModule { }

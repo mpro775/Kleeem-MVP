@@ -52,7 +52,12 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * BYTES_PER_MB;
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('merchants/:merchantId/documents')
-@ApiParam({ name: 'merchantId', example: 'm_12345', type: 'string' })
+@ApiParam({
+  name: 'merchantId',
+  description: 'معرف التاجر (ObjectId)',
+  example: '507f1f77bcf86cd799439011',
+  type: 'string',
+})
 export class DocumentsController {
   constructor(private readonly svc: DocumentsService) {}
 

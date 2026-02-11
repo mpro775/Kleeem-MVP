@@ -7,6 +7,7 @@ import { MulterModule } from '@nestjs/platform-express';
 
 import { OutboxModule } from '../../common/outbox/outbox.module';
 import { CommonServicesModule } from '../../common/services/common-services.module';
+import { StorageModule } from '../../common/storage/storage.module';
 import { MetricsModule } from '../../metrics/metrics.module';
 import { AuthModule } from '../auth/auth.module';
 import { CatalogModule } from '../catalog/catalog.module';
@@ -74,7 +75,8 @@ import { PromptVersionService } from './services/prompt-version.service';
     CatalogModule,
     forwardRef(() => ChatModule),
     OutboxModule,
-    CommonServicesModule,
+    StorageModule,
+    forwardRef(() => CommonServicesModule),
   ],
   providers: [
     MerchantsService,
@@ -134,4 +136,4 @@ import { PromptVersionService } from './services/prompt-version.service';
     MongooseModule,
   ],
 })
-export class MerchantsModule {}
+export class MerchantsModule { }

@@ -11,6 +11,10 @@ import { Types } from 'mongoose';
 import { CategoriesService } from '../../categories/categories.service';
 import { StorefrontService } from '../../storefront/storefront.service';
 import { Currency } from '../enums/product.enums';
+import {
+  CurrencyPrice,
+  createCurrencyPrice,
+} from '../schemas/currency-price.schema';
 
 import { ProductIndexService } from './product-index.service';
 
@@ -54,10 +58,10 @@ function normalizeCurrency(currency: unknown): Currency {
 type RawImage = { url?: unknown };
 type RawPayload =
   | {
-      description?: unknown;
-      images?: unknown;
-      permalink?: unknown;
-    }
+    description?: unknown;
+    images?: unknown;
+    permalink?: unknown;
+  }
   | null
   | undefined;
 
@@ -139,7 +143,7 @@ export class ProductSyncService {
     @Inject(forwardRef(() => StorefrontService))
     private readonly storefronts: StorefrontService,
     private readonly categories: CategoriesService,
-  ) {}
+  ) { }
 
   /**
    * إدراج/تحديث منتج خارجي (Zid/Salla) ثم فهرسته.
@@ -158,7 +162,7 @@ export class ProductSyncService {
     // بناء بيانات الوثيقة بدقّة وبدون any
     const price = toNumber(p.price, 0);
     const currency = normalizeCurrency(p.currency);
-    const prices = new Map<string, number>([[currency, price]]);
+    const prices = new Map<string, CurrencyPrice>([[currency, createCurrencyPrice(price, false)]]);
     const isAvailable = toBooleanFromStock(p.stock);
     const images = extractImages(p.raw);
     const permalink = extractPermalink(p.raw);

@@ -16,6 +16,8 @@ import axiosInstance from "@/shared/api/axios";
 import { API_BASE } from "@/context/config";
 import OnboardingLayout from "@/app/layout/OnboardingLayout";
 import type { IntegrationsStatus } from "@/features/integtarions/api/integrationsApi";
+import { completeOnboardingAPI } from "@/auth/api";
+import { backendUserToUser } from "@/shared/utils/auth";
 
 type Source = "internal" | "salla" | "zid";
 const isExternal = (s: IntegrationsStatus) =>
@@ -23,7 +25,7 @@ const isExternal = (s: IntegrationsStatus) =>
 
 export default function SourceSelectPage() {
   const navigate = useNavigate();
-  const { user, token } = useAuth();
+  const { user, token, setAuth } = useAuth();
 
   const [source, setSource] = useState<Source>("internal");
   const [saving, setSaving] = useState(false);
@@ -87,7 +89,18 @@ export default function SourceSelectPage() {
       // ✅ غيّر المصدر فقط عندما يكون internal
       if (source === "internal") {
         await setProductSource(source);
-        navigate("/dashboard");
+        // Mark onboarding as complete
+        try {
+          if (token) {
+            const res = await completeOnboardingAPI(token);
+            const updatedUser = backendUserToUser(res.user);
+            // ✅ استخدم setAuth بدون silent لتحديث الحالة بشكل كامل والتوجيه التلقائي
+            setAuth(updatedUser, res.accessToken);
+          }
+        } catch {
+          // Continue even if this fails - navigate to dashboard as fallback
+          navigate("/dashboard", { replace: true });
+        }
         return;
       }
 

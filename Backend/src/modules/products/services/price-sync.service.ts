@@ -34,7 +34,7 @@ export interface GeneratePricesOptions {
   /** معرف التاجر */
   merchantId: string;
   /** أسعار يدوية اختيارية */
-  customPrices?: Record<string, number>;
+  customPrices?: Record<string, number> | undefined;
 }
 
 /**
@@ -48,7 +48,7 @@ export interface SetManualPriceOptions {
   /** السعر الجديد */
   amount: number;
   /** SKU للمتغير (اختياري) */
-  variantSku?: string;
+  variantSku?: string | undefined;
 }
 
 /**
@@ -60,9 +60,9 @@ export interface ResetToAutoPriceOptions {
   /** رمز العملة */
   currency: string;
   /** SKU للمتغير (اختياري) */
-  variantSku?: string;
+  variantSku?: string | undefined;
   /** هل يتم إعادة حساب السعر؟ */
-  recalculate?: boolean;
+  recalculate?: boolean | undefined;
 }
 
 /**
@@ -89,7 +89,7 @@ export class PriceSyncService {
     private readonly merchantModel: Model<MerchantDocument>,
     @Inject(forwardRef(() => CurrencyService))
     private readonly currencyService: CurrencyService,
-  ) {}
+  ) { }
 
   /**
    * توليد أسعار لجميع العملات المدعومة

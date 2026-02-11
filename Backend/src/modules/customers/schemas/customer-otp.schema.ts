@@ -1,6 +1,6 @@
 // src/modules/customers/schemas/customer-otp.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type CustomerOtpDocument = CustomerOtp & Document;
 
@@ -11,6 +11,10 @@ export enum ContactType {
 
 @Schema({ timestamps: { createdAt: true, updatedAt: false } })
 export class CustomerOtp {
+  @Prop({ type: Types.ObjectId, auto: true })
+  _id?: Types.ObjectId;
+
+  createdAt!: Date;
   @Prop({ required: true, index: true })
   merchantId!: string;
 

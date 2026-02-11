@@ -1,6 +1,7 @@
 // src/modules/customers/dto/send-otp.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsIn } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum } from 'class-validator';
+import { ContactType } from '../schemas/customer-otp.schema';
 
 export class SendOtpDto {
   @ApiProperty({
@@ -22,9 +23,8 @@ export class SendOtpDto {
   @ApiProperty({
     description: 'نوع التواصل',
     example: 'email',
-    enum: ['email', 'phone'],
+    enum: ContactType,
   })
-  @IsString({ message: 'يجب أن يكون نوع التواصل نصيًا' })
-  @IsIn(['email', 'phone'], { message: 'نوع التواصل يجب أن يكون email أو phone' })
-  contactType!: 'email' | 'phone';
+  @IsEnum(ContactType, { message: 'نوع التواصل يجب أن يكون email أو phone' })
+  contactType!: ContactType;
 }

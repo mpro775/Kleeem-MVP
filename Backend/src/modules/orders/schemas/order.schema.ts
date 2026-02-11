@@ -5,6 +5,25 @@ import { Types, Document } from 'mongoose';
 export type OrderDocument = Order & Document;
 
 @Schema({ _id: false, timestamps: false })
+export class OrderCustomer {
+  @Prop({ type: String, required: true })
+  name?: string;
+
+  @Prop({ type: String, required: true })
+  phone?: string;
+
+  @Prop({ type: String, required: false })
+  email?: string | undefined;
+
+  @Prop({ type: Object, required: false })
+  address?: Record<string, unknown> | string | undefined;
+
+  @Prop({ type: String, required: false })
+  phoneNormalized?: string | undefined;
+}
+export const OrderCustomerSchema = SchemaFactory.createForClass(OrderCustomer);
+
+@Schema({ _id: false, timestamps: false })
 export class OrderProduct {
   @Prop({ type: Types.ObjectId, ref: 'Product', required: false })
   product?: Types.ObjectId;
@@ -12,13 +31,13 @@ export class OrderProduct {
   @Prop({ type: String, default: null })
   variantSku?: string | null;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   name?: string;
 
-  @Prop({ required: true })
+  @Prop({ type: Number, required: true })
   price?: number;
 
-  @Prop({ required: true })
+  @Prop({ type: Number, required: true })
   quantity?: number;
 }
 export const OrderProductSchema = SchemaFactory.createForClass(OrderProduct);
@@ -31,14 +50,14 @@ export class OrderDiscount {
   @Prop({ type: String })
   name?: string;
 
-  @Prop({ required: true })
+  @Prop({ type: Number, required: true })
   amount!: number;
 }
 export const OrderDiscountSchema = SchemaFactory.createForClass(OrderDiscount);
 
 @Schema({ _id: false, timestamps: false })
 export class OrderPricing {
-  @Prop({ required: true, default: 0 })
+  @Prop({ type: Number, required: true, default: 0 })
   subtotal!: number; // مجموع المنتجات قبل الخصم
 
   @Prop({ type: [OrderDiscountSchema], default: [] })
@@ -54,50 +73,56 @@ export class OrderPricing {
   @Prop({ type: [OrderDiscountSchema], default: [] })
   products?: OrderDiscount[]; // خصومات المنتجات
 
-  @Prop({ required: true, default: 0 })
+  @Prop({ type: Number, required: true, default: 0 })
   totalDiscount!: number; // إجمالي الخصومات
 
-  @Prop({ default: 0 })
+  @Prop({ type: Number, default: 0 })
   shippingCost?: number;
 
-  @Prop({ default: 0 })
+  @Prop({ type: Number, default: 0 })
   shippingDiscount?: number;
 
-  @Prop({ required: true, default: 0 })
+  @Prop({ type: Number, required: true, default: 0 })
   total!: number; // النهائي
 }
 export const OrderPricingSchema = SchemaFactory.createForClass(OrderPricing);
 
 @Schema({ timestamps: true })
 export class Order {
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   merchantId?: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   sessionId?: string;
 
   // ربط بالعميل (إن وُجد)
   @Prop({ type: Types.ObjectId, ref: 'Customer', index: true })
   customerId?: Types.ObjectId;
 
+  // snapshot لبيانات العميل لحظة الشراء
+  @Prop({ type: OrderCustomerSchema, default: null, _id: false })
+  customer?: OrderCustomer | null;
+
   // snapshot لبيانات العميل لحظة الشراء (للمحافظة على التاريخ)
   @Prop({ type: Object, default: null })
-  customerSnapshot?: Record<string, unknown> | null;
+  customerSnapshot?: Record<string, unknown> | null; // deprecated: use customer
 
   // ✅ استخدم الـSchema الفرعي بدل class مباشرة
   @Prop({ type: [OrderProductSchema], required: true })
   products?: OrderProduct[];
 
   @Prop({
+    type: String,
     default: 'pending',
     enum: ['pending', 'paid', 'canceled', 'shipped', 'delivered', 'refunded'],
   })
   status?: string;
 
-  @Prop()
+  @Prop({ type: String })
   externalId?: string;
 
   @Prop({
+    type: String,
     default: 'storefront',
     enum: ['manual', 'api', 'imported', 'mini-store', 'widget', 'storefront'],
   })

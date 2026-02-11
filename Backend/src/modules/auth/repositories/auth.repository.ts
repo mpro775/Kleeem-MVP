@@ -60,4 +60,7 @@ export interface AuthRepository {
     excludeId: Types.ObjectId,
   ): Promise<void>;
   deletePasswordResetTokensByUser(userId: Types.ObjectId): Promise<void>;
+
+  // User updates
+  setFirstLoginFalse(userId: Types.ObjectId): Promise<UserDocument | null>;
 }

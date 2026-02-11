@@ -1,11 +1,10 @@
 // src/modules/documents/dto/common.dto.ts
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, Matches, IsNumber } from 'class-validator';
+import { IsString, IsMongoId, IsNumber } from 'class-validator';
 
 export class MerchantParamDto {
-  @ApiProperty({ example: 'm_12345' })
-  @IsString()
-  @Matches(/^m_.+$/)
+  @ApiProperty({ example: '507f1f77bcf86cd799439011' })
+  @IsMongoId({ message: 'معرف التاجر غير صالح (ObjectId مطلوب)' })
   merchantId!: string;
 }
 

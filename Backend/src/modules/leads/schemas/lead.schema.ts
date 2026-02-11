@@ -1,11 +1,12 @@
 // src/modules/leads/schemas/lead.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type LeadDocument = Lead & Document;
 
 @Schema({ timestamps: true })
 export class Lead {
+  _id?: Types.ObjectId;
   @Prop({ required: true, index: true })
   merchantId?: string;
 

@@ -6,6 +6,8 @@ import { PublicChatWidgetController } from '../public-chat-widget.controller';
 
 import type { TestingModule } from '@nestjs/testing';
 
+const MERCHANT_ID = '507f1f77bcf86cd799439011';
+
 describe('PublicChatWidgetController', () => {
   let controller: PublicChatWidgetController;
   let service: jest.Mocked<ChatWidgetService>;
@@ -36,7 +38,7 @@ describe('PublicChatWidgetController', () => {
     it('should return widget settings for valid slug', async () => {
       const widgetSlug = 'chat_abc123';
       const settings = {
-        merchantId: 'm_12345',
+        merchantId: MERCHANT_ID,
         widgetSlug,
         embedMode: 'iframe',
         headerBgColor: '#ffffff',
@@ -60,7 +62,7 @@ describe('PublicChatWidgetController', () => {
         widgetSlug,
       );
       expect(result).toEqual({
-        merchantId: 'm_12345',
+        merchantId: MERCHANT_ID,
         widgetSlug: 'chat_abc123',
         embedMode: 'iframe',
         theme: {
@@ -106,7 +108,7 @@ describe('PublicChatWidgetController', () => {
     it('should handle settings with null values', async () => {
       const widgetSlug = 'chat_xyz789';
       const settings = {
-        merchantId: 'm_12345',
+        merchantId: MERCHANT_ID,
         widgetSlug,
         embedMode: 'bubble',
         headerBgColor: null,
@@ -127,7 +129,7 @@ describe('PublicChatWidgetController', () => {
       const result = await controller.getByWidgetSlug(widgetSlug);
 
       expect(result).toEqual({
-        merchantId: 'm_12345',
+        merchantId: MERCHANT_ID,
         widgetSlug: 'chat_xyz789',
         embedMode: 'bubble',
         theme: {
@@ -151,7 +153,7 @@ describe('PublicChatWidgetController', () => {
     it('should return widget status for valid slug', async () => {
       const widgetSlug = 'chat_abc123';
       const settings = {
-        merchantId: 'm_12345',
+        merchantId: MERCHANT_ID,
         widgetSlug,
       };
 
@@ -222,7 +224,7 @@ describe('PublicChatWidgetController', () => {
         visitorId: 'visitor_123',
       };
       const settings = {
-        merchantId: 'm_12345',
+        merchantId: MERCHANT_ID,
         widgetSlug,
         welcomeMessage: 'مرحبا بك في متجرنا',
       };
@@ -252,7 +254,7 @@ describe('PublicChatWidgetController', () => {
       const widgetSlug = 'chat_xyz789';
       const body = {};
       const settings = {
-        merchantId: 'm_67890',
+        merchantId: MERCHANT_ID,
         widgetSlug,
         welcomeMessage: null,
       };
@@ -295,7 +297,7 @@ describe('PublicChatWidgetController', () => {
     it('should generate unique session IDs', async () => {
       const widgetSlug = 'chat_test123';
       const settings = {
-        merchantId: 'm_test',
+        merchantId: MERCHANT_ID,
         widgetSlug,
         welcomeMessage: 'Welcome',
       };
@@ -319,7 +321,7 @@ describe('PublicChatWidgetController', () => {
     it('should handle settings with undefined welcomeMessage', async () => {
       const widgetSlug = 'chat_no_welcome';
       const settings = {
-        merchantId: 'm_test',
+        merchantId: MERCHANT_ID,
         widgetSlug,
         welcomeMessage: undefined,
       };
@@ -334,7 +336,7 @@ describe('PublicChatWidgetController', () => {
     it('should handle settings with empty welcomeMessage', async () => {
       const widgetSlug = 'chat_empty_welcome';
       const settings = {
-        merchantId: 'm_test',
+        merchantId: MERCHANT_ID,
         widgetSlug,
         welcomeMessage: '',
       };
@@ -349,7 +351,7 @@ describe('PublicChatWidgetController', () => {
     it('should handle settings with null welcomeMessage', async () => {
       const widgetSlug = 'chat_null_welcome';
       const settings = {
-        merchantId: 'm_test',
+        merchantId: MERCHANT_ID,
         widgetSlug,
         welcomeMessage: null,
       };

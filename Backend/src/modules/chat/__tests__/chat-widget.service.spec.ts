@@ -6,6 +6,8 @@ import { ChatWidgetService } from '../chat-widget.service';
 
 import type { ChatWidgetRepository } from '../repositories/chat-widget.repository';
 
+const MERCHANT_ID = '507f1f77bcf86cd799439011';
+
 describe('ChatWidgetService', () => {
   let service: ChatWidgetService;
   let repo: jest.Mocked<ChatWidgetRepository>;
@@ -35,7 +37,7 @@ describe('ChatWidgetService', () => {
 
   describe('syncWidgetSlug', () => {
     it('should sync widget slug successfully', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const slug = 'test-slug';
 
       repo.setWidgetSlug.mockResolvedValue(undefined);
@@ -49,7 +51,7 @@ describe('ChatWidgetService', () => {
 
   describe('getSettings', () => {
     it('should return existing settings when found', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const existingSettings = {
         merchantId,
         botName: 'Existing Bot',
@@ -66,7 +68,7 @@ describe('ChatWidgetService', () => {
     });
 
     it('should create default settings on first time', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const defaultSettings = {
         merchantId,
         botName: 'Bot',
@@ -85,7 +87,7 @@ describe('ChatWidgetService', () => {
 
   describe('updateSettings', () => {
     it('should update settings successfully', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const dto = { botName: 'Updated Bot', embedMode: 'iframe' } as any;
       const updatedSettings = {
         merchantId,
@@ -102,7 +104,7 @@ describe('ChatWidgetService', () => {
     });
 
     it('should throw NotFoundException when settings not found', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const dto = { botName: 'Updated Bot' } as any;
 
       repo.upsertAndReturn.mockResolvedValue(null as any);
@@ -116,7 +118,7 @@ describe('ChatWidgetService', () => {
 
   describe('generateWidgetSlug', () => {
     it('should generate slug without suffix when unique', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const settings = {
         merchantId,
         botName: 'My Bot',
@@ -133,7 +135,7 @@ describe('ChatWidgetService', () => {
     });
 
     it('should generate slug with suffix when exists', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const settings = {
         merchantId,
         botName: 'My Bot',
@@ -150,7 +152,7 @@ describe('ChatWidgetService', () => {
     });
 
     it('should generate default slug when botName is empty', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const settings = {
         merchantId,
         botName: '',
@@ -167,7 +169,7 @@ describe('ChatWidgetService', () => {
     });
 
     it('should clean botName and generate valid slug', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const settings = {
         merchantId,
         botName: 'My Bot & Chat!@#',
@@ -191,7 +193,7 @@ describe('ChatWidgetService', () => {
     it('should return settings when found by slug', async () => {
       const slug = 'test-slug';
       const settings = {
-        merchantId: 'm1',
+        merchantId: MERCHANT_ID,
         widgetSlug: slug,
       } as any;
 
@@ -217,7 +219,7 @@ describe('ChatWidgetService', () => {
 
   describe('getEmbedSettings', () => {
     it('should return embed settings without storefront brand', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const settings = {
         merchantId,
         embedMode: 'iframe',
@@ -244,7 +246,7 @@ describe('ChatWidgetService', () => {
     });
 
     it('should return embed settings with storefront brand', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const settings = {
         merchantId,
         embedMode: 'bubble',
@@ -275,7 +277,7 @@ describe('ChatWidgetService', () => {
     });
 
     it('should throw NotFoundException when settings not found', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
 
       repo.findOneByMerchant.mockResolvedValue(null);
 
@@ -285,7 +287,7 @@ describe('ChatWidgetService', () => {
     });
 
     it('should handle null storefront brand gracefully', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const settings = {
         merchantId,
         embedMode: 'bar',
@@ -308,7 +310,7 @@ describe('ChatWidgetService', () => {
 
   describe('updateEmbedSettings', () => {
     it('should update embed mode successfully', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const dto = { embedMode: 'popup' };
       const updatedSettings = {
         merchantId,
@@ -331,7 +333,7 @@ describe('ChatWidgetService', () => {
     });
 
     it('should update with undefined embedMode', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const dto = {}; // embedMode is undefined
       const updatedSettings = {
         merchantId,
@@ -348,7 +350,7 @@ describe('ChatWidgetService', () => {
     });
 
     it('should throw NotFoundException when settings not found', async () => {
-      const merchantId = 'm1';
+      const merchantId = MERCHANT_ID;
       const dto = { embedMode: 'bar' };
 
       repo.upsertAndReturn.mockResolvedValue(null as any);

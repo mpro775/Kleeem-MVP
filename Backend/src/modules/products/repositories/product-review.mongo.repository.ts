@@ -11,7 +11,7 @@ export class ProductReviewMongoRepository implements ProductReviewRepository {
   constructor(
     @InjectModel(ProductReview.name)
     private readonly model: Model<ProductReviewDocument>,
-  ) {}
+  ) { }
 
   async create(review: Partial<ProductReview>): Promise<ProductReview> {
     const created = await this.model.create(review);
@@ -63,9 +63,9 @@ export class ProductReviewMongoRepository implements ProductReviewRepository {
   async findAllByProduct(
     merchantId: string,
     productId: string,
-    status?: ProductReviewStatus,
     page: number = 1,
     limit: number = 20,
+    status?: ProductReviewStatus,
   ): Promise<{ reviews: ProductReview[]; total: number }> {
     const skip = (page - 1) * limit;
     const query: any = { merchantId, productId };

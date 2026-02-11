@@ -1,14 +1,16 @@
 // src/modules/customers/customers.service.ts
 import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Types } from 'mongoose';
 
 import { CUSTOMER_REPOSITORY } from './tokens';
 import { CustomerRepository } from './repositories/customer.repository';
-import { Customer, SignupSource, ContactType } from './schemas/customer.schema';
+import { Customer, SignupSource } from './schemas/customer.schema';
+import { ContactType } from './schemas/customer-otp.schema';
 import { OtpService } from './services/otp.service';
 import { normalizePhone } from '../../common/utils/phone.util';
 import { normalizeEmail } from '../../common/utils/email.util';
-import { LeadsService } from '../../leads/leads.service';
+import { LeadsService } from '../leads/leads.service';
 import { CustomerAddress, AddressLabel } from './schemas/customer-address.schema';
 import { CUSTOMER_ADDRESS_REPOSITORY } from './tokens';
 import { CustomerAddressRepository } from './repositories/customer-address.repository';
@@ -23,7 +25,7 @@ export class CustomersService {
     private readonly otpService: OtpService,
     private readonly jwtService: JwtService,
     private readonly leadsService: LeadsService,
-  ) {}
+  ) { }
 
   /**
    * إرسال OTP للعميل
@@ -71,14 +73,14 @@ export class CustomersService {
       customer = await this.createCustomer(merchantId, contact, contactType, {
         name: additionalData?.name || `عميل ${contactType === ContactType.EMAIL ? 'بريد إلكتروني' : 'هاتف'}`,
         signupSource: additionalData?.signupSource || SignupSource.OTP,
-        metadata: additionalData?.metadata,
+        ...(additionalData?.metadata ? { metadata: additionalData.metadata } : {}),
       });
     } else {
-    // تحديث lastSeenAt للعميل الموجود
-    await this.updateLastSeen(customer._id!.toString());
+      // تحديث lastSeenAt للعميل الموجود
+      await this.updateLastSeen(customer._id!.toString());
 
-    // تحويل leads المرتبطة بنفس معلومات التواصل
-    await this.convertRelatedLeads(merchantId, contact, contactType, customer._id!.toString());
+      // تحويل leads المرتبطة بنفس معلومات التواصل
+      await this.convertRelatedLeads(merchantId, contact, contactType, customer._id!.toString());
     }
 
     // إنشاء JWT token للعميل
@@ -132,9 +134,11 @@ export class CustomersService {
 
     // إضافة معلومات التواصل
     if (contactType === ContactType.EMAIL) {
-      customerData.emailLower = normalizeEmail(contact);
+      const email = normalizeEmail(contact);
+      if (email) customerData.emailLower = email;
     } else {
-      customerData.phoneNormalized = normalizePhone(contact);
+      const phone = normalizePhone(contact);
+      if (phone) customerData.phoneNormalized = phone;
     }
 
     return this.customerRepo.create(customerData);
@@ -327,12 +331,13 @@ export class CustomersService {
         contactType,
       );
 
-      if (lead) {
-        await this.leadsService.convertLeadToCustomer(lead._id!.toString(), customerId);
+      if (lead && lead._id) {
+        await this.leadsService.convertLeadToCustomer(lead._id.toString(), customerId);
       }
     } catch (error) {
       // لا نتوقف عن إنشاء العميل بسبب فشل تحويل leads
-      console.error('Error converting related leads:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error converting related leads:', errorMessage);
     }
   }
 
@@ -369,7 +374,7 @@ export class CustomersService {
 
     return this.addressRepo.create({
       merchantId,
-      customerId,
+      customerId: customerId as any,
       ...addressData,
     });
   }

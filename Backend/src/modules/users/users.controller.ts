@@ -29,9 +29,9 @@ import { Types } from 'mongoose';
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
-} from '../../common';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { TranslationService } from '../../common/services/translation.service';
+} from 'src/common/decorators/api-response.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { TranslationService } from 'src/common/services/translation.service';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { NotificationsPrefsDto } from './dto/notifications-prefs.dto';
@@ -60,7 +60,7 @@ export class UsersController {
     private readonly usersService: UsersService,
     @InjectModel(User.name) private readonly userModel: Model<User>,
     private readonly translationService: TranslationService,
-  ) {}
+  ) { }
 
   @Get()
   @ApiOperation({
@@ -171,9 +171,9 @@ export class UsersController {
     const passwordOwnerId = isAdmin && !isSelf ? actorId : id;
     const passwordOwner = passwordOwnerId
       ? await this.userModel
-          .findById(toObjectId(passwordOwnerId))
-          .select('+password')
-          .exec()
+        .findById(toObjectId(passwordOwnerId))
+        .select('+password')
+        .exec()
       : null;
 
     if (!passwordOwner?.password) {

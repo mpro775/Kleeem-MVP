@@ -1,5 +1,5 @@
 // src/modules/users/users.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { CommonServicesModule } from '../../common/services/common-services.module';
@@ -12,7 +12,7 @@ import { UsersService } from './users.service';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    CommonServicesModule,
+    forwardRef(() => CommonServicesModule),
   ],
   providers: [
     UsersService,
@@ -24,4 +24,4 @@ import { UsersService } from './users.service';
   controllers: [UsersController],
   exports: [UsersService],
 })
-export class UsersModule {}
+export class UsersModule { }

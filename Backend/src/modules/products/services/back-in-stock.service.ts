@@ -1,10 +1,11 @@
 // src/modules/products/services/back-in-stock.service.ts
 import { Injectable, Inject, BadRequestException, Logger } from '@nestjs/common';
+import { Types } from 'mongoose';
 
 import { SmsService } from '../../../common/services/sms.service';
 import { MailService } from '../../mail/mail.service';
 
-import { BackInStockRequest, BackInStockRequestDocument, BackInStockStatus } from '../schemas/back-in-stock-request.schema';
+import { BackInStockRequest, BackInStockStatus } from '../schemas/back-in-stock-request.schema';
 import { BACK_IN_STOCK_REQUEST_REPOSITORY } from '../tokens';
 import { BackInStockRequestRepository } from '../repositories/back-in-stock-request.repository';
 
@@ -17,7 +18,7 @@ export class BackInStockService {
     private readonly backInStockRepo: BackInStockRequestRepository,
     private readonly smsService: SmsService,
     private readonly mailService: MailService,
-  ) {}
+  ) { }
 
   /**
    * إنشاء طلب إشعار عند توفر المنتج
@@ -50,9 +51,9 @@ export class BackInStockService {
     // إنشاء الطلب
     return this.backInStockRepo.create({
       merchantId,
-      productId,
-      variantId: variantId || null,
-      customerId: customerId || undefined,
+      productId: new Types.ObjectId(productId),
+      variantId: variantId ?? null,
+      customerId: customerId ? new Types.ObjectId(customerId) : undefined,
       contact: contact || '',
       status: BackInStockStatus.PENDING,
     });
@@ -124,8 +125,9 @@ export class BackInStockService {
         );
         notificationCount++;
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         this.logger.error(
-          `Failed to send back-in-stock notification for request ${request._id}: ${error.message}`,
+          `Failed to send back-in-stock notification for request ${request._id}: ${errorMessage}`,
         );
       }
     }
@@ -140,7 +142,7 @@ export class BackInStockService {
   /**
    * إرسال إشعار واحد
    */
-  private async sendNotification(request: BackInStockRequestDocument): Promise<void> {
+  private async sendNotification(request: BackInStockRequest): Promise<void> {
     const message = `🎉 المنتج الذي طلبت إشعاره أصبح متوفراً الآن!\n\nيمكنك زيارة متجرنا لإكمال الشراء.`;
 
     // إرسال الإشعار عبر SMS أو Email حسب نوع التواصل
@@ -150,7 +152,8 @@ export class BackInStockService {
         // TODO: تنفيذ إرسال البريد الإلكتروني
         console.log(`Sending back-in-stock email to ${request.contact}`);
       } catch (error) {
-        throw new Error(`Failed to send email notification: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to send email notification: ${errorMessage}`);
       }
     } else {
       // SMS

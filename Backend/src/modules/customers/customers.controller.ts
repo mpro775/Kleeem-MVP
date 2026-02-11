@@ -11,13 +11,14 @@ import {
   Patch,
   Query,
   BadRequestException,
+  Delete,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
 import { IdentityGuard } from '../../common/guards/identity.guard';
 import { CustomerGuard } from '../../common/guards/customer.guard';
-import { Customer } from '../../common/decorators/customer.decorator';
+import { Customer as CurrentUser } from '../../common/decorators/customer.decorator';
 import { CustomerRequestUser } from '../../modules/auth/strategies/customer-jwt.strategy';
 import { CustomersService } from './customers.service';
 import { SendOtpDto } from './dto/send-otp.dto';
@@ -25,12 +26,13 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { GetCustomersDto } from './dto/get-customers.dto';
+import { Customer, SignupSource } from './schemas/customer.schema';
 import { ContactType } from './schemas/customer-otp.schema';
 
 @ApiTags('customers')
 @Controller('customers')
 export class CustomersController {
-  constructor(private readonly customersService: CustomersService) {}
+  constructor(private readonly customersService: CustomersService) { }
 
   // ========== OTP Endpoints ==========
 
@@ -45,7 +47,7 @@ export class CustomersController {
     await this.customersService.sendOtp(
       dto.merchantId,
       dto.contact,
-      dto.contactType as ContactType,
+      dto.contactType,
     );
 
     return {
@@ -83,7 +85,7 @@ export class CustomersController {
     return this.customersService.verifyOtpAndCreateCustomer(
       dto.merchantId,
       dto.contact,
-      dto.contactType as ContactType,
+      dto.contactType,
       dto.code,
     );
   }
@@ -99,11 +101,11 @@ export class CustomersController {
     return this.customersService.verifyOtpAndCreateCustomer(
       dto.merchantId,
       dto.contact,
-      dto.contactType as ContactType,
+      dto.contactType,
       dto.code,
       {
-        name: dto.name,
-        signupSource: 'otp' as any,
+        ...(dto.name ? { name: dto.name } : {}),
+        signupSource: SignupSource.OTP,
       },
     );
   }
@@ -220,7 +222,7 @@ export class CustomersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'الحصول على بيانات العميل الحالي (للمتجر)' })
   @ApiResponse({ status: 200, description: 'بيانات العميل' })
-  async getMyProfile(@Customer() customer: CustomerRequestUser) {
+  async getMyProfile(@CurrentUser() customer: CustomerRequestUser) {
     return customer.customer;
   }
 
@@ -230,7 +232,7 @@ export class CustomersController {
   @ApiOperation({ summary: 'تحديث بيانات العميل الحالي (للمتجر)' })
   @ApiResponse({ status: 200, description: 'تم تحديث البيانات بنجاح' })
   async updateMyProfile(
-    @Customer() customer: CustomerRequestUser,
+    @CurrentUser() customer: CustomerRequestUser,
     @Body() updates: { name?: string; marketingConsent?: boolean },
   ) {
     return this.customersService.updateCustomer(
@@ -271,10 +273,11 @@ export class CustomersController {
       zip?: string;
     },
   ) {
+    const { merchantId, ...addressData } = body;
     return this.customersService.createCustomerAddress(
-      body.merchantId,
+      merchantId,
       customerId,
-      body,
+      addressData as any, // Cast to any because label is string but needs AddressLabel enum
     );
   }
 
@@ -297,11 +300,12 @@ export class CustomersController {
       isDefault?: boolean;
     },
   ) {
+    const { merchantId, ...updates } = body;
     return this.customersService.updateCustomerAddress(
-      body.merchantId,
+      merchantId,
       customerId,
       addressId,
-      body,
+      updates as any,
     );
   }
 
@@ -330,7 +334,7 @@ export class CustomersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'الحصول على عناوين العميل الحالي' })
   @ApiResponse({ status: 200, description: 'قائمة عناوين العميل' })
-  async getMyAddresses(@Customer() customer: CustomerRequestUser) {
+  async getMyAddresses(@CurrentUser() customer: CustomerRequestUser) {
     return this.customersService.getCustomerAddresses(
       customer.merchantId,
       customer.customerId,
@@ -343,7 +347,7 @@ export class CustomersController {
   @ApiOperation({ summary: 'إضافة عنوان للعميل الحالي' })
   @ApiResponse({ status: 201, description: 'تم إضافة العنوان بنجاح' })
   async addMyAddress(
-    @Customer() customer: CustomerRequestUser,
+    @CurrentUser() customer: CustomerRequestUser,
     @Body() addressData: {
       label: string;
       country: string;
@@ -356,7 +360,7 @@ export class CustomersController {
     return this.customersService.createCustomerAddress(
       customer.merchantId,
       customer.customerId,
-      addressData,
+      addressData as any,
     );
   }
 
@@ -366,7 +370,7 @@ export class CustomersController {
   @ApiOperation({ summary: 'تحديث عنوان العميل الحالي' })
   @ApiResponse({ status: 200, description: 'تم تحديث العنوان بنجاح' })
   async updateMyAddress(
-    @Customer() customer: CustomerRequestUser,
+    @CurrentUser() customer: CustomerRequestUser,
     @Param('addressId') addressId: string,
     @Body() updates: {
       label?: string;
@@ -382,7 +386,7 @@ export class CustomersController {
       customer.merchantId,
       customer.customerId,
       addressId,
-      updates,
+      updates as any,
     );
   }
 
@@ -392,7 +396,7 @@ export class CustomersController {
   @ApiOperation({ summary: 'حذف عنوان العميل الحالي' })
   @ApiResponse({ status: 200, description: 'تم حذف العنوان بنجاح' })
   async deleteMyAddress(
-    @Customer() customer: CustomerRequestUser,
+    @CurrentUser() customer: CustomerRequestUser,
     @Param('addressId') addressId: string,
   ) {
     const success = await this.customersService.deleteCustomerAddress(

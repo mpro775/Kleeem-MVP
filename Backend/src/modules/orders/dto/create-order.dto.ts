@@ -81,6 +81,11 @@ class OrderProductDto {
 }
 
 class CustomerDto {
+  @ApiPropertyOptional({ description: 'معرّف العميل', example: '66bdcf0b8f2e12...' })
+  @IsString({ message: 'يجب أن يكون معرّف العميل نصيًا' })
+  @IsOptional()
+  id?: string;
+
   @ApiProperty({ description: 'اسم العميل', example: 'محمد أحمد' })
   @IsString({ message: 'يجب أن يكون اسم العميل نصيًا' })
   @IsNotEmpty({ message: 'اسم العميل مطلوب' })

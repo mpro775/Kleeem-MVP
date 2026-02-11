@@ -1,11 +1,29 @@
 // src/modules/coupons/dto/get-coupons.dto.ts
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsOptional, IsEnum, IsNumber, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  Min,
+  Max,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 import { CouponStatus } from '../schemas/coupon.schema';
 
 export class GetCouponsDto {
+  @ApiPropertyOptional({
+    description: 'البحث في كود أو وصف الكوبون',
+    example: 'SUMMER',
+    maxLength: 100,
+  })
+  @IsString({ message: 'نص البحث يجب أن يكون نصياً' })
+  @MaxLength(100, { message: 'نص البحث طويل جداً' })
+  @IsOptional()
+  search?: string;
+
   @ApiPropertyOptional({
     description: 'حالة الكوبون',
     enum: CouponStatus,

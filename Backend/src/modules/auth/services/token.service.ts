@@ -182,14 +182,9 @@ export class TokenService {
       algorithm: 'HS256',
     };
 
-    const accessToken = this.jwtService.sign(accessPayload, {
-      ...commonSign,
-      expiresIn: this.ACCESS_TOKEN_TTL,
-    });
-    const refreshToken = this.jwtService.sign(refreshPayload, {
-      ...commonSign,
-      expiresIn: this.REFRESH_TOKEN_TTL,
-    });
+    // Note: Don't use expiresIn option since exp is already set in the payload
+    const accessToken = this.jwtService.sign(accessPayload, commonSign);
+    const refreshToken = this.jwtService.sign(refreshPayload, commonSign);
 
     const sessionData: SessionData = {
       userId: payload.userId as string,

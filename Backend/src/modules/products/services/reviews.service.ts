@@ -2,6 +2,7 @@
 import { Injectable, Inject, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 
 import { ProductReview, ProductReviewDocument, ProductReviewStatus } from '../schemas/product-review.schema';
+import { Types } from 'mongoose';
 import { PRODUCT_REVIEW_REPOSITORY } from '../tokens';
 import { ProductReviewRepository } from '../repositories/product-review.repository';
 
@@ -12,7 +13,7 @@ export class ReviewsService {
   constructor(
     @Inject(PRODUCT_REVIEW_REPOSITORY)
     private readonly reviewRepo: ProductReviewRepository,
-  ) {}
+  ) { }
 
   /**
    * إنشاء تقييم جديد
@@ -44,11 +45,11 @@ export class ReviewsService {
 
     return this.reviewRepo.create({
       merchantId,
-      productId,
-      customerId,
-      orderId: orderId || undefined,
+      productId: new Types.ObjectId(productId) as any,
+      customerId: new Types.ObjectId(customerId) as any,
+      ...(orderId ? { orderId: new Types.ObjectId(orderId) as any } : {}),
       rating,
-      comment: comment?.trim(),
+      ...(comment?.trim() ? { comment: comment.trim() } : {}),
       status: ProductReviewStatus.PENDING,
       reviewedAt: new Date(),
       isVerifiedPurchase: !!orderId, // افتراض أن وجود orderId يعني شراء موثق
@@ -100,7 +101,7 @@ export class ReviewsService {
     reviews: ProductReview[];
     total: number;
   }> {
-    return this.reviewRepo.findAllByProduct(merchantId, productId, status, page, limit);
+    return this.reviewRepo.findAllByProduct(merchantId, productId, page, limit, status);
   }
 
   /**

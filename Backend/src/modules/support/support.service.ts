@@ -62,7 +62,7 @@ export class SupportService {
     private readonly repo: SupportRepository,
     private readonly http: HttpService,
     @Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client,
-  ) {}
+  ) { }
 
   private generateTicketNumber() {
     const a = Date.now().toString(BASE_36).toUpperCase();
@@ -79,13 +79,15 @@ export class SupportService {
   }
 
   private async publicOrSignedUrl(bucket: string, key: string) {
-    const cdn = (
-      process.env.ASSETS_CDN_BASE_URL ||
+    const cdn = (process.env.ASSETS_CDN_BASE_URL || '').replace(/\/+$/, '');
+    const endpoint = (
       process.env.AWS_ENDPOINT ||
       process.env.MINIO_PUBLIC_URL ||
       ''
     ).replace(/\/+$/, '');
-    if (cdn) return `${cdn}/${bucket}/${key}`;
+    // For R2 public buckets (CDN), bucket is implied by the domain
+    if (cdn) return `${cdn}/${key}`;
+    if (endpoint) return `${endpoint}/${bucket}/${key}`;
     return getSignedUrl(
       this.s3,
       new GetObjectCommand({ Bucket: bucket, Key: key }),

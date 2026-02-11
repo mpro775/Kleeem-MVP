@@ -44,19 +44,27 @@ export class MongoInstructionsRepository implements InstructionsRepository {
 
   async findAll(
     params: FindAllParams,
-  ): Promise<Array<Instruction & { _id: Types.ObjectId }>> {
+  ): Promise<{ items: Array<Instruction & { _id: Types.ObjectId }>; total: number }> {
     const { merchantId, active, limit = 30, page = 1 } = params || {};
     const filter: Record<string, unknown> = {};
     if (merchantId) filter.merchantId = this.toId(merchantId);
     if (typeof active === 'boolean') filter.active = active;
 
-    return (await this.instructionModel
-      .find(filter)
-      .limit(limit)
-      .skip((page - 1) * limit)
-      .sort({ updatedAt: -1 })
-      .lean()
-      .exec()) as unknown as Array<Instruction & { _id: Types.ObjectId }>;
+    const [items, total] = await Promise.all([
+      this.instructionModel
+        .find(filter)
+        .limit(limit)
+        .skip((page - 1) * limit)
+        .sort({ updatedAt: -1 })
+        .lean()
+        .exec(),
+      this.instructionModel.countDocuments(filter).exec(),
+    ]);
+
+    return {
+      items: items as unknown as Array<Instruction & { _id: Types.ObjectId }>,
+      total,
+    };
   }
 
   async findById(

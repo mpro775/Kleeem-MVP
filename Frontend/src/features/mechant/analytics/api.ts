@@ -2,7 +2,7 @@
 import axiosInstance from "@/shared/api/axios";
 
 export type Period = "week" | "month" | "quarter";
-export type GroupBy = "day" | "week";
+export type GroupBy = "day" | "hour";
 export type Overview = import("@/features/mechant/dashboard/type").Overview;
 export type ChecklistGroup = import("@/features/mechant/dashboard/type").ChecklistGroup;
 

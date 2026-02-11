@@ -5,11 +5,11 @@ import { Model, Types } from 'mongoose';
 import { PaginationService } from '../../../common/services/pagination.service';
 import { GetProductsDto, SortOrder } from '../dto/get-products.dto';
 import { Currency } from '../enums/product.enums';
-import { Product, ProductDocument } from '../schemas/product.schema';
-
+import { CurrencyPrice, createCurrencyPrice } from '../schemas/currency-price.schema';
 import type { PaginationResult } from '../../../common/dto/pagination.dto';
 import type { ProductLean } from '../types';
 import type { ClientSession, FilterQuery } from 'mongoose';
+import { Product, ProductDocument } from '../schemas/product.schema';
 
 type StringArrayRecord = Record<string, string[]>;
 
@@ -47,7 +47,7 @@ function toProductLean(p: unknown): ProductLean {
     // نبني أقل شكل ممكن لتفادي any
     return {
       attributes: [],
-      prices: new Map<string, number>(),
+      prices: new Map<string, CurrencyPrice>(),
       currency: Currency.YER,
     } as ProductLean;
   }
@@ -57,28 +57,29 @@ function toProductLean(p: unknown): ProductLean {
   );
   const attributes: ProductLean['attributes'] = attributesRecord
     ? Object.entries(attributesRecord).map(([keySlug, valueSlugs]) => ({
-        keySlug,
-        valueSlugs,
-      }))
+      keySlug,
+      valueSlugs,
+    }))
     : undefined;
 
   const rawPrices = (p as { prices?: unknown }).prices;
-  const prices = new Map<string, number>();
+  const prices = new Map<string, CurrencyPrice>();
   if (rawPrices instanceof Map) {
     for (const [k, v] of rawPrices.entries()) {
-      if (
-        typeof k === 'string' &&
-        typeof v === 'number' &&
-        Number.isFinite(v) &&
-        v >= 0
-      ) {
-        prices.set(k, v);
+      if (typeof k === 'string') {
+        if (typeof v === 'number' && Number.isFinite(v) && v >= 0) {
+          prices.set(k, createCurrencyPrice(v));
+        } else if (isObject(v) && 'amount' in v && typeof v.amount === 'number') {
+          prices.set(k, v as unknown as CurrencyPrice);
+        }
       }
     }
   } else if (isObject(rawPrices)) {
     for (const [k, v] of Object.entries(rawPrices)) {
       if (typeof v === 'number' && Number.isFinite(v) && v >= 0) {
-        prices.set(String(k), v);
+        prices.set(String(k), createCurrencyPrice(v));
+      } else if (isObject(v) && 'amount' in v && typeof v.amount === 'number') {
+        prices.set(String(k), v as unknown as CurrencyPrice);
       }
     }
   }
@@ -102,7 +103,7 @@ export class MongoProductsRepository {
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
     private readonly pagination: PaginationService,
-  ) {}
+  ) { }
 
   async startSession(): Promise<ClientSession> {
     return this.productModel.db.startSession();

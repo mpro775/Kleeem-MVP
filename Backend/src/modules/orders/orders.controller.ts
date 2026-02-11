@@ -21,10 +21,10 @@ import {
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
-} from '../../common';
-import { Public } from '../../common/decorators/public.decorator';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { TranslationService } from '../../common/services/translation.service';
+} from 'src/common/decorators/api-response.decorator';
+import { Public } from 'src/common/decorators/public.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { TranslationService } from 'src/common/services/translation.service';
 
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrdersService } from './orders.service';
@@ -42,7 +42,7 @@ export class OrdersController {
   constructor(
     private readonly ordersService: OrdersService,
     private readonly translationService: TranslationService,
-  ) {}
+  ) { }
   @Public()
   @Post()
   @ApiOperation({

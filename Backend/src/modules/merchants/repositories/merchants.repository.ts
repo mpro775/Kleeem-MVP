@@ -44,4 +44,5 @@ export interface MerchantsRepository {
     userId: Types.ObjectId,
     opts?: { name?: string; slugBase?: string },
   ): Promise<MerchantDocument>;
+  findByUserId(userId: string): Promise<MerchantDocument | null>;
 }

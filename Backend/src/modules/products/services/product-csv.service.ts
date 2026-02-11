@@ -22,6 +22,10 @@ function safeStringify(
 
 import { TranslationService } from '../../../common/services/translation.service';
 import { Currency } from '../enums/product.enums';
+import {
+  CurrencyPrice,
+  createCurrencyPrice,
+} from '../schemas/currency-price.schema';
 import { Product, ProductDocument } from '../schemas/product.schema';
 
 import { ProductValidationService } from './product-validation.service';
@@ -158,7 +162,7 @@ export class ProductCsvService {
     private readonly productModel: Model<ProductDocument>,
     private readonly validation: ProductValidationService,
     private readonly translationService: TranslationService,
-  ) {}
+  ) { }
 
   /**
    * تصدير المنتجات إلى CSV
@@ -166,10 +170,10 @@ export class ProductCsvService {
   async exportToCSV(merchantId: string): Promise<string> {
     const products = await this.productModel
       .find({ merchantId: new Types.ObjectId(merchantId) })
-      .lean<LeanProduct>()
+      .lean<LeanProduct[]>()
       .exec();
 
-    const rows = this.buildExportRows([products]);
+    const rows = this.buildExportRows(products);
 
     return safeStringify(rows, {
       header: true,
@@ -307,10 +311,16 @@ export class ProductCsvService {
 
     const price = this.parsePrice(row.price);
     const baseCurrency = Currency.YER;
-    const { prices, basePrice } = this.validation.normalizePrices(
+    const { prices: normalizedPrices, basePrice } = this.validation.normalizePrices(
       { [baseCurrency]: price },
       baseCurrency,
     );
+
+    // Convert Map<string, number> to Map<string, CurrencyPrice>
+    const prices = new Map<string, CurrencyPrice>();
+    for (const [currency, amount] of normalizedPrices.entries()) {
+      prices.set(currency, createCurrencyPrice(amount, false));
+    }
 
     const status: Product['status'] = row.status
       ? (row.status as Product['status'])
@@ -417,7 +427,7 @@ export class ProductCsvService {
         sku,
         barcode: row.barcode || null,
         attributes: {},
-        prices: new Map([[currency, price]]),
+        prices: new Map([[currency, createCurrencyPrice(price, false)]]),
         priceDefault: price,
         currency,
         stock: row.stock ? parseInt(row.stock, 10) : 0,

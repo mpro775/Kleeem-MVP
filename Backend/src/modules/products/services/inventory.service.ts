@@ -56,7 +56,7 @@ export class InventoryService {
     private readonly repo: ProductsRepository,
     private readonly translationService: TranslationService,
     private readonly backInStockService: BackInStockService,
-  ) {}
+  ) { }
 
   /** تحقق من توفر مجموعة عناصر */
   async checkAvailability(items: StockItem[]): Promise<StockCheckResult> {
@@ -271,7 +271,7 @@ export class InventoryService {
       if (quantity > 0 && !product.variants![idx].isAvailable) {
         try {
           await this.backInStockService.processBackInStockNotifications(
-            product.merchantId!,
+            product.merchantId!.toString(),
             productId,
             variantSku,
           );
@@ -300,7 +300,7 @@ export class InventoryService {
     if (!wasAvailable && (quantity > 0 || product.isUnlimitedStock === true)) {
       try {
         await this.backInStockService.processBackInStockNotifications(
-          product.merchantId!,
+          product.merchantId!.toString(),
           productId,
         );
       } catch (error) {

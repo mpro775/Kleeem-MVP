@@ -117,9 +117,11 @@ const getBaseURL = (): string => {
 
 const axiosInstance = axios.create({
   baseURL: getBaseURL(),
-  withCredentials: false,
+  withCredentials: true,
   headers: { Accept: "application/json, text/plain, */*" },
 });
+
+let csrfToken: string | null = null;
 
 // قبل كل طلب
 axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -142,6 +144,11 @@ axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem("token");
   if (token) config.headers.set("Authorization", `Bearer ${token}`);
 
+  // CSRF
+  if (csrfToken) {
+    config.headers.set("X-CSRF-Token", csrfToken);
+  }
+
   // Idempotency للمسارات المعدِّلة
   const m = (config.method || "get").toLowerCase();
   if (["post", "put", "patch", "delete"].includes(m) && !config.headers.has("X-Idempotency-Key")) {
@@ -154,6 +161,15 @@ axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 // عند الاستجابة: res.data ← payload دائمًا
 axiosInstance.interceptors.response.use(
   (res) => {
+    // التقاط CSRF token من الرأس
+    const headerToken =
+      (res.headers["x-csrf-token"] as string | undefined) ||
+      (res.headers["X-CSRF-Token"] as string | undefined);
+
+    if (headerToken) {
+      csrfToken = headerToken;
+    }
+
     try {
       const isBlob =
         (res.request?.responseType === "blob") ||
@@ -177,13 +193,64 @@ axiosInstance.interceptors.response.use(
       return res;
     }
   },
-  (err) => {
-    const token = localStorage.getItem("token");
+  async (err) => {
+    const originalRequest = err.config;
 
-    if (err.response?.status === 401 && token) {
+    // Prevent infinite loops: don't retry refresh or if already retried
+    const isRefreshRequest = originalRequest?.url?.includes('/auth/refresh');
+    const alreadyRetried = originalRequest?._retry;
+
+    // Try to refresh token on 401 (unless it's the refresh endpoint itself)
+    if (err.response?.status === 401 && !isRefreshRequest && !alreadyRetried) {
+      const token = localStorage.getItem("token");
+
+      if (token) {
+        originalRequest._retry = true;
+
+        try {
+          // Try to refresh the token
+          const refreshResponse = await axiosInstance.post(`${API_BASE}/auth/refresh`, {});
+          const newToken = refreshResponse.data?.accessToken;
+
+          if (newToken) {
+            // Store new token
+            localStorage.setItem("token", newToken);
+
+            // Update user if provided
+            if (refreshResponse.data?.user) {
+              localStorage.setItem("user", JSON.stringify(refreshResponse.data.user));
+            }
+
+            // 👇 Inform AuthContext about the refresh
+            window.dispatchEvent(
+              new CustomEvent("auth:token-refreshed", {
+                detail: {
+                  token: newToken,
+                  user: refreshResponse.data?.user,
+                },
+              })
+            );
+
+            // Update headers and retry
+            axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
+            originalRequest.headers.set("Authorization", `Bearer ${newToken}`);
+
+            return axiosInstance(originalRequest);
+          }
+        } catch {
+          // Refresh failed - logout user
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/login";
+          return Promise.reject(err);
+        }
+      }
+
+      // No token or refresh failed - logout
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/login";
+      return Promise.reject(err);
     }
 
     const status = err.response?.status as number | undefined;
@@ -230,5 +297,6 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(appError);
   }
 );
+
 
 export default axiosInstance;

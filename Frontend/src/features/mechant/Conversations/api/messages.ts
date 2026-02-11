@@ -43,22 +43,18 @@ export async function fetchWidgetSessionMessages(
   return data?.messages ?? [];
 }
 
+/** جلب رسائل جلسة واحدة عبر GET /messages/session/:sessionId (الـ merchantId من JWT) */
 export async function fetchSessionMessagesDashboard(
-  merchantId: string,
+  _merchantId: string,
   sessionId: string,
-  channel?: ChannelType
+  _channel?: ChannelType
 ): Promise<ChatMessage[]> {
-  // لا نمرر channel في params لأننا نريد جميع المحادثات للبحث عن sessionId
-  // الـ channel سيتم فلترته في السيرفر إذا لزم الأمر
-  const { data } = await axiosInstance.get<ConversationSession[] | { data: ConversationSession[] }>(
-    `/messages`,
-    {
-      params: { merchantId, ...(channel ? { channel } : {}) },
-    }
+  const { data } = await axiosInstance.get<ConversationSession | { data: ConversationSession } | null>(
+    `/messages/session/${sessionId}`
   );
-  // بعد normalizePayload، data قد يكون ConversationSession[] مباشرة أو { data: ConversationSession[] }
-  const sessions = Array.isArray(data) ? data : (data?.data ?? []);
-  const session = sessions.find((s: ConversationSession) => s.sessionId === sessionId);
+  const session = data && typeof data === "object" && !Array.isArray(data)
+    ? ("data" in data ? data.data : data)
+    : null;
   return session?.messages ?? [];
 }
 

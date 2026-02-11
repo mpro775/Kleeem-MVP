@@ -41,7 +41,8 @@ import { alpha } from "@mui/material/styles";
 type MobileView = "list" | "chat";
 
 function dedupeAppend(list: UiChatMessage[], msg: UiChatMessage) {
-  if (msg._id && list.some((m) => m._id === msg._id)) return list;
+  const id = msg._id;
+  if (id && list.some((m) => m._id === id)) return list;
   return [...list, msg];
 }
 
@@ -89,9 +90,11 @@ export default function ChatWorkspace({ merchantId }: { merchantId: string }) {
         rating = m.rating;
       }
     }
-    
+    // الباك إند يرسل أحياناً id عبر WebSocket وليس _id
+    const messageId = m._id ?? (m as { id?: string }).id ?? undefined;
+
     return {
-      _id: m._id,
+      _id: messageId,
       role,
       text: m.text,
       timestamp: m.timestamp,

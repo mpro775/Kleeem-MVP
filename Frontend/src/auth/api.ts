@@ -86,3 +86,17 @@ export async function resetPasswordAPI(
     confirmPassword,
   });
 }
+
+export async function completeOnboardingAPI(token: string): Promise<AuthPayload> {
+  const res = await axiosInstance.post(
+    `${API_BASE}/auth/onboarding-complete`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return res.data as AuthPayload;
+}
+
+export async function refreshTokenAPI(): Promise<AuthPayload> {
+  const res = await axiosInstance.post(`${API_BASE}/auth/refresh`, {});
+  return res.data as AuthPayload;
+}

@@ -40,6 +40,7 @@ export class MongoCouponsRepository implements CouponsRepository {
     merchantId: string,
     options: {
       status?: string;
+      search?: string;
       limit?: number;
       skip?: number;
     } = {},
@@ -54,6 +55,18 @@ export class MongoCouponsRepository implements CouponsRepository {
 
     if (options.status) {
       query.status = options.status;
+    }
+
+    const searchTrimmed = options.search?.trim();
+    if (searchTrimmed) {
+      const searchRegex = new RegExp(
+        searchTrimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+        'i',
+      );
+      query.$or = [
+        { code: searchRegex },
+        { description: searchRegex },
+      ];
     }
 
     const limit = options.limit || 20;

@@ -9,7 +9,9 @@ export interface ChatMessage {
   text: string;
   timestamp: string; // ISO date string
   metadata?: Record<string, unknown>;
-  _id?: string; // أضف _id لو متوفر من الباك اند
+  /** من REST غالباً _id، من WebSocket قد يأتي id */
+  _id?: string;
+  id?: string;
   rating?: 0 | 1 | null; // 0 = سيء، 1 = جيد
   feedback?: string | null; // تعليق التاجر
 

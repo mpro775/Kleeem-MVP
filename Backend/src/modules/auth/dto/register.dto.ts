@@ -15,7 +15,7 @@ export class RegisterDto {
   email!: string;
 
   @ApiProperty({
-    description: 'كلمة المرور (6 أحرف فأكثر)',
+    description: 'كلمة المرور (8 أحرف فأكثر)',
     example: 'securePass',
   })
   @IsString(I18nMessage('validation.string'))

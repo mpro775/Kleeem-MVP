@@ -27,7 +27,7 @@ export class MerchantProvisioningService {
     private readonly promptBuilder: PromptBuilderService,
     private readonly businessMetrics: BusinessMetrics,
     private readonly translationService: TranslationService,
-  ) {}
+  ) { }
 
   /**
    * إنشاء التاجر + تهيئة الـ n8n + إنشاء Storefront
@@ -44,9 +44,18 @@ export class MerchantProvisioningService {
     let storefrontCreated = false;
 
     try {
-      // 1) n8n workflow
-      wfId = await this.n8n.createForMerchant(String(merchant._id));
-      merchant.workflowId = wfId;
+      // 1) n8n workflow - non-blocking to prevent registration failures
+      try {
+        wfId = await this.n8n.createForMerchant(String(merchant._id));
+        merchant.workflowId = wfId;
+        this.logger.log(`Created n8n workflow ${wfId} for merchant ${merchant._id}`);
+      } catch (n8nError) {
+        // Log but don't fail - workflow can be created later via ensureWorkflow
+        const n8nErrMsg = n8nError instanceof Error ? n8nError.message : String(n8nError);
+        this.logger.warn(
+          `n8n workflow creation failed for merchant ${merchant._id}: ${n8nErrMsg}. Will retry later.`,
+        );
+      }
 
       // 2) Compile final prompt
       merchant.finalPromptTemplate =
@@ -100,7 +109,12 @@ export class MerchantProvisioningService {
         //Ignore
       }
 
-      this.logger.error('Merchant initialization failed', err as Error);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorStack = err instanceof Error ? err.stack : undefined;
+      this.logger.error(
+        `Merchant initialization failed: ${errorMessage}`,
+        errorStack,
+      );
       throw new InternalServerErrorException(
         this.translationService.translate(
           'merchants.errors.initializationFailed',
@@ -115,11 +129,11 @@ export class MerchantProvisioningService {
    */
   async ensureWorkflow(merchantId: string): Promise<string> {
     const merchant = await this.merchantsRepository.findOne(merchantId);
-    const doc = merchant;
-    if (!doc.workflowId) {
-      // ضع منطق إنشاء فعلي هنا إن رغبت لاحقًا
-      return 'wf_placeholder';
+    if (!merchant.workflowId) {
+      this.logger.log(`Creating missing workflow for merchant ${merchantId}`);
+      const wfId = await this.n8n.createForMerchant(merchantId);
+      return wfId;
     }
-    return String(doc.workflowId);
+    return String(merchant.workflowId);
   }
 }

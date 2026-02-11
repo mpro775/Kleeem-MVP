@@ -15,9 +15,9 @@ export interface ProductReviewRepository {
   findAllByProduct(
     merchantId: string,
     productId: string,
-    status?: ProductReviewStatus,
     page: number,
     limit: number,
+    status?: ProductReviewStatus,
   ): Promise<{ reviews: ProductReview[]; total: number }>;
   findAllApprovedByProduct(merchantId: string, productId: string): Promise<ProductReview[]>;
   findByCustomer(

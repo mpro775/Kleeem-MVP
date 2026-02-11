@@ -12,6 +12,8 @@ export enum BackInStockStatus {
 
 @Schema({ timestamps: true })
 export class BackInStockRequest {
+  _id?: Types.ObjectId;
+
   @Prop({ required: true, index: true })
   merchantId!: string;
 
@@ -22,7 +24,7 @@ export class BackInStockRequest {
   variantId?: string | null; // SKU للمتغير
 
   @Prop({ type: Types.ObjectId, ref: 'Customer', index: true })
-  customerId?: Types.ObjectId;
+  customerId?: Types.ObjectId | undefined;
 
   @Prop({ required: true })
   contact!: string; // phone or email

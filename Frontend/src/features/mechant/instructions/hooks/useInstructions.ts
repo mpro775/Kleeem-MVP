@@ -30,10 +30,9 @@ export const useInstructions = () => {
     setLoading(true);
     try {
       const params = { page: page + 1, limit, active: activeFilter };
-      // نفترض أن الـ API function تقوم بتوحيد شكل الرد
-      const response = await listInstructions(params); 
-      setRows(response || []);
-      setTotalRows(response?.length || 0);
+      const response = await listInstructions(params);
+      setRows(response.items ?? []);
+      setTotalRows(response.total ?? 0);
     } catch (error) {
       console.error('Error fetching instructions:', error);
       setRows([]);

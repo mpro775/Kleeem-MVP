@@ -41,12 +41,16 @@ import { Model } from 'mongoose';
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
-} from '../../common';
-import { CurrentUser, CurrentUserId, CurrentMerchantId } from '../../common';
-import { Public } from '../../common/decorators/public.decorator';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { OutboxService } from '../../common/outbox/outbox.service';
-import { TranslationService } from '../../common/services/translation.service';
+} from 'src/common/decorators/api-response.decorator';
+import {
+  CurrentUser,
+  CurrentUserId,
+  CurrentMerchantId,
+} from 'src/common/decorators/current-user.decorator';
+import { Public } from 'src/common/decorators/public.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { OutboxService } from 'src/common/outbox/outbox.service';
+import { TranslationService } from 'src/common/services/translation.service';
 import { CatalogService } from '../catalog/catalog.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
@@ -98,7 +102,7 @@ export class MerchantsController {
     private readonly catalog: CatalogService,
     private readonly outbox: OutboxService,
     private readonly translationService: TranslationService,
-  ) {}
+  ) { }
 
   @Post()
   @ApiOperation({
@@ -538,7 +542,7 @@ export class MerchantsController {
         exchange: 'catalog.sync',
         routingKey: 'requested',
       })
-      .catch(() => {});
+      .catch(() => { });
 
     await this.notifications.notifyUser(userId, {
       type: 'catalog.sync.queued',

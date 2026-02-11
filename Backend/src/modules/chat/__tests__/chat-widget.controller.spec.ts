@@ -5,6 +5,8 @@ import { ChatWidgetService } from '../chat-widget.service';
 
 import type { TestingModule } from '@nestjs/testing';
 
+const MERCHANT_ID = '507f1f77bcf86cd799439011';
+
 describe('ChatWidgetController', () => {
   let controller: ChatWidgetController;
   let service: jest.Mocked<ChatWidgetService>;
@@ -36,7 +38,7 @@ describe('ChatWidgetController', () => {
 
   describe('getSettings', () => {
     it('should return widget settings', async () => {
-      const merchantId = 'm_12345';
+      const merchantId = MERCHANT_ID;
       const settings = {
         merchantId,
         botName: 'Test Bot',
@@ -54,7 +56,7 @@ describe('ChatWidgetController', () => {
 
   describe('updateSettings', () => {
     it('should update widget settings', async () => {
-      const merchantId = 'm_12345';
+      const merchantId = MERCHANT_ID;
       const dto = {
         botName: 'Updated Bot',
         embedMode: 'iframe' as const,
@@ -76,11 +78,11 @@ describe('ChatWidgetController', () => {
 
   describe('getEmbedSettings', () => {
     it('should return embed settings', async () => {
-      const merchantId = 'm_12345';
+      const merchantId = MERCHANT_ID;
       const embedSettings = {
         embedMode: 'iframe',
         availableModes: ['bubble', 'iframe', 'bar', 'conversational'],
-        shareUrl: '/m_12345/chat',
+        shareUrl: `/${MERCHANT_ID}/chat`,
         colors: {
           headerBgColor: '#ffffff',
           brandColor: '#000000',
@@ -99,7 +101,7 @@ describe('ChatWidgetController', () => {
 
   describe('getShareUrl', () => {
     it('should return share URL with widget slug', async () => {
-      const merchantId = 'm_12345';
+      const merchantId = MERCHANT_ID;
       const settings = {
         merchantId,
         botName: 'Test Bot',
@@ -124,7 +126,7 @@ describe('ChatWidgetController', () => {
 
   describe('generateSlug', () => {
     it('should generate and return widget slug', async () => {
-      const merchantId = 'm_12345';
+      const merchantId = MERCHANT_ID;
       const generatedSlug = 'generated-slug-123';
 
       service.generateWidgetSlug.mockResolvedValue(generatedSlug);
@@ -138,7 +140,7 @@ describe('ChatWidgetController', () => {
 
   describe('updateEmbedSettings', () => {
     it('should update embed settings with embedMode', async () => {
-      const merchantId = 'm_12345';
+      const merchantId = MERCHANT_ID;
       const dto = { embedMode: 'conversational' as const };
       const updatedEmbedSettings = {
         embedMode: 'conversational',
@@ -157,7 +159,7 @@ describe('ChatWidgetController', () => {
     });
 
     it('should update embed settings with partial dto', async () => {
-      const merchantId = 'm_12345';
+      const merchantId = MERCHANT_ID;
       const dto = {} as any; // empty dto for partial update
       const updatedEmbedSettings = {
         embedMode: 'iframe',
@@ -180,7 +182,7 @@ describe('ChatWidgetController', () => {
     it('should sync widget slug (method exists but not directly tested)', async () => {
       // This method exists in the controller but might not be directly exposed as an endpoint
       // Testing the service method directly
-      const merchantId = 'm_12345';
+      const merchantId = MERCHANT_ID;
       const slug = 'sync-slug';
 
       service.syncWidgetSlug.mockResolvedValue(slug);
@@ -198,7 +200,7 @@ describe('ChatWidgetController', () => {
       // Testing the service method directly
       const slug = 'test-slug';
       const settings = {
-        merchantId: 'm_12345',
+        merchantId: MERCHANT_ID,
         widgetSlug: slug,
       };
 

@@ -20,7 +20,7 @@ import {
   ApiOkResponse,
   ApiCreatedResponse,
 } from '@nestjs/swagger';
-import { Matches } from 'class-validator';
+import { IsMongoId } from 'class-validator';
 // ================= Internal imports =================
 import { Public } from 'src/common/decorators/public.decorator';
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
@@ -32,12 +32,12 @@ import { UpdateWidgetSettingsDto } from './dto/update-widget-settings.dto';
 import { ChatWidgetSettings } from './schema/chat-widget.schema';
 
 // ================== Constants ==================
-const MERCHANT_PREFIX = 'm_' as const;
+const EXAMPLE_MERCHANT_ID = '507f1f77bcf86cd799439011';
 const SHARE_BASE = 'https://chat.example.com/widget' as const;
 
 // ================== DTOs ==================
 class MerchantParamDto {
-  @Matches(/^m_.+/, { message: 'merchantId must start with m_' })
+  @IsMongoId({ message: 'معرف التاجر غير صالح (ObjectId مطلوب)' })
   merchantId!: string;
 }
 
@@ -46,8 +46,8 @@ class MerchantParamDto {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiParam({
   name: 'merchantId',
-  description: 'معرف التاجر',
-  example: 'm_12345',
+  description: 'معرف التاجر (ObjectId)',
+  example: EXAMPLE_MERCHANT_ID,
   type: 'string',
 })
 @Controller('merchants/:merchantId/widget-settings')
@@ -67,7 +67,7 @@ export class ChatWidgetController {
     schema: {
       type: 'object',
       properties: {
-        merchantId: { type: 'string', example: `${MERCHANT_PREFIX}12345` },
+        merchantId: { type: 'string', example: EXAMPLE_MERCHANT_ID },
         widgetSlug: { type: 'string', example: 'chat_abc123' },
         theme: {
           type: 'object',
@@ -130,7 +130,7 @@ export class ChatWidgetController {
           type: 'object',
           description: 'الإعدادات المحدثة',
           properties: {
-            merchantId: { type: 'string', example: `${MERCHANT_PREFIX}12345` },
+            merchantId: { type: 'string', example: EXAMPLE_MERCHANT_ID },
             widgetSlug: { type: 'string', example: 'chat_abc123' },
             theme: {
               type: 'object',
@@ -210,7 +210,7 @@ export class ChatWidgetController {
         success: { type: 'boolean', example: true },
         url: { type: 'string', example: `${SHARE_BASE}/chat_abc123` },
         widgetSlug: { type: 'string', example: 'chat_abc123' },
-        merchantId: { type: 'string', example: `${MERCHANT_PREFIX}12345` },
+        merchantId: { type: 'string', example: EXAMPLE_MERCHANT_ID },
         expiresAt: { type: 'string', nullable: true, example: null },
         isActive: { type: 'boolean', example: true },
       },
@@ -256,7 +256,7 @@ export class ChatWidgetController {
         success: { type: 'boolean', example: true },
         message: { type: 'string', example: 'تم إنشاء slug فريد للودجة' },
         slug: { type: 'string', example: 'chat_xyz789' },
-        merchantId: { type: 'string', example: `${MERCHANT_PREFIX}12345` },
+        merchantId: { type: 'string', example: EXAMPLE_MERCHANT_ID },
         generatedAt: { type: 'string', example: '2023-09-18T16:30:00Z' },
         expiresAt: { type: 'string', nullable: true, example: null },
       },
@@ -295,7 +295,7 @@ export class ChatWidgetController {
         settings: {
           type: 'object',
           properties: {
-            merchantId: { type: 'string', example: `${MERCHANT_PREFIX}12345` },
+            merchantId: { type: 'string', example: EXAMPLE_MERCHANT_ID },
             embedMode: {
               type: 'string',
               enum: ['iframe', 'popup'],

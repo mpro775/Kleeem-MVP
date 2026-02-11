@@ -40,7 +40,7 @@ import { CustomerJwtStrategy } from './strategies/customer-jwt.strategy';
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET')!,
-        signOptions: { expiresIn: '7d' },
+        // Note: Don't set default expiresIn here - TokenService sets exp directly in payload
       }),
       inject: [ConfigService],
     }),
@@ -61,7 +61,7 @@ import { CustomerJwtStrategy } from './strategies/customer-jwt.strategy';
     forwardRef(() => MerchantsModule), // لازمه ل AuthController الذي يستعمل MerchantsService
     forwardRef(() => CustomersModule), // للـ CustomerJwtStrategy
     MetricsModule,
-    CommonServicesModule,
+    forwardRef(() => CommonServicesModule),
   ],
   controllers: [AuthController],
 
@@ -82,4 +82,4 @@ import { CustomerJwtStrategy } from './strategies/customer-jwt.strategy';
   ],
   exports: [AuthService, TokenService, CookieService],
 })
-export class AuthModule {}
+export class AuthModule { }

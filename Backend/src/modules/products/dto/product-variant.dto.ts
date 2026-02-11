@@ -1,5 +1,5 @@
 // src/modules/products/dto/product-variant.dto.ts
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, ApiPropertyOptions } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
@@ -19,7 +19,7 @@ import { Currency } from '../enums/product.enums';
 const EXAMPLE_WEIGHT = 250;
 const EXAMPLE_PRICE = 99.99;
 const EXAMPLE_PRICE_SAR = 75;
-const PRICE_SCHEMA = {
+const PRICE_SCHEMA: ApiPropertyOptions = {
   description:
     'أسعار المتغير بعملات متعددة. يمكن إدخال السعر كرقم بسيط أو ككائن مع isManual',
   type: 'object',
@@ -36,7 +36,7 @@ const PRICE_SCHEMA = {
       },
     ],
   },
-} as const;
+};
 const VALIDATION_OBJECT = {
   ...I18nMessage('validation.object'),
   nullable: false,

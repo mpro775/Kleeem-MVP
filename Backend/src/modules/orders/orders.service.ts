@@ -34,7 +34,7 @@ export class OrdersService {
     private readonly couponsService: CouponsService,
     private readonly promotionsService: PromotionsService,
     private readonly inventoryService: InventoryService,
-  ) {}
+  ) { }
 
   async create(dto: CreateOrderDto, customerId?: string): Promise<Order> {
     const merchantId = dto.merchantId;
@@ -91,21 +91,20 @@ export class OrdersService {
 
     // تحضير بيانات العميل
     let orderCustomerId = customerId;
-    let customerSnapshot = dto.customer ? { ...dto.customer, phoneNormalized } : undefined;
+    let customer = dto.customer ? { ...dto.customer, phoneNormalized } : undefined;
 
     // إذا كان هناك customerId من JWT، احصل على بيانات العميل الحالية
     if (customerId) {
       try {
-        const customer = await this.customersService.findById(customerId);
-        if (customer) {
-          customerSnapshot = {
-            id: customer._id,
-            name: customer.name,
-            email: customer.emailLower,
-            phone: customer.phoneNormalized,
-            phoneNormalized: customer.phoneNormalized,
+        const dbCustomer = await this.customersService.findById(customerId);
+        if (dbCustomer) {
+          customer = {
+            name: dbCustomer.name ?? '',
+            email: dbCustomer.emailLower ?? '',
+            phone: dbCustomer.phoneNormalized ?? '',
+            phoneNormalized: dbCustomer.phoneNormalized ?? '',
             // أي بيانات إضافية تحتاجها
-          };
+          } as any;
         }
       } catch (error) {
         console.error('Error fetching customer data:', error);
@@ -118,7 +117,7 @@ export class OrdersService {
       products,
       source: dto.source ?? 'storefront',
       customerId: orderCustomerId,
-      customerSnapshot,
+      customer,
       pricing: pricingResult.pricing,
       currency: pricingResult.currency,
       exchangeRate: pricingResult.exchangeRate,

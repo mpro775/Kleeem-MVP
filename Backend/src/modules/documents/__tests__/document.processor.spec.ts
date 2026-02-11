@@ -40,6 +40,8 @@ jest.mock('xlsx', () => ({
 
 type DocumentJobData = { docId: string; merchantId: string };
 
+const MERCHANT_ID = '507f1f77bcf86cd799439011';
+
 describe('DocumentProcessor', () => {
   const fixedNow = 1712345678901;
 
@@ -105,7 +107,7 @@ describe('DocumentProcessor', () => {
     // وثيقة PDF
     const doc = {
       _id: docId,
-      merchantId: 'm1',
+      merchantId: MERCHANT_ID,
       fileType: 'application/pdf',
       storageKey: 's1',
     };
@@ -189,7 +191,7 @@ describe('DocumentProcessor', () => {
     (docModel.findById as unknown as jest.Mock).mockReturnValue({
       lean: jest.fn().mockResolvedValue({
         _id: docId,
-        merchantId: 'm1',
+        merchantId: MERCHANT_ID,
         fileType: 'application/pdf',
         storageKey: 's1',
       }),
@@ -229,7 +231,7 @@ describe('DocumentProcessor', () => {
     (docModel.findById as unknown as jest.Mock).mockReturnValue({
       lean: jest.fn().mockResolvedValue({
         _id: docId,
-        merchantId: 'm1',
+        merchantId: MERCHANT_ID,
         fileType: 'text/plain',
         storageKey: 's2',
       }),
@@ -262,7 +264,7 @@ describe('DocumentProcessor', () => {
     (docModel.findById as unknown as jest.Mock).mockReturnValue({
       lean: jest.fn().mockResolvedValue({
         _id: docId,
-        merchantId: 'm1',
+        merchantId: MERCHANT_ID,
         fileType:
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         storageKey: 's3',

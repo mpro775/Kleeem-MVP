@@ -8,12 +8,14 @@ import { getAxiosMessage } from "@/shared/lib/errors";
 import OnboardingLayout from "@/app/layout/OnboardingLayout";
 import { getIntegrationsStatus } from "@/features/integtarions/api/integrationsApi";
 import { syncCatalog } from "@/features/integtarions/api/catalogApi";
+import { completeOnboardingAPI } from "@/auth/api";
+import { backendUserToUser } from "@/shared/utils/auth";
 
 // هذه الدوال تستخدم axiosInstance بالفعل
 
 export default function SyncPage() {
   const navigate = useNavigate();
-  const { user, token } = useAuth();
+  const { user, token, setAuth } = useAuth();
 
   const [statusText, setStatusText] = useState<string>("جاهز للمزامنة");
   const [loading, setLoading] = useState(false);
@@ -111,7 +113,20 @@ export default function SyncPage() {
 
       <Button
         variant="outlined"
-        onClick={() => navigate("/dashboard")}
+        onClick={async () => {
+          // Mark onboarding as complete before navigating
+          try {
+            if (token) {
+              const res = await completeOnboardingAPI(token);
+              const updatedUser = backendUserToUser(res.user);
+              // ✅ استخدم setAuth بدون silent لتحديث الحالة بشكل كامل والتوجيه التلقائي
+              setAuth(updatedUser, res.accessToken);
+            }
+          } catch {
+            // Continue even if this fails - navigate to dashboard as fallback
+            navigate("/dashboard", { replace: true });
+          }
+        }}
         fullWidth
         sx={{ fontWeight: "bold", py: 1.5, borderRadius: 2 }}
       >

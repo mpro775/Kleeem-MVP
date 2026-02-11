@@ -78,7 +78,6 @@ const HOVER_PERCENT = 8;
 const PCT_MIN = -100;
 const PCT_MAX = 100;
 const YEAR_SECONDS = 31_536_000;
-const DEFAULT_CDN = 'https://cdn.kaleem-ai.com';
 const DEFAULT_ORDERS_LIMIT = 50;
 const MB_PER_PIXEL = 1_000_000;
 const HEX_BASE = 16;
@@ -99,7 +98,7 @@ export class StorefrontService {
     private readonly vectorService: VectorService,
     @Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client,
     private readonly leads: LeadsService,
-  ) {}
+  ) { }
 
   // ========= Helpers =========
   private normalizeHex(hex: string): string {
@@ -170,16 +169,14 @@ export class StorefrontService {
   }
 
   private async publicUrlFor(bucket: string, key: string): Promise<string> {
-    const cdnBase = (process.env.ASSETS_CDN_BASE_URL || DEFAULT_CDN).replace(
-      /\/+$/,
-      '',
-    );
+    const cdnBase = (process.env.ASSETS_CDN_BASE_URL || '').replace(/\/+$/, '');
     const endpoint = (
       process.env.AWS_ENDPOINT ||
       process.env.MINIO_PUBLIC_URL ||
       ''
     ).replace(/\/+$/, '');
-    if (cdnBase) return `${cdnBase}/${bucket}/${key}`;
+    // For R2 public buckets (CDN), bucket is implied by the domain
+    if (cdnBase) return `${cdnBase}/${key}`;
     if (endpoint) return `${endpoint}/${bucket}/${key}`;
     return getSignedUrl(
       this.s3,
@@ -478,7 +475,7 @@ export class StorefrontService {
         files.map((f) => unlink(f.path).catch(() => undefined)),
       );
       throw new BadRequestException(
-        `لا يمكن إضافة المزيد من البنرات: الحد الأقصى ${MAX_BANNERS}.`,
+        `لا يمكن إضافة المزيد من البنرات، الحد الأقصى لعدد البنرات هو ${MAX_BANNERS}.`,
       );
     }
 

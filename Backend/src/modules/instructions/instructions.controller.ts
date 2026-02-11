@@ -60,8 +60,8 @@ export class InstructionsController {
         },
         merchantId: {
           type: 'string',
-          description: 'معرف التاجر (ADMIN فقط، وإلا يُتجاهَل)',
-          example: 'm_12345',
+          description: 'معرف التاجر (ObjectId، ADMIN فقط، وإلا يُتجاهَل)',
+          example: '507f1f77bcf86cd799439011',
         },
         relatedReplies: {
           type: 'array',
@@ -125,7 +125,7 @@ export class InstructionsController {
     @Query('active') active?: string,
     @Query('limit') limit = '30',
     @Query('page') page = '1',
-  ): Promise<Array<Instruction & { _id: Types.ObjectId }>> {
+  ): Promise<{ items: Array<Instruction & { _id: Types.ObjectId }>; total: number }> {
     // إن مرّر merchantId بالاستعلام يجب أن يكون ADMIN أو يطابق JWT
     const merchantId = qMerchantId ?? jwtMerchantId;
     if (!merchantId) {

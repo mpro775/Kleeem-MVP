@@ -72,7 +72,7 @@ export class MongoMerchantsRepository implements MerchantsRepository {
   constructor(
     @InjectModel(Merchant.name)
     private readonly merchantModel: Model<MerchantDocument>,
-  ) {}
+  ) { }
 
   // ---------- Create ----------
   async create(createDto: CreateMerchantDto): Promise<MerchantDocument> {
@@ -206,8 +206,42 @@ export class MongoMerchantsRepository implements MerchantsRepository {
     const m = await this.merchantModel.findById(merchantId).exec();
     if (!m) throw new NotFoundException(INVALID_ID_MSG);
 
-    // نُسند الحقول المسموح بها فقط
-    Object.assign(m, dto);
+    // Handle currencySettings separately to convert exchangeRates to Map
+    if (dto.currencySettings) {
+      const { exchangeRates, ...restCurrencySettings } = dto.currencySettings;
+
+      // Build the new currencySettings object
+      const existingSettings = m.currencySettings ?? {
+        baseCurrency: 'YER' as const,
+        supportedCurrencies: ['YER'],
+        exchangeRates: new Map<string, number>(),
+        roundingStrategy: 'round' as const,
+        roundToNearest: 1,
+      };
+
+      // Merge non-exchangeRates fields
+      const updatedSettings = {
+        ...existingSettings,
+        ...restCurrencySettings,
+        // Convert exchangeRates from Record to Map if provided
+        exchangeRates:
+          exchangeRates && typeof exchangeRates === 'object'
+            ? new Map(Object.entries(exchangeRates))
+            : existingSettings.exchangeRates,
+      };
+
+      // Assign the updated settings
+      (m as unknown as Record<string, unknown>).currencySettings =
+        updatedSettings;
+
+      // Remove currencySettings from dto to prevent double assignment
+      const { currencySettings: _, ...restDto } = dto;
+      Object.assign(m, restDto);
+    } else {
+      // نُسند الحقول المسموح بها فقط
+      Object.assign(m, dto);
+    }
+
     await m.save();
     return m;
   }
@@ -428,5 +462,9 @@ export class MongoMerchantsRepository implements MerchantsRepository {
     };
 
     return this.create(dto);
+  }
+
+  async findByUserId(userId: string): Promise<MerchantDocument | null> {
+    return this.merchantModel.findOne({ userId }).exec();
   }
 }

@@ -65,7 +65,10 @@ export default function BannersEditor({
   }, [localBanners.length]);
 
   const handleAdd = () => {
-    if (localBanners.length >= MAX_BANNERS) return;
+    if (localBanners.length >= MAX_BANNERS) {
+      setError(`لا يمكنك إضافة أكثر من ${MAX_BANNERS} بانرات (الحد الأقصى ${MAX_BANNERS}).`);
+      return;
+    }
     const newBanner = { text: "", active: true, order: localBanners.length };
     console.log("Adding new banner:", newBanner);
     setLocalBanners([...localBanners, newBanner]);
@@ -125,7 +128,11 @@ export default function BannersEditor({
     });
 
   const handleFilesSelected = async (files: FileList | null) => {
-    if (!files || remainingSlots <= 0) return;
+    if (!files) return;
+    if (remainingSlots <= 0) {
+      setError(`لا يمكنك إضافة المزيد من البنرات، الحد الأقصى هو ${MAX_BANNERS} بنرات.`);
+      return;
+    }
 
     setError(null);
 

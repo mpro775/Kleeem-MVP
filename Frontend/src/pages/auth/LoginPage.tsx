@@ -111,21 +111,30 @@ export default function LoginPage() {
         dir="rtl"
       >
         <TextField
-          {...register("email", {
-            required: "البريد الإلكتروني مطلوب",
-            pattern: {
-              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-              message: "بريد إلكتروني غير صحيح",
-            },
-          })}
+          {...(() => {
+            const { onChange: onEmailRegisterChange, ...rest } = register(
+              "email",
+              {
+                required: "البريد الإلكتروني مطلوب",
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: "بريد إلكتروني غير صحيح",
+                },
+              }
+            );
+            return {
+              ...rest,
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                const v = sanitize(e.target.value);
+                e.target.value = v;
+                onEmailRegisterChange(e);
+              },
+            };
+          })()}
           label="البريد الإلكتروني"
           fullWidth
           sx={{ mb: 3 }}
           error={!!errors.email}
-          onChange={(e) => {
-            const v = sanitize(e.target.value);
-            e.target.value = v;
-          }}
           helperText={errors.email?.message || ""}
           inputProps={{
             inputMode: "email",
@@ -147,20 +156,29 @@ export default function LoginPage() {
         />
 
         <TextField
-          {...register("password", {
-            required: "كلمة المرور مطلوبة",
-            minLength: {
-              value: 6,
-              message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
-            },
-          })}
-          onChange={(e) => {
-            // لا نعدّل كلمة المرور (حتى لا نفسدها)، لكن إن رغبت بإزالة الوسوم فقط:
-            const v = e.target.value
-              .replace(/<[^>]*>/g, "")
-              .replace(/[<>]/g, "");
-            e.target.value = v;
-          }}
+          {...(() => {
+            const { onChange: onPasswordRegisterChange, ...rest } = register(
+              "password",
+              {
+                required: "كلمة المرور مطلوبة",
+                minLength: {
+                  value: 8,
+                  message: "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
+                },
+              }
+            );
+            return {
+              ...rest,
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                // لا نعدّل كلمة المرور (حتى لا نفسدها)، لكن إن رغبت بإزالة الوسوم فقط:
+                const v = e.target.value
+                  .replace(/<[^>]*>/g, "")
+                  .replace(/[<>]/g, "");
+                e.target.value = v;
+                onPasswordRegisterChange(e);
+              },
+            };
+          })()}
           inputProps={{ maxLength: 128 }}
           label="كلمة المرور"
           type={showPassword ? "text" : "password"}

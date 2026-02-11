@@ -34,7 +34,7 @@ function isPositiveInt(n: unknown): n is number {
 
 @Injectable()
 export class ProductMediaService {
-  constructor(@Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client) {}
+  constructor(@Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client) { }
 
   private async publicUrl(bucket: string, key: string): Promise<string> {
     const cdn = (process.env.ASSETS_CDN_BASE_URL || '').replace(/\/+$/, '');
@@ -43,7 +43,8 @@ export class ProductMediaService {
       process.env.MINIO_PUBLIC_URL ||
       ''
     ).replace(/\/+$/, '');
-    if (cdn) return `${cdn}/${bucket}/${key}`;
+    // For R2 public buckets (CDN), bucket is implied by the domain
+    if (cdn) return `${cdn}/${key}`;
     if (endpoint) return `${endpoint}/${bucket}/${key}`;
     return getSignedUrl(
       this.s3,

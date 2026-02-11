@@ -6,6 +6,8 @@ import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 
 import type { DocumentsRepository } from '../repositories/documents.repository';
 
+const MERCHANT_ID = '507f1f77bcf86cd799439011';
+
 jest.mock('@aws-sdk/s3-request-presigner', () => ({
   __esModule: true,
   getSignedUrl: jest.fn().mockResolvedValue('https://s3/presigned'),
@@ -55,12 +57,12 @@ describe('DocumentsService', () => {
       toObject: () => ({ _id: 'doc1', storageKey: 'k', filename: 'file.pdf' }),
     } as any);
 
-    const res = await service.uploadFile('m1', file);
+    const res = await service.uploadFile(MERCHANT_ID, file);
 
     expect((service as any).s3.send).toHaveBeenCalled();
     expect(repo.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        merchantId: 'm1',
+        merchantId: MERCHANT_ID,
         filename: 'file.pdf',
         fileType: 'application/pdf',
         status: 'pending',
@@ -68,14 +70,14 @@ describe('DocumentsService', () => {
     );
     expect(queue.add).toHaveBeenCalledWith('process', {
       docId: 'doc1',
-      merchantId: 'm1',
+      merchantId: MERCHANT_ID,
     });
     expect((res as any)._id).toBe('doc1');
   });
 
   it('list: يرجع قائمة المستندات من الريبو', async () => {
     repo.listByMerchant.mockResolvedValue([{ _id: 'a' } as any]);
-    const out = await service.list('m1');
+    const out = await service.list(MERCHANT_ID);
     expect(out).toEqual([{ _id: 'a' }]);
   });
 
@@ -84,7 +86,7 @@ describe('DocumentsService', () => {
       storageKey: 'k',
     } as any);
 
-    const url = await service.getPresignedUrl('m1', 'd1');
+    const url = await service.getPresignedUrl(MERCHANT_ID, 'd1');
     expect(url).toBe('https://s3/presigned');
   });
 
@@ -93,9 +95,9 @@ describe('DocumentsService', () => {
       storageKey: 'k',
     } as any);
 
-    await service.delete('m1', 'd1');
+    await service.delete(MERCHANT_ID, 'd1');
 
     expect((service as any).s3.send).toHaveBeenCalled();
-    expect(repo.deleteByIdForMerchant).toHaveBeenCalledWith('d1', 'm1');
+    expect(repo.deleteByIdForMerchant).toHaveBeenCalledWith('d1', MERCHANT_ID);
   });
 });
