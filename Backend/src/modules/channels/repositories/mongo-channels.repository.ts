@@ -15,7 +15,12 @@ import {
   ChannelProvider,
 } from '../schemas/channel.schema';
 
-import { ChannelsRepository, ChannelSecretsLean } from './channels.repository';
+import {
+  ChannelsRepository,
+  ChannelSecretsLean,
+  ListAllAdminParams,
+  StatsAdminResult,
+} from './channels.repository';
 
 @Injectable()
 export class MongoChannelsRepository implements ChannelsRepository {
@@ -106,6 +111,64 @@ export class MongoChannelsRepository implements ChannelsRepository {
     return this.model
       .findOne({ merchantId, provider, isDefault: true, deletedAt: null })
       .lean() as unknown as Promise<ChannelLean | null>;
+  }
+
+  async listAllAdmin(
+    params: ListAllAdminParams,
+  ): Promise<{ items: ChannelLean[]; total: number }> {
+    const { merchantId, provider, status, limit, page } = params;
+    const filter: FilterQuery<ChannelDocument> = { deletedAt: null };
+    if (merchantId) filter.merchantId = merchantId;
+    if (provider) filter.provider = provider;
+    if (status) filter.status = status;
+
+    const [items, total] = await Promise.all([
+      this.model
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean()
+        .exec() as Promise<ChannelLean[]>,
+      this.model.countDocuments(filter).exec(),
+    ]);
+
+    return { items, total };
+  }
+
+  async statsAdmin(): Promise<StatsAdminResult> {
+    const baseMatch = { deletedAt: null };
+
+    const [total, byProvider, byStatus] = await Promise.all([
+      this.model.countDocuments(baseMatch).exec(),
+      this.model
+        .aggregate<{ _id: string; count: number }>([
+          { $match: baseMatch },
+          { $group: { _id: '$provider', count: { $sum: 1 } } },
+        ])
+        .exec(),
+      this.model
+        .aggregate<{ _id: string; count: number }>([
+          { $match: baseMatch },
+          { $group: { _id: '$status', count: { $sum: 1 } } },
+        ])
+        .exec(),
+    ]);
+
+    const byProviderMap: Record<string, number> = {};
+    byProvider.forEach((p) => {
+      byProviderMap[String(p._id)] = p.count;
+    });
+    const byStatusMap: Record<string, number> = {};
+    byStatus.forEach((s) => {
+      byStatusMap[String(s._id)] = s.count;
+    });
+
+    return {
+      total,
+      byProvider: byProviderMap,
+      byStatus: byStatusMap,
+    };
   }
 
   async startSession(): Promise<ClientSession> {

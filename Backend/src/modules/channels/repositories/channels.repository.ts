@@ -1,6 +1,24 @@
 import type { ChannelLean } from '../../webhooks/repositories/channel.repository';
-import type { Channel, ChannelProvider } from '../schemas/channel.schema';
+import type {
+  Channel,
+  ChannelProvider,
+  ChannelStatus,
+} from '../schemas/channel.schema';
 import type { ClientSession, HydratedDocument, Types } from 'mongoose';
+
+export interface ListAllAdminParams {
+  merchantId?: Types.ObjectId;
+  provider?: ChannelProvider;
+  status?: ChannelStatus;
+  limit: number;
+  page: number;
+}
+
+export interface StatsAdminResult {
+  total: number;
+  byProvider: Record<string, number>;
+  byStatus: Record<string, number>;
+}
 
 export type ChannelSecretsLean = {
   _id: Types.ObjectId;
@@ -51,6 +69,11 @@ export interface ChannelsRepository {
     merchantId: Types.ObjectId,
     provider: ChannelProvider,
   ): Promise<ChannelLean | null>; // lean
+
+  listAllAdmin(
+    params: ListAllAdminParams,
+  ): Promise<{ items: ChannelLean[]; total: number }>;
+  statsAdmin(): Promise<StatsAdminResult>;
 
   // مساعدة
   startSession(): Promise<ClientSession>;

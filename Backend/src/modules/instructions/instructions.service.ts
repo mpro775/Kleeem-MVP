@@ -30,6 +30,7 @@ export class InstructionsService {
   async findAll(params: {
     merchantId?: string;
     active?: boolean;
+    type?: 'auto' | 'manual';
     limit?: number;
     page?: number;
   }): Promise<{ items: Array<Instruction & { _id: Types.ObjectId }>; total: number }> {

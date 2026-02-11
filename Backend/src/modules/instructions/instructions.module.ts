@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AiModule } from '../ai/ai.module';
 import { MessagingModule } from '../messaging/message.module';
 
+import { InstructionsAdminController } from './instructions.admin.controller';
 import { InstructionsController } from './instructions.controller';
 import { InstructionsService } from './instructions.service';
 import { MongoInstructionsRepository } from './repositories/mongo-instructions.repository';
@@ -25,7 +26,7 @@ import { Instruction, InstructionSchema } from './schemas/instruction.schema';
       useClass: MongoInstructionsRepository,
     },
   ],
-  controllers: [InstructionsController],
+  controllers: [InstructionsController, InstructionsAdminController],
   exports: [InstructionsService],
 })
 export class InstructionsModule {}
