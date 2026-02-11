@@ -36,7 +36,7 @@ import { HydratedDocument } from 'mongoose';
 import { ChannelLean } from '../webhooks/repositories/channel.repository';
 import { StatsAdminResult } from './repositories/channels.repository';
 
-@ApiTags('Admin Channels')
+@ApiTags('Admin', 'Admin Channels')
 @ApiBearerAuth()
 @Controller('admin/channels')
 @UseGuards(JwtAuthGuard, RolesGuard)

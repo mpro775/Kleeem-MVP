@@ -7,7 +7,7 @@ import path, { join } from 'path';
 import { BullModule, BullModuleOptions } from '@nestjs/bull';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -77,6 +77,7 @@ import { ProductsModule } from './modules/products/products.module';
 import { PublicModule } from './modules/public/public.module';
 import { StorefrontModule } from './modules/storefront/storefront.module';
 import { SupportModule } from './modules/support/support.module';
+import { AdminAuditInterceptor } from './modules/system/interceptors/admin-audit.interceptor';
 import { SystemModule } from './modules/system/system.module';
 import { UsersModule } from './modules/users/users.module';
 import { VectorModule } from './modules/vector/vector.module';
@@ -381,6 +382,7 @@ const getHeader = (req: IncomingMessage, name: string): string | undefined => {
         OutboxDispatcher,
         HttpMetricsInterceptor,
         PerformanceTrackingInterceptor,
+        { provide: APP_INTERCEPTOR, useClass: AdminAuditInterceptor },
       ]),
   ],
   exports: IS_TEST_MIN ? [] : [AmqpMetrics],

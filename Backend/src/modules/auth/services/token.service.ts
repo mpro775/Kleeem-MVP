@@ -252,6 +252,24 @@ export class TokenService {
     await this.store.addToBlacklist(jti, this.REFRESH_TOKEN_TTL);
   }
 
+  /** إلغاء جلسة بالـ jti (لأدمن) — alias عام لـ revokeRefreshToken */
+  async revokeSessionByJti(jti: string): Promise<void> {
+    await this.revokeRefreshToken(jti);
+  }
+
+  /** قائمة جلسات مستخدم مع تفاصيلها (لأدمن) */
+  async listSessionsForUser(
+    userId: string,
+  ): Promise<Array<{ jti: string } & SessionData>> {
+    const jtiList = await this.store.getUserSessions(userId);
+    const results: Array<{ jti: string } & SessionData> = [];
+    for (const jti of jtiList) {
+      const sess = await this.store.getSession(jti);
+      if (sess) results.push({ jti, ...sess });
+    }
+    return results;
+  }
+
   /** يتحقق من الـ refresh token ويؤكد تطابق JTI بين decode و verify */
   private verifyRefreshToken(refreshToken: string): JwtPayload {
     const decodedUnknown: unknown = this.jwtService.decode(refreshToken);

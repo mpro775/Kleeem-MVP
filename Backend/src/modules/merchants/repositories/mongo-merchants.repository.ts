@@ -29,7 +29,12 @@ import {
 } from '../schemas/subscription-plan.schema';
 import { MerchantStatusResponse } from '../types/types';
 
-import { MerchantsRepository } from './merchants.repository';
+import {
+  MerchantsRepository,
+  ListAllAdminParams,
+  StatsAdminResult,
+  MerchantAdminLean,
+} from './merchants.repository';
 
 // ========= Constants =========
 const INVALID_ID_MSG = 'Merchant not found' as const;
@@ -466,5 +471,199 @@ export class MongoMerchantsRepository implements MerchantsRepository {
 
   async findByUserId(userId: string): Promise<MerchantDocument | null> {
     return this.merchantModel.findOne({ userId }).exec();
+  }
+
+  // ---------- Admin list & stats ----------
+  async listAllAdmin(
+    params: ListAllAdminParams,
+  ): Promise<{ items: MerchantAdminLean[]; total: number }> {
+    const {
+      limit,
+      page,
+      status,
+      active,
+      includeDeleted,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      subscriptionTier,
+    } = params;
+    const filter: FilterQuery<MerchantDocument> = {};
+    if (!includeDeleted) {
+      filter.deletedAt = null;
+    }
+    if (status) filter.status = status;
+    if (typeof active === 'boolean') filter.active = active;
+    if (search && search.trim()) {
+      filter.$text = { $search: search.trim() };
+    }
+    if (subscriptionTier) {
+      filter['subscription.tier'] = subscriptionTier;
+    }
+
+    const sortDir = sortOrder === 'asc' ? 1 : -1;
+    const sortField = sortBy === 'name' ? 'name' : sortBy === 'status' ? 'status' : sortBy === 'updatedAt' ? 'updatedAt' : 'createdAt';
+
+    const [items, total] = await Promise.all([
+      this.merchantModel
+        .find(filter)
+        .sort({ [sortField]: sortDir } as Record<string, 1 | -1>)
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .select(
+          'name userId status active deletedAt publicSlug subscription createdAt updatedAt',
+        )
+        .lean()
+        .exec() as Promise<MerchantAdminLean[]>,
+      this.merchantModel.countDocuments(filter).exec(),
+    ]);
+
+    return { items, total };
+  }
+
+  async statsAdmin(): Promise<StatsAdminResult> {
+    const baseMatch: FilterQuery<MerchantDocument> = { deletedAt: null };
+
+    const [total, activeCount, byStatusAgg] = await Promise.all([
+      this.merchantModel.countDocuments(baseMatch).exec(),
+      this.merchantModel.countDocuments({ ...baseMatch, active: true }).exec(),
+      this.merchantModel
+        .aggregate<{ _id: string; count: number }>([
+          { $match: baseMatch },
+          { $group: { _id: '$status', count: { $sum: 1 } } },
+        ])
+        .exec(),
+    ]);
+
+    const byStatus: Record<string, number> = {};
+    byStatusAgg.forEach((s) => {
+      byStatus[String(s._id)] = s.count;
+    });
+
+    return {
+      total,
+      activeCount,
+      inactiveCount: total - activeCount,
+      byStatus,
+    };
+  }
+
+  async updateAdmin(
+    id: string,
+    dto: { active?: boolean; status?: 'active' | 'inactive' | 'suspended' },
+  ): Promise<MerchantDocument> {
+    const updateData: Partial<Merchant> = {};
+    if (typeof dto.active === 'boolean') updateData.active = dto.active;
+    if (dto.status) updateData.status = dto.status;
+    if (Object.keys(updateData).length === 0) {
+      return this.findOne(id);
+    }
+    const updated = await this.merchantModel
+      .findByIdAndUpdate(
+        id,
+        { $set: updateData } as UpdateQuery<MerchantDocument>,
+        { new: true, runValidators: true },
+      )
+      .exec();
+    if (!updated) throw new NotFoundException(INVALID_ID_MSG);
+    return updated;
+  }
+
+  async suspend(
+    id: string,
+    actor: Actor,
+    reason?: string,
+  ): Promise<MerchantDocument> {
+    const merchant = await this.merchantModel.findById(id);
+    if (!merchant) throw new NotFoundException(INVALID_ID_MSG);
+    if (merchant.deletedAt)
+      throw new BadRequestException('لا يمكن تعليق تاجر محذوف');
+
+    merchant.active = false;
+    merchant.status = 'suspended' as MerchantStatusLiteral;
+    merchant.suspension = {
+      reason: reason?.trim() || undefined,
+      suspendedAt: new Date(),
+      suspendedBy: new Types.ObjectId(actor.userId),
+    };
+    await merchant.save();
+    return merchant;
+  }
+
+  async unsuspend(id: string, actor: Actor): Promise<MerchantDocument> {
+    const merchant = await this.merchantModel.findById(id);
+    if (!merchant) throw new NotFoundException(INVALID_ID_MSG);
+    if (!merchant.suspension)
+      throw new BadRequestException('التاجر غير معلّق');
+
+    merchant.active = true;
+    merchant.status = 'active' as MerchantStatusLiteral;
+    merchant.suspension = undefined;
+    await merchant.save();
+    return merchant;
+  }
+
+  async getTrendsAdmin(
+    period: '7d' | '30d',
+  ): Promise<{ date: string; count: number }[]> {
+    const days = period === '7d' ? 7 : 30;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const result = await this.merchantModel
+      .aggregate<{ _id: string; count: number }>([
+        {
+          $match: {
+            deletedAt: null,
+            createdAt: { $gte: startDate },
+          },
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+        { $project: { date: '$_id', count: 1, _id: 0 } },
+      ])
+      .exec();
+
+    return result;
+  }
+
+  async getTrendsByDateRange(
+    from: string,
+    to: string,
+  ): Promise<{ date: string; count: number }[]> {
+    const startDate = new Date(from);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(to);
+    endDate.setHours(23, 59, 59, 999);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      return [];
+    }
+
+    const result = await this.merchantModel
+      .aggregate<{ _id: string; count: number }>([
+        {
+          $match: {
+            deletedAt: null,
+            createdAt: { $gte: startDate, $lte: endDate },
+          },
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+        { $project: { date: '$_id', count: 1, _id: 0 } },
+      ])
+      .exec();
+
+    return result;
   }
 }

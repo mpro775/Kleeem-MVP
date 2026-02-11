@@ -75,6 +75,10 @@ export class MessageService {
     );
   }
 
+  async countSessionsByMerchant(merchantId: string): Promise<number> {
+    return this.messagesRepo.countByMerchant(merchantId);
+  }
+
   async createOrAppend(
     dto: CreateMessageDto,
     session?: ClientSession,

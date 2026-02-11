@@ -37,14 +37,20 @@ import { User, UserSchema } from '../users/schemas/user.schema';
 import { CleanupCoordinatorService } from './cleanup-coordinator.service';
 import { MerchantPromptController } from './controllers/merchant-prompt.controller';
 import { MerchantChecklistService } from './merchant-checklist.service';
+import { MerchantsAdminController } from './merchants.admin.controller';
 import { MerchantsController } from './merchants.controller';
 import { MerchantsService } from './merchants.service';
 import { MongoMerchantChecklistRepository } from './repositories/mongo-merchant-checklist.repository';
 import { MongoMerchantsRepository } from './repositories/mongo-merchants.repository';
 import { MongoPromptVersionRepository } from './repositories/mongo-prompt-version.repository';
+import {
+  MerchantAuditLog,
+  MerchantAuditLogSchema,
+} from './schemas/merchant-audit-log.schema';
 import { Merchant, MerchantSchema } from './schemas/merchant.schema';
 import { CurrencyService } from './services/currency.service';
 import { MerchantCacheService } from './services/merchant-cache.service';
+import { MerchantAuditService } from './services/merchant-audit.service';
 import { MerchantDeletionService } from './services/merchant-deletion.service';
 import { MerchantProfileService } from './services/merchant-profile.service';
 import { MerchantPromptService } from './services/merchant-prompt.service';
@@ -57,6 +63,7 @@ import { PromptVersionService } from './services/prompt-version.service';
   imports: [
     MongooseModule.forFeature([
       { name: Merchant.name, schema: MerchantSchema },
+      { name: MerchantAuditLog.name, schema: MerchantAuditLogSchema },
       { name: Product.name, schema: ProductSchema },
       { name: Category.name, schema: CategorySchema },
       { name: User.name, schema: UserSchema },
@@ -104,10 +111,12 @@ import { PromptVersionService } from './services/prompt-version.service';
     MerchantPromptService,
     MerchantProfileService,
     MerchantDeletionService,
+    MerchantAuditService,
     CurrencyService,
   ],
   controllers: [
     MerchantsController,
+    MerchantsAdminController,
     MerchantPromptController,
     PublicRouterController,
   ],
@@ -125,6 +134,7 @@ import { PromptVersionService } from './services/prompt-version.service';
     MerchantPromptService,
     MerchantProfileService,
     MerchantDeletionService,
+    MerchantAuditService,
     CurrencyService,
 
     // Repositories

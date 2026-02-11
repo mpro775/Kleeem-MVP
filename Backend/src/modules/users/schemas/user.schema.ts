@@ -124,6 +124,16 @@ export class User {
   };
   @Prop({ default: true, index: true }) active?: boolean;
 
+  /** سبب التعطيل (عند تعطيل من الأدمن) */
+  @Prop()
+  deactivationReason?: string;
+
+  @Prop()
+  deactivatedAt?: Date;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  deactivatedBy?: Types.ObjectId;
+
   // (اختياري) دعم حذف ناعم
   @Prop()
   deletedAt?: Date;

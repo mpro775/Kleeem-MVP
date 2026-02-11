@@ -8,6 +8,7 @@ import {
   Body,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { UseGuards } from '@nestjs/common';
 import { Roles } from 'src/common/decorators/roles.decorator'; // role: 'admin'
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -16,6 +17,7 @@ import { AnalyticsService } from './analytics.service';
 import { QueryKleemMissingResponsesDto } from './dto/query-kleem-missing-responses.dto';
 import { KleemMissingResponseDocument } from './schemas/kleem-missing-response.schema';
 
+@ApiTags('Admin', 'Admin Analytics')
 @UseGuards(RolesGuard)
 @Roles('admin')
 @Controller('admin/analytics/kleem-missing-responses')

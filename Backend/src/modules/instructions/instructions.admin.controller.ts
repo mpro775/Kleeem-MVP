@@ -30,7 +30,7 @@ import { QueryAdminInstructionsDto } from './dto/query-admin-instructions.dto';
 import { BulkIdsDto } from './dto/bulk-ids.dto';
 import { Types } from 'mongoose';
 
-@ApiTags('Admin Instructions')
+@ApiTags('Admin', 'Admin Instructions')
 @ApiBearerAuth()
 @Controller('admin/instructions')
 @UseGuards(JwtAuthGuard, RolesGuard)

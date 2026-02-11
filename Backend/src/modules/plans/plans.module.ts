@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
+import { PlansAdminController } from './plans.admin.controller';
 import { PlansController } from './plans.controller';
 import { PlansService } from './plans.service';
 import { PlanMongoRepository } from './repositories/plan.mongo.repository';
@@ -15,7 +16,7 @@ import { PLAN_REPOSITORY } from './tokens';
     PlansService,
     { provide: PLAN_REPOSITORY, useClass: PlanMongoRepository },
   ],
-  controllers: [PlansController],
+  controllers: [PlansController, PlansAdminController],
   exports: [PlansService],
 })
 export class PlansModule {}

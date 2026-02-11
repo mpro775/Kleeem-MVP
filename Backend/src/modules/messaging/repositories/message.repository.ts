@@ -100,4 +100,6 @@ export interface MessageRepository {
     limit: number;
     page: number;
   }): Promise<{ data: MessageSessionEntity[]; total: number }>;
+
+  countByMerchant(merchantId: string): Promise<number>;
 }

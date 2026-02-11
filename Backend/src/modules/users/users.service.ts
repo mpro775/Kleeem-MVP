@@ -9,9 +9,15 @@ import type { CreateUserDto } from './dto/create-user.dto';
 import type { GetUsersDto } from './dto/get-users.dto';
 import type { NotificationsPrefsDto } from './dto/notifications-prefs.dto';
 import type { UpdateUserDto } from './dto/update-user.dto';
-import type { UsersRepository } from './repositories/users.repository';
-import type { UserDocument } from './schemas/user.schema';
+import type {
+  UsersRepository,
+  ListAllAdminParams,
+  StatsAdminResult,
+  UserAdminLean,
+} from './repositories/users.repository';
+import type { UserDocument, UserRole } from './schemas/user.schema';
 import type { UserLean } from './types';
+import { toCsv } from '../../common/utils/csv.utils';
 import type { PaginationResult } from '../../common/dto/pagination.dto';
 
 /** util: تحويل آمن إلى ObjectId */
@@ -54,6 +60,69 @@ export class UsersService {
   // قراءة متعددة: Lean
   async findAll(): Promise<UserLean[]> {
     return this.repo.findAll();
+  }
+
+  async listAllAdmin(
+    params: ListAllAdminParams,
+  ): Promise<{ items: UserAdminLean[]; total: number }> {
+    return this.repo.listAllAdmin(params);
+  }
+
+  async getStatsAdmin(): Promise<StatsAdminResult> {
+    return this.repo.statsAdmin();
+  }
+
+  async getTrendsAdmin(
+    period: '7d' | '30d',
+  ): Promise<{ date: string; count: number }[]> {
+    return this.repo.getTrendsAdmin(period);
+  }
+
+  async getTrendsByDateRange(
+    from: string,
+    to: string,
+  ): Promise<{ date: string; count: number }[]> {
+    return this.repo.getTrendsByDateRange(from, to);
+  }
+
+  async exportCsv(params: {
+    role?: UserRole;
+    active?: boolean;
+    includeDeleted?: boolean;
+  }): Promise<string> {
+    const { items } = await this.listAllAdmin({
+      limit: 5000,
+      page: 1,
+      ...params,
+    });
+    const headers = ['id', 'email', 'name', 'role', 'active', 'emailVerified', 'merchantId', 'createdAt'];
+    const rows = items.map((u) => [
+      u._id ?? '',
+      u.email ?? '',
+      u.name ?? '',
+      u.role ?? '',
+      u.active ?? '',
+      u.emailVerified ?? '',
+      u.merchantId ?? '',
+      u.createdAt ? new Date(u.createdAt).toISOString() : '',
+    ]);
+    return toCsv(headers, rows);
+  }
+
+  async updateAdmin(
+    id: string,
+    dto: {
+      role?: UserRole;
+      active?: boolean;
+      reason?: string;
+      merchantId?: string | null;
+    },
+    actor?: { userId: string },
+  ): Promise<UserDocument> {
+    const _id = toObjectId(id);
+    const updated = await this.repo.updateAdmin(_id, dto, actor);
+    if (!updated) throw new UserNotFoundError(id);
+    return updated;
   }
 
   // قراءة مفردة: Lean

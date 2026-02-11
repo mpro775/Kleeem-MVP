@@ -101,6 +101,12 @@ export class AuthService {
       emailVerified: boolean;
     };
   }> {
+    const disableSignup = this.config.get<string>('DISABLE_USER_SIGNUP');
+    if (disableSignup === '1' || disableSignup === 'true' || disableSignup === 'yes') {
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.signupDisabled') ?? 'التسجيل مؤقتاً متوقف',
+      );
+    }
     this.validateRegistrationData(registerDto);
 
     try {
@@ -691,6 +697,29 @@ export class AuthService {
     this.businessMetrics.incPasswordChangeCompleted?.();
   }
 
+  /**
+   * إعادة تعيين كلمة مرور من الأدمن (يكوّن كلمة مؤقتة ويعيدها).
+   * للأدمن فقط - يُستدعى من POST /admin/users/:id/reset-password
+   */
+  async adminResetPassword(userId: string): Promise<{ temporaryPassword: string }> {
+    const user = await this.repo.findUserByIdWithPassword(userId);
+    if (!user) {
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.userNotFound'),
+      );
+    }
+
+    const temp = generateSecureToken(8); // 16 hex chars → كلمة مؤقتة
+    user.password = temp;
+    user.passwordChangedAt = new Date();
+    await this.repo.saveUser(user);
+
+    await this.invalidateUserCache(user.email ?? '', String(user._id));
+    await this.repo.deletePasswordResetTokensByUser(user._id);
+
+    return { temporaryPassword: temp };
+  }
+
   async ensureMerchant(userId: string): Promise<{
     accessToken: string;
     user: {
@@ -741,6 +770,14 @@ export class AuthService {
   }
 
   private async createMerchantForUser(user: UserDocument): Promise<void> {
+    if (
+      this.config.get<string>('DISABLE_MERCHANT_SIGNUP') === '1' ||
+      this.config.get<string>('DISABLE_MERCHANT_SIGNUP') === 'true'
+    ) {
+      throw new BadRequestException(
+        this.translationService.translate('auth.errors.merchantSignupDisabled') ?? 'إنشاء حسابات تجار جدد مؤقتاً متوقف',
+      );
+    }
     if (!user.emailVerified) {
       throw new BadRequestException(
         this.translationService.translate('auth.errors.emailNotVerified'),

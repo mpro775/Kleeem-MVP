@@ -17,6 +17,7 @@ import { CreateChannelDto } from './dto/create-channel.dto';
 import { UpdateChannelDto } from './dto/update-channel.dto';
 import {
   ChannelsRepository,
+  ChannelsCountByMerchant,
   ListAllAdminParams,
   StatsAdminResult,
 } from './repositories/channels.repository';
@@ -105,6 +106,10 @@ export class ChannelsService {
 
   async getStatsAdmin(): Promise<StatsAdminResult> {
     return this.repo.statsAdmin();
+  }
+
+  async countByMerchant(merchantId: string): Promise<ChannelsCountByMerchant> {
+    return this.repo.countByMerchant(new Types.ObjectId(merchantId));
   }
 
   private async getOrThrow(id: string): Promise<HydratedDocument<Channel>> {

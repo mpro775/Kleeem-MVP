@@ -8,7 +8,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 
 import { GeminiService } from './gemini.service';
 
-@ApiTags('Admin AI')
+@ApiTags('Admin', 'Admin AI')
 @ApiBearerAuth()
 @Controller('admin/ai')
 @UseGuards(JwtAuthGuard, RolesGuard)

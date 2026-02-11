@@ -39,6 +39,12 @@ export type ChannelSecretsLean = {
   sessionId?: string; // WhatsApp QR
 };
 
+export type ChannelsCountByMerchant = {
+  total: number;
+  enabled: number;
+  connected: number;
+};
+
 export interface ChannelsRepository {
   // 基本
   create(
@@ -74,6 +80,8 @@ export interface ChannelsRepository {
     params: ListAllAdminParams,
   ): Promise<{ items: ChannelLean[]; total: number }>;
   statsAdmin(): Promise<StatsAdminResult>;
+
+  countByMerchant(merchantId: Types.ObjectId): Promise<ChannelsCountByMerchant>;
 
   // مساعدة
   startSession(): Promise<ClientSession>;

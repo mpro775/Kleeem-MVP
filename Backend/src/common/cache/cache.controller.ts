@@ -16,7 +16,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { CacheWarmerOrchestrator } from './cache-warmer.orchestrator';
 import { CacheService } from './cache.service';
 
-@ApiTags('Cache Management')
+@ApiTags('Admin', 'Cache Management')
 @Controller('admin/cache')
 @UseGuards(JwtAuthGuard)
 @Roles(UserRole.ADMIN)

@@ -18,9 +18,11 @@ import {
 import {
   ChannelsRepository,
   ChannelSecretsLean,
+  ChannelsCountByMerchant,
   ListAllAdminParams,
   StatsAdminResult,
 } from './channels.repository';
+import { ChannelStatus } from '../schemas/channel.schema';
 
 @Injectable()
 export class MongoChannelsRepository implements ChannelsRepository {
@@ -169,6 +171,16 @@ export class MongoChannelsRepository implements ChannelsRepository {
       byProvider: byProviderMap,
       byStatus: byStatusMap,
     };
+  }
+
+  async countByMerchant(merchantId: Types.ObjectId): Promise<ChannelsCountByMerchant> {
+    const filter: FilterQuery<ChannelDocument> = { merchantId, deletedAt: null };
+    const [total, enabled, connected] = await Promise.all([
+      this.model.countDocuments(filter).exec(),
+      this.model.countDocuments({ ...filter, enabled: true }).exec(),
+      this.model.countDocuments({ ...filter, status: ChannelStatus.CONNECTED }).exec(),
+    ]);
+    return { total, enabled, connected };
   }
 
   async startSession(): Promise<ClientSession> {

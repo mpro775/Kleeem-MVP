@@ -164,6 +164,21 @@ export class Merchant {
   @Prop({ default: true, index: true })
   active!: boolean;
 
+  /** تعليق من الأدمن (مع سبب) */
+  @Prop({
+    type: {
+      reason: String,
+      suspendedAt: Date,
+      suspendedBy: { type: Types.ObjectId, ref: 'User' },
+    },
+    _id: false,
+  })
+  suspension?: {
+    reason?: string;
+    suspendedAt?: Date;
+    suspendedBy?: Types.ObjectId;
+  };
+
   // ✅ تصريح صريح بالنوع مع default=null
   @Prop({ type: Date, default: null, index: true })
   deletedAt!: Date | null;

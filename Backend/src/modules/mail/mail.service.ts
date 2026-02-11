@@ -93,6 +93,29 @@ export class MailService {
   }
 
   /**
+   * إرسال بريد عام (للتذاكر، إشعارات، إلخ)
+   */
+  async sendEmail(
+    to: string,
+    subject: string,
+    html: string,
+  ): Promise<void> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      await this.transporter.sendMail({
+        from: this.mailFrom,
+        to,
+        subject,
+        html,
+      });
+      this.logger.log(`Email sent to ${to}`);
+    } catch (err: unknown) {
+      const stack = err instanceof Error ? err.stack : undefined;
+      this.logger.error(`Failed to send email to ${to}`, stack);
+    }
+  }
+
+  /**
    * يرسل بريد إعادة تعيين كلمة المرور
    */
   async sendPasswordResetEmail(email: string, link: string): Promise<void> {

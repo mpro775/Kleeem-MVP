@@ -22,6 +22,22 @@ export class AttachmentMeta {
 }
 const AttachmentMetaSchema = SchemaFactory.createForClass(AttachmentMeta);
 
+@Schema({ _id: false })
+export class TicketReplyItem {
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  authorId!: Types.ObjectId;
+
+  @Prop({ required: true })
+  body!: string;
+
+  @Prop({ default: false })
+  isInternal?: boolean;
+
+  @Prop({ default: () => new Date() })
+  createdAt!: Date;
+}
+const TicketReplyItemSchema = SchemaFactory.createForClass(TicketReplyItem);
+
 @Schema({ timestamps: true, collection: 'support_tickets' })
 export class SupportTicket {
   @Prop({ type: String, required: true }) name!: string;
@@ -54,6 +70,14 @@ export class SupportTicket {
 
   @Prop({ type: Types.ObjectId, ref: 'User', index: true })
   createdBy?: Types.ObjectId;
+
+  /** د.1: موظف الدعم المعيّن للتذكرة */
+  @Prop({ type: Types.ObjectId, ref: 'User', index: true })
+  assignedTo?: Types.ObjectId;
+
+  /** د.2: ردود/تعليقات على التذكرة */
+  @Prop({ type: [TicketReplyItemSchema], default: [] })
+  replies!: TicketReplyItem[];
 }
 export const SupportTicketSchema = SchemaFactory.createForClass(SupportTicket);
 
@@ -119,6 +143,17 @@ SupportTicketSchema.index(
 SupportTicketSchema.index(
   {
     createdBy: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { background: true, sparse: true },
+);
+
+// فهرس للموظف المعيّن
+SupportTicketSchema.index(
+  {
+    assignedTo: 1,
+    status: 1,
     createdAt: -1,
     _id: -1,
   },

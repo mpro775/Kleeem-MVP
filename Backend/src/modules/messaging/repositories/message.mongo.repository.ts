@@ -219,6 +219,12 @@ export class MessageMongoRepository implements MessageRepository {
     );
   }
 
+  async countByMerchant(merchantId: string): Promise<number> {
+    return this.model
+      .countDocuments({ merchantId: new Types.ObjectId(merchantId) })
+      .exec();
+  }
+
   async findAll(filters: {
     merchantId?: string;
     channel?: string;

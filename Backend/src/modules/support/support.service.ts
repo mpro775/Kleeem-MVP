@@ -8,6 +8,7 @@ import {
   Logger,
   Inject,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   GetObjectCommand,
@@ -18,13 +19,18 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Types } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
 
+import { MailService } from '../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateContactDto } from './dto/create-contact.dto';
+import { toCsv } from '../../common/utils/csv.utils';
 import {
   SupportRepository,
   SupportTicketEntity,
+  ListAllAdminParams,
 } from './repositories/support.repository';
 import { SUPPORT_REPOSITORY } from './tokens';
 import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
+import type { TicketStatus } from './support.enums';
 
 // ثوابت لتجنب الأرقام السحرية
 const BASE_36 = 36;
@@ -62,6 +68,8 @@ export class SupportService {
     private readonly repo: SupportRepository,
     private readonly http: HttpService,
     @Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client,
+    private readonly mailService: MailService,
+    private readonly notificationsService: NotificationsService,
   ) { }
 
   private generateTicketNumber() {
@@ -328,5 +336,157 @@ export class SupportService {
     const created = await this.repo.create(ticketData);
     await this.notifyTicketCreation(created);
     return created;
+  }
+
+  /** د.3: إحصائيات التذاكر */
+  async getStatsAdmin(): Promise<{
+    byStatus: Record<string, number>;
+    total: number;
+    avgResolutionHours?: number;
+  }> {
+    return this.repo.statsAdmin?.() ?? {
+      byStatus: {},
+      total: 0,
+    };
+  }
+
+  /** قائمة التذاكر للأدمن مع فلترة وترقيم */
+  async listAllAdmin(
+    params: ListAllAdminParams,
+  ): Promise<{ items: SupportTicketEntity[]; total: number }> {
+    return this.repo.listAllAdmin(params);
+  }
+
+  /** جلب تذكرة واحدة (للأدمن) */
+  async findOne(id: string): Promise<SupportTicketEntity> {
+    const ticket = await this.repo.findById?.(id);
+    if (!ticket) throw new NotFoundException('التذكرة غير موجودة');
+    return ticket;
+  }
+
+  async exportCsv(params: { status?: TicketStatus }): Promise<string> {
+    const { items } = await this.listAllAdmin({
+      limit: 5000,
+      page: 1,
+      ...params,
+    });
+    const headers = [
+      'id',
+      'ticketNumber',
+      'name',
+      'email',
+      'phone',
+      'topic',
+      'subject',
+      'message',
+      'status',
+      'source',
+      'createdAt',
+    ];
+    const rows = items.map((t) => [
+      (t as { _id?: { toString?: () => string } })._id?.toString?.() ?? '',
+      (t as { ticketNumber?: string }).ticketNumber ?? '',
+      (t as { name?: string }).name ?? '',
+      (t as { email?: string }).email ?? '',
+      (t as { phone?: string }).phone ?? '',
+      (t as { topic?: string }).topic ?? '',
+      (t as { subject?: string }).subject ?? '',
+      (t as { message?: string }).message ?? '',
+      (t as { status?: string }).status ?? '',
+      (t as { source?: string }).source ?? '',
+      (t as { createdAt?: Date }).createdAt
+        ? new Date((t as { createdAt?: Date }).createdAt!).toISOString()
+        : '',
+    ]);
+    return toCsv(headers, rows);
+  }
+
+  /** إشعار صاحب التذكرة عند التحديث أو الرد (د.4) */
+  private async notifyTicketUpdated(
+    ticket: SupportTicketEntity,
+    kind: 'status_change' | 'reply_added',
+    detail?: string,
+  ): Promise<void> {
+    const title =
+      kind === 'status_change'
+        ? `تحديث على تذكرتك ${ticket.ticketNumber}`
+        : `رد جديد على تذكرتك ${ticket.ticketNumber}`;
+    const body =
+      detail ||
+      (kind === 'status_change'
+        ? `تم تحديث حالة التذكرة إلى: ${ticket.status}`
+        : 'تمت إضافة رد على تذكرتك');
+
+    if (ticket.createdBy) {
+      await this.notificationsService
+        .notifyUser(ticket.createdBy.toString(), {
+          type: 'support_ticket_update',
+          title,
+          body,
+          data: { ticketId: ticket._id?.toString(), ticketNumber: ticket.ticketNumber },
+        })
+        .catch(() => {});
+    } else if (ticket.email) {
+      const html = `
+        <p>مرحباً ${ticket.name || ''}،</p>
+        <p>${body}</p>
+        <p>رقم التذكرة: ${ticket.ticketNumber}</p>
+      `;
+      await this.mailService
+        .sendEmail(ticket.email, title, html)
+        .catch(() => {});
+    }
+  }
+
+  /** د.2: إضافة رد على تذكرة */
+  async addReplyAdmin(
+    id: string,
+    body: string,
+    authorId: string,
+    isInternal = false,
+  ): Promise<SupportTicketEntity> {
+    const ticket = await this.repo.findById?.(id);
+    if (!ticket) throw new NotFoundException('التذكرة غير موجودة');
+
+    const reply = {
+      authorId: new Types.ObjectId(authorId),
+      body,
+      isInternal: !!isInternal,
+      createdAt: new Date(),
+    };
+    const updated = await this.repo.addReply?.(id, reply);
+    if (!updated) throw new NotFoundException('التذكرة غير موجودة');
+
+    if (!isInternal) {
+      await this.notifyTicketUpdated(
+        updated,
+        'reply_added',
+        `تمت إضافة رد جديد على تذكرتك`,
+      );
+    }
+    return updated;
+  }
+
+  /** تحديث حالة التذكرة أو تعيين الموظف (للأدمن) */
+  async updateAdmin(
+    id: string,
+    dto: { status?: TicketStatus; assignedTo?: string | null },
+  ): Promise<SupportTicketEntity> {
+    const before = await this.repo.findById?.(id);
+    const patch: Partial<SupportTicketEntity> = {};
+    if (dto.status !== undefined) patch.status = dto.status;
+    if (dto.assignedTo !== undefined) {
+      patch.assignedTo =
+        dto.assignedTo != null && dto.assignedTo !== ''
+          ? new Types.ObjectId(dto.assignedTo)
+          : (null as unknown as Types.ObjectId);
+    }
+    const updated = await this.repo.updateById?.(id, patch);
+    if (!updated) throw new NotFoundException('التذكرة غير موجودة');
+
+    if (dto.status !== undefined && before?.status !== dto.status) {
+      await this.notifyTicketUpdated(updated, 'status_change');
+    }
+    return updated;
   }
 }

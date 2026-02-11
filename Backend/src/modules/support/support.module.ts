@@ -4,12 +4,15 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MulterModule } from '@nestjs/platform-express';
 
+import { MailModule } from '../mail/mail.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { StorageModule } from '../../common/storage/storage.module';
 import { SupportMongoRepository } from './repositories/support.mongo.repository';
 import {
   SupportTicket,
   SupportTicketSchema,
 } from './schemas/support-ticket.schema';
+import { SupportAdminController } from './support.admin.controller';
 import { SupportController } from './support.controller';
 import { SupportService } from './support.service';
 import { SUPPORT_REPOSITORY } from './tokens';
@@ -22,8 +25,10 @@ import { SUPPORT_REPOSITORY } from './tokens';
       { name: SupportTicket.name, schema: SupportTicketSchema },
     ]),
     StorageModule,
+    MailModule,
+    NotificationsModule,
   ],
-  controllers: [SupportController],
+  controllers: [SupportController, SupportAdminController],
   providers: [
     SupportService,
     { provide: SUPPORT_REPOSITORY, useClass: SupportMongoRepository },

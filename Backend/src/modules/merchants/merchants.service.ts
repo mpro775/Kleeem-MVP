@@ -8,10 +8,17 @@ import { OnboardingBasicDto } from './dto/requests/onboarding-basic.dto';
 import { PreviewPromptDto } from './dto/requests/preview-prompt.dto';
 import { QuickConfigDto } from './dto/requests/quick-config.dto';
 import { UpdateMerchantDto } from './dto/requests/update-merchant.dto';
-import { MerchantsRepository } from './repositories/merchants.repository';
+import { toCsv } from '../../common/utils/csv.utils';
+import {
+  MerchantsRepository,
+  ListAllAdminParams,
+  StatsAdminResult,
+  MerchantAdminLean,
+} from './repositories/merchants.repository';
 import { MerchantDocument } from './schemas/merchant.schema';
 import { QuickConfig } from './schemas/quick-config.schema';
 import { MerchantCacheService } from './services/merchant-cache.service';
+import { MerchantAuditService } from './services/merchant-audit.service';
 import { MerchantDeletionService } from './services/merchant-deletion.service';
 import { MerchantProfileService } from './services/merchant-profile.service';
 import { MerchantPromptService } from './services/merchant-prompt.service';
@@ -36,6 +43,7 @@ export class MerchantsService {
     private readonly promptSvc: MerchantPromptService,
     private readonly profileSvc: MerchantProfileService,
     private readonly deletionSvc: MerchantDeletionService,
+    private readonly auditSvc: MerchantAuditService,
   ) { }
 
   async create(dto: CreateMerchantDto): Promise<MerchantDocument> {
@@ -53,6 +61,72 @@ export class MerchantsService {
 
   async findAll(): Promise<MerchantDocument[]> {
     return this.merchantsRepository.findAll();
+  }
+
+  async listAllAdmin(
+    params: ListAllAdminParams,
+  ): Promise<{ items: MerchantAdminLean[]; total: number }> {
+    return this.merchantsRepository.listAllAdmin(params);
+  }
+
+  async getStatsAdmin(): Promise<StatsAdminResult> {
+    return this.merchantsRepository.statsAdmin();
+  }
+
+  async getTrendsAdmin(
+    period: '7d' | '30d',
+  ): Promise<{ date: string; count: number }[]> {
+    return this.merchantsRepository.getTrendsAdmin(period);
+  }
+
+  async getTrendsByDateRange(
+    from: string,
+    to: string,
+  ): Promise<{ date: string; count: number }[]> {
+    return this.merchantsRepository.getTrendsByDateRange(from, to);
+  }
+
+  async exportCsv(params: {
+    status?: 'active' | 'inactive' | 'suspended';
+    active?: boolean;
+    includeDeleted?: boolean;
+    subscriptionTier?: string;
+  }): Promise<string> {
+    const { items } = await this.listAllAdmin({
+      limit: 5000,
+      page: 1,
+      ...params,
+    });
+    const headers = [
+      'id',
+      'name',
+      'userId',
+      'status',
+      'active',
+      'publicSlug',
+      'tier',
+      'createdAt',
+    ];
+    const rows = items.map((m) => [
+      m._id?.toString?.() ?? '',
+      m.name ?? '',
+      m.userId?.toString?.() ?? '',
+      m.status ?? '',
+      m.active ?? '',
+      m.publicSlug ?? '',
+      m.subscription?.tier ?? '',
+      m.createdAt ? new Date(m.createdAt).toISOString() : '',
+    ]);
+    return toCsv(headers, rows);
+  }
+
+  async updateAdmin(
+    id: string,
+    dto: { active?: boolean; status?: 'active' | 'inactive' | 'suspended' },
+  ): Promise<MerchantDocument> {
+    const updated = await this.merchantsRepository.updateAdmin(id, dto);
+    await this.invalidateMerchantCache(id);
+    return updated;
   }
 
   async findOne(id: string): Promise<MerchantDocument> {
@@ -90,6 +164,35 @@ export class MerchantsService {
     actor: { userId: string; role: string },
   ): Promise<{ message: string }> {
     return this.deletionSvc.purge(id, actor);
+  }
+
+  async suspend(
+    id: string,
+    actor: { userId: string },
+    reason?: string,
+  ): Promise<MerchantDocument> {
+    const updated = await this.merchantsRepository.suspend(id, actor, reason);
+    await this.auditSvc.log(id, 'suspend', actor.userId, { reason }).catch(() => {});
+    await this.invalidateMerchantCache(id);
+    return updated;
+  }
+
+  async unsuspend(
+    id: string,
+    actor: { userId: string },
+  ): Promise<MerchantDocument> {
+    const updated = await this.merchantsRepository.unsuspend(id, actor);
+    await this.auditSvc.log(id, 'unsuspend', actor.userId).catch(() => {});
+    await this.invalidateMerchantCache(id);
+    return updated;
+  }
+
+  getAuditLog(
+    merchantId: string,
+    limit?: number,
+    page?: number,
+  ): ReturnType<MerchantAuditService['list']> {
+    return this.auditSvc.list(merchantId, limit ?? 50, page ?? 1);
   }
 
   async isSubscriptionActive(id: string): Promise<boolean> {

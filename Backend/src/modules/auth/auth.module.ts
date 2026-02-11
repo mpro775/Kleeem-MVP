@@ -57,7 +57,7 @@ import { CustomerJwtStrategy } from './strategies/customer-jwt.strategy';
     ]),
     MailModule, // ← استيراد MailModule ليوفر MailService
 
-    UsersModule,
+    forwardRef(() => UsersModule),
     forwardRef(() => MerchantsModule), // لازمه ل AuthController الذي يستعمل MerchantsService
     forwardRef(() => CustomersModule), // للـ CustomerJwtStrategy
     MetricsModule,

@@ -13,7 +13,12 @@ import type { NotificationsPrefsDto } from '../dto/notifications-prefs.dto';
 import type { UpdateUserDto } from '../dto/update-user.dto';
 import type { UserDocument } from '../schemas/user.schema';
 import type { UserLean } from '../types';
-import type { UsersRepository } from './users.repository';
+import type {
+  UsersRepository,
+  ListAllAdminParams,
+  StatsAdminResult,
+  UserAdminLean,
+} from './users.repository';
 import type { FilterQuery, QueryOptions } from 'mongoose';
 
 /** ثوابت لتجنّب الأرقام/النصوص السحرية */
@@ -164,5 +169,195 @@ export class MongoUsersRepository implements UsersRepository {
 
     const items = raw.items.map(normalizeLean);
     return { ...raw, items };
+  }
+
+  async listAllAdmin(
+    params: ListAllAdminParams,
+  ): Promise<{ items: UserAdminLean[]; total: number }> {
+    const {
+      limit,
+      page,
+      role,
+      active,
+      includeDeleted,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = params;
+    const filter: FilterQuery<User> = {};
+    if (!includeDeleted) {
+      filter.$or = [{ deletedAt: { $exists: false } }, { deletedAt: null }];
+    }
+    if (role) filter.role = role;
+    if (typeof active === 'boolean') filter.active = active;
+    if (search && search.trim()) {
+      filter.$text = { $search: search.trim() };
+    }
+
+    const sortDir = sortOrder === 'asc' ? 1 : -1;
+    const sortField =
+      sortBy === 'name' ? 'name' : sortBy === 'email' ? 'email' : sortBy === 'updatedAt' ? 'updatedAt' : 'createdAt';
+
+    const [docs, total] = await Promise.all([
+      this.userModel
+        .find(filter)
+        .select(SELECT_SAFE)
+        .sort({ [sortField]: sortDir } as Record<string, 1 | -1>)
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean()
+        .exec() as Promise<RawLeanUser[]>,
+      this.userModel.countDocuments(filter).exec(),
+    ]);
+
+    const items: UserAdminLean[] = docs.map((u) => ({
+      _id: (u._id as { toString?: () => string })?.toString?.() ?? String(u._id),
+      email: u.email,
+      name: u.name,
+      role: u.role,
+      active: u.active,
+      emailVerified: u.emailVerified,
+      merchantId: u.merchantId
+        ? ((u.merchantId as { toString?: () => string })?.toString?.() ??
+          String(u.merchantId))
+        : undefined,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
+    }));
+
+    return { items, total };
+  }
+
+  async statsAdmin(): Promise<StatsAdminResult> {
+    const baseMatch: FilterQuery<User> = {
+      $or: [{ deletedAt: { $exists: false } }, { deletedAt: null }],
+    };
+
+    const [total, activeCount, byRoleAgg] = await Promise.all([
+      this.userModel.countDocuments(baseMatch).exec(),
+      this.userModel.countDocuments({ ...baseMatch, active: true }).exec(),
+      this.userModel
+        .aggregate<{ _id: string; count: number }>([
+          { $match: baseMatch },
+          { $group: { _id: '$role', count: { $sum: 1 } } },
+        ])
+        .exec(),
+    ]);
+
+    const byRole: Record<string, number> = {};
+    byRoleAgg.forEach((r) => {
+      byRole[String(r._id)] = r.count;
+    });
+
+    return {
+      total,
+      activeCount,
+      inactiveCount: total - activeCount,
+      byRole,
+    };
+  }
+
+  async updateAdmin(
+    id: Types.ObjectId,
+    dto: {
+      role?: User['role'];
+      active?: boolean;
+      reason?: string;
+      merchantId?: string | null;
+    },
+    actor?: { userId: string },
+  ): Promise<UserDocument | null> {
+    const updateData: Record<string, unknown> = {};
+    if (dto.role !== undefined) updateData.role = dto.role;
+    if (dto.merchantId !== undefined) {
+      updateData.merchantId =
+        dto.merchantId != null && dto.merchantId !== ''
+          ? new Types.ObjectId(dto.merchantId)
+          : null;
+    }
+    if (typeof dto.active === 'boolean') {
+      updateData.active = dto.active;
+      if (dto.active === false && dto.reason) {
+        updateData.deactivationReason = dto.reason.trim();
+        updateData.deactivatedAt = new Date();
+        if (actor?.userId) {
+          updateData.deactivatedBy = new Types.ObjectId(actor.userId);
+        }
+      } else if (dto.active === true) {
+        updateData.deactivationReason = null;
+        updateData.deactivatedAt = null;
+        updateData.deactivatedBy = null;
+      }
+    }
+    if (Object.keys(updateData).length === 0) {
+      return this.userModel.findById(id).exec();
+    }
+    return this.userModel
+      .findByIdAndUpdate(id, { $set: updateData }, { new: true })
+      .exec();
+  }
+
+  async getTrendsAdmin(
+    period: '7d' | '30d',
+  ): Promise<{ date: string; count: number }[]> {
+    const days = period === '7d' ? 7 : 30;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const baseMatch: FilterQuery<User> = {
+      $or: [{ deletedAt: { $exists: false } }, { deletedAt: null }],
+      createdAt: { $gte: startDate },
+    };
+
+    const result = await this.userModel
+      .aggregate<{ _id: string; count: number }>([
+        { $match: baseMatch },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+        { $project: { date: '$_id', count: 1, _id: 0 } },
+      ])
+      .exec();
+
+    return result;
+  }
+
+  async getTrendsByDateRange(
+    from: string,
+    to: string,
+  ): Promise<{ date: string; count: number }[]> {
+    const startDate = new Date(from);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(to);
+    endDate.setHours(23, 59, 59, 999);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      return [];
+    }
+
+    const baseMatch: FilterQuery<User> = {
+      $or: [{ deletedAt: { $exists: false } }, { deletedAt: null }],
+      createdAt: { $gte: startDate, $lte: endDate },
+    };
+
+    const result = await this.userModel
+      .aggregate<{ _id: string; count: number }>([
+        { $match: baseMatch },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+        { $project: { date: '$_id', count: 1, _id: 0 } },
+      ])
+      .exec();
+
+    return result;
   }
 }
