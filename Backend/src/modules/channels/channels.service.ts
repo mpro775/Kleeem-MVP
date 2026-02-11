@@ -15,7 +15,11 @@ import { WhatsAppCloudAdapter } from './adapters/whatsapp-cloud.adapter';
 import { WhatsAppQrAdapter } from './adapters/whatsapp-qr.adapter';
 import { CreateChannelDto } from './dto/create-channel.dto';
 import { UpdateChannelDto } from './dto/update-channel.dto';
-import { ChannelsRepository } from './repositories/channels.repository';
+import {
+  ChannelsRepository,
+  ListAllAdminParams,
+  StatsAdminResult,
+} from './repositories/channels.repository';
 import {
   ChannelProvider,
   ChannelStatus,
@@ -77,6 +81,30 @@ export class ChannelsService {
     provider?: ChannelProvider,
   ): Promise<ChannelLean[]> {
     return this.repo.listByMerchant(new Types.ObjectId(merchantId), provider);
+  }
+
+  async listAllAdmin(
+    params: {
+      merchantId?: string;
+      provider?: ChannelProvider;
+      status?: ChannelStatus;
+      limit: number;
+      page: number;
+    },
+  ): Promise<{ items: ChannelLean[]; total: number }> {
+    const repoParams: ListAllAdminParams = {
+      limit: params.limit,
+      page: params.page,
+    };
+    if (params.merchantId)
+      repoParams.merchantId = new Types.ObjectId(params.merchantId);
+    if (params.provider) repoParams.provider = params.provider;
+    if (params.status) repoParams.status = params.status;
+    return this.repo.listAllAdmin(repoParams);
+  }
+
+  async getStatsAdmin(): Promise<StatsAdminResult> {
+    return this.repo.statsAdmin();
   }
 
   private async getOrThrow(id: string): Promise<HydratedDocument<Channel>> {

@@ -4,6 +4,7 @@ import type { Types } from 'mongoose';
 export interface FindAllParams {
   merchantId?: string;
   active?: boolean;
+  type?: 'auto' | 'manual';
   limit?: number;
   page?: number;
 }

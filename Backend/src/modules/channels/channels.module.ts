@@ -10,6 +10,7 @@ import { WebchatAdapter } from './adapters/webchat.adapter';
 import { WhatsAppCloudAdapter } from './adapters/whatsapp-cloud.adapter';
 import { WhatsAppQrAdapter } from './adapters/whatsapp-qr.adapter';
 import { ChannelsDispatcherService } from './channels-dispatcher.service';
+import { ChannelsAdminController } from './channels.admin.controller';
 import { ChannelsController } from './channels.controller';
 import { ChannelsService } from './channels.service';
 import { MongoChannelsRepository } from './repositories/mongo-channels.repository';
@@ -22,7 +23,7 @@ import { WhatsappCloudService } from './whatsapp-cloud.service';
     HttpModule,
     forwardRef(() => ChatModule),
   ],
-  controllers: [ChannelsController],
+  controllers: [ChannelsController, ChannelsAdminController],
   providers: [
     ChannelsService,
     {

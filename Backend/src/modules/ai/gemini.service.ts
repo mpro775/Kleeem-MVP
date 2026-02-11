@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import { InstructionsService } from '../instructions/instructions.service';
 
@@ -8,10 +9,37 @@ export class GeminiService {
   private genAI: GoogleGenerativeAI;
   private logger = new Logger(GeminiService.name);
 
-  constructor(private instructionsService: InstructionsService) {
-    this.genAI = new GoogleGenerativeAI(
-      'AIzaSyAFLWfWKrZpG6c4-uYYqgeYnLtvk3PijSU',
-    );
+  constructor(
+    private instructionsService: InstructionsService,
+    private configService: ConfigService,
+  ) {
+    const apiKey =
+      this.configService.get<string>('GOOGLE_GEMINI_API_KEY') ||
+      process.env.GOOGLE_GEMINI_API_KEY ||
+      'AIzaSyAFLWfWKrZpG6c4-uYYqgeYnLtvk3PijSU';
+    this.genAI = new GoogleGenerativeAI(apiKey);
+  }
+
+  async checkHealth(): Promise<{ ok: boolean; message?: string }> {
+    const apiKey =
+      this.configService.get<string>('GOOGLE_GEMINI_API_KEY') ||
+      process.env.GOOGLE_GEMINI_API_KEY;
+    if (!apiKey || apiKey.trim() === '') {
+      return { ok: false, message: 'GOOGLE_GEMINI_API_KEY is not set' };
+    }
+    try {
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const result = await model.generateContent('ping');
+      if (result?.response?.text()) {
+        return { ok: true };
+      }
+      return { ok: false, message: 'No response from Gemini' };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown Gemini API error';
+      this.logger.warn('Gemini health check failed', { error: message });
+      return { ok: false, message };
+    }
   }
   async generateAndSaveInstructionFromBadReply(
     badReply: string,
