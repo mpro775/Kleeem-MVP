@@ -1,5 +1,6 @@
 // Request DTOs
 export * from './requests/create-merchant.dto';
+export * from './requests/leads-settings.dto';
 export * from './requests/update-merchant.dto';
 export * from './requests/onboarding-basic.dto';
 export * from './requests/quick-config.dto';

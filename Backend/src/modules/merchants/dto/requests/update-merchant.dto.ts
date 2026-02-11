@@ -1,15 +1,24 @@
 import { PartialType } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUrl } from 'class-validator'; // تأكد من الاستيراد
+import { IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { CreateMerchantDto } from './create-merchant.dto';
+import { LeadsSettingsDto } from './leads-settings.dto';
 
 export class UpdateMerchantDto extends PartialType(CreateMerchantDto) {
-  // إعادة تعريف الحقل يدوياً لضمان عدم حذفه
   @ApiPropertyOptional({
     description: 'رابط شعار التاجر',
     example: 'https://example.com/logo.png',
   })
   @IsOptional()
-  @IsString() // استخدم IsString أو IsUrl
+  @IsString()
   logoUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'إعدادات جمع العملاء المحتملين (Leads)',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LeadsSettingsDto)
+  leadsSettings?: LeadsSettingsDto;
 }

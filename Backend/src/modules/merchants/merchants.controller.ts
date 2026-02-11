@@ -56,6 +56,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
 
 import { CreateMerchantDto } from './dto/requests/create-merchant.dto';
+import { LeadsSettingsDto } from './dto/requests/leads-settings.dto';
 import { OnboardingBasicDto } from './dto/requests/onboarding-basic.dto';
 import { UpdateMerchantDto } from './dto/requests/update-merchant.dto';
 import {
@@ -246,6 +247,53 @@ export class MerchantsController {
       this.translationService,
     );
     return this.checklist.getChecklist(merchantId);
+  }
+
+  @Get(':id/leads-settings')
+  @ApiOperation({ summary: 'جلب إعدادات جمع العملاء المحتملين (Leads)' })
+  @ApiParam({ name: 'id', description: 'معرف التاجر' })
+  @ApiOkResponse({ description: 'إعدادات الـ Leads' })
+  @ApiNotFoundResponse({ description: 'التاجر غير موجود' })
+  @ApiForbiddenResponse({ description: 'غير مخوّل' })
+  async getLeadsSettings(
+    @Param('id') id: string,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+    @CurrentUser() user: { role: Role },
+  ): Promise<{ enabled: boolean; fields: LeadsSettingsDto['fields'] }> {
+    assertOwnerOrAdmin(id, jwtMerchantId, user.role, this.translationService);
+    const merchant = await this.svc.findOne(id);
+    if (!merchant)
+      throw new NotFoundException('i18n:merchants.errors.notFound');
+    const settings = merchant.leadsSettings;
+    return {
+      enabled: settings?.enabled ?? true,
+      fields: settings?.fields ?? [],
+    };
+  }
+
+  @Patch(':id/leads-settings')
+  @ApiOperation({ summary: 'تحديث إعدادات جمع العملاء المحتملين (Leads)' })
+  @ApiParam({ name: 'id', description: 'معرف التاجر' })
+  @ApiBody({ type: LeadsSettingsDto })
+  @ApiOkResponse({ description: 'تم تحديث الإعدادات' })
+  @ApiNotFoundResponse({ description: 'التاجر غير موجود' })
+  @ApiForbiddenResponse({ description: 'غير مخوّل' })
+  async updateLeadsSettings(
+    @Param('id') id: string,
+    @Body() dto: LeadsSettingsDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+    @CurrentUser() user: { role: Role },
+  ): Promise<MerchantDocument> {
+    assertOwnerOrAdmin(id, jwtMerchantId, user.role, this.translationService);
+    const merchant = await this.svc.findOne(id);
+    if (!merchant)
+      throw new NotFoundException('i18n:merchants.errors.notFound');
+    return this.svc.update(id, {
+      leadsSettings: {
+        enabled: dto.enabled ?? merchant.leadsSettings?.enabled ?? true,
+        fields: dto.fields ?? merchant.leadsSettings?.fields ?? [],
+      },
+    });
   }
 
   @Get('prompt/advanced-template')
