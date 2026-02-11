@@ -1,8 +1,15 @@
 // src/modules/orders/repositories/orders.repository.ts
 import type { PaginationResult } from '../../../common/dto/pagination.dto';
 import type { MerchantDocument } from '../../merchants/schemas/merchant.schema';
-import type { GetOrdersDto } from '../dto/get-orders.dto';
+import type { GetOrdersDto, ListOrdersDto } from '../dto/get-orders.dto';
 import type { Order } from '../schemas/order.schema';
+
+export interface ListOrdersOffsetResult {
+  items: Order[];
+  total: number;
+  page: number;
+  limit: number;
+}
 
 export interface OrdersRepository {
   create(data: Record<string, unknown>): Promise<Order>;
@@ -31,4 +38,8 @@ export interface OrdersRepository {
     phone: string,
     dto: GetOrdersDto,
   ): Promise<PaginationResult<Order>>;
+  findOrdersOffset(
+    merchantId: string,
+    dto: ListOrdersDto,
+  ): Promise<ListOrdersOffsetResult>;
 }

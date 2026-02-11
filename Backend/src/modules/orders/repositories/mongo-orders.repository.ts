@@ -6,11 +6,14 @@ import { Model, Types } from 'mongoose';
 import { MerchantNotFoundError } from '../../../common/errors/business-errors';
 import { PaginationService } from '../../../common/services/pagination.service';
 import { Merchant, MerchantDocument } from '../../merchants/schemas/merchant.schema';
-import { GetOrdersDto, SortOrder } from '../dto/get-orders.dto';
+import { GetOrdersDto, ListOrdersDto, SortOrder } from '../dto/get-orders.dto';
 import { Order, OrderDocument, OrderProduct } from '../schemas/order.schema';
 import { normalizePhone } from '../utils/phone.util';
 
-import { OrdersRepository } from './orders.repository';
+import {
+  type ListOrdersOffsetResult,
+  OrdersRepository,
+} from './orders.repository';
 
 import type { PaginationResult } from '../../../common/dto/pagination.dto';
 import type { FilterQuery } from 'mongoose';
@@ -284,5 +287,48 @@ export class MongoOrdersRepository implements OrdersRepository {
     }));
 
     return { ...result, items };
+  }
+
+  async findOrdersOffset(
+    merchantId: string,
+    dto: ListOrdersDto,
+  ): Promise<ListOrdersOffsetResult> {
+    const baseFilter: FilterQuery<OrderDocument> = { merchantId };
+
+    if (dto.status) baseFilter.status = dto.status;
+
+    if (dto.phone?.trim()) {
+      const normalized = normalizePhone(dto.phone.trim());
+      if (normalized) {
+        baseFilter.$or = [
+          { 'customer.phone': { $regex: normalized, $options: 'i' } },
+          { 'customer.phoneNormalized': normalized },
+        ];
+      }
+    }
+
+    const page = dto.page ?? 1;
+    const limit = dto.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [total, docs] = await Promise.all([
+      this.orderModel.countDocuments(baseFilter).exec(),
+      this.orderModel
+        .find(baseFilter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select('-__v')
+        .lean()
+        .exec(),
+    ]);
+
+    const items = docs.map((item) => ({
+      ...item,
+      _id: toStringId((item as unknown as { _id?: unknown })?._id),
+      merchantId: (item as OrderDocument).merchantId || '',
+    })) as Order[];
+
+    return { items, total, page, limit };
   }
 }

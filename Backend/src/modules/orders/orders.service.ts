@@ -11,7 +11,8 @@ import {
 import { PromotionsService } from '../promotions/promotions.service';
 
 import { CreateOrderDto } from './dto/create-order.dto';
-import { GetOrdersDto } from './dto/get-orders.dto';
+import { GetOrdersDto, ListOrdersDto } from './dto/get-orders.dto';
+import type { ListOrdersOffsetResult } from './repositories/orders.repository';
 import { OrdersRepository } from './repositories/orders.repository';
 import { Order } from './schemas/order.schema';
 import { PricingService } from './services/pricing.service';
@@ -185,6 +186,13 @@ export class OrdersService {
     dto: GetOrdersDto,
   ): Promise<PaginationResult<Order>> {
     return this.ordersRepository.getOrders(merchantId, dto);
+  }
+
+  async listOrdersForMerchant(
+    merchantId: string,
+    dto: ListOrdersDto,
+  ): Promise<ListOrdersOffsetResult> {
+    return this.ordersRepository.findOrdersOffset(merchantId, dto);
   }
 
   async searchOrders(

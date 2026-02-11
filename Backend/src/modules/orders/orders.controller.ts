@@ -6,8 +6,10 @@ import {
   Get,
   Param,
   Patch,
+  Query,
   UseGuards,
   Req,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,11 +24,13 @@ import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
 } from 'src/common/decorators/api-response.decorator';
+import { CurrentMerchantId } from 'src/common/decorators/current-user.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { TranslationService } from 'src/common/services/translation.service';
 
 import { CreateOrderDto } from './dto/create-order.dto';
+import { ListOrdersDto } from './dto/get-orders.dto';
 import { OrdersService } from './orders.service';
 import { Order } from './schemas/order.schema';
 
@@ -90,7 +94,7 @@ export class OrdersController {
     return this.ordersService.create(dto, customerId);
   }
 
-  // جلب جميع الطلبات
+  // جلب طلبات التاجر مع ترقيم الصفحات والفلترة
   @Get()
   @ApiOperation({
     summary: 'orders.operations.findAll.summary',
@@ -101,8 +105,24 @@ export class OrdersController {
     status: 401,
     description: 'orders.responses.error.unauthorized',
   })
-  async findAll(): Promise<Order[]> {
-    return this.ordersService.findAll();
+  @ApiResponse({
+    status: 403,
+    description: 'No merchant context (JWT)',
+  })
+  async findAll(
+    @CurrentMerchantId() merchantId: string | null,
+    @Query() dto: ListOrdersDto,
+  ): Promise<{ orders: Order[]; total: number; page: number; limit: number }> {
+    if (!merchantId) {
+      throw new ForbiddenException('analytics.responses.error.noMerchant');
+    }
+    const result = await this.ordersService.listOrdersForMerchant(merchantId, dto);
+    return {
+      orders: result.items,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+    };
   }
 
   @Public()
