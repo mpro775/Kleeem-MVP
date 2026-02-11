@@ -142,6 +142,7 @@ export class OrdersController {
     return this.ordersService.findMine(merchantId, sessionId);
   }
   // جلب طلب محدد بالتفصيل
+  // عند تمرير sessionId أو phone: نتحقق من ملكية الطلب قبل الإرجاع (403 إذا لا يطابق)
   @Public()
   @Get(':id')
   @ApiOperation({
@@ -159,11 +160,28 @@ export class OrdersController {
     description: 'orders.responses.success.found',
   })
   @ApiResponse({
+    status: 403,
+    description: 'Order does not belong to the provided session/phone',
+  })
+  @ApiResponse({
     status: 404,
     description: 'orders.responses.error.notFound',
   })
-  async findOne(@Param('id') id: string): Promise<Order | null> {
-    return this.ordersService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @Query('sessionId') sessionId?: string,
+    @Query('phone') phone?: string,
+  ): Promise<Order | null> {
+    const order = await this.ordersService.findOne(id);
+    if (!order) return null;
+    const owns = await this.ordersService.assertOwnership(order, {
+      sessionId,
+      phone,
+    });
+    if (!owns) {
+      throw new ForbiddenException('Order access denied');
+    }
+    return order;
   }
 
   // تعديل حالة الطلب (مثال: pending/paid/canceled)

@@ -49,7 +49,7 @@ export interface ProductResponse {
   attributes?: { keySlug: string; valueSlugs: string[] }[];
   badges?: Badge[];
 
-  status?: 'active' | 'inactive' | 'out_of_stock';
+  status?: 'draft' | 'published' | 'scheduled' | 'archived';
   source: 'manual' | 'api';
   sourceUrl?: string;
 

@@ -2,6 +2,7 @@
 // File: src/features/store/utils/transform.ts
 // =========================
 import type { Currency } from "@/features/mechant/products/type";
+import { getProductDisplayPrice } from "@/features/store/product/utils";
 import type { OfferItem, ProductResponse } from "../types";
 import type { Offer } from "@/features/mechant/products/type";
 
@@ -29,11 +30,8 @@ export function mapOffersToProducts(
   return offers.map((o) => {
     const base = productById.get(o.id);
 
-    // price: الأولوية (effective -> new -> base.price -> 0)
-    const basePrice =
-      typeof (base as unknown as { price?: unknown })?.price === "number"
-        ? (base as unknown as { price?: number }).price
-        : undefined;
+    // price: الأولوية (effective -> new -> base سعر العرض -> 0)
+    const basePrice = base ? getProductDisplayPrice(base) : undefined;
     const price = o.priceEffective ?? o.priceNew ?? basePrice ?? 0;
 
     // images: صورة العرض إن وُجدت وإلا صور المنتج

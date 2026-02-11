@@ -9,7 +9,6 @@ import ItemsList from "@/features/store/order/ui/ItemsList";
 import SummaryCard from "@/features/store/order/ui/SummaryCard";
 import StatusTimeline from "@/features/store/order/ui/StatusTimeline";
 import OrderDetailsSkeleton from "@/features/store/order/ui/OrderDetailsSkeleton";
-import type { Order } from "@/features/store/type";
 
 export default function OrderDetailsPage() {
   const { orderId = "", slug = "" } = useParams<{
@@ -49,21 +48,44 @@ export default function OrderDetailsPage() {
     );
   }
 
-  const currency = (order as Order).currency || "SAR";
+  const currency = order.currency || "SAR";
+  const pricing = order.pricing;
+
+  const formatStepDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return {
+      date: d.toLocaleDateString("ar-SA", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }),
+      time: d.toLocaleTimeString("ar-SA", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+  };
+  const createdAtFmt = formatStepDate(order.createdAt);
+  const updatedAtFmt = formatStepDate(order.updatedAt);
 
   const steps = [
-    { label: "تم الطلب", date: "١٠ مارس ٢٠٢٣", time: "١٠:٣٠ ص", active: true },
+    {
+      label: "تم الطلب",
+      date: createdAtFmt.date,
+      time: createdAtFmt.time,
+      active: true,
+    },
     {
       label: "قيد التجهيز",
-      date: "١٠ مارس ٢٠٢٣",
-      time: "١١:٤٥ ص",
+      date: updatedAtFmt.date,
+      time: updatedAtFmt.time,
       active: order.status !== "pending",
     },
     {
       label: "تم التوصيل",
-      date: "١٢ مارس ٢٠٢٣",
-      time: "٠٢:٣٠ م",
-      active: ["delivered", "paid"].includes(order.status as "delivered" | "paid"),
+      date: updatedAtFmt.date,
+      time: updatedAtFmt.time,
+      active: ["delivered", "paid"].includes(order.status),
     },
   ];
 
@@ -103,9 +125,10 @@ export default function OrderDetailsPage() {
 
           <SummaryCard
             products={order.products}
-            shipping={0}
-            discount={0}
+            shipping={pricing?.shippingCost ?? 0}
+            discount={pricing?.totalDiscount ?? 0}
             currency={currency}
+            totalOverride={pricing?.total}
           />
 
           <StatusTimeline steps={steps} />

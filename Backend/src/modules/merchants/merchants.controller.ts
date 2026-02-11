@@ -205,10 +205,35 @@ export class MerchantsController {
   }
   @Public()
   @Get(':id') // ← سيصل إليها فقط قيم ObjectId بعد ترتيب الراوتات
-  findOne(
+  async findOne(
     @Param('id', ParseObjectIdPipe) id: string,
-  ): Promise<MerchantDocument> {
-    return this.svc.findOne(id);
+  ): Promise<MerchantDocument & { email?: string; storefrontUrl?: string }> {
+    const merchant = await this.svc.findOne(id);
+    const obj = merchant.toObject
+      ? (merchant.toObject() as Record<string, unknown>)
+      : (merchant as unknown as Record<string, unknown>);
+
+    let email: string | undefined;
+    const userId = (merchant.userId as { toString?: () => string })?.toString?.();
+    if (userId) {
+      const user = await this.userModel
+        .findById(userId)
+        .select('email')
+        .lean<{ email?: string }>()
+        .exec();
+      email = user?.email;
+    }
+
+    const publicSlug = merchant.publicSlug;
+    const storefrontUrl =
+      typeof publicSlug === 'string' && publicSlug
+        ? `/store/${publicSlug}`
+        : undefined;
+
+    return { ...obj, email, storefrontUrl } as MerchantDocument & {
+      email?: string;
+      storefrontUrl?: string;
+    };
   }
   @Get()
   @ApiOperation({

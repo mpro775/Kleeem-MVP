@@ -11,6 +11,7 @@ import {
   useTheme,
 } from "@mui/material";
 import type { Offer, ProductResponse } from "@/features/mechant/products/type";
+import { getProductDisplayPrice } from "@/features/store/product/utils";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
@@ -61,7 +62,7 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
   const showOffer = pct > 0;
   const sellPrice = showOffer
     ? (product.offer!.newPrice as number)
-    : product.price ?? 0;
+    : getProductDisplayPrice(product);
   const oldPrice = showOffer ? (product.offer!.oldPrice as number) : undefined;
 
   const visibleBadges =

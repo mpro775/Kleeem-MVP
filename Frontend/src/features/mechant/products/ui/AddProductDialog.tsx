@@ -321,7 +321,7 @@ const openSnack = (message: unknown, severity: 'success'|'info'|'warning'|'error
       setSpecTags([]);
       setCurrency("SAR");
       setOffer({ enabled: false });
-      setAttributes({});
+      setAttributes([]);
       setBadges([]);
       setFiles([]);
       setPreviews([]);

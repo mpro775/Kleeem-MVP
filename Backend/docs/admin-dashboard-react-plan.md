@@ -53,6 +53,11 @@ admin-dashboard/
 │   │   ├── SupportPage.tsx
 │   │   ├── ReportsPage.tsx
 │   │   ├── AnalyticsPage.tsx
+│   │   ├── KleemSettingsPage.tsx
+│   │   ├── KleemPromptsPage.tsx
+│   │   ├── KleemFaqsPage.tsx
+│   │   ├── KleemConversationsPage.tsx
+│   │   ├── KleemRatingsPage.tsx
 │   │   ├── SystemPage.tsx
 │   │   └── ...
 │   ├── features/                # منطق النطاق
@@ -61,6 +66,10 @@ admin-dashboard/
 │   │   │   │   ├── dashboard.ts
 │   │   │   │   ├── merchants.ts
 │   │   │   │   ├── users.ts
+│   │   │   │   ├── kleem-settings.ts
+│   │   │   │   ├── kleem-prompts.ts
+│   │   │   │   ├── kleem-faqs.ts
+│   │   │   │   ├── kleem-chats.ts
 │   │   │   │   └── ...
 │   │   │   ├── hooks/           # React Query hooks
 │   │   │   └── types.ts
@@ -111,6 +120,11 @@ const router = createBrowserRouter([
       { path: 'dashboard', element: <DashboardPage /> },
       { path: 'merchants', element: <MerchantsPage /> },
       { path: 'merchants/:id', element: <MerchantDetailPage /> },
+      { path: 'kleem/settings', element: <KleemSettingsPage /> },
+      { path: 'kleem/prompts', element: <KleemPromptsPage /> },
+      { path: 'kleem/faqs', element: <KleemFaqsPage /> },
+      { path: 'kleem/conversations', element: <KleemConversationsPage /> },
+      { path: 'kleem/ratings', element: <KleemRatingsPage /> },
       // ...
     ],
   },
@@ -224,15 +238,37 @@ export default function App() {
 
 ---
 
-### 4.9 التحليلات وكليم
+### 4.9 التحليلات (Analytics)
 | المسار | الشاشة | API |
 |--------|--------|-----|
 | `/admin/analytics/kleem-missing-responses` | ردود مفقودة | `GET`, `PATCH`, `POST bulk-resolve` |
-| `/admin/kleem/*` | إعدادات كليم | `admin/kleem/*` |
 
 ---
 
-### 4.10 النظام والأمان
+### 4.10 كليم (Kleem) — خدمة العملاء الخاصة
+
+كليم هي خدمة المحادثة الآلية. يجب أن يتحكّم الأدمن بكل عملياتها.
+
+| المسار | الشاشة | API |
+|--------|--------|-----|
+| `/admin/kleem/settings` | إعدادات البوت | `GET/PUT /admin/kleem/settings/chat` |
+| `/admin/kleem/prompts` | إدارة البرومبتات | `GET`, `POST`, `PATCH`, `DELETE`, `POST :id/active`, `POST :id/archive` |
+| `/admin/kleem/prompts/sandbox` | اختبار برومبت | `POST /admin/kleem/prompts/sandbox` |
+| `/admin/kleem/faqs` | الأسئلة الشائعة | `GET`, `POST`, `PATCH`, `DELETE`, `POST import`, `POST reindex` |
+| `/admin/kleem/conversations` | محادثات كليم | `GET /admin/kleem/bot-chats`, `GET /:sessionId` |
+| `/admin/kleem/ratings` | تقييمات المحادثات | `GET /admin/kleem/bot-chats/ratings`, `GET /stats` |
+| `/admin/kleem/analytics` | إحصائيات كليم | `GET stats/top-questions/list`, `GET stats/bad-bot-replies/list` |
+
+**العمليات:**
+- **الإعدادات:** تعديل إعدادات تشغيل البوت (روابط، نصوص)
+- **البرومبتات:** CRUD، تفعيل/أرشفة، عرض البرومبت النشط، اختبار (sandbox)
+- **الأسئلة الشائعة:** CRUD، استيراد جماعي/من ملف، إعادة فهرسة
+- **المحادثات:** استعراض، حفظ رسائل، تقييم رسائل
+- **التقييمات:** قائمة، إحصائيات (إيجابي/سلبي)، أكثر الأسئلة، أسوأ الردود
+
+---
+
+### 4.11 النظام والأمان
 | المسار | الشاشة | API |
 |--------|--------|-----|
 | `/admin/system/audit-log` | سجل تدقيق | `GET /admin/system/audit-log` |
@@ -283,8 +319,9 @@ export default function App() {
 | 2 | لوحة رئيسية + التجار + المستخدمون | أسبوعان |
 | 3 | الاستهلاك + الخطط + القنوات + التوجيهات | أسبوع |
 | 4 | الدعم + التقارير + التحليلات | أسبوع |
-| 5 | النظام والأمان + كليم | أسبوع |
-| 6 | تحسينات UX + اختبارات | أسبوع |
+| 5 | كليم (إعدادات، برومبتات، FAQs، محادثات، تقييمات) | أسبوع |
+| 6 | النظام والأمان | أسبوع |
+| 7 | تحسينات UX + اختبارات | أسبوع |
 
 ---
 

@@ -35,6 +35,27 @@ export function discountPct(oldP?: number, newP?: number) {
   return Math.round((1 - newP / oldP) * 100);
 }
 
+/** سعر العرض للمنتج: priceEffective ثم priceDefault ثم prices[currency] ثم price */
+export function getProductDisplayPrice(
+  p: {
+    priceEffective?: number;
+    priceDefault?: number;
+    prices?: Record<string, number>;
+    price?: number;
+    currency?: string;
+  },
+  currency = "SAR"
+): number {
+  const c = p.currency ?? currency;
+  return (
+    p.priceEffective ??
+    p.priceDefault ??
+    (p.prices && typeof p.prices[c] === "number" ? p.prices[c] : undefined) ??
+    p.price ??
+    0
+  );
+}
+
 type CategoryLike = {
   name?: string;
   trail?: string[];

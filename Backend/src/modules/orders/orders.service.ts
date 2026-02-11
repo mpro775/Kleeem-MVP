@@ -158,6 +158,25 @@ export class OrdersService {
     return this.ordersRepository.findOne(orderId);
   }
 
+  /**
+   * يتحقق من ملكية الطلب.
+   * إذا لم يُمرّر أي من sessionId أو phone → يُعاد true (متوافق مع السلوك السابق).
+   * إذا مُرّر أحدهما أو كلاهما وكان أحدهما يطابق الطلب → true.
+   * وإلا → false.
+   */
+  async assertOwnership(
+    order: Order,
+    opts: { sessionId?: string; phone?: string },
+  ): Promise<boolean> {
+    if (!opts.sessionId && !opts.phone) return true;
+    const orderPhoneNorm = order.customer?.phoneNormalized ?? normalizePhone(order.customer?.phone);
+    const inputPhoneNorm = opts.phone ? normalizePhone(opts.phone) : undefined;
+    const sessionMatch = opts.sessionId && order.sessionId === opts.sessionId;
+    const phoneMatch =
+      inputPhoneNorm && orderPhoneNorm && orderPhoneNorm === inputPhoneNorm;
+    return Boolean(sessionMatch || phoneMatch);
+  }
+
   async updateStatus(id: string, status: string): Promise<Order | null> {
     return this.ordersRepository.updateStatus(id, status);
   }

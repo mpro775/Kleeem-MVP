@@ -26,7 +26,7 @@ test("fetches product and adds to cart", async () => {
   mockGet.mockResolvedValueOnce({ data: product });
   renderWithProviders(
     <Routes>
-      <Route path="/store/:slugOrId/product/:productId" element={<ProductDetailsPage />} />
+      <Route path="/store/:slug/product/:idOrSlug" element={<ProductDetailsPage />} />
     </Routes>,
     { route: "/store/test/product/p1" }
   );

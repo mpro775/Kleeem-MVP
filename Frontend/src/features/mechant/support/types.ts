@@ -16,7 +16,7 @@ export const adminContactSchema = z.object({
   name: z.string().min(2, "فضلاً اكتب الاسم الكامل"),
   email: z.string().email("بريد إلكتروني غير صالح"),
   phone: z.string().optional(),
-  merchantId: z.string().min(10, "معرّف التاجر مفقود"),
+  merchantId: z.string().optional().default(""), // يُستمد من JWT في الباك إند إن لم يُعرض
   topic: z.nativeEnum(ContactTopic, {
     errorMap: () => ({ message: "اختر نوع الطلب" }),
   }),

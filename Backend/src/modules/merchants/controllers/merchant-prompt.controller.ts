@@ -11,8 +11,13 @@ import {
   ValidationPipe,
   UsePipes,
   BadRequestException,
+  ForbiddenException,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+
+import { CurrentMerchantId } from '../../../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 import { StorefrontService } from '../../storefront/storefront.service';
 import { AdvancedTemplateDto } from '../dto/requests/advanced-template.dto';
@@ -26,6 +31,8 @@ import { PromptPreviewService } from '../services/prompt-preview.service';
 import { PromptVersionService } from '../services/prompt-version.service';
 
 @ApiTags('Merchants • Prompt')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('merchants/:id/prompt')
 export class MerchantPromptController {
   constructor(
@@ -36,10 +43,26 @@ export class MerchantPromptController {
     private readonly promptBuilder: PromptBuilderService,
   ) {}
 
+  private assertOwnership(
+    paramId: string,
+    jwtMerchantId: string | null,
+  ): void {
+    if (!jwtMerchantId) {
+      throw new ForbiddenException('معرّف التاجر مطلوب');
+    }
+    if (String(paramId) !== String(jwtMerchantId)) {
+      throw new ForbiddenException('غير مصرح بالوصول لهذا التاجر');
+    }
+  }
+
   @Get('quick-config')
   @ApiOperation({ summary: 'جلب إعدادات Quick Setup' })
   @ApiResponse({ status: 200, type: QuickConfigDto })
-  async getQuickConfig(@Param('id') id: string): Promise<QuickConfigDto> {
+  async getQuickConfig(
+    @Param('id') id: string,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+  ): Promise<QuickConfigDto> {
+    this.assertOwnership(id, jwtMerchantId);
     const m = await this.merchantSvc.findOne(id);
     return (m as unknown as { quickConfig: QuickConfigDto }).quickConfig;
   }
@@ -51,7 +74,9 @@ export class MerchantPromptController {
   async updateQuickConfig(
     @Param('id') id: string,
     @Body() dto: QuickConfigDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
   ): Promise<QuickConfigDto> {
+    this.assertOwnership(id, jwtMerchantId);
     const updated = await this.merchantSvc.updateQuickConfig(id, dto);
     return updated;
   }
@@ -61,7 +86,9 @@ export class MerchantPromptController {
   @ApiResponse({ status: 200, type: AdvancedTemplateDto })
   async getAdvancedTemplate(
     @Param('id') id: string,
+    @CurrentMerchantId() jwtMerchantId: string | null,
   ): Promise<{ template: string; note: string }> {
+    this.assertOwnership(id, jwtMerchantId);
     const m = await this.merchantSvc.findOne(id);
     const merchantDoc = m as unknown as {
       currentAdvancedConfig: { template: string; note: string };
@@ -79,7 +106,9 @@ export class MerchantPromptController {
   async saveAdvancedTemplate(
     @Param('id') id: string,
     @Body() dto: AdvancedTemplateDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
   ): Promise<{ message: string }> {
+    this.assertOwnership(id, jwtMerchantId);
     const tpl = dto.template?.trim();
     if (!tpl) throw new BadRequestException('template is required');
     await this.versionSvc.snapshot(id, dto.note);
@@ -91,7 +120,9 @@ export class MerchantPromptController {
   @ApiOperation({ summary: 'جلب سجلّ نسخ القالب المتقدّم' })
   async listVersions(
     @Param('id') id: string,
+    @CurrentMerchantId() jwtMerchantId: string | null,
   ): Promise<{ template: string; note?: string; updatedAt: Date }[]> {
+    this.assertOwnership(id, jwtMerchantId);
     return this.versionSvc.list(id);
   }
 
@@ -100,7 +131,9 @@ export class MerchantPromptController {
   async revertVersion(
     @Param('id') id: string,
     @Param('index', ParseIntPipe) index: number,
+    @CurrentMerchantId() jwtMerchantId: string | null,
   ): Promise<{ message: string }> {
+    this.assertOwnership(id, jwtMerchantId);
     await this.versionSvc.revert(id, index);
     return { message: `Reverted to version ${index}` };
   }
@@ -110,7 +143,9 @@ export class MerchantPromptController {
   async preview(
     @Param('id') id: string,
     @Body() dto: PreviewPromptDto,
+    @CurrentMerchantId() jwtMerchantId: string | null,
   ): Promise<{ preview: string }> {
+    this.assertOwnership(id, jwtMerchantId);
     const m = await this.merchantSvc.findOne(id);
 
     // 1) خذ نسخة Plain من المستند
@@ -155,7 +190,11 @@ export class MerchantPromptController {
   @Get('final-prompt')
   @ApiOperation({ summary: 'جلب الـ finalPrompt النص النهائي' })
   @ApiResponse({ status: 200, schema: { example: { prompt: '...' } } })
-  async finalPrompt(@Param('id') id: string): Promise<{ prompt: string }> {
+  async finalPrompt(
+    @Param('id') id: string,
+    @CurrentMerchantId() jwtMerchantId: string | null,
+  ): Promise<{ prompt: string }> {
+    this.assertOwnership(id, jwtMerchantId);
     const m = await this.merchantSvc.findOne(id);
     const merchantDoc = m as unknown as { finalPromptTemplate: string };
     if (!merchantDoc.finalPromptTemplate)

@@ -62,6 +62,13 @@ export class ChatWidgetService {
     return this.repo.findBySlugOrPublicSlug(slug);
   }
 
+  async getMerchantPublicSlug(
+    merchantId: string | { toString(): string },
+  ): Promise<string | null> {
+    const id = typeof merchantId === 'string' ? merchantId : merchantId.toString();
+    return this.repo.getMerchantPublicSlug(id);
+  }
+
   async getEmbedSettings(merchantId: string): Promise<{
     embedMode: string;
     availableModes: string[];

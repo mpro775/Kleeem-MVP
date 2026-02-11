@@ -25,6 +25,26 @@ export interface OrderProduct {
   price: number;
     image?: string;
 }
+
+export interface OrderPricing {
+  subtotal?: number;
+  total?: number;
+  totalDiscount?: number;
+  shippingCost?: number;
+  shippingDiscount?: number;
+  promotions?: Array<{ name?: string; amount?: number }>;
+  coupon?: { code: string; amount: number } | null;
+  products?: Array<{ name?: string; amount?: number }>;
+}
+
+export type OrderStatus =
+  | "pending"
+  | "paid"
+  | "canceled"
+  | "shipped"
+  | "delivered"
+  | "refunded";
+
 export interface Order {
   _id: string;
   merchantId: string;
@@ -32,9 +52,10 @@ export interface Order {
   sessionId: string;
   customer: CustomerInfo;
   products: OrderProduct[];
-  status: 'pending' | 'paid' | 'canceled';
+  status: OrderStatus;
   createdAt: string;
   updatedAt: string;
+  pricing?: OrderPricing | null;
 }
 export interface Lead {
   _id: string;

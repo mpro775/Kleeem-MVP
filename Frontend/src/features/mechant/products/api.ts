@@ -59,11 +59,17 @@ export async function getMerchantProducts(
   merchantId: string
 ): Promise<ProductResponse[]> {
   const { data } = await axiosInstance.get<
+    | { items?: ProductResponse[]; meta?: { hasMore?: boolean; count?: number } }
     | { success?: boolean; data?: ProductResponse[] }
     | { products?: ProductResponse[]; total?: number; page?: number; limit?: number; totalPages?: number }
     | ProductResponse[]
   >("/products", { params: { merchantId: ensureIdString(merchantId) } });
-  
+
+  // إذا كانت في شكل { items, meta } (استجابة الباك إند المعيارية)
+  if (data && typeof data === "object" && "items" in data && Array.isArray((data as { items?: unknown }).items)) {
+    return (data as { items: ProductResponse[] }).items;
+  }
+
   // إذا كانت المصفوفة مباشرة
   if (Array.isArray(data)) return data;
   

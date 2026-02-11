@@ -1,6 +1,7 @@
 // components/store/ProductGrid.tsx
 import { Box, Typography, IconButton, useTheme, Button } from "@mui/material";
 import type { ProductResponse } from "@/features/mechant/products/type";
+import { getProductDisplayPrice } from "@/features/store/product/utils";
 import { ProductCard } from "./ProductCard";
 import GridViewIcon from "@mui/icons-material/GridView";
 import ViewListIcon from "@mui/icons-material/ViewList";
@@ -29,10 +30,14 @@ export function ProductGrid({ products, onAddToCart, onOpen }: Props) {
 
     switch (sortOption) {
       case "price_asc":
-        result.sort((a, b) => a.price - b.price);
+        result.sort(
+          (a, b) => getProductDisplayPrice(a) - getProductDisplayPrice(b)
+        );
         break;
       case "price_desc":
-        result.sort((a, b) => b.price - a.price);
+        result.sort(
+          (a, b) => getProductDisplayPrice(b) - getProductDisplayPrice(a)
+        );
         break;
       case "newest":
         result.sort(

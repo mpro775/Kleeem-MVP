@@ -20,6 +20,7 @@ import { styled } from "@mui/system";
 import { FormProvider, useForm } from "react-hook-form";
 
 import { useAuth } from "@/context/hooks";
+import { API_BASE } from "@/context/config";
 import { usePromptStudio } from "@/features/mechant/prompt-studio/hooks";
 import type { QuickConfig } from "@/features/mechant/prompt-studio/types";
 
@@ -187,10 +188,8 @@ export default function PromptStudioPage() {
               <Box sx={{ minWidth: 0, height: "100%" }}>
                 <ChatSimulator
                   merchantId={merchantId}
-                  promptTestUrl={`${
-                    import.meta.env.VITE_PUBLIC_WEB_ORIGIN ||
-                    window.location.origin
-                  }/api/merchants/${merchantId}/prompt/preview`}
+                  promptTestUrl={`${API_BASE}/merchants/${merchantId}/prompt/preview`}
+                  useAdvanced={activeTab === "advanced"}
                 />
               </Box>
             )}
@@ -272,10 +271,8 @@ export default function PromptStudioPage() {
             <Box sx={{ height: "100%" }}>
               <ChatSimulator
                 merchantId={merchantId}
-                promptTestUrl={`${
-                  import.meta.env.VITE_PUBLIC_WEB_ORIGIN ||
-                  window.location.origin
-                }/api/merchants/${merchantId}/prompt/preview`}
+                promptTestUrl={`${API_BASE}/merchants/${merchantId}/prompt/preview`}
+                useAdvanced={activeTab === "advanced"}
               />
             </Box>
           )}

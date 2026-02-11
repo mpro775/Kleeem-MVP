@@ -105,52 +105,15 @@ export class ProductsController {
       );
     }
 
-    const input = this.buildCreateProductInput(dto, jwtMerchantId);
-    const product = await this.productsService.create(
-      input as unknown as CreateProductDto & { merchantId: string },
-    );
+    const input = {
+      ...dto,
+      merchantId: jwtMerchantId,
+    } as CreateProductDto & { merchantId: string };
+    const product = await this.productsService.create(input);
 
     return plainToInstance(ProductResponseDto, product, {
       excludeExtraneousValues: true,
     });
-  }
-
-  private buildCreateProductInput(dto: CreateProductDto, merchantId: string) {
-    const input = {
-      merchantId,
-      name: dto.name || '',
-      prices: dto.prices,
-      isAvailable: dto.isAvailable ?? true,
-      keywords: dto.keywords || [],
-      images: dto.images || [],
-      category: dto.category || '',
-      specsBlock: dto.specsBlock || [],
-    };
-
-    return this.addOptionalProductFields(input, dto);
-  }
-
-  private addOptionalProductFields(
-    input: Record<string, unknown>,
-    dto: CreateProductDto,
-  ) {
-    const optionalMappings = {
-      source: dto.source,
-      sourceUrl: dto.sourceUrl,
-      externalId: dto.externalId,
-      platform: dto.platform,
-      currency: dto.currency,
-      offer: dto.offer,
-      attributes: dto.attributes,
-    };
-
-    Object.entries(optionalMappings).forEach(([key, value]) => {
-      if (value !== undefined) {
-        input[key] = value;
-      }
-    });
-
-    return input;
   }
 
   @Get()

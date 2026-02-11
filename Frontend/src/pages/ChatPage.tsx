@@ -51,6 +51,8 @@ function normalizeSettings(raw: Raw): Settings {
       ? d.merchantId
       : undefined;
 
+  const theme = typeof d.theme === "object" && d.theme !== null ? (d.theme as Record<string, unknown>) : undefined;
+
   const publicSlug =
     typeof merchant?.slug === "string"
       ? merchant.slug
@@ -76,28 +78,16 @@ function normalizeSettings(raw: Raw): Settings {
         ? d.welcomeMessage
         : "أهلًا! كيف أقدر أساعدك؟",
     brandColor: (() => {
-      // الأولوية لـ brandColor المباشر من الاستجابة
-      if (typeof d.brandColor === "string" && d.brandColor) {
-        console.log("[ChatPage] Using brandColor from response:", d.brandColor);
-        return d.brandColor;
-      }
-      // ثم theme.primaryColor
-      if (
-        typeof d.theme === "object" &&
-        d.theme !== null &&
-        typeof (d.theme as Record<string, unknown>).primaryColor === "string"
-      ) {
-        const themeColor = (d.theme as Record<string, unknown>).primaryColor as string;
-        console.log("[ChatPage] Using theme.primaryColor:", themeColor);
-        return themeColor;
-      }
-      // Fallback
-      console.log("[ChatPage] Using default brandColor: #1565c0");
+      if (typeof d.brandColor === "string" && d.brandColor) return d.brandColor;
+      if (typeof theme?.brandColor === "string" && theme.brandColor) return theme.brandColor as string;
+      if (typeof theme?.primaryColor === "string" && theme.primaryColor) return theme.primaryColor as string;
       return "#1565c0";
     })(),
     fontFamily:
       typeof d.fontFamily === "string"
         ? d.fontFamily
+        : typeof theme?.fontFamily === "string"
+        ? (theme.fontFamily as string)
         : "Tajawal, system-ui, sans-serif",
     avatarUrl: typeof d.avatarUrl === "string" ? d.avatarUrl : undefined,
     showPoweredBy:
@@ -132,11 +122,8 @@ export default function ChatPage() {
 
         if (!slug) throw new Error("لا يوجد سلاج في المسار.");
 
-        // ملاحظة: الاندبوينت عندك هو /public/chat-widget/:slug
         const res = await axios.get(`/public/chat-widget/${slug}`);
-        console.log("[ChatPage] Raw response:", res);
         const normalized = normalizeSettings(res);
-        console.log("[ChatPage] Normalized settings:", normalized);
 
         if (!normalized.merchantId) {
           throw new Error("تعذر تحديد معرف التاجر لإعدادات الدردشة.");

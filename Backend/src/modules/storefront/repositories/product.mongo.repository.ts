@@ -27,7 +27,7 @@ export class StorefrontProductMongoRepository
     return this.model
       .find({
         merchantId: new Types.ObjectId(merchantId),
-        status: 'active',
+        status: { $in: ['active', 'published'] },
         isAvailable: true,
       })
       .sort({ createdAt: -1 })

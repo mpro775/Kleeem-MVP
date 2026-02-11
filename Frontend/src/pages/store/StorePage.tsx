@@ -109,9 +109,16 @@ export function StorePageInner() {
     : Array.isArray(products)
     ? products
     : [];
+  const productCategoryId = (p: ProductResponse): string | null => {
+    const c = p.category;
+    if (!c) return null;
+    if (typeof c === "string") return c;
+    const obj = c as { _id?: string };
+    return obj?._id ?? null;
+  };
   const filteredProducts = (Array.isArray(sourceList) ? sourceList : []).filter(
     (p) =>
-      (!activeCategory || p.category === activeCategory) &&
+      (!activeCategory || productCategoryId(p) === activeCategory) &&
       (p.name.toLowerCase().includes(search.toLowerCase()) ||
         p.shortDescription?.toLowerCase().includes(search.toLowerCase()) ||
         p.richDescription?.toLowerCase().includes(search.toLowerCase()))

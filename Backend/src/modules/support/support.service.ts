@@ -262,9 +262,15 @@ export class SupportService {
     return attachments;
   }
 
-  private async validateContactDto(dto: CreateContactDto): Promise<void> {
+  private async validateContactDto(
+    dto: CreateContactDto,
+    meta?: { source?: 'landing' | 'merchant' },
+  ): Promise<void> {
     const extendedDto = dto as ExtendedCreateContactDto;
     if (extendedDto.website) throw new BadRequestException('Spam detected');
+
+    // تخطي reCAPTCHA للطلبات من لوحة التاجر (المستخدم مصادق عليه)
+    if (meta?.source === 'merchant') return;
 
     const ok = await this.verifyRecaptcha(extendedDto.recaptchaToken);
     if (!ok) throw new BadRequestException('reCAPTCHA failed');
@@ -331,7 +337,7 @@ export class SupportService {
       source?: 'landing' | 'merchant';
     },
   ): Promise<SupportTicketEntity> {
-    await this.validateContactDto(dto);
+    await this.validateContactDto(dto, meta);
     const ticketData = await this.prepareTicketData(dto, files, meta);
     const created = await this.repo.create(ticketData);
     await this.notifyTicketCreation(created);

@@ -12,13 +12,13 @@ export async function updateMyProfile(userId: string, payload: UpdateProfilePayl
 }
 
 export async function changePassword(payload: ChangePasswordPayload) {
-  const response = await axiosInstance.post<{ success: boolean; data: { status: 'ok' } }>(`/auth/change-password`, payload);
-  return response.data.data;
+  const response = await axiosInstance.post<{ status: string; message: string }>(`/auth/change-password`, payload);
+  return response.data;
 }
 
 export async function requestPasswordReset(email: string) {
-  const response = await axiosInstance.post<{ success: boolean; data: { status: 'ok' } }>(`/auth/forgot-password`, { email });
-  return response.data.data;
+  const response = await axiosInstance.post<{ status?: string; message?: string }>(`/auth/forgot-password`, { email });
+  return response.data;
 }
 
 // Notifications
@@ -33,14 +33,14 @@ export async function updateMyNotifications(userId: string, payload: Notificatio
 
 // Product source (requires password confirm)
 export async function setProductSource(merchantId: string, source: ProductSource, confirmPassword: string) {
-  const response = await axiosInstance.patch<{ success: boolean; data: unknown }>(`/merchants/${merchantId}/product-source`, { source, confirmPassword });
-  return response.data.data;
+  const response = await axiosInstance.patch<{ merchant: unknown; sync: unknown }>(`/merchants/${merchantId}/product-source`, { source, confirmPassword });
+  return response.data;
 }
 
 // Delete account with password
 export async function deleteMyAccount(userId: string, payload: ConfirmPasswordPayload) {
-  const response = await axiosInstance.post<{ success: boolean; data: { message?: string } }>(`/users/${userId}/delete`, payload);
-  return response.data.data;
+  const response = await axiosInstance.post<{ message?: string } | void>(`/users/${userId}/delete`, payload);
+  return response.data;
 }
 
 // n8n Workflow management

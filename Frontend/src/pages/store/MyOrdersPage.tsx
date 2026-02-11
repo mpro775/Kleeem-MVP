@@ -31,6 +31,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import LocalMallIcon from "@mui/icons-material/LocalMall";
 import DirectionsIcon from "@mui/icons-material/Directions";
 import type { Order } from "@/features/store/type";
+import { pickId } from "@/features/store/home/types";
 import { getStorefrontInfo } from "@/features/mechant/storefront-theme/api";
 import { setBrandVars } from "@/features/shared/brandCss";
 import { StoreNavbar } from "@/features/store/ui/StoreNavbar";
@@ -79,10 +80,17 @@ export default function MyOrdersPage() {
     axiosInstance
       .get(`/storefront/${slug}`)
       .then(async (res) => {
-        // res.data هو الـ payload بعد التطبيع
-        // استخراج merchantId من response
-        const mid = res.data.merchantId || res.data.merchant || (res.data.storefront as any)?.merchant;
-        
+        // استخراج merchantId من الاستجابة: { merchant, storefront, products, categories }
+        const d = res.data as Record<string, unknown>;
+        const sf = d.storefront as Record<string, unknown> | undefined;
+        const sfMerchant = sf?.merchant;
+        const mid =
+          (typeof d.merchantId === "string" && d.merchantId) ||
+          pickId(d.merchant) ||
+          (sfMerchant != null && sfMerchant !== ""
+            ? String(sfMerchant)
+            : null);
+
         if (!mid) {
           throw new Error("تعذر تحديد هوية التاجر");
         }

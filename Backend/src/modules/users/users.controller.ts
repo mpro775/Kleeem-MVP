@@ -83,7 +83,11 @@ export class UsersController {
   @ApiSuccessResponse(CreateUserDto, 'i18n:users.messages.getSuccess')
   @ApiNotFoundResponse({ description: I18N_USER_NOT_FOUND })
   @ApiUnauthorizedResponse({ description: I18N_UNAUTHORIZED })
-  findOne(@Param('id') id: string): Promise<UserLean> {
+  findOne(
+    @Param('id') id: string,
+    @Req() req: RequestWithUser,
+  ): Promise<UserLean> {
+    assertOwnProfileOrAdmin(id, req, I18N_INSUFFICIENT_PERMS);
     return this.usersService.findOne(id);
   }
 
@@ -108,7 +112,9 @@ export class UsersController {
   updateProfile(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
+    @Req() req: RequestWithUser,
   ): Promise<UserDocument> {
+    assertOwnProfileOrAdmin(id, req, I18N_INSUFFICIENT_PERMS);
     // أي حقل email يأتي ضمنياً سيتم تجاهله
     return this.usersService.update(id, dto);
   }
@@ -121,7 +127,9 @@ export class UsersController {
   })
   async getNotifications(
     @Param('id') id: string,
+    @Req() req: RequestWithUser,
   ): Promise<NotificationsPrefsDto> {
+    assertOwnProfileOrAdmin(id, req, I18N_INSUFFICIENT_PERMS);
     return this.usersService.getNotificationsPrefs(id);
   }
 
@@ -134,7 +142,9 @@ export class UsersController {
   updateNotifications(
     @Param('id') id: string,
     @Body() dto: NotificationsPrefsDto,
+    @Req() req: RequestWithUser,
   ): Promise<NotificationsPrefsDto> {
+    assertOwnProfileOrAdmin(id, req, I18N_INSUFFICIENT_PERMS);
     return this.usersService.updateNotificationsPrefs(id, dto);
   }
 
@@ -195,4 +205,19 @@ export class UsersController {
 /** util محلي */
 function toObjectId(id: string): Types.ObjectId {
   return new Types.ObjectId(id);
+}
+
+/** يتحقق أن المستخدم الحالي يصل لملفه فقط (أو أن يكون أدمن) */
+function assertOwnProfileOrAdmin(
+  targetId: string,
+  req: RequestWithUser,
+  errorMessage: string,
+): void {
+  const actorId = req.user?.userId;
+  const actorRole = req.user?.role;
+  const isSelf = actorId === targetId;
+  const isAdmin = actorRole === UserRole.ADMIN;
+  if (!isSelf && !isAdmin) {
+    throw new BadRequestException(errorMessage);
+  }
 }

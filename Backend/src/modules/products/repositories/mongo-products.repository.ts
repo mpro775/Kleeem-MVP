@@ -195,7 +195,11 @@ export class MongoProductsRepository {
     productSlug: string,
   ): Promise<ProductLean | null> {
     return this.productModel
-      .findOne({ slug: productSlug, status: 'active', isAvailable: true })
+      .findOne({
+        slug: productSlug,
+        status: { $in: ['active', 'published'] },
+        isAvailable: true,
+      })
       .populate({ path: 'category', select: 'name' })
       .lean()
       .exec() as Promise<ProductLean | null>;
@@ -209,7 +213,7 @@ export class MongoProductsRepository {
       .findOne({
         merchantId,
         slug: productSlug,
-        status: 'active',
+        status: { $in: ['active', 'published'] },
         isAvailable: true,
       })
       .populate({ path: 'category', select: 'name' })
@@ -224,7 +228,7 @@ export class MongoProductsRepository {
   ): Promise<PaginationResult<ProductLean>> {
     const filter: FilterQuery<ProductDocument> = {
       merchantId,
-      status: 'active',
+      status: { $in: ['active', 'published'] },
       isAvailable: true,
     };
     if (dto.search) filter.$text = { $search: dto.search };
@@ -285,7 +289,7 @@ export class MongoProductsRepository {
     dto: GetProductsDto,
   ): Promise<PaginationResult<ProductLean>> {
     const filter: FilterQuery<ProductDocument> = {
-      status: 'active',
+      status: { $in: ['active', 'published'] },
       isAvailable: true,
     };
     if (dto.search) filter.$text = { $search: dto.search };

@@ -24,7 +24,7 @@ export const ProfileSettings = ({ profile, onProfileChange, onSave, isSaving }: 
       <Grid  size={{xs: 12, md: 4}}>
          <TextField
           label="رقم الهاتف"
-          value={profile.phone}
+          value={profile.phone ?? ""}
           onChange={(e) => onProfileChange('phone', e.target.value)}
           fullWidth
         />

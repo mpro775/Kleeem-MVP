@@ -8,15 +8,20 @@ export default function SummaryCard({
   shipping = 0,
   discount = 0,
   currency = "SAR",
+  totalOverride,
 }: {
   products: OrderProduct[];
   shipping?: number;
   discount?: number;
   currency?: string;
+  totalOverride?: number;
 }) {
   const theme = useTheme();
   const sub = sumItems(products);
-  const total = Math.max(0, sub + shipping - discount);
+  const total =
+    totalOverride != null
+      ? totalOverride
+      : Math.max(0, sub + shipping - discount);
 
   return (
     <Paper

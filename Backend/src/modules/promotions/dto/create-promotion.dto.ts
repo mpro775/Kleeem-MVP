@@ -16,7 +16,6 @@ import {
 
 import { PromotionType, ApplyTo } from '../schemas/promotion.schema';
 
-const TIMEOUT_MS = 10000;
 export class CreatePromotionDto {
   @ApiProperty({
     description: 'معرّف التاجر',
@@ -150,7 +149,7 @@ export class CreatePromotionDto {
 
   @ApiPropertyOptional({
     description: 'عدد مرات الاستخدام الكلي (null = غير محدود)',
-    example: TIMEOUT_MS,
+    example: 100,
     minimum: 1,
   })
   @IsOptional()

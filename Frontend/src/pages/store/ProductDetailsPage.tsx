@@ -149,10 +149,12 @@ export function ProductDetailsPage() {
   useEffect(() => {
     if (!product) return;
     const init: Record<string, string> = {};
-    const attrs = (product as ProductResponse).attributes as
-      | Record<string, string[]>
-      | undefined;
-    if (attrs) {
+    const attrs = Array.isArray(product.attributes)
+      ? Object.fromEntries(
+          product.attributes.map((item) => [item.keySlug, item.valueSlugs ?? []])
+        )
+      : (product.attributes as Record<string, string[]> | undefined);
+    if (attrs && typeof attrs === "object" && !Array.isArray(attrs)) {
       Object.entries(attrs).forEach(([k, vals]) => {
         if (Array.isArray(vals) && vals[0]) init[k] = String(vals[0]);
       });
@@ -169,12 +171,23 @@ export function ProductDetailsPage() {
   if (loading) return <ProductSkeleton />;
   if (!product) return null;
 
+  // تحويل attributes من صيغة الباك إند { keySlug, valueSlugs }[] إلى Record<string, string[]>
+  const attrsRecord: Record<string, string[]> = Array.isArray(product.attributes)
+    ? Object.fromEntries(
+        product.attributes.map((item) => [item.keySlug, item.valueSlugs ?? []])
+      )
+    : (product.attributes as Record<string, string[]> | undefined) ?? {};
+
   const trail = renderCategoryTrail(product);
   const currency = (product as ProductResponse).currency || "SAR";
   const availableStock = product.isUnlimitedStock
     ? Number.POSITIVE_INFINITY
     : product.stock ?? product.quantity ?? 0;
-  const canBuy = product.status === "active" && availableStock > 0;
+  const canBuy =
+    availableStock > 0 &&
+    (product.isAvailable !== false) &&
+    product.status !== "draft" &&
+    product.status !== "archived";
 
   const handleAddToCart = () => {
     const productWithAttributes = {
@@ -220,12 +233,7 @@ export function ProductDetailsPage() {
         </Box>
         <FloatingCartButton
           count={cartCount}
-          onClick={() => {
-            console.log("Cart button clicked, setting openCart to true");
-            console.log("Current merchant:", merchant);
-            console.log("Current openCart state:", openCart);
-            setOpenCart(true);
-          }}
+          onClick={() => setOpenCart(true)}
         />
 
         {trail && (
@@ -318,7 +326,13 @@ export function ProductDetailsPage() {
             )}
 
             <PriceSection
-              price={product.price}
+              price={
+                product.priceEffective ??
+                product.priceDefault ??
+                product.prices?.[currency] ??
+                product.price ??
+                0
+              }
               offer={product.offer}
               currency={currency}
             />
@@ -339,7 +353,7 @@ export function ProductDetailsPage() {
             <Divider sx={{ mb: { xs: 2, sm: 3 } }} />
 
             <AttributesSection
-              attributes={product.attributes}
+              attributes={attrsRecord}
               selected={selectedAttrs}
               onSelect={(k, v) => setSelectedAttrs((s) => ({ ...s, [k]: v }))}
             />
@@ -374,10 +388,7 @@ export function ProductDetailsPage() {
         {merchant && (
           <CartDialog
             open={openCart}
-            onClose={() => {
-              console.log("Closing cart dialog");
-              setOpenCart(false);
-            }}
+            onClose={() => setOpenCart(false)}
             merchantId={merchant._id}
             sessionId={sessionId}
             defaultCustomer={localCustomer}

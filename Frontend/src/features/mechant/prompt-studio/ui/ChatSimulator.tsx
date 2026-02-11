@@ -25,12 +25,14 @@ type Props = {
   // 2) أو Webhook n8n التجريبي اللي يرد JSON { botReply }
   promptTestUrl: string;
   // باك-إند “ردّ التستنج” (اختياري لكن مُستحسن للتخزين/الـWS):
-  testBotReplyBase?: string;          // افتراضي: https://api.kaleem-ai.com/api/webhooks
+  useAdvanced?: boolean;
+  testBotReplyBase?: string;
 };
 
 export function ChatSimulator({
   merchantId,
   promptTestUrl,
+  useAdvanced = false,
   testBotReplyBase = "https://api.kaleem-ai.com/api/webhooks",
 }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -74,7 +76,7 @@ export function ChatSimulator({
       // (B) جيب ردّ الذكاء من مسار التستنج (اختياري للمحاكاة)
       const res = await axiosInstance.post(promptTestUrl, {
         merchantId: merchantId,
-        useAdvanced: false,
+        useAdvanced: useAdvanced,
         testVars: {
           customerMessage: userText,
           customerName: "مستخدم تجريبي",
@@ -82,7 +84,12 @@ export function ChatSimulator({
         },
         audience: "agent"
       });
-      const reply = res.data ?? "—";
+      const reply =
+        res.data && typeof res.data === "object" && "preview" in res.data
+          ? String((res.data as { preview?: string }).preview ?? "—")
+          : typeof res.data === "string"
+            ? res.data
+            : "—";
   
       // (C) اعرض الرد محليًا
       setMessages((m) => [...m, { from: "bot", text: reply }]);

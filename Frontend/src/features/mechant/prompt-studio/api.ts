@@ -8,6 +8,15 @@ import axiosInstance from "@/shared/api/axios";
 const authHeader = (token: string) => ({
   headers: { Authorization: `Bearer ${token}` },
 });
+
+function extractPreview(data: unknown): string {
+  if (typeof data === "string") return data;
+  if (data && typeof data === "object" && "preview" in data) {
+    const val = (data as { preview?: unknown }).preview;
+    return typeof val === "string" ? val : "";
+  }
+  return "";
+}
 export async function getAdvancedTemplate(
   token: string,
   merchantId: string
@@ -74,9 +83,7 @@ export async function previewPrompt(
         },
       }
     );
-    console.log("API response:", res.data); // للتشخيص
-    // الباك إند يرسل الآن: { success, data: string, requestId, timestamp }
-    return typeof res.data === 'string' ? res.data : "";
+    return extractPreview(res.data);
   } catch (error) {
     console.error("Error in previewPrompt:", error);
     throw error;

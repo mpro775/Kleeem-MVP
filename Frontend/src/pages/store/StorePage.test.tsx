@@ -11,7 +11,7 @@ vi.mock("react-router-dom", async () => {
   );
   return {
     ...actual,
-    useParams: () => ({ slugOrId: "demo" }),
+    useParams: () => ({ slug: "demo" }),
     useNavigate: () => vi.fn(),
   };
 });
