@@ -240,6 +240,37 @@ export class Merchant {
   // — Working hours —
   @Prop({ type: [WorkingHourSchema], default: [] })
   workingHours!: WorkingHour[];
+
+  // — Leads settings (جمع العملاء المحتملين) —
+  @Prop({
+    type: {
+      enabled: { type: Boolean, default: true },
+      fields: {
+        type: [
+          {
+            key: String,
+            fieldType: { type: String, enum: ['name', 'email', 'phone', 'address', 'custom'] },
+            label: String,
+            placeholder: String,
+            required: { type: Boolean, default: false },
+          },
+        ],
+        default: [],
+      },
+    },
+    _id: false,
+    default: () => ({ enabled: true, fields: [] }),
+  })
+  leadsSettings?: {
+    enabled: boolean;
+    fields: Array<{
+      key: string;
+      fieldType: 'name' | 'email' | 'phone' | 'address' | 'custom';
+      label: string;
+      placeholder: string;
+      required: boolean;
+    }>;
+  };
 }
 
 export const MerchantSchema = SchemaFactory.createForClass(Merchant);
