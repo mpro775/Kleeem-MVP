@@ -100,16 +100,18 @@ function clamp(n: number, min: number, max: number): number {
 }
 
 function buildListQuery(q: Record<string, unknown>): MissingResponsesListQuery {
-  // Map API types to internal service types
-  let type: MissingResponsesListQuery['type'] = 'all';
   const apiType = q.type as string;
-  if (apiType === 'missing') {
-    type = 'missing_response';
-  } else if (apiType === 'kleem') {
-    // Kleem missing responses might be handled differently or not supported
-    // For now, treat as missing_response or we could add specific handling
-    type = 'missing_response';
-  }
+  const allowedTypes: MissingResponsesListQuery['type'][] = [
+    'all',
+    'missing_response',
+    'unavailable_product',
+  ];
+  const type: MissingResponsesListQuery['type'] =
+    apiType === 'missing' || apiType === 'kleem'
+      ? 'missing_response'
+      : allowedTypes.includes(apiType as MissingResponsesListQuery['type'])
+        ? (apiType as MissingResponsesListQuery['type'])
+        : 'all';
 
   return {
     page: parseIntSafe(q.page, DEFAULT_PAGE),
@@ -391,7 +393,7 @@ export class AnalyticsController {
   @ApiQuery({
     name: 'type',
     required: false,
-    enum: ['all', 'missing', 'kleem'],
+    enum: ['all', 'missing_response', 'unavailable_product', 'missing', 'kleem'],
     example: 'all',
   })
   @ApiQuery({ name: 'search', required: false, type: String, example: 'سعر' })
@@ -507,9 +509,10 @@ export class AnalyticsController {
     type: ErrorResponse,
   })
   async resolveBulk(
+    @CurrentUserId() userId: string,
     @Body() body: { ids: string[] },
   ): Promise<{ success: true; modifiedCount: number; matchedCount: number }> {
-    const r = await this.analytics.bulkResolve(body.ids);
+    const r = await this.analytics.bulkResolveMarch(body.ids, userId);
     return { success: true, modifiedCount: r.updated, matchedCount: r.updated };
   }
 

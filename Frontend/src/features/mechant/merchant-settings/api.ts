@@ -15,7 +15,7 @@ export const updateMerchantInfo = async (
   merchantId: string,
   info: Partial<MerchantInfo>
 ): Promise<void> => {
-  // مسموح فقط بالمفاتيح التالية
+  // مسموح فقط بالمفاتيح التالية (متوافق مع UpdateMerchantDto في الباك إند)
   const KEYS = [
     "name",
     "logoUrl",
@@ -29,6 +29,7 @@ export const updateMerchantInfo = async (
     "socialLinks",
     "publicSlug",
     "publicSlugEnabled",
+    "customCategory",
   ] as const;
 
   const body: Record<string, unknown> = {};
@@ -74,12 +75,12 @@ export async function checkPublicSlugAvailability(
   return { available: Boolean(available) };
 }
 
-// ✅ 5) تحديث slug الخاص بالـ storefront (لو عندك كيان منفصل)
+// ✅ 5) تحديث slug الخاص بالـ storefront (الباك إند: Controller('storefront'))
 export async function updateStorefrontSlug(
   merchantId: string,
   slug: string
 ): Promise<{ slug: string }> {
-  const res = await axiosInstance.patch(`/storefronts/by-merchant/${merchantId}`, {
+  const res = await axiosInstance.patch(`/storefront/by-merchant/${merchantId}`, {
     slug,
   });
   // الباك إند يرسل الآن: { success, data: { slug }, requestId, timestamp }
