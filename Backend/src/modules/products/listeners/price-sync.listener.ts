@@ -45,8 +45,9 @@ export class PriceSyncListener {
         `تم تحديث ${result.updatedCount} منتج للتاجر ${payload.merchantId}`,
       );
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `فشل في مزامنة أسعار التاجر ${payload.merchantId}: ${error}`,
+        `فشل في مزامنة أسعار التاجر ${payload.merchantId}: ${message}`,
       );
     }
   }
@@ -56,9 +57,7 @@ export class PriceSyncListener {
    * قد يتطلب إعادة حساب جميع الأسعار
    */
   @OnEvent(CURRENCY_EVENTS.BASE_CURRENCY_CHANGED)
-  async handleBaseCurrencyChange(
-    payload: BaseCurrencyChangedEvent,
-  ): Promise<void> {
+  handleBaseCurrencyChange(payload: BaseCurrencyChangedEvent): void {
     this.logger.log(
       `استلام حدث تغيير العملة الأساسية للتاجر ${payload.merchantId}: ${payload.previousCurrency} → ${payload.newCurrency}`,
     );
@@ -78,9 +77,9 @@ export class PriceSyncListener {
    * عند إضافة عملة جديدة، يمكن توليد أسعار لها
    */
   @OnEvent(CURRENCY_EVENTS.SUPPORTED_CURRENCIES_CHANGED)
-  async handleSupportedCurrenciesChange(
+  handleSupportedCurrenciesChange(
     payload: SupportedCurrenciesChangedEvent,
-  ): Promise<void> {
+  ): void {
     this.logger.log(
       `استلام حدث تغيير العملات المدعومة للتاجر ${payload.merchantId}`,
     );

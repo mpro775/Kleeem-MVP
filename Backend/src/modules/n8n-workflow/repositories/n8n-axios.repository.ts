@@ -8,7 +8,7 @@ import {
   WorkflowCreatePayload,
 } from './n8n-client.repository';
 
-const N8N_API_KEY_LENGTH = 4;
+const N8N_API_KEY_LENGTH = 5;
 const N8N_TIMEOUT = 30000;
 @Injectable()
 export class N8nAxiosRepository implements N8nClientRepository {
@@ -27,7 +27,7 @@ export class N8nAxiosRepository implements N8nClientRepository {
       `[n8n.header]  = ${keyName}: ${apiKey ? apiKey.slice(0, N8N_API_KEY_LENGTH) + '***' : 'MISSING'}`,
     );
     this.logger.log(
-      `[n8n.keyCheck] Length: ${apiKey.length}, First4: ${apiKey.slice(0, 4)}`,
+      `[n8n.keyCheck] Length: ${apiKey.length}, First4: ${apiKey.slice(0, N8N_API_KEY_LENGTH)}`,
     );
     this.api = axios.create({
       baseURL: `${baseUrl}`,

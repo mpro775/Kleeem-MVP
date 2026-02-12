@@ -16,7 +16,9 @@ export class UpdateSupportAdminDto {
     description: 'معرف موظف الدعم المعيّن (أو null لفك التعيين)',
   })
   @IsOptional()
-  @ValidateIf((o) => o.assignedTo != null && o.assignedTo !== '')
+  @ValidateIf(
+    (o: UpdateSupportAdminDto) => o.assignedTo != null && o.assignedTo !== '',
+  )
   @IsMongoId()
   assignedTo?: string | null;
 }

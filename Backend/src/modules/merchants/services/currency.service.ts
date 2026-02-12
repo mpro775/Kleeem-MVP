@@ -221,125 +221,134 @@ export class CurrencyService {
       throw new NotFoundException('التاجر غير موجود');
     }
 
-    // جلب الإعدادات الحالية للمقارنة
     const merchant = await this.getMerchant(merchantId);
     const currentSettings = merchant.currencySettings;
 
-    const updateData: Record<string, unknown> = {};
+    const updateData = this.buildCurrencyUpdateData(settings);
+    await this.merchantModel
+      .findByIdAndUpdate(merchantId, { $set: updateData })
+      .exec();
 
+    this.emitBaseCurrencyChangedIfNeeded(
+      merchantId,
+      settings.baseCurrency,
+      currentSettings?.baseCurrency,
+    );
+    this.emitSupportedCurrenciesChangedIfNeeded(
+      merchantId,
+      settings.supportedCurrencies,
+      currentSettings?.supportedCurrencies,
+    );
+    this.emitExchangeRatesChangedIfNeeded(
+      merchantId,
+      settings.exchangeRates,
+      currentSettings?.exchangeRates,
+    );
+  }
+
+  private buildCurrencyUpdateData(
+    settings: Partial<{
+      baseCurrency: string;
+      supportedCurrencies: string[];
+      exchangeRates: Record<string, number>;
+      roundingStrategy: 'none' | 'ceil' | 'floor' | 'round';
+      roundToNearest: number;
+    }>,
+  ): Record<string, unknown> {
+    const updateData: Record<string, unknown> = {};
     if (settings.baseCurrency) {
       updateData['currencySettings.baseCurrency'] = settings.baseCurrency;
     }
-
     if (settings.supportedCurrencies) {
       updateData['currencySettings.supportedCurrencies'] =
         settings.supportedCurrencies;
     }
-
     if (settings.exchangeRates) {
       updateData['currencySettings.exchangeRates'] = new Map(
         Object.entries(settings.exchangeRates),
       );
     }
-
     if (settings.roundingStrategy) {
       updateData['currencySettings.roundingStrategy'] =
         settings.roundingStrategy;
     }
-
     if (settings.roundToNearest !== undefined) {
       updateData['currencySettings.roundToNearest'] = settings.roundToNearest;
     }
+    return updateData;
+  }
 
-    await this.merchantModel
-      .findByIdAndUpdate(merchantId, { $set: updateData })
-      .exec();
+  private emitBaseCurrencyChangedIfNeeded(
+    merchantId: string,
+    newCurrency: string | undefined,
+    previousCurrency: string | undefined,
+  ): void {
+    if (!newCurrency || newCurrency === previousCurrency) return;
 
-    // إطلاق الأحداث المناسبة
+    const payload: BaseCurrencyChangedEvent = {
+      merchantId,
+      previousCurrency: previousCurrency || 'YER',
+      newCurrency,
+    };
+    this.logger.log(
+      `إطلاق حدث تغيير العملة الأساسية للتاجر ${merchantId}: ${payload.previousCurrency} → ${payload.newCurrency}`,
+    );
+    this.eventEmitter.emit(CURRENCY_EVENTS.BASE_CURRENCY_CHANGED, payload);
+  }
 
-    // 1. تغيير العملة الأساسية
-    if (
-      settings.baseCurrency &&
-      settings.baseCurrency !== currentSettings?.baseCurrency
-    ) {
-      const eventPayload: BaseCurrencyChangedEvent = {
-        merchantId,
-        previousCurrency: currentSettings?.baseCurrency || 'YER',
-        newCurrency: settings.baseCurrency,
-      };
+  private emitSupportedCurrenciesChangedIfNeeded(
+    merchantId: string,
+    newCurrencies: string[] | undefined,
+    currentCurrencies: string[] | undefined,
+  ): void {
+    if (!newCurrencies) return;
 
-      this.logger.log(
-        `إطلاق حدث تغيير العملة الأساسية للتاجر ${merchantId}: ${eventPayload.previousCurrency} → ${eventPayload.newCurrency}`,
-      );
+    const current = currentCurrencies || [];
+    const added = newCurrencies.filter((c) => !current.includes(c));
+    const removed = current.filter((c) => !newCurrencies.includes(c));
+    if (added.length === 0 && removed.length === 0) return;
 
-      this.eventEmitter.emit(
-        CURRENCY_EVENTS.BASE_CURRENCY_CHANGED,
-        eventPayload,
-      );
-    }
+    const payload: SupportedCurrenciesChangedEvent = {
+      merchantId,
+      addedCurrencies: added,
+      removedCurrencies: removed,
+    };
+    this.logger.log(`إطلاق حدث تغيير العملات المدعومة للتاجر ${merchantId}`);
+    this.eventEmitter.emit(
+      CURRENCY_EVENTS.SUPPORTED_CURRENCIES_CHANGED,
+      payload,
+    );
+  }
 
-    // 2. تغيير العملات المدعومة
-    if (settings.supportedCurrencies) {
-      const currentCurrencies = currentSettings?.supportedCurrencies || [];
-      const newCurrencies = settings.supportedCurrencies;
+  private emitExchangeRatesChangedIfNeeded(
+    merchantId: string,
+    newRates: Record<string, number> | undefined,
+    currentRates:
+      | Map<string, number>
+      | Record<string, number>
+      | Types.Map<number>
+      | undefined,
+  ): void {
+    if (!newRates) return;
 
-      const addedCurrencies = newCurrencies.filter(
-        (c) => !currentCurrencies.includes(c),
-      );
-      const removedCurrencies = currentCurrencies.filter(
-        (c) => !newCurrencies.includes(c),
-      );
+    const previousRates = this.normalizeExchangeRates(currentRates);
+    const affected = Object.keys(newRates).filter((currency) => {
+      const oldRate = previousRates?.get(currency);
+      const newRate = newRates[currency];
+      return oldRate !== newRate;
+    });
+    if (affected.length === 0) return;
 
-      if (addedCurrencies.length > 0 || removedCurrencies.length > 0) {
-        const eventPayload: SupportedCurrenciesChangedEvent = {
-          merchantId,
-          addedCurrencies,
-          removedCurrencies,
-        };
-
-        this.logger.log(
-          `إطلاق حدث تغيير العملات المدعومة للتاجر ${merchantId}`,
-        );
-
-        this.eventEmitter.emit(
-          CURRENCY_EVENTS.SUPPORTED_CURRENCIES_CHANGED,
-          eventPayload,
-        );
-      }
-    }
-
-    // 3. تغيير أسعار الصرف
-    if (settings.exchangeRates) {
-      const previousRates = this.normalizeExchangeRates(
-        currentSettings?.exchangeRates,
-      );
-
-      const affectedCurrencies = Object.keys(settings.exchangeRates).filter(
-        (currency) => {
-          const oldRate = previousRates?.get(currency);
-          const newRate = settings.exchangeRates![currency];
-          return oldRate !== newRate;
-        },
-      );
-
-      if (affectedCurrencies.length > 0) {
-        const eventPayload: ExchangeRatesUpdatedEvent = {
-          merchantId,
-          affectedCurrencies,
-          previousRates: previousRates
-            ? Object.fromEntries(previousRates)
-            : undefined,
-          newRates: settings.exchangeRates,
-        };
-
-        this.logger.log(`إطلاق حدث تغيير أسعار الصرف للتاجر ${merchantId}`);
-
-        this.eventEmitter.emit(
-          CURRENCY_EVENTS.EXCHANGE_RATES_UPDATED,
-          eventPayload,
-        );
-      }
-    }
+    const payload: ExchangeRatesUpdatedEvent = {
+      merchantId,
+      affectedCurrencies: affected,
+      previousRates: previousRates
+        ? Object.fromEntries(previousRates)
+        : undefined,
+      newRates,
+    };
+    this.logger.log(`إطلاق حدث تغيير أسعار الصرف للتاجر ${merchantId}`);
+    this.eventEmitter.emit(CURRENCY_EVENTS.EXCHANGE_RATES_UPDATED, payload);
   }
 
   async getCurrencySettings(
@@ -431,8 +440,9 @@ export class CurrencyService {
         });
         results.set(currency, convertedAmount);
       } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
         this.logger.warn(
-          `فشل تحويل ${amount} من ${fromCurrency} إلى ${currency}: ${error}`,
+          `فشل تحويل ${amount} من ${fromCurrency} إلى ${currency}: ${msg}`,
         );
       }
     }

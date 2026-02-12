@@ -174,7 +174,6 @@ export default tseslint.config(
     plugins: { jest: jestPlugin, '@typescript-eslint': tseslint.plugin },
     languageOptions: {
       parserOptions: {
-        project: ['./tsconfig.json', './tsconfig.test.json'],
         tsconfigRootDir: import.meta.dirname,
       },
       globals: { ...jestPlugin.environments.globals.globals },

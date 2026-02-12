@@ -3,7 +3,6 @@ import {
   Injectable,
   Inject,
   BadRequestException,
-  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
@@ -11,7 +10,6 @@ import { Types } from 'mongoose';
 import { ProductReviewRepository } from '../repositories/product-review.repository';
 import {
   ProductReview,
-  ProductReviewDocument,
   ProductReviewStatus,
 } from '../schemas/product-review.schema';
 import { PRODUCT_REVIEW_REPOSITORY } from '../tokens';
@@ -53,17 +51,22 @@ export class ReviewsService {
 
     // التحقق من صحة الشراء إذا كان مطلوباً (يمكن إضافتها لاحقاً)
 
-    return this.reviewRepo.create({
+    const reviewData: Partial<ProductReview> = {
       merchantId,
-      productId: new Types.ObjectId(productId) as any,
-      customerId: new Types.ObjectId(customerId) as any,
-      ...(orderId ? { orderId: new Types.ObjectId(orderId) as any } : {}),
+      productId: new Types.ObjectId(productId),
+      customerId: new Types.ObjectId(customerId),
       rating,
-      ...(comment?.trim() ? { comment: comment.trim() } : {}),
       status: ProductReviewStatus.PENDING,
       reviewedAt: new Date(),
-      isVerifiedPurchase: !!orderId, // افتراض أن وجود orderId يعني شراء موثق
-    });
+      isVerifiedPurchase: !!orderId,
+    };
+    if (orderId) {
+      reviewData.orderId = new Types.ObjectId(orderId);
+    }
+    if (comment?.trim()) {
+      reviewData.comment = comment.trim();
+    }
+    return this.reviewRepo.create(reviewData);
   }
 
   /**
@@ -218,10 +221,20 @@ export class ReviewsService {
       productId,
     );
 
+    const minRating = 1;
+    const maxRating = 5;
+    const ratingKeys = Array.from(
+      { length: maxRating - minRating + 1 },
+      (_, i) => minRating + i,
+    );
+    const emptyDistribution: { [key: number]: number } = Object.fromEntries(
+      ratingKeys.map((k) => [k, 0]),
+    ) as { [key: number]: number };
+
     if (allApprovedReviews.length === 0) {
       return {
         averageRating: 0,
-        ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        ratingDistribution: emptyDistribution,
       };
     }
 
@@ -231,13 +244,18 @@ export class ReviewsService {
     );
     const averageRating = totalRating / allApprovedReviews.length;
 
-    const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const ratingDistribution = { ...emptyDistribution };
     allApprovedReviews.forEach((review) => {
-      ratingDistribution[review.rating as keyof typeof ratingDistribution]++;
+      const r = review.rating;
+      if (r >= minRating && r <= maxRating) {
+        ratingDistribution[r]++;
+      }
     });
 
+    const oneDecimalFactor = 10;
     return {
-      averageRating: Math.round(averageRating * 10) / 10, // تقريب لمنزلة عشرية واحدة
+      averageRating:
+        Math.round(averageRating * oneDecimalFactor) / oneDecimalFactor,
       ratingDistribution,
     };
   }

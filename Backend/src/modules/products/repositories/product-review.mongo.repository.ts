@@ -1,7 +1,7 @@
 // src/modules/products/repositories/product-review.mongo.repository.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, type FilterQuery, type UpdateQuery } from 'mongoose';
 
 import {
   ProductReview,
@@ -81,7 +81,7 @@ export class ProductReviewMongoRepository implements ProductReviewRepository {
     status?: ProductReviewStatus,
   ): Promise<{ reviews: ProductReview[]; total: number }> {
     const skip = (page - 1) * limit;
-    const query: any = { merchantId, productId };
+    const query: FilterQuery<ProductReviewDocument> = { merchantId, productId };
 
     if (status) {
       query.status = status;
@@ -142,7 +142,7 @@ export class ProductReviewMongoRepository implements ProductReviewRepository {
     approvedAt?: Date,
     rejectedAt?: Date,
   ): Promise<ProductReview | null> {
-    const updateData: any = { status };
+    const updateData: UpdateQuery<ProductReviewDocument> = { status };
 
     if (approvedAt) {
       updateData.approvedAt = approvedAt;

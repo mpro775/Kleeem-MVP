@@ -13,9 +13,7 @@ import {
 } from './integration.repository';
 
 @Injectable()
-export class SallaIntegrationMongoRepository
-  implements SallaIntegrationRepository
-{
+export class SallaIntegrationMongoRepository implements SallaIntegrationRepository {
   constructor(
     @InjectModel(Integration.name)
     private readonly model: Model<IntegrationDocument>,

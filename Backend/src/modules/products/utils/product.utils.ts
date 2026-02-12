@@ -270,14 +270,32 @@ function extractContentFields(doc: unknown) {
   const keywordsRaw = get(doc, ['keywords']);
   if (Array.isArray(keywordsRaw)) result.keywords = keywordsRaw;
 
-  const attributes = get(doc, ['attributes']);
-  if (Array.isArray(attributes)) result.attributes = attributes;
+  const attributesRaw = get(doc, ['attributes']);
+  if (Array.isArray(attributesRaw)) {
+    const attrs = attributesRaw.filter(isRecord).map((attr) => {
+      const keySlug = (attr as { keySlug?: unknown }).keySlug;
+      const valueSlugsRaw = (attr as { valueSlugs?: unknown }).valueSlugs;
+      const valueSlugs = Array.isArray(valueSlugsRaw)
+        ? (valueSlugsRaw as unknown[])
+        : undefined;
+
+      const normalized: { keySlug?: unknown; valueSlugs?: unknown[] } = {};
+      if (keySlug !== undefined) normalized.keySlug = keySlug;
+      if (valueSlugs !== undefined) normalized.valueSlugs = valueSlugs;
+      return normalized;
+    });
+
+    result.attributes = attrs;
+  }
 
   const imagesRaw = get(doc, ['images']);
   if (Array.isArray(imagesRaw)) result.images = imagesRaw.slice(0, MAX_IMAGES);
 
   const badgesRaw = get(doc, ['badges']);
-  if (Array.isArray(badgesRaw)) result.badges = badgesRaw;
+  if (Array.isArray(badgesRaw)) {
+    const badges = badgesRaw.filter(isRecord);
+    result.badges = badges;
+  }
 
   const currency = asString(get(doc, ['currency']));
   if (currency !== null) result.currency = currency;

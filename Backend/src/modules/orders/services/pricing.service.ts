@@ -328,53 +328,97 @@ export class PricingService {
     },
     item: PricingCartItem,
   ): number {
-    if (offer.type === 'percentage' && offer.discountValue) {
-      return (item.price * item.quantity * offer.discountValue) / 100;
-    }
+    const pct = this.calcPercentageDiscount(offer, item);
+    if (pct !== null) return pct;
 
-    if (offer.type === 'fixed_amount' && offer.discountValue) {
-      return Math.min(
-        offer.discountValue * item.quantity,
-        item.price * item.quantity,
-      );
-    }
+    const fixed = this.calcFixedAmountDiscount(offer, item);
+    if (fixed !== null) return fixed;
 
-    if (offer.newPrice != null) {
-      const oldPrice = offer.oldPrice || item.price;
-      return (oldPrice - offer.newPrice) * item.quantity;
-    }
+    const newPrice = this.calcNewPriceDiscount(offer, item);
+    if (newPrice !== null) return newPrice;
 
-    if (
-      offer.type === 'quantity_based' &&
-      offer.quantityThreshold &&
-      offer.quantityDiscount
-    ) {
-      if (item.quantity < offer.quantityThreshold) {
-        return 0;
-      }
-      return item.price * item.quantity * (offer.quantityDiscount / 100);
-    }
+    const qty = this.calcQuantityBasedDiscount(offer, item);
+    if (qty !== null) return qty;
 
-    if (
-      offer.type === 'buy_x_get_y' &&
-      offer.buyQuantity &&
-      offer.getQuantity
-    ) {
-      // دعم حالة نفس المنتج فقط
-      if (offer.getProductId && offer.getProductId !== item.productId) {
-        return 0;
-      }
-      const bundleSize = offer.buyQuantity + offer.getQuantity;
-      if (bundleSize <= 0) {
-        return 0;
-      }
-      const freeBundles = Math.floor(item.quantity / bundleSize);
-      const freeUnits = freeBundles * offer.getQuantity;
-      const pct = offer.getDiscount ?? 100;
-      return freeUnits * item.price * (pct / 100);
-    }
+    const buyX = this.calcBuyXGetYDiscount(offer, item);
+    if (buyX !== null) return buyX;
 
     return 0;
+  }
+
+  private calcPercentageDiscount(
+    offer: { type?: string; discountValue?: number },
+    item: PricingCartItem,
+  ): number | null {
+    if (offer.type !== 'percentage' || !offer.discountValue) return null;
+    return (item.price * item.quantity * offer.discountValue) / 100;
+  }
+
+  private calcFixedAmountDiscount(
+    offer: { type?: string; discountValue?: number },
+    item: PricingCartItem,
+  ): number | null {
+    if (offer.type !== 'fixed_amount' || !offer.discountValue) return null;
+    return Math.min(
+      offer.discountValue * item.quantity,
+      item.price * item.quantity,
+    );
+  }
+
+  private calcNewPriceDiscount(
+    offer: { newPrice?: number; oldPrice?: number },
+    item: PricingCartItem,
+  ): number | null {
+    if (offer.newPrice == null) return null;
+    const oldPrice = offer.oldPrice || item.price;
+    return (oldPrice - offer.newPrice) * item.quantity;
+  }
+
+  private calcQuantityBasedDiscount(
+    offer: {
+      type?: string;
+      quantityThreshold?: number;
+      quantityDiscount?: number;
+    },
+    item: PricingCartItem,
+  ): number | null {
+    if (
+      offer.type !== 'quantity_based' ||
+      !offer.quantityThreshold ||
+      !offer.quantityDiscount
+    ) {
+      return null;
+    }
+    if (item.quantity < offer.quantityThreshold) return 0;
+    return item.price * item.quantity * (offer.quantityDiscount / 100);
+  }
+
+  private calcBuyXGetYDiscount(
+    offer: {
+      type?: string;
+      buyQuantity?: number;
+      getQuantity?: number;
+      getProductId?: string;
+      getDiscount?: number;
+    },
+    item: PricingCartItem,
+  ): number | null {
+    if (
+      offer.type !== 'buy_x_get_y' ||
+      !offer.buyQuantity ||
+      !offer.getQuantity
+    ) {
+      return null;
+    }
+    if (offer.getProductId && offer.getProductId !== item.productId) {
+      return 0;
+    }
+    const bundleSize = offer.buyQuantity + offer.getQuantity;
+    if (bundleSize <= 0) return 0;
+    const freeBundles = Math.floor(item.quantity / bundleSize);
+    const freeUnits = freeBundles * offer.getQuantity;
+    const pct = offer.getDiscount ?? 100;
+    return freeUnits * item.price * (pct / 100);
   }
 
   private async calculatePromotionDiscounts(
@@ -613,9 +657,11 @@ export class PricingService {
 
     // إذا لم يوجد سعر، حوّل من السعر الأساسي
     const basePrice = this.getProductBasePrice(product);
-    const baseCurrency = product.basePriceCurrency || product.currency || 'YER';
+    const baseCurrency = String(
+      product.basePriceCurrency || product.currency || 'YER',
+    );
 
-    if (targetCurrency === baseCurrency) {
+    if (String(targetCurrency) === baseCurrency) {
       return basePrice;
     }
 
@@ -626,8 +672,9 @@ export class PricingService {
         merchantId,
       });
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(
-        `فشل تحويل السعر من ${baseCurrency} إلى ${targetCurrency}: ${error}`,
+        `فشل تحويل السعر من ${baseCurrency} إلى ${targetCurrency}: ${message}`,
       );
       return basePrice;
     }

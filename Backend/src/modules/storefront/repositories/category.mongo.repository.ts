@@ -13,9 +13,7 @@ import {
 } from './category.repository';
 
 @Injectable()
-export class StorefrontCategoryMongoRepository
-  implements StorefrontCategoryRepository
-{
+export class StorefrontCategoryMongoRepository implements StorefrontCategoryRepository {
   constructor(
     @InjectModel(Category.name)
     private readonly model: Model<CategoryDocument>,

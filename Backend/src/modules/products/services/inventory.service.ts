@@ -234,88 +234,125 @@ export class InventoryService {
     variantSku?: string,
     reason?: string,
   ): Promise<ProductDocument> {
+    const product = await this.getProductOrThrow(productId);
+    this.validateStockQuantity(quantity);
+
+    if (product.hasVariants && variantSku && product.variants) {
+      return this.updateVariantStock(
+        product,
+        productId,
+        variantSku,
+        quantity,
+        reason,
+      );
+    }
+
+    return this.updateProductStock(product, productId, quantity, reason);
+  }
+
+  private async getProductOrThrow(productId: string): Promise<ProductDocument> {
     const product = await this.repo.findById(new Types.ObjectId(productId));
     if (!product) {
       throw new NotFoundException(
         this.translationService.translateProduct('errors.notFound'),
       );
     }
+    return product;
+  }
+
+  private validateStockQuantity(quantity: number): void {
     if (quantity < 0) {
       throw new BadRequestException(
         this.translationService.translate('validation.min'),
       );
     }
+  }
 
-    if (product.hasVariants && variantSku && product.variants) {
-      const idx = product.variants.findIndex((v) => v.sku === variantSku);
-      if (idx === -1) {
-        throw new NotFoundException('Variant not found');
-      }
-      const updatedVariants = [...product.variants];
-      updatedVariants[idx] = {
-        ...product.variants[idx],
-        stock: quantity,
-        isAvailable: quantity > 0,
-      };
-      const productIdObj = product._id;
-      if (!productIdObj) {
-        throw new BadRequestException('Product id is missing');
-      }
-      const updated = await this.repo.updateById(productIdObj, {
-        variants: updatedVariants,
-      });
-      this.logger.log(
-        `Updated variant ${variantSku} stock to ${quantity}. Reason: ${reason || 'N/A'}`,
-      );
-
-      // إرسال إشعارات back-in-stock إذا أصبح المنتج متوفراً
-      if (quantity > 0 && !product.variants[idx].isAvailable) {
-        try {
-          await this.backInStockService.processBackInStockNotifications(
-            product.merchantId!.toString(),
-            productId,
-            variantSku,
-          );
-        } catch (error) {
-          this.logger.error(
-            'Failed to process back-in-stock notifications:',
-            error,
-          );
-        }
-      }
-
-      return updated!;
+  private async updateVariantStock(
+    product: ProductDocument,
+    productId: string,
+    variantSku: string,
+    quantity: number,
+    reason?: string,
+  ): Promise<ProductDocument> {
+    const idx = product.variants!.findIndex((v) => v.sku === variantSku);
+    if (idx === -1) {
+      throw new NotFoundException('Variant not found');
     }
 
     const productIdObj = product._id;
     if (!productIdObj) {
       throw new BadRequestException('Product id is missing');
     }
+
+    const updatedVariants = [...product.variants!];
+    updatedVariants[idx] = {
+      ...product.variants![idx],
+      stock: quantity,
+      isAvailable: quantity > 0,
+    };
+
+    const updated = await this.repo.updateById(productIdObj, {
+      variants: updatedVariants,
+    });
+    this.logger.log(
+      `Updated variant ${variantSku} stock to ${quantity}. Reason: ${reason ?? 'N/A'}`,
+    );
+
+    const becameAvailable = quantity > 0 && !product.variants![idx].isAvailable;
+    if (becameAvailable) {
+      await this.notifyBackInStock(product, productId, variantSku);
+    }
+
+    return updated!;
+  }
+
+  private async updateProductStock(
+    product: ProductDocument,
+    productId: string,
+    quantity: number,
+    reason?: string,
+  ): Promise<ProductDocument> {
+    const productIdObj = product._id;
+    if (!productIdObj) {
+      throw new BadRequestException('Product id is missing');
+    }
+
     const wasAvailable = product.isAvailable;
     const updated = await this.repo.updateById(productIdObj, {
       stock: quantity,
       isAvailable: quantity > 0 || product.isUnlimitedStock === true,
     });
     this.logger.log(
-      `Updated product ${productId} stock to ${quantity}. Reason: ${reason || 'N/A'}`,
+      `Updated product ${productId} stock to ${quantity}. Reason: ${reason ?? 'N/A'}`,
     );
 
-    // إرسال إشعارات back-in-stock إذا أصبح المنتج متوفراً
-    if (!wasAvailable && (quantity > 0 || product.isUnlimitedStock === true)) {
-      try {
-        await this.backInStockService.processBackInStockNotifications(
-          product.merchantId!.toString(),
-          productId,
-        );
-      } catch (error) {
-        this.logger.error(
-          'Failed to process back-in-stock notifications:',
-          error,
-        );
-      }
+    const becameAvailable =
+      !wasAvailable && (quantity > 0 || product.isUnlimitedStock === true);
+    if (becameAvailable) {
+      await this.notifyBackInStock(product, productId);
     }
 
     return updated!;
+  }
+
+  private async notifyBackInStock(
+    product: ProductDocument,
+    productId: string,
+    variantSku?: string,
+  ): Promise<void> {
+    try {
+      await this.backInStockService.processBackInStockNotifications(
+        product.merchantId!.toString(),
+        productId,
+        variantSku,
+      );
+    } catch (error) {
+      this.logger.error(
+        'Failed to process back-in-stock notifications:',
+        error,
+      );
+    }
   }
 
   /** معلومات المخزون لمنتج */

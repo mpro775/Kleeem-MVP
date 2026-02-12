@@ -106,17 +106,17 @@ export class LeadMongoRepository implements LeadRepository {
     contact: string,
     contactType: 'phone' | 'email',
   ): Promise<LeadEntity | null> {
-    const query: any = {
+    const query: FilterQuery<LeadDocument> = {
       merchantId,
       converted: { $ne: true },
       ...this.notDeleted(),
     };
 
     if (contactType === 'phone') {
-      query.phoneNormalized = contact;
+      (query as Record<string, unknown>).phoneNormalized = contact;
     } else {
       // للبريد الإلكتروني، نبحث في data object
-      query['data.email'] = contact.toLowerCase();
+      (query as Record<string, unknown>)['data.email'] = contact.toLowerCase();
     }
 
     return this.model

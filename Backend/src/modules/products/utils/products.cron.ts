@@ -6,6 +6,8 @@ import { Model } from 'mongoose';
 import { Product, ProductDocument } from '../schemas/product.schema';
 import { BackInStockService } from '../services/back-in-stock.service';
 
+const OLD_BACK_IN_STOCK_REQUESTS_DAYS = 90;
+
 @Injectable()
 export class ProductsCron {
   private readonly logger = new Logger(ProductsCron.name);
@@ -74,7 +76,9 @@ export class ProductsCron {
   @Cron('0 0 * * *') // كل يوم في منتصف الليل
   async cleanupOldBackInStockRequests(): Promise<void> {
     try {
-      const deletedCount = await this.backInStockService.cleanupOldRequests(90); // 90 يوم
+      const deletedCount = await this.backInStockService.cleanupOldRequests(
+        OLD_BACK_IN_STOCK_REQUESTS_DAYS,
+      );
       if (deletedCount > 0) {
         this.logger.log(
           `Cleaned up ${deletedCount} old back-in-stock requests`,

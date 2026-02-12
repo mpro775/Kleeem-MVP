@@ -19,7 +19,7 @@ import {
 } from '@nestjs/swagger';
 
 import { CustomerGuard } from '../../../common/guards/customer.guard';
-import { IdentityGuard } from '../../../common/guards/identity.guard';
+import { BackInStockRequest } from '../schemas/back-in-stock-request.schema';
 import { BackInStockService } from '../services/back-in-stock.service';
 
 @ApiTags('products')
@@ -41,7 +41,7 @@ export class BackInStockController {
       customerId?: string;
       contact?: string;
     },
-  ) {
+  ): Promise<BackInStockRequest> {
     return this.backInStockService.createRequest(
       body.merchantId,
       body.productId,
@@ -59,7 +59,7 @@ export class BackInStockController {
   async getMyRequests(
     @Query('merchantId') merchantId: string,
     @Body('customerId') customerId: string,
-  ) {
+  ): Promise<BackInStockRequest[]> {
     return this.backInStockService.getCustomerRequests(merchantId, customerId);
   }
 
@@ -72,7 +72,7 @@ export class BackInStockController {
   async cancelRequest(
     @Param('id') requestId: string,
     @Body('merchantId') merchantId: string,
-  ) {
+  ): Promise<{ success: boolean }> {
     const success = await this.backInStockService.cancelRequest(
       merchantId,
       requestId,

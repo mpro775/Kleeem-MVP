@@ -8,6 +8,8 @@ import {
   MerchantAuditAction,
 } from '../schemas/merchant-audit-log.schema';
 
+const MERCHANT_AUDIT_LOG_LIMIT = 50;
+
 export interface MerchantAuditEntry {
   _id: Types.ObjectId;
   merchantId: Types.ObjectId;
@@ -43,7 +45,7 @@ export class MerchantAuditService {
 
   async list(
     merchantId: string,
-    limit = 50,
+    limit = MERCHANT_AUDIT_LOG_LIMIT,
     page = 1,
   ): Promise<{ items: MerchantAuditEntry[]; total: number }> {
     const filter = { merchantId: new Types.ObjectId(merchantId) };
@@ -54,7 +56,7 @@ export class MerchantAuditService {
         .skip((page - 1) * limit)
         .limit(limit)
         .lean()
-        .exec() as Promise<MerchantAuditEntry[]>,
+        .exec() as unknown as Promise<MerchantAuditEntry[]>,
       this.model.countDocuments(filter).exec(),
     ]);
     return { items, total };

@@ -466,7 +466,7 @@ export class AuthService {
     });
 
     if (!user.merchantId) {
-      user.merchantId = merchant._id as Types.ObjectId;
+      user.merchantId = merchant._id;
       await this.repo.saveUser(user);
     }
   }
@@ -802,7 +802,7 @@ export class AuthService {
     });
 
     if (!user.merchantId) {
-      user.merchantId = merchant._id as Types.ObjectId;
+      user.merchantId = merchant._id;
       await this.repo.saveUser(user);
     }
   }

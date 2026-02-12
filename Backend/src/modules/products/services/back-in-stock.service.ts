@@ -16,6 +16,8 @@ import {
 } from '../schemas/back-in-stock-request.schema';
 import { BACK_IN_STOCK_REQUEST_REPOSITORY } from '../tokens';
 
+const OLD_BACK_IN_STOCK_REQUESTS_DAYS = 90;
+
 @Injectable()
 export class BackInStockService {
   private readonly logger = new Logger(BackInStockService.name);
@@ -145,7 +147,7 @@ export class BackInStockService {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
         this.logger.error(
-          `Failed to send back-in-stock notification for request ${request._id}: ${errorMessage}`,
+          `Failed to send back-in-stock notification for request ${String(request._id)}: ${errorMessage}`,
         );
       }
     }
@@ -165,15 +167,9 @@ export class BackInStockService {
 
     // إرسال الإشعار عبر SMS أو Email حسب نوع التواصل
     if (request.contact.includes('@')) {
-      // Email
-      try {
-        // TODO: تنفيذ إرسال البريد الإلكتروني
-        console.log(`Sending back-in-stock email to ${request.contact}`);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        throw new Error(`Failed to send email notification: ${errorMessage}`);
-      }
+      const subject = 'المنتج الذي طلبت إشعاره أصبح متوفراً الآن';
+      const html = `<p dir="rtl">${message.replace(/\n/g, '<br/>')}</p>`;
+      await this.mailService.sendEmail(request.contact, subject, html);
     } else {
       // SMS
       await this.smsService.sendNotificationSms(
@@ -187,7 +183,9 @@ export class BackInStockService {
   /**
    * تنظيف الطلبات القديمة (للـ maintenance)
    */
-  async cleanupOldRequests(daysOld: number = 90): Promise<number> {
+  async cleanupOldRequests(
+    daysOld = OLD_BACK_IN_STOCK_REQUESTS_DAYS,
+  ): Promise<number> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
 

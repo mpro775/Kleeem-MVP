@@ -2,6 +2,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
+const MAX_COMMENT_LENGTH = 1000;
+
 export type ProductReviewDocument = ProductReview & Document;
 
 export enum ProductReviewStatus {
@@ -27,7 +29,7 @@ export class ProductReview {
   @Prop({ required: true, min: 1, max: 5 })
   rating!: number;
 
-  @Prop({ maxlength: 1000 })
+  @Prop({ maxlength: MAX_COMMENT_LENGTH })
   comment?: string;
 
   @Prop({

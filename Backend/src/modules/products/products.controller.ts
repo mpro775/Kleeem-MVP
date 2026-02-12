@@ -62,8 +62,10 @@ import { StockChangeType } from './schemas/stock-change-log.schema';
 import { InventoryService } from './services/inventory.service';
 import { ProductCsvService } from './services/product-csv.service';
 import { StockChangeLogService } from './services/stock-change-log.service';
+import { ProductLean } from './types';
 
 const MAX_IMAGES = 6;
+const DEFAULT_STOCK_HISTORY_LIMIT = 50;
 
 @ApiTags('المنتجات')
 @ApiBearerAuth()
@@ -944,71 +946,14 @@ export class ProductsController {
     const limit = query.limit ?? 20;
     const page = query.page ?? 1;
 
-    // جلب المنتجات
+    // جلب المنتجات (نستخدم limit فقط بدون cursor)
     const result = await this.productsService.listByMerchant(jwtMerchantId, {
       limit,
-      cursor: undefined,
     });
 
-    // تحويل البيانات لشكل المخزون
-    let items = result.items.map((product) => {
-      const stock = product.stock ?? 0;
-      const threshold = product.lowStockThreshold ?? null;
-      const isUnlimited = product.isUnlimitedStock ?? false;
-      const isLowStock =
-        !isUnlimited && threshold !== null && stock <= threshold;
-      const isOutOfStock = !isUnlimited && stock <= 0;
+    let items = result.items.map((p) => this.mapProductToInventoryItem(p));
 
-      return {
-        productId: String(product._id),
-        name: product.name ?? '',
-        stock,
-        lowStockThreshold: threshold,
-        isUnlimitedStock: isUnlimited,
-        isAvailable: product.isAvailable ?? false,
-        isLowStock,
-        isOutOfStock,
-        hasVariants: product.hasVariants ?? false,
-        variants: product.variants?.map((v) => ({
-          sku: v.sku,
-          stock: v.stock ?? 0,
-          lowStockThreshold: v.lowStockThreshold ?? null,
-          isLowStock:
-            v.lowStockThreshold !== null &&
-            v.lowStockThreshold !== undefined &&
-            (v.stock ?? 0) <= v.lowStockThreshold,
-          isAvailable: v.isAvailable ?? false,
-        })),
-        images: product.images ?? [],
-      };
-    });
-
-    // تطبيق الفلترة
-    if (query.status && query.status !== 'all') {
-      items = items.filter((item) => {
-        switch (query.status) {
-          case 'low':
-            return item.isLowStock && !item.isOutOfStock;
-          case 'out':
-            return item.isOutOfStock;
-          case 'unlimited':
-            return item.isUnlimitedStock;
-          case 'available':
-            return item.isAvailable && !item.isOutOfStock;
-          default:
-            return true;
-        }
-      });
-    }
-
-    // تطبيق البحث
-    if (query.search) {
-      const searchLower = query.search.toLowerCase();
-      items = items.filter((item) =>
-        item.name.toLowerCase().includes(searchLower),
-      );
-    }
-
+    items = this.applyInventoryFilters(items, query.status, query.search);
     const total = items.length;
     const startIdx = (page - 1) * limit;
     const paginatedItems = items.slice(startIdx, startIdx + limit);
@@ -1022,6 +967,169 @@ export class ProductsController {
         hasMore: startIdx + paginatedItems.length < total,
       },
     };
+  }
+
+  private mapProductToInventoryItem(product: ProductLean) {
+    const stock = product.stock ?? 0;
+    const threshold = product.lowStockThreshold ?? null;
+    const isUnlimited = product.isUnlimitedStock ?? false;
+    const { isLowStock, isOutOfStock } = this.computeStockFlags(
+      stock,
+      threshold,
+      isUnlimited,
+    );
+
+    const variants = product.variants?.map((v) =>
+      this.mapVariantToInventoryFormat(v),
+    );
+
+    return {
+      productId: String(product._id),
+      name: product.name ?? '',
+      stock,
+      lowStockThreshold: threshold,
+      isUnlimitedStock: isUnlimited,
+      isAvailable: product.isAvailable ?? false,
+      isLowStock,
+      isOutOfStock,
+      hasVariants: product.hasVariants ?? false,
+      ...(variants ? { variants } : {}),
+      images: product.images ?? [],
+    };
+  }
+
+  private computeStockFlags(
+    stock: number,
+    threshold: number | null,
+    isUnlimited: boolean,
+  ) {
+    const isLowStock = !isUnlimited && threshold !== null && stock <= threshold;
+    const isOutOfStock = !isUnlimited && stock <= 0;
+    return { isLowStock, isOutOfStock };
+  }
+
+  private mapVariantToInventoryFormat(v: {
+    sku: string;
+    stock?: number;
+    lowStockThreshold?: number | null;
+    isAvailable?: boolean;
+  }) {
+    return {
+      sku: v.sku,
+      stock: v.stock ?? 0,
+      lowStockThreshold: v.lowStockThreshold ?? null,
+      isLowStock:
+        v.lowStockThreshold != null && (v.stock ?? 0) <= v.lowStockThreshold,
+      isAvailable: v.isAvailable ?? false,
+    };
+  }
+
+  private filterInventoryByStatus(
+    item: {
+      isLowStock: boolean;
+      isOutOfStock: boolean;
+      isUnlimitedStock: boolean;
+      isAvailable: boolean;
+    },
+    status: string,
+  ): boolean {
+    if (status === 'low') return item.isLowStock && !item.isOutOfStock;
+    if (status === 'out') return item.isOutOfStock;
+    if (status === 'unlimited') return item.isUnlimitedStock;
+    if (status === 'available') return item.isAvailable && !item.isOutOfStock;
+    return true;
+  }
+
+  private applyInventoryFilters(
+    items: Array<{
+      productId: string;
+      name: string;
+      stock: number;
+      lowStockThreshold: number | null;
+      isUnlimitedStock: boolean;
+      isAvailable: boolean;
+      isLowStock: boolean;
+      isOutOfStock: boolean;
+      hasVariants: boolean;
+      variants?: Array<{
+        sku: string;
+        stock: number;
+        lowStockThreshold: number | null;
+        isLowStock: boolean;
+        isAvailable: boolean;
+      }>;
+      images: string[];
+    }>,
+    status?: string,
+    search?: string,
+  ): typeof items {
+    let filtered = items;
+    if (status && status !== 'all') {
+      filtered = filtered.filter((item) =>
+        this.filterInventoryByStatus(item, status),
+      );
+    }
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter((item) =>
+        item.name.toLowerCase().includes(searchLower),
+      );
+    }
+    return filtered;
+  }
+
+  private assertStockUpdatePermission(
+    product: { merchantId?: unknown },
+    user: { role: string },
+    jwtMerchantId: string,
+  ): void {
+    if (
+      user.role !== 'ADMIN' &&
+      String(product.merchantId) !== String(jwtMerchantId)
+    ) {
+      throw new ForbiddenException(
+        this.translationService.translate('auth.errors.accessDenied'),
+      );
+    }
+  }
+
+  private getPreviousStockForUpdate(
+    product: {
+      stock?: number;
+      variants?: Array<{ sku: string; stock?: number }>;
+    },
+    variantSku?: string,
+  ): number {
+    if (variantSku) {
+      const v = product.variants?.find((x) => x.sku === variantSku);
+      return v?.stock ?? 0;
+    }
+    return product.stock ?? 0;
+  }
+
+  private async logStockChangeForUpdate(params: {
+    merchantId: string;
+    productId: string;
+    productName: string;
+    variantSku: string | null;
+    previousStock: number;
+    newStock: number;
+    reason: string | null;
+    changedBy: string;
+    changedByName: string;
+  }): Promise<void> {
+    await this.stockChangeLogService.logChange({
+      merchantId: params.merchantId,
+      productId: params.productId,
+      productName: params.productName,
+      variantSku: params.variantSku,
+      previousStock: params.previousStock,
+      newStock: params.newStock,
+      changeType: StockChangeType.MANUAL,
+      reason: params.reason,
+      changedBy: params.changedBy,
+      changedByName: params.changedByName,
+    });
   }
 
   /**
@@ -1049,21 +1157,13 @@ export class ProductsController {
     }
 
     const product = await this.productsService.findOne(id);
-    if (
-      user.role !== 'ADMIN' &&
-      String(product.merchantId) !== String(jwtMerchantId)
-    ) {
-      throw new ForbiddenException(
-        this.translationService.translate('auth.errors.accessDenied'),
-      );
-    }
+    this.assertStockUpdatePermission(product, user, jwtMerchantId);
 
-    // الحصول على المخزون السابق
-    const previousStock = dto.variantSku
-      ? (product.variants?.find((v) => v.sku === dto.variantSku)?.stock ?? 0)
-      : (product.stock ?? 0);
+    const previousStock = this.getPreviousStockForUpdate(
+      product,
+      dto.variantSku ?? undefined,
+    );
 
-    // تحديث المخزون
     const updated = await this.inventoryService.updateStock(
       id,
       dto.quantity,
@@ -1071,15 +1171,13 @@ export class ProductsController {
       dto.reason,
     );
 
-    // تسجيل التغيير
-    await this.stockChangeLogService.logChange({
+    await this.logStockChangeForUpdate({
       merchantId: jwtMerchantId,
       productId: id,
       productName: product.name ?? '',
       variantSku: dto.variantSku ?? null,
       previousStock,
       newStock: dto.quantity,
-      changeType: StockChangeType.MANUAL,
       reason: dto.reason ?? null,
       changedBy: user.userId,
       changedByName: user.name ?? 'Unknown',
@@ -1134,61 +1232,18 @@ export class ProductsController {
     let failedCount = 0;
 
     for (const item of dto.items) {
-      try {
-        const product = await this.productsService.findOne(item.productId);
-
-        // التحقق من الملكية
-        if (
-          user.role !== 'ADMIN' &&
-          String(product.merchantId) !== String(jwtMerchantId)
-        ) {
-          results.push({
-            productId: item.productId,
-            success: false,
-            error: 'Access denied',
-          });
-          failedCount++;
-          continue;
-        }
-
-        // الحصول على المخزون السابق
-        const previousStock = item.variantSku
-          ? (product.variants?.find((v) => v.sku === item.variantSku)?.stock ??
-            0)
-          : (product.stock ?? 0);
-
-        // تحديث المخزون
-        await this.inventoryService.updateStock(
-          item.productId,
-          item.quantity,
-          item.variantSku,
-          item.reason,
-        );
-
-        // تسجيل التغيير
-        await this.stockChangeLogService.logChange({
-          merchantId: jwtMerchantId,
-          productId: item.productId,
-          productName: product.name ?? '',
-          variantSku: item.variantSku ?? null,
-          previousStock,
-          newStock: item.quantity,
-          changeType: StockChangeType.MANUAL,
-          reason: item.reason ?? null,
-          changedBy: user.userId,
-          changedByName: user.name ?? 'Unknown',
-        });
-
-        results.push({ productId: item.productId, success: true });
-        successCount++;
-      } catch (error) {
-        results.push({
-          productId: item.productId,
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-        failedCount++;
-      }
+      const result = await this.processSingleBulkStockItem(
+        item,
+        user,
+        jwtMerchantId,
+      );
+      results.push({
+        productId: item.productId,
+        success: result.success,
+        ...(result.success === false ? { error: result.error } : {}),
+      });
+      if (result.success) successCount++;
+      else failedCount++;
     }
 
     return {
@@ -1196,6 +1251,58 @@ export class ProductsController {
       failed: failedCount,
       results,
     };
+  }
+
+  private async processSingleBulkStockItem(
+    item: {
+      productId: string;
+      quantity: number;
+      variantSku?: string;
+      reason?: string;
+    },
+    user: { userId: string; role: string; name?: string },
+    jwtMerchantId: string,
+  ): Promise<{ success: true } | { success: false; error: string }> {
+    try {
+      const product = await this.productsService.findOne(item.productId);
+      if (
+        user.role !== 'ADMIN' &&
+        String(product.merchantId) !== String(jwtMerchantId)
+      ) {
+        return { success: false, error: 'Access denied' };
+      }
+
+      const previousStock = this.getPreviousStockForUpdate(
+        product,
+        item.variantSku,
+      );
+
+      await this.inventoryService.updateStock(
+        item.productId,
+        item.quantity,
+        item.variantSku,
+        item.reason,
+      );
+
+      await this.logStockChangeForUpdate({
+        merchantId: jwtMerchantId,
+        productId: item.productId,
+        productName: product.name ?? '',
+        variantSku: item.variantSku ?? null,
+        previousStock,
+        newStock: item.quantity,
+        reason: item.reason ?? null,
+        changedBy: user.userId,
+        changedByName: user.name ?? 'Unknown',
+      });
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 
   /**
@@ -1260,10 +1367,12 @@ export class ProductsController {
       );
     }
 
+    const effectiveLimit = limit ?? DEFAULT_STOCK_HISTORY_LIMIT;
+    const effectivePage = page ?? 1;
     const result = await this.stockChangeLogService.getProductHistory(
       id,
-      limit ?? 50,
-      page ?? 1,
+      effectiveLimit,
+      effectivePage,
     );
 
     return {
@@ -1308,7 +1417,7 @@ export class ProductsController {
     const products =
       await this.productsService.findAllByMerchant(merchantObjectId);
 
-    // بناء CSV
+    const rows = products.flatMap((p) => this.buildProductCsvRows(p));
     const headers = [
       'معرف المنتج',
       'اسم المنتج',
@@ -1320,63 +1429,68 @@ export class ProductsController {
       'الحالة',
     ].join(',');
 
-    const rows: string[] = [];
-
-    for (const product of products) {
-      const isUnlimited = product.isUnlimitedStock ?? false;
-      const stock = product.stock ?? 0;
-      const threshold = product.lowStockThreshold ?? '';
-      const isLow =
-        !isUnlimited && threshold !== '' && stock <= Number(threshold);
-      const isOut = !isUnlimited && stock <= 0;
-      const status = isUnlimited
-        ? 'غير محدود'
-        : isOut
-          ? 'منتهي'
-          : isLow
-            ? 'منخفض'
-            : 'جيد';
-
-      if (product.hasVariants && product.variants) {
-        for (const variant of product.variants) {
-          const vStock = variant.stock ?? 0;
-          const vThreshold = variant.lowStockThreshold ?? '';
-          const vIsLow = vThreshold !== '' && vStock <= Number(vThreshold);
-          const vIsOut = vStock <= 0;
-          const vStatus = vIsOut ? 'منتهي' : vIsLow ? 'منخفض' : 'جيد';
-
-          rows.push(
-            [
-              String(product._id),
-              `"${(product.name ?? '').replace(/"/g, '""')}"`,
-              variant.sku,
-              vStock,
-              vThreshold,
-              'لا',
-              variant.isAvailable ? 'نعم' : 'لا',
-              vStatus,
-            ].join(','),
-          );
-        }
-      } else {
-        rows.push(
-          [
-            String(product._id),
-            `"${(product.name ?? '').replace(/"/g, '""')}"`,
-            '',
-            stock,
-            threshold,
-            isUnlimited ? 'نعم' : 'لا',
-            product.isAvailable ? 'نعم' : 'لا',
-            status,
-          ].join(','),
-        );
-      }
-    }
-
     const csv = '\uFEFF' + headers + '\n' + rows.join('\n'); // BOM for Excel Arabic support
     const filename = `inventory_${new Date().toISOString().split('T')[0]}.csv`;
 
     return { csv, filename };
+  }
+
+  private getStockStatusLabel(
+    isUnlimited: boolean,
+    isOut: boolean,
+    isLow: boolean,
+  ): string {
+    if (isUnlimited) return 'غير محدود';
+    if (isOut) return 'منتهي';
+    if (isLow) return 'منخفض';
+    return 'جيد';
+  }
+
+  private buildProductCsvRows(product: ProductLean): string[] {
+    const nameEscaped = `"${(product.name ?? '').replace(/"/g, '""')}"`;
+    const productId = String(product._id);
+
+    const isUnlimited = product.isUnlimitedStock ?? false;
+    const stock = product.stock ?? 0;
+    const threshold = product.lowStockThreshold ?? '';
+    const thresholdStr = String(threshold);
+    const isLow =
+      !isUnlimited && thresholdStr !== '' && stock <= Number(thresholdStr);
+    const isOut = !isUnlimited && stock <= 0;
+    const status = this.getStockStatusLabel(isUnlimited, isOut, isLow);
+
+    if (product.hasVariants && product.variants) {
+      return product.variants.map((v) => {
+        const vStock = v.stock ?? 0;
+        const vThreshold = v.lowStockThreshold ?? '';
+        const vThresholdStr = String(vThreshold);
+        const vIsLow = vThresholdStr !== '' && vStock <= Number(vThresholdStr);
+        const vIsOut = vStock <= 0;
+        const vStatus = this.getStockStatusLabel(false, vIsOut, vIsLow);
+        return [
+          productId,
+          nameEscaped,
+          v.sku,
+          vStock,
+          vThresholdStr,
+          'لا',
+          v.isAvailable ? 'نعم' : 'لا',
+          vStatus,
+        ].join(',');
+      });
+    }
+
+    return [
+      [
+        productId,
+        nameEscaped,
+        '',
+        stock,
+        thresholdStr,
+        isUnlimited ? 'نعم' : 'لا',
+        product.isAvailable ? 'نعم' : 'لا',
+        status,
+      ].join(','),
+    ];
   }
 }

@@ -69,15 +69,10 @@ describe('MailService', () => {
         FRONTEND_URL: 'https://app.example.com',
       };
 
-      expect(() => new MailService(makeConfig(cfg))).toThrow(
-        InternalServerErrorException,
-      );
-      try {
-        new MailService(makeConfig(cfg));
-      } catch (e: any) {
-        expect(e.message).toContain('Missing email configuration');
-        expect(e.message).toContain('MAIL_PASS');
-      }
+      const throwFn = () => new MailService(makeConfig(cfg));
+      expect(throwFn).toThrow(InternalServerErrorException);
+      expect(throwFn).toThrow('Missing email configuration');
+      expect(throwFn).toThrow('MAIL_PASS');
       expect(createTransportMock).not.toHaveBeenCalled();
     });
   });

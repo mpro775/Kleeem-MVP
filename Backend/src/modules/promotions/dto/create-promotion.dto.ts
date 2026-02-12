@@ -56,7 +56,7 @@ export class CreatePromotionDto {
   })
   @IsNumber({}, { message: 'يجب أن تكون القيمة رقمية' })
   @Min(0, { message: 'القيمة يجب أن تكون أكبر من أو تساوي صفر' })
-  @ValidateIf((o) => o.type === PromotionType.PERCENTAGE)
+  @ValidateIf((o: CreatePromotionDto) => o.type === PromotionType.PERCENTAGE)
   @Max(100, { message: 'النسبة المئوية يجب ألا تتجاوز 100%' })
   discountValue!: number;
 

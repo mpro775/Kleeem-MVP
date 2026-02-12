@@ -10,6 +10,8 @@ import { PlansService } from '../plans/plans.service';
 import { UsageService } from '../usage/usage.service';
 import { UsersService } from '../users/users.service';
 
+const ADMIN_USAGE_MAX_LIMIT = 5000;
+
 @Injectable()
 export class AdminReportsService {
   constructor(
@@ -42,15 +44,31 @@ export class AdminReportsService {
     ]);
 
     const m = merchant as { name?: string; lastActivity?: Date };
-    return {
+
+    const result: {
+      merchantId: string;
+      merchantName?: string;
+      lastActivity?: Date;
+      conversationCount: number;
+      channelsTotal: number;
+      channelsEnabled: number;
+      channelsConnected: number;
+    } = {
       merchantId,
-      merchantName: m?.name,
-      lastActivity: m?.lastActivity,
       conversationCount,
       channelsTotal: channelsCount.total,
       channelsEnabled: channelsCount.enabled,
       channelsConnected: channelsCount.connected,
     };
+
+    if (m?.name !== undefined) {
+      result.merchantName = m.name;
+    }
+    if (m?.lastActivity !== undefined) {
+      result.lastActivity = m.lastActivity;
+    }
+
+    return result;
   }
 
   /** و.2: تقرير التحويلات/التسجيل */
@@ -138,7 +156,7 @@ export class AdminReportsService {
     const key = monthKey ?? this.usageService.monthKeyFrom();
     const { items } = await this.usageService.listAllAdminWithLimits({
       monthKey: key,
-      limit: 5000,
+      limit: ADMIN_USAGE_MAX_LIMIT,
       page: 1,
     });
 

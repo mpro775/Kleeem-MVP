@@ -18,6 +18,7 @@ import {
 } from './repositories/merchants.repository';
 import { MerchantDocument } from './schemas/merchant.schema';
 import { QuickConfig } from './schemas/quick-config.schema';
+import { PlanTier } from './schemas/subscription-plan.schema';
 import { MerchantAuditService } from './services/merchant-audit.service';
 import { MerchantCacheService } from './services/merchant-cache.service';
 import { MerchantDeletionService } from './services/merchant-deletion.service';
@@ -26,6 +27,10 @@ import { MerchantPromptService } from './services/merchant-prompt.service';
 import { MerchantProvisioningService } from './services/merchant-provisioning.service';
 import { PromptBuilderService } from './services/prompt-builder.service';
 import { MerchantStatusResponse } from './types/types';
+
+// Constants
+const MERCHANTS_EXPORT_LIMIT = 5000;
+const AUDIT_LOG_LIMIT = 50;
 
 @Injectable()
 export class MerchantsService {
@@ -55,7 +60,22 @@ export class MerchantsService {
     return this.profileSvc.update(id, dto);
   }
 
-  // Cache invalidation helper
+  private merchantToCsvRow(m: MerchantAdminLean): string[] {
+    const id = m._id != null ? String(m._id) : '';
+    const userId = m.userId != null ? String(m.userId) : '';
+    const createdAt = m.createdAt ? new Date(m.createdAt).toISOString() : '';
+    return [
+      id,
+      m.name ?? '',
+      userId,
+      m.status ?? '',
+      String(m.active ?? ''),
+      m.publicSlug ?? '',
+      m.subscription?.tier ?? '',
+      createdAt,
+    ];
+  }
+
   private async invalidateMerchantCache(merchantId: string) {
     await this.cacheSvc.invalidate(merchantId);
   }
@@ -94,7 +114,7 @@ export class MerchantsService {
     subscriptionTier?: string;
   }): Promise<string> {
     const { items } = await this.listAllAdmin({
-      limit: 5000,
+      limit: MERCHANTS_EXPORT_LIMIT,
       page: 1,
       ...params,
     });
@@ -108,16 +128,7 @@ export class MerchantsService {
       'tier',
       'createdAt',
     ];
-    const rows = items.map((m) => [
-      m._id?.toString?.() ?? '',
-      m.name ?? '',
-      m.userId?.toString?.() ?? '',
-      m.status ?? '',
-      m.active ?? '',
-      m.publicSlug ?? '',
-      m.subscription?.tier ?? '',
-      m.createdAt ? new Date(m.createdAt).toISOString() : '',
-    ]);
+    const rows = items.map((m) => this.merchantToCsvRow(m));
     return toCsv(headers, rows);
   }
 
@@ -174,7 +185,7 @@ export class MerchantsService {
   ): Promise<MerchantDocument> {
     const updated = await this.merchantsRepository.suspend(id, actor, reason);
     await this.auditSvc
-      .log(id, 'suspend', actor.userId, { reason })
+      .log(id, 'suspend', actor.userId, { reason: reason ?? '' })
       .catch(() => {});
     await this.invalidateMerchantCache(id);
     return updated;
@@ -195,7 +206,7 @@ export class MerchantsService {
     limit?: number,
     page?: number,
   ): ReturnType<MerchantAuditService['list']> {
-    return this.auditSvc.list(merchantId, limit ?? 50, page ?? 1);
+    return this.auditSvc.list(merchantId, limit ?? AUDIT_LOG_LIMIT, page ?? 1);
   }
 
   async isSubscriptionActive(id: string): Promise<boolean> {
@@ -271,7 +282,7 @@ export class MerchantsService {
       userId: userId.toString(),
       name: opts?.name ?? 'متجر جديد',
       subscription: {
-        tier: 'free' as any,
+        tier: PlanTier.Free,
         startDate: new Date().toISOString(),
         features: [],
       },

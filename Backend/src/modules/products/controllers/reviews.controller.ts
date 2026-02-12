@@ -24,6 +24,10 @@ import { Customer } from '../../../common/decorators/customer.decorator';
 import { CustomerGuard } from '../../../common/guards/customer.guard';
 import { IdentityGuard } from '../../../common/guards/identity.guard';
 import { CustomerRequestUser } from '../../../modules/auth/strategies/customer-jwt.strategy';
+import {
+  ProductReview,
+  ProductReviewStatus,
+} from '../schemas/product-review.schema';
 import { ReviewsService } from '../services/reviews.service';
 
 @ApiTags('products')
@@ -43,7 +47,12 @@ export class ReviewsController {
     @Query('merchantId') merchantId: string,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
-  ) {
+  ): Promise<{
+    reviews: ProductReview[];
+    total: number;
+    averageRating: number;
+    ratingDistribution: { [key: number]: number };
+  }> {
     return this.reviewsService.getApprovedReviewsForProduct(
       merchantId,
       productId,
@@ -70,7 +79,7 @@ export class ReviewsController {
       comment?: string;
       orderId?: string;
     },
-  ) {
+  ): Promise<ProductReview> {
     return this.reviewsService.createReview(
       customer.merchantId,
       productId,
@@ -92,7 +101,7 @@ export class ReviewsController {
     @Customer() customer: CustomerRequestUser,
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
-  ) {
+  ): Promise<{ reviews: ProductReview[]; total: number }> {
     return this.reviewsService.getCustomerReviews(
       customer.merchantId,
       customer.customerId,
@@ -121,14 +130,27 @@ export class ReviewsController {
     @Query('status') status?: 'pending' | 'approved' | 'rejected',
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
-  ) {
+  ): Promise<{ reviews: ProductReview[]; total: number }> {
+    const reviewStatus = this.mapQueryStatusToProductReviewStatus(status);
     return this.reviewsService.getAllReviewsForProduct(
       merchantId,
       productId,
-      status as any,
+      reviewStatus,
       page,
       limit,
     );
+  }
+
+  private mapQueryStatusToProductReviewStatus(
+    status?: 'pending' | 'approved' | 'rejected',
+  ): ProductReviewStatus | undefined {
+    if (!status) return undefined;
+    const map: Record<string, ProductReviewStatus> = {
+      pending: ProductReviewStatus.PENDING,
+      approved: ProductReviewStatus.APPROVED,
+      rejected: ProductReviewStatus.REJECTED,
+    };
+    return map[status];
   }
 
   @UseGuards(IdentityGuard)
@@ -140,7 +162,7 @@ export class ReviewsController {
   async approveReview(
     @Param('reviewId') reviewId: string,
     @Body('merchantId') merchantId: string,
-  ) {
+  ): Promise<ProductReview | null> {
     return this.reviewsService.approveReview(merchantId, reviewId);
   }
 
@@ -153,7 +175,7 @@ export class ReviewsController {
   async rejectReview(
     @Param('reviewId') reviewId: string,
     @Body('merchantId') merchantId: string,
-  ) {
+  ): Promise<ProductReview | null> {
     return this.reviewsService.rejectReview(merchantId, reviewId);
   }
 
@@ -166,7 +188,7 @@ export class ReviewsController {
   async deleteReview(
     @Param('reviewId') reviewId: string,
     @Body('merchantId') merchantId: string,
-  ) {
+  ): Promise<{ success: boolean }> {
     const success = await this.reviewsService.deleteReview(
       merchantId,
       reviewId,

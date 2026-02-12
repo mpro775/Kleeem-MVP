@@ -20,6 +20,9 @@ import {
 import { MAX_DESCRIPTION_LENGTH } from '../../constants';
 import { AddressDto } from '../shared/address.dto';
 
+const EXAMPLE_RATE_SAR = 0.0067;
+const EXAMPLE_RATE_USD = 0.004;
+
 /**
  * العملات المدعومة في النظام
  */
@@ -74,7 +77,7 @@ export class CurrencySettingsDto {
     description: 'أسعار الصرف (مقابل العملة الأساسية)',
     type: 'object',
     additionalProperties: { type: 'number' },
-    example: { SAR: 0.0067, USD: 0.004 },
+    example: { SAR: EXAMPLE_RATE_SAR, USD: EXAMPLE_RATE_USD },
   })
   @IsOptional()
   @IsObject({ message: 'يجب أن تكون أسعار الصرف كائن' })

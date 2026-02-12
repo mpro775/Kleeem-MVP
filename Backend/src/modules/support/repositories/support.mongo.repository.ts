@@ -82,25 +82,43 @@ export class SupportMongoRepository implements SupportRepository {
       byStatus[String(s._id)] = s.count;
     });
 
-    let avgResolutionHours: number | undefined;
+    const MILLISECONDS_PER_SECOND = 1000;
+    const SECONDS_PER_MINUTE = 60;
+    const MINUTES_PER_HOUR = 60;
+    const MILLISECONDS_PER_HOUR =
+      MILLISECONDS_PER_SECOND * SECONDS_PER_MINUTE * MINUTES_PER_HOUR;
+
+    const result: {
+      byStatus: Record<string, number>;
+      total: number;
+      avgResolutionHours?: number;
+    } = {
+      byStatus,
+      total,
+    };
+
     if (resolvedDocs.length > 0) {
       const hours = resolvedDocs
-        .map((d: { createdAt?: Date; updatedAt?: Date }) => {
-          const created = d.createdAt ? new Date(d.createdAt).getTime() : 0;
-          const updated = d.updatedAt
-            ? new Date(d.updatedAt).getTime()
-            : created;
-          return (updated - created) / (1000 * 60 * 60);
+        .map((d) => {
+          const doc = d as Record<string, unknown>;
+          const createdAt = doc.createdAt as Date | undefined;
+          const updatedAt = doc.updatedAt as Date | undefined;
+          const created = createdAt ? new Date(createdAt).getTime() : 0;
+          const updated = updatedAt ? new Date(updatedAt).getTime() : created;
+          return (updated - created) / MILLISECONDS_PER_HOUR;
         })
         .filter((h) => h >= 0);
-      avgResolutionHours =
-        hours.length > 0
-          ? Math.round((hours.reduce((a, b) => a + b, 0) / hours.length) * 10) /
-            10
-          : undefined;
+
+      if (hours.length > 0) {
+        const sum = hours.reduce((a, b) => a + b, 0);
+        const avg = sum / hours.length;
+        const ROUNDING_FACTOR = 10;
+        result.avgResolutionHours =
+          Math.round(avg * ROUNDING_FACTOR) / ROUNDING_FACTOR;
+      }
     }
 
-    return { byStatus, total, avgResolutionHours };
+    return result;
   }
 
   async listAllAdmin(

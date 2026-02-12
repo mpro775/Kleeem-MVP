@@ -33,6 +33,10 @@ import { ListOrdersDto } from './dto/get-orders.dto';
 import { OrdersService } from './orders.service';
 import { Order } from './schemas/order.schema';
 
+interface RequestWithOptionalCustomer {
+  customer?: { customerId?: string };
+}
+
 /**
  * وحدة تحكم الطلبات
  * تتعامل مع عمليات إنشاء واسترجاع الطلبات
@@ -87,8 +91,10 @@ export class OrdersController {
       },
     },
   })
-  async create(@Body() dto: CreateOrderDto, @Req() req: any): Promise<Order> {
-    // استخراج customerId من JWT إذا كان متوفراً
+  async create(
+    @Body() dto: CreateOrderDto,
+    @Req() req: RequestWithOptionalCustomer,
+  ): Promise<Order> {
     const customerId = req.customer?.customerId;
     return this.ordersService.create(dto, customerId);
   }
@@ -127,14 +133,6 @@ export class OrdersController {
     };
   }
 
-  @Public()
-  @Get('mine/:merchantId/:sessionId')
-  async findMineBySession(
-    @Param('merchantId') merchantId: string,
-    @Param('sessionId') sessionId: string,
-  ): Promise<Order[]> {
-    return this.ordersService.findMine(merchantId, sessionId);
-  }
   @Public()
   @Get('mine/:merchantId/:sessionId')
   async findMine(
@@ -176,10 +174,10 @@ export class OrdersController {
   ): Promise<Order | null> {
     const order = await this.ordersService.findOne(id);
     if (!order) return null;
-    const owns = await this.ordersService.assertOwnership(order, {
-      sessionId,
-      phone,
-    });
+    const opts: { sessionId?: string; phone?: string } = {};
+    if (sessionId !== undefined) opts.sessionId = sessionId;
+    if (phone !== undefined) opts.phone = phone;
+    const owns = await this.ordersService.assertOwnership(order, opts);
     if (!owns) {
       throw new ForbiddenException('Order access denied');
     }

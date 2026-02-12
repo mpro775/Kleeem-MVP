@@ -134,7 +134,9 @@ export class PriceSyncService {
         prices.set(currency, createCurrencyPrice(convertedPrice, false));
       } catch (error) {
         this.logger.warn(
-          `فشل تحويل السعر من ${baseCurrency} إلى ${currency}: ${error}`,
+          `فشل تحويل السعر من ${baseCurrency} إلى ${currency}: ${String(
+            error,
+          )}`,
         );
         // في حالة الفشل، لا نضيف السعر
       }
@@ -248,51 +250,7 @@ export class PriceSyncService {
       );
     }
 
-    const prices = this.normalizePrices(product.prices);
-    const merchantId = product.merchantId?.toString();
-
-    if (!merchantId) {
-      throw new BadRequestException('معرف التاجر غير موجود');
-    }
-
-    const baseCurrency =
-      product.basePriceCurrency || product.currency || Currency.YER;
-    const basePrice =
-      product.basePrice || this.getBasePriceFromPrices(prices, baseCurrency);
-
-    if (basePrice === undefined) {
-      throw new BadRequestException('السعر الأساسي غير موجود');
-    }
-
-    let newAmount: number;
-
-    if (recalculate && currency !== baseCurrency) {
-      // إعادة حساب السعر من سعر الصرف
-      newAmount = await this.currencyService.convertPrice(basePrice, {
-        fromCurrency: baseCurrency,
-        toCurrency: currency,
-        merchantId,
-      });
-    } else {
-      // الاحتفاظ بالسعر الحالي
-      newAmount = prices.get(currency)?.amount || 0;
-    }
-
-    prices.set(currency, {
-      amount: newAmount,
-      isManual: false,
-      lastAutoSync: new Date(),
-      manualOverrideAt: null,
-    });
-
-    product.prices = prices;
-    await product.save();
-
-    this.logger.log(
-      `تم إعادة سعر المنتج ${productId} بعملة ${currency} للوضع التلقائي`,
-    );
-
-    return product;
+    return this.resetBasePriceForProduct(product, currency, recalculate);
   }
 
   /**
@@ -320,89 +278,14 @@ export class PriceSyncService {
     let updatedCount = 0;
 
     for (const product of products) {
-      let updated = false;
-      const prices = this.normalizePrices(product.prices);
-      const productBaseCurrency =
-        product.basePriceCurrency || product.currency || baseCurrency;
-      const basePrice =
-        product.basePrice ||
-        this.getBasePriceFromPrices(prices, productBaseCurrency);
-
-      if (basePrice === undefined) continue;
-
-      // تحديث أسعار العملات المتأثرة (غير اليدوية فقط)
-      for (const currency of affectedCurrencies) {
-        if (currency === productBaseCurrency) continue;
-
-        const priceData = prices.get(currency);
-
-        // تجاوز الأسعار اليدوية
-        if (priceData?.isManual) {
-          this.logger.debug(
-            `تجاوز السعر اليدوي للمنتج ${product._id} بعملة ${currency}`,
-          );
-          continue;
-        }
-
-        try {
-          const newPrice = await this.currencyService.convertPrice(basePrice, {
-            fromCurrency: productBaseCurrency,
-            toCurrency: currency,
-            merchantId,
-          });
-
-          prices.set(currency, createCurrencyPrice(newPrice, false));
-          updated = true;
-        } catch (error) {
-          this.logger.warn(
-            `فشل تحديث سعر المنتج ${product._id} بعملة ${currency}: ${error}`,
-          );
-        }
-      }
-
-      // تحديث أسعار المتغيرات أيضاً
-      if (product.hasVariants && product.variants) {
-        for (const variant of product.variants) {
-          const variantPrices = this.normalizePrices(variant.prices);
-          const variantBaseCurrency =
-            variant.basePriceCurrency || productBaseCurrency;
-          const variantBasePrice =
-            variant.basePrice ||
-            this.getBasePriceFromPrices(variantPrices, variantBaseCurrency);
-
-          if (variantBasePrice === undefined) continue;
-
-          for (const currency of affectedCurrencies) {
-            if (currency === variantBaseCurrency) continue;
-
-            const priceData = variantPrices.get(currency);
-            if (priceData?.isManual) continue;
-
-            try {
-              const newPrice = await this.currencyService.convertPrice(
-                variantBasePrice,
-                {
-                  fromCurrency: variantBaseCurrency,
-                  toCurrency: currency,
-                  merchantId,
-                },
-              );
-
-              variantPrices.set(currency, createCurrencyPrice(newPrice, false));
-              variant.prices = variantPrices;
-              updated = true;
-            } catch (error) {
-              this.logger.warn(
-                `فشل تحديث سعر المتغير ${variant.sku} بعملة ${currency}: ${error}`,
-              );
-            }
-          }
-        }
-      }
+      const updated = await this.updatePricesForSingleProduct(
+        product,
+        affectedCurrencies,
+        baseCurrency,
+        merchantId,
+      );
 
       if (updated) {
-        product.prices = prices;
-        await product.save();
         updatedCount++;
       }
     }
@@ -491,7 +374,215 @@ export class PriceSyncService {
   }
 
   // ==================== Helper Methods ====================
+  private async resetBasePriceForProduct(
+    product: ProductDocument,
+    currency: string,
+    recalculate: boolean,
+  ): Promise<ProductDocument> {
+    const prices = this.normalizePrices(product.prices);
+    const merchantId = product.merchantId?.toString();
 
+    if (!merchantId) {
+      throw new BadRequestException('معرف التاجر غير موجود');
+    }
+
+    const baseCurrency =
+      product.basePriceCurrency || product.currency || Currency.YER;
+    const basePrice =
+      product.basePrice || this.getBasePriceFromPrices(prices, baseCurrency);
+
+    if (basePrice === undefined) {
+      throw new BadRequestException('السعر الأساسي غير موجود');
+    }
+
+    const newAmount = await this.calculateResetAmountForCurrency(
+      prices,
+      String(baseCurrency),
+      basePrice,
+      currency,
+      merchantId,
+      recalculate,
+    );
+
+    prices.set(currency, {
+      amount: newAmount,
+      isManual: false,
+      lastAutoSync: new Date(),
+      manualOverrideAt: null,
+    });
+
+    product.prices = prices;
+    await product.save();
+
+    this.logger.log(
+      `تم إعادة سعر المنتج ${String(
+        product._id,
+      )} بعملة ${currency} للوضع التلقائي`,
+    );
+
+    return product;
+  }
+
+  private async updatePricesForSingleProduct(
+    product: ProductDocument,
+    affectedCurrencies: string[],
+    baseCurrencyFallback: string,
+    merchantId: string,
+  ): Promise<boolean> {
+    let updated = false;
+    const prices = this.normalizePrices(product.prices);
+    const productBaseCurrency =
+      product.basePriceCurrency || product.currency || baseCurrencyFallback;
+    const basePrice =
+      product.basePrice ||
+      this.getBasePriceFromPrices(prices, productBaseCurrency);
+
+    if (basePrice === undefined) return false;
+
+    const productUpdated = await this.updateProductCurrencies(
+      prices,
+      affectedCurrencies,
+      String(productBaseCurrency),
+      basePrice,
+      merchantId,
+      product._id,
+    );
+
+    if (productUpdated) {
+      product.prices = prices;
+      updated = true;
+    }
+
+    if (product.hasVariants && product.variants?.length) {
+      const variantsUpdated = await this.updateVariantsCurrencies(
+        product,
+        affectedCurrencies,
+        String(productBaseCurrency),
+        merchantId,
+      );
+      updated = updated || variantsUpdated;
+    }
+
+    if (updated) {
+      await product.save();
+    }
+
+    return updated;
+  }
+
+  private async updateProductCurrencies(
+    prices: Map<string, CurrencyPrice>,
+    affectedCurrencies: string[],
+    productBaseCurrency: string,
+    basePrice: number,
+    merchantId: string,
+    productId: Types.ObjectId,
+  ): Promise<boolean> {
+    let updated = false;
+
+    for (const currency of affectedCurrencies) {
+      if (currency === productBaseCurrency) continue;
+
+      const priceData = prices.get(currency);
+
+      // تجاوز الأسعار اليدوية
+      if (priceData?.isManual) {
+        this.logger.debug(
+          `تجاوز السعر اليدوي للمنتج ${String(productId)} بعملة ${currency}`,
+        );
+        continue;
+      }
+
+      try {
+        const newPrice = await this.currencyService.convertPrice(basePrice, {
+          fromCurrency: productBaseCurrency,
+          toCurrency: currency,
+          merchantId,
+        });
+
+        prices.set(currency, createCurrencyPrice(newPrice, false));
+        updated = true;
+      } catch (error) {
+        this.logger.warn(
+          `فشل تحديث سعر المنتج ${String(
+            productId,
+          )} بعملة ${currency}: ${String(error)}`,
+        );
+      }
+    }
+
+    return updated;
+  }
+
+  private async updateVariantsCurrencies(
+    product: ProductDocument,
+    affectedCurrencies: string[],
+    productBaseCurrency: string,
+    merchantId: string,
+  ): Promise<boolean> {
+    if (!product.variants?.length) return false;
+    let updated = false;
+
+    for (const variant of product.variants) {
+      const variantPrices = this.normalizePrices(variant.prices);
+      const variantBaseCurrency =
+        variant.basePriceCurrency || productBaseCurrency;
+      const variantBasePrice =
+        variant.basePrice ||
+        this.getBasePriceFromPrices(variantPrices, variantBaseCurrency);
+
+      if (variantBasePrice === undefined) continue;
+
+      for (const currency of affectedCurrencies) {
+        if (currency === String(variantBaseCurrency)) continue;
+
+        const priceData = variantPrices.get(currency);
+        if (priceData?.isManual) continue;
+
+        try {
+          const newPrice = await this.currencyService.convertPrice(
+            variantBasePrice,
+            {
+              fromCurrency: variantBaseCurrency,
+              toCurrency: currency,
+              merchantId,
+            },
+          );
+
+          variantPrices.set(currency, createCurrencyPrice(newPrice, false));
+          variant.prices = variantPrices;
+          updated = true;
+        } catch (error) {
+          this.logger.warn(
+            `فشل تحديث سعر المتغير ${
+              variant.sku
+            } بعملة ${currency}: ${String(error)}`,
+          );
+        }
+      }
+    }
+
+    return updated;
+  }
+
+  private async calculateResetAmountForCurrency(
+    prices: Map<string, CurrencyPrice>,
+    baseCurrency: string,
+    basePrice: number,
+    currency: string,
+    merchantId: string,
+    recalculate: boolean,
+  ): Promise<number> {
+    if (recalculate && currency !== baseCurrency) {
+      return this.currencyService.convertPrice(basePrice, {
+        fromCurrency: baseCurrency,
+        toCurrency: currency,
+        merchantId,
+      });
+    }
+
+    return prices.get(currency)?.amount || 0;
+  }
   private async getProduct(productId: string): Promise<ProductDocument> {
     if (!Types.ObjectId.isValid(productId)) {
       throw new BadRequestException('معرف المنتج غير صالح');
@@ -658,17 +749,14 @@ export class PriceSyncService {
       throw new BadRequestException('السعر الأساسي للمتغير غير موجود');
     }
 
-    let newAmount: number;
-
-    if (recalculate && currency !== baseCurrency) {
-      newAmount = await this.currencyService.convertPrice(basePrice, {
-        fromCurrency: baseCurrency,
-        toCurrency: currency,
-        merchantId,
-      });
-    } else {
-      newAmount = prices.get(currency)?.amount || 0;
-    }
+    const newAmount = await this.calculateResetAmountForCurrency(
+      prices,
+      String(baseCurrency),
+      basePrice,
+      currency,
+      merchantId,
+      recalculate,
+    );
 
     prices.set(currency, {
       amount: newAmount,

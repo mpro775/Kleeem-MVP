@@ -28,13 +28,22 @@ import { IdentityGuard } from '../../common/guards/identity.guard';
 import { CustomerRequestUser } from '../../modules/auth/strategies/customer-jwt.strategy';
 
 import { CustomersService } from './customers.service';
+import { CreateAddressDto } from './dto/create-address.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { GetCustomersDto } from './dto/get-customers.dto';
 import { SendOtpDto } from './dto/send-otp.dto';
+import { UpdateAddressDto } from './dto/update-address.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
-import { ContactType } from './schemas/customer-otp.schema';
+import { CustomerAddress } from './schemas/customer-address.schema';
 import { Customer, SignupSource } from './schemas/customer.schema';
+
+import type { CustomerListResult } from './customers.service';
+
+/** مدة دقيقة واحدة بالميلي ثانية */
+const ONE_MINUTE_MS = 60_000;
+/** مدة 5 دقائق بالميلي ثانية */
+const FIVE_MINUTES_MS = 300_000;
 
 @ApiTags('customers')
 @Controller('customers')
@@ -43,7 +52,7 @@ export class CustomersController {
 
   // ========== OTP Endpoints ==========
 
-  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
+  @Throttle({ default: { limit: 3, ttl: ONE_MINUTE_MS } })
   @Post('otp/send')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'إرسال رمز OTP للعميل' })
@@ -62,7 +71,7 @@ export class CustomersController {
     };
   }
 
-  @Throttle({ default: { limit: 5, ttl: 300000 } }) // 5 attempts per 5 minutes
+  @Throttle({ default: { limit: 5, ttl: FIVE_MINUTES_MS } })
   @Post('otp/verify')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'التحقق من رمز OTP وإنشاء/تحديث العميل' })
@@ -88,7 +97,11 @@ export class CustomersController {
     },
   })
   @ApiResponse({ status: 400, description: 'رمز غير صحيح أو منتهي الصلاحية' })
-  async verifyOtp(@Body() dto: VerifyOtpDto) {
+  async verifyOtp(@Body() dto: VerifyOtpDto): Promise<{
+    customer: Customer;
+    accessToken: string;
+    isNewCustomer: boolean;
+  }> {
     return this.customersService.verifyOtpAndCreateCustomer(
       dto.merchantId,
       dto.contact,
@@ -104,7 +117,11 @@ export class CustomersController {
     status: 200,
     description: 'تم التسجيل بنجاح',
   })
-  async signup(@Body() dto: VerifyOtpDto & { name?: string }) {
+  async signup(@Body() dto: VerifyOtpDto & { name?: string }): Promise<{
+    customer: Customer;
+    accessToken: string;
+    isNewCustomer: boolean;
+  }> {
     return this.customersService.verifyOtpAndCreateCustomer(
       dto.merchantId,
       dto.contact,
@@ -141,7 +158,7 @@ export class CustomersController {
   async getCustomers(
     @Query() query: GetCustomersDto,
     @Body('merchantId') merchantId: string,
-  ) {
+  ): Promise<CustomerListResult> {
     if (query.search) {
       return this.customersService.searchCustomers(
         merchantId,
@@ -161,7 +178,7 @@ export class CustomersController {
   async getCustomer(
     @Param('id') customerId: string,
     @Body('merchantId') merchantId: string,
-  ) {
+  ): Promise<Customer> {
     const customer = await this.customersService.findByIdAndMerchant(
       customerId,
       merchantId,
@@ -178,7 +195,7 @@ export class CustomersController {
   @ApiOperation({ summary: 'إنشاء عميل جديد يدوياً' })
   @ApiResponse({ status: 201, description: 'تم إنشاء العميل بنجاح' })
   @ApiResponse({ status: 400, description: 'بيانات غير صحيحة' })
-  async createCustomer(@Body() dto: CreateCustomerDto) {
+  async createCustomer(@Body() dto: CreateCustomerDto): Promise<Customer> {
     return this.customersService.createManualCustomer(dto.merchantId, dto);
   }
 
@@ -191,7 +208,7 @@ export class CustomersController {
   async updateCustomer(
     @Param('id') customerId: string,
     @Body() dto: UpdateCustomerDto & { merchantId: string },
-  ) {
+  ): Promise<Customer> {
     const updatedCustomer = await this.customersService.updateCustomer(
       dto.merchantId,
       customerId,
@@ -211,7 +228,7 @@ export class CustomersController {
   async addTag(
     @Param('id') customerId: string,
     @Body() body: { merchantId: string; tag: string },
-  ) {
+  ): Promise<Customer | null> {
     return this.customersService.addTag(body.merchantId, customerId, body.tag);
   }
 
@@ -223,7 +240,7 @@ export class CustomersController {
   async removeTag(
     @Param('id') customerId: string,
     @Body() body: { merchantId: string; tag: string },
-  ) {
+  ): Promise<Customer | null> {
     return this.customersService.removeTag(
       body.merchantId,
       customerId,
@@ -238,8 +255,11 @@ export class CustomersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'الحصول على بيانات العميل الحالي (للمتجر)' })
   @ApiResponse({ status: 200, description: 'بيانات العميل' })
-  async getMyProfile(@CurrentUser() customer: CustomerRequestUser) {
-    return customer.customer;
+  getMyProfile(
+    @CurrentUser() customer: CustomerRequestUser,
+  ): Customer | undefined {
+    // customer.customer من guard مُ typed كـ Customer في CustomerRequestUser
+    return customer.customer as Customer;
   }
 
   @UseGuards(CustomerGuard)
@@ -250,7 +270,7 @@ export class CustomersController {
   async updateMyProfile(
     @CurrentUser() customer: CustomerRequestUser,
     @Body() updates: { name?: string; marketingConsent?: boolean },
-  ) {
+  ): Promise<Customer | null> {
     return this.customersService.updateCustomer(
       customer.merchantId,
       customer.customerId,
@@ -268,7 +288,7 @@ export class CustomersController {
   async getCustomerAddresses(
     @Param('id') customerId: string,
     @Body('merchantId') merchantId: string,
-  ) {
+  ): Promise<CustomerAddress[]> {
     return this.customersService.getCustomerAddresses(merchantId, customerId);
   }
 
@@ -279,22 +299,13 @@ export class CustomersController {
   @ApiResponse({ status: 201, description: 'تم إضافة العنوان بنجاح' })
   async addCustomerAddress(
     @Param('id') customerId: string,
-    @Body()
-    body: {
-      merchantId: string;
-      label: string;
-      country: string;
-      city: string;
-      address1: string;
-      address2?: string;
-      zip?: string;
-    },
-  ) {
+    @Body() body: CreateAddressDto & { merchantId: string },
+  ): Promise<CustomerAddress> {
     const { merchantId, ...addressData } = body;
     return this.customersService.createCustomerAddress(
       merchantId,
       customerId,
-      addressData as any, // Cast to any because label is string but needs AddressLabel enum
+      addressData,
     );
   }
 
@@ -306,24 +317,14 @@ export class CustomersController {
   async updateCustomerAddress(
     @Param('id') customerId: string,
     @Param('addressId') addressId: string,
-    @Body()
-    body: {
-      merchantId: string;
-      label?: string;
-      country?: string;
-      city?: string;
-      address1?: string;
-      address2?: string;
-      zip?: string;
-      isDefault?: boolean;
-    },
-  ) {
+    @Body() body: UpdateAddressDto & { merchantId: string },
+  ): Promise<CustomerAddress | null> {
     const { merchantId, ...updates } = body;
     return this.customersService.updateCustomerAddress(
       merchantId,
       customerId,
       addressId,
-      updates as any,
+      updates,
     );
   }
 
@@ -336,7 +337,7 @@ export class CustomersController {
     @Param('id') customerId: string,
     @Param('addressId') addressId: string,
     @Body('merchantId') merchantId: string,
-  ) {
+  ): Promise<{ success: boolean }> {
     const success = await this.customersService.deleteCustomerAddress(
       merchantId,
       customerId,
@@ -352,7 +353,9 @@ export class CustomersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'الحصول على عناوين العميل الحالي' })
   @ApiResponse({ status: 200, description: 'قائمة عناوين العميل' })
-  async getMyAddresses(@CurrentUser() customer: CustomerRequestUser) {
+  async getMyAddresses(
+    @CurrentUser() customer: CustomerRequestUser,
+  ): Promise<CustomerAddress[]> {
     return this.customersService.getCustomerAddresses(
       customer.merchantId,
       customer.customerId,
@@ -366,20 +369,12 @@ export class CustomersController {
   @ApiResponse({ status: 201, description: 'تم إضافة العنوان بنجاح' })
   async addMyAddress(
     @CurrentUser() customer: CustomerRequestUser,
-    @Body()
-    addressData: {
-      label: string;
-      country: string;
-      city: string;
-      address1: string;
-      address2?: string;
-      zip?: string;
-    },
-  ) {
+    @Body() addressData: CreateAddressDto,
+  ): Promise<CustomerAddress> {
     return this.customersService.createCustomerAddress(
       customer.merchantId,
       customer.customerId,
-      addressData as any,
+      addressData,
     );
   }
 
@@ -391,22 +386,13 @@ export class CustomersController {
   async updateMyAddress(
     @CurrentUser() customer: CustomerRequestUser,
     @Param('addressId') addressId: string,
-    @Body()
-    updates: {
-      label?: string;
-      country?: string;
-      city?: string;
-      address1?: string;
-      address2?: string;
-      zip?: string;
-      isDefault?: boolean;
-    },
-  ) {
+    @Body() updates: UpdateAddressDto,
+  ): Promise<CustomerAddress | null> {
     return this.customersService.updateCustomerAddress(
       customer.merchantId,
       customer.customerId,
       addressId,
-      updates as any,
+      updates,
     );
   }
 
@@ -418,7 +404,7 @@ export class CustomersController {
   async deleteMyAddress(
     @CurrentUser() customer: CustomerRequestUser,
     @Param('addressId') addressId: string,
-  ) {
+  ): Promise<{ success: boolean }> {
     const success = await this.customersService.deleteCustomerAddress(
       customer.merchantId,
       customer.customerId,

@@ -1,7 +1,7 @@
 // src/modules/products/repositories/back-in-stock-request.mongo.repository.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, type FilterQuery } from 'mongoose';
 
 import {
   BackInStockRequest,
@@ -12,9 +12,7 @@ import {
 import { BackInStockRequestRepository } from './back-in-stock-request.repository';
 
 @Injectable()
-export class BackInStockRequestMongoRepository
-  implements BackInStockRequestRepository
-{
+export class BackInStockRequestMongoRepository implements BackInStockRequestRepository {
   constructor(
     @InjectModel(BackInStockRequest.name)
     private readonly model: Model<BackInStockRequestDocument>,
@@ -45,7 +43,7 @@ export class BackInStockRequestMongoRepository
     contact?: string,
     customerId?: string,
   ): Promise<BackInStockRequest | null> {
-    const query: any = {
+    const query: FilterQuery<BackInStockRequestDocument> = {
       merchantId,
       productId,
       status: BackInStockStatus.PENDING,
@@ -71,7 +69,7 @@ export class BackInStockRequestMongoRepository
     customerId?: string,
     contact?: string,
   ): Promise<BackInStockRequest[]> {
-    const query: any = { merchantId };
+    const query: FilterQuery<BackInStockRequestDocument> = { merchantId };
 
     if (customerId) {
       query.customerId = customerId;
@@ -89,7 +87,7 @@ export class BackInStockRequestMongoRepository
     productId: string,
     variantId?: string,
   ): Promise<BackInStockRequest[]> {
-    const query: any = {
+    const query: FilterQuery<BackInStockRequestDocument> = {
       merchantId,
       productId,
       status: BackInStockStatus.PENDING,

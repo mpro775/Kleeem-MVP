@@ -7,9 +7,7 @@ import { Order, OrderDocument } from '../../orders/schemas/order.schema';
 import { OrderEntity, StorefrontOrderRepository } from './order.repository';
 
 @Injectable()
-export class StorefrontOrderMongoRepository
-  implements StorefrontOrderRepository
-{
+export class StorefrontOrderMongoRepository implements StorefrontOrderRepository {
   constructor(
     @InjectModel(Order.name)
     private readonly model: Model<OrderDocument>,

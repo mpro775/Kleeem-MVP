@@ -148,7 +148,8 @@ export class MerchantProfileService {
         try {
           await fs.unlink(file.path);
         } catch (e) {
-          this.logger.warn(`Failed to delete temp file: ${file.path}`);
+          const err = e as Error;
+          this.logger.warn(`Failed to delete temp file: ${file.path}`, err);
         }
       }
     } catch (error) {

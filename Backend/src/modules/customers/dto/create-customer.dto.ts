@@ -52,6 +52,14 @@ export class CreateCustomerDto {
   marketingConsent?: boolean;
 
   @ApiPropertyOptional({
+    description: 'حالة الحظر (للإنشاء اليدوي)',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isBlocked?: boolean;
+
+  @ApiPropertyOptional({
     description: 'قائمة التاجات',
     example: ['VIP', 'loyal'],
     type: [String],

@@ -13,9 +13,7 @@ import {
 } from './merchant.repository';
 
 @Injectable()
-export class StorefrontMerchantMongoRepository
-  implements StorefrontMerchantRepository
-{
+export class StorefrontMerchantMongoRepository implements StorefrontMerchantRepository {
   constructor(
     @InjectModel(Merchant.name)
     private readonly model: Model<MerchantDocument>,

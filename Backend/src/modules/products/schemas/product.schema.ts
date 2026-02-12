@@ -5,7 +5,7 @@ import { HydratedDocument, Types } from 'mongoose';
 
 import { Currency } from '../enums/product.enums';
 
-import { CurrencyPrice, CurrencyPriceSchema } from './currency-price.schema';
+import { CurrencyPrice } from './currency-price.schema';
 import { ProductVariant, ProductVariantSchema } from './product-variant.schema';
 
 export type ProductDocument = HydratedDocument<Product>;

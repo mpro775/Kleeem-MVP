@@ -12,6 +12,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 
+const DEFAULT_PRICE = 5000;
+
 import { I18nMessage } from '../../../common/validators/i18n-validator';
 
 /**
@@ -20,7 +22,7 @@ import { I18nMessage } from '../../../common/validators/i18n-validator';
 export class CurrencyPriceDto {
   @ApiProperty({
     description: 'السعر بالعملة',
-    example: 5000,
+    example: DEFAULT_PRICE,
     minimum: 0,
   })
   @IsNumber({}, I18nMessage('validation.number'))
@@ -43,7 +45,7 @@ export class CurrencyPriceDto {
 export class SetManualPriceDto {
   @ApiProperty({
     description: 'السعر الجديد',
-    example: 5000,
+    example: DEFAULT_PRICE,
     minimum: 0,
   })
   @IsNumber({}, I18nMessage('validation.number'))
@@ -65,7 +67,7 @@ export class CurrencyPriceItemDto {
 
   @ApiProperty({
     description: 'السعر',
-    example: 75,
+    example: DEFAULT_PRICE,
     minimum: 0,
   })
   @IsNumber({}, I18nMessage('validation.number'))
@@ -90,7 +92,7 @@ export class BulkSetPricesDto {
     description: 'قائمة الأسعار للعملات المختلفة',
     type: [CurrencyPriceItemDto],
     example: [
-      { currency: 'SAR', amount: 75, isManual: true },
+      { currency: 'SAR', amount: DEFAULT_PRICE, isManual: true },
       { currency: 'USD', amount: 20, isManual: true },
     ],
   })
@@ -143,7 +145,7 @@ export class PriceResponseDto {
   @ApiProperty({ description: 'رمز العملة', example: 'SAR' })
   currency!: string;
 
-  @ApiProperty({ description: 'السعر', example: 75 })
+  @ApiProperty({ description: 'السعر', example: DEFAULT_PRICE })
   amount!: number;
 
   @ApiPropertyOptional({ description: 'هل السعر يدوي؟', example: false })
@@ -168,7 +170,7 @@ export class AllPricesResponseDto {
 
   @ApiProperty({
     description: 'السعر الأساسي',
-    example: 5000,
+    example: DEFAULT_PRICE,
   })
   basePrice!: number;
 
@@ -185,7 +187,7 @@ export class AllPricesResponseDto {
 export class UpdateBasePriceDto {
   @ApiProperty({
     description: 'السعر الأساسي الجديد',
-    example: 5000,
+    example: DEFAULT_PRICE,
     minimum: 0,
   })
   @IsNumber({}, I18nMessage('validation.number'))

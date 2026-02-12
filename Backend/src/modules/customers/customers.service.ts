@@ -1,5 +1,10 @@
 // src/modules/customers/customers.service.ts
-import { Injectable, Inject, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Types } from 'mongoose';
 
@@ -7,8 +12,12 @@ import { normalizeEmail } from '../../common/utils/email.util';
 import { normalizePhone } from '../../common/utils/phone.util';
 import { LeadsService } from '../leads/leads.service';
 
+import { CreateCustomerDto } from './dto/create-customer.dto';
 import { CustomerAddressRepository } from './repositories/customer-address.repository';
-import { CustomerRepository } from './repositories/customer.repository';
+import {
+  CustomerRepository,
+  type CustomerListFilters,
+} from './repositories/customer.repository';
 import {
   CustomerAddress,
   AddressLabel,
@@ -19,8 +28,24 @@ import { OtpService } from './services/otp.service';
 import { CUSTOMER_ADDRESS_REPOSITORY } from './tokens';
 import { CUSTOMER_REPOSITORY } from './tokens';
 
+/** فلاتر تستخدم في findAllForMerchant و searchCustomers */
+export type CustomerServiceFilters = CustomerListFilters & {
+  page?: number;
+  search?: string;
+};
+
+export interface CustomerListResult {
+  customers: Customer[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 @Injectable()
 export class CustomersService {
+  private readonly logger = new Logger(CustomersService.name);
+
   constructor(
     @Inject(CUSTOMER_REPOSITORY)
     private readonly customerRepo: CustomerRepository,
@@ -61,12 +86,7 @@ export class CustomersService {
     isNewCustomer: boolean;
   }> {
     // التحقق من OTP
-    const verificationResult = await this.otpService.verifyOtp(
-      merchantId,
-      contact,
-      contactType,
-      code,
-    );
+    await this.otpService.verifyOtp(merchantId, contact, contactType, code);
 
     // البحث عن العميل الموجود
     let customer = await this.findByContact(contact, contactType, merchantId);
@@ -177,11 +197,12 @@ export class CustomersService {
     customer: Customer,
     merchantId: string,
   ): Promise<string> {
+    const SECONDS_PER_MS = 1000;
     const payload = {
       customerId: customer._id!.toString(),
       merchantId,
       role: 'CUSTOMER',
-      iat: Math.floor(Date.now() / 1000),
+      iat: Math.floor(Date.now() / SECONDS_PER_MS),
     };
 
     return this.jwtService.signAsync(payload);
@@ -221,7 +242,10 @@ export class CustomersService {
       throw new BadRequestException('العميل غير موجود أو لا ينتمي لهذا التاجر');
     }
 
-    return this.customerRepo.updateById(customerId, updates);
+    // استبعاد merchantId من التحديث (يُستخدم للتحقق فقط)
+    const safeUpdates = { ...updates } as Partial<Customer>;
+    delete (safeUpdates as Record<string, unknown>).merchantId;
+    return this.customerRepo.updateById(customerId, safeUpdates);
   }
 
   /**
@@ -271,23 +295,42 @@ export class CustomersService {
   /**
    * البحث والتصفية في العملاء (للتاجر)
    */
-  async findAllForMerchant(merchantId: string, filters: any = {}) {
-    const customers = await this.customerRepo.findAll(merchantId, filters);
-    const total = await this.customerRepo.count(merchantId, filters);
+  async findAllForMerchant(
+    merchantId: string,
+    filters: CustomerServiceFilters = {},
+  ): Promise<CustomerListResult> {
+    const limit = filters.limit ?? 20;
+    const page = filters.page ?? 1;
+    const skip = (page - 1) * limit;
+
+    const repoFilters: CustomerListFilters = {
+      ...filters,
+      limit,
+      skip,
+    };
+
+    const [customers, total] = await Promise.all([
+      this.customerRepo.findAll(merchantId, repoFilters),
+      this.customerRepo.count(merchantId, repoFilters),
+    ]);
 
     return {
       customers,
       total,
-      page: filters.page || 1,
-      limit: filters.limit || 20,
-      totalPages: Math.ceil(total / (filters.limit || 20)),
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 
   /**
    * البحث النصي في العملاء
    */
-  async searchCustomers(merchantId: string, query: string, filters: any = {}) {
+  async searchCustomers(
+    merchantId: string,
+    query: string,
+    filters: CustomerServiceFilters = {},
+  ): Promise<CustomerListResult> {
     if (!query || query.trim().length < 2) {
       return this.findAllForMerchant(merchantId, filters);
     }
@@ -297,6 +340,7 @@ export class CustomersService {
       query.trim(),
       filters,
     );
+
     return {
       customers,
       total: customers.length,
@@ -307,58 +351,91 @@ export class CustomersService {
   }
 
   /**
-   * إنشاء عميل يدوياً (للتاجر)
+   * التحقق من عدم وجود عميل بنفس البريد أو الهاتف
    */
-  async createManualCustomer(merchantId: string, dto: any): Promise<Customer> {
-    // التحقق من عدم وجود عميل بنفس البريد أو الهاتف
-    if (dto.email) {
-      const existingByEmail = await this.customerRepo.findByEmailLower(
-        dto.email.toLowerCase().trim(),
+  private async assertNoDuplicateContact(
+    merchantId: string,
+    emailLower?: string,
+    phoneNormalized?: string,
+  ): Promise<void> {
+    if (emailLower) {
+      const existing = await this.customerRepo.findByEmailLower(
+        emailLower,
         merchantId,
       );
-      if (existingByEmail) {
+      if (existing) {
         throw new BadRequestException('يوجد عميل آخر بنفس البريد الإلكتروني');
       }
     }
-
-    if (dto.phone) {
-      const existingByPhone = await this.customerRepo.findByPhoneNormalized(
-        dto.phone,
+    if (phoneNormalized) {
+      const existing = await this.customerRepo.findByPhoneNormalized(
+        phoneNormalized,
         merchantId,
       );
-      if (existingByPhone) {
+      if (existing) {
         throw new BadRequestException('يوجد عميل آخر بنفس رقم الهاتف');
       }
     }
-
-    return this.customerRepo.create({
-      merchantId,
-      name: dto.name,
-      emailLower: dto.email ? dto.email.toLowerCase().trim() : undefined,
-      phoneNormalized: dto.phone || undefined,
-      marketingConsent: dto.marketingConsent || false,
-      isBlocked: dto.isBlocked || false,
-      tags: dto.tags || [],
-      metadata: dto.metadata || {},
-      signupSource: dto.signupSource || 'manual',
-      lastSeenAt: new Date(),
-    });
   }
 
   /**
-   * تحديث إحصائيات العميل
+   * إنشاء عميل يدوياً (للتاجر)
+   */
+  async createManualCustomer(
+    merchantId: string,
+    dto: CreateCustomerDto,
+  ): Promise<Customer> {
+    const emailLower = dto.email
+      ? (normalizeEmail(dto.email.trim()) ?? dto.email.toLowerCase().trim())
+      : undefined;
+    const phoneNormalized = dto.phone ? normalizePhone(dto.phone) : undefined;
+
+    await this.assertNoDuplicateContact(
+      merchantId,
+      emailLower,
+      phoneNormalized,
+    );
+
+    const customerData: Partial<Customer> = {
+      merchantId,
+      name: dto.name,
+      marketingConsent: dto.marketingConsent === true,
+      isBlocked: dto.isBlocked === true,
+      tags: Array.isArray(dto.tags) ? dto.tags : [],
+      metadata:
+        typeof dto.metadata === 'object' && dto.metadata !== null
+          ? dto.metadata
+          : {},
+      signupSource: dto.signupSource ?? SignupSource.MANUAL,
+      lastSeenAt: new Date(),
+    };
+    if (emailLower) customerData.emailLower = emailLower;
+    if (phoneNormalized) customerData.phoneNormalized = phoneNormalized;
+
+    return this.customerRepo.create(customerData);
+  }
+
+  /**
+   * تحديث إحصائيات العميل بعد إنشاء طلب
    */
   async updateCustomerStats(
     customerId: string,
     orderTotal: number,
+    orderId?: string,
   ): Promise<void> {
     const customer = await this.customerRepo.findById(customerId);
     if (!customer) return;
 
+    const stats = customer.stats ?? {
+      totalOrders: 0,
+      totalSpend: 0,
+      lastOrderId: null,
+    };
+
     const updatedStats = {
-      totalOrders: customer.stats.totalOrders + 1,
-      totalSpend: customer.stats.totalSpend + orderTotal,
-      lastOrderId: customerId as any, // TODO: should be orderId
+      totalOrders: stats.totalOrders + 1,
+      totalSpend: stats.totalSpend + orderTotal,
+      lastOrderId: orderId ? new Types.ObjectId(orderId) : stats.lastOrderId,
     };
 
     await this.customerRepo.updateById(customerId, { stats: updatedStats });
@@ -386,11 +463,11 @@ export class CustomersService {
           customerId,
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // لا نتوقف عن إنشاء العميل بسبب فشل تحويل leads
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      console.error('Error converting related leads:', errorMessage);
+      this.logger.warn(`Error converting related leads: ${errorMessage}`);
     }
   }
 
@@ -436,7 +513,7 @@ export class CustomersService {
 
     return this.addressRepo.create({
       merchantId,
-      customerId: customerId as any,
+      customerId: new Types.ObjectId(customerId),
       ...addressData,
     });
   }

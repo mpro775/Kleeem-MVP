@@ -8,7 +8,6 @@ import {
 import { ConfigService } from '@nestjs/config';
 
 import { SmsService } from '../../../common/services/sms.service';
-import { normalizeEmail } from '../../../common/utils/email.util';
 import { normalizePhone } from '../../../common/utils/phone.util';
 import {
   generateNumericCode,
@@ -16,11 +15,16 @@ import {
 } from '../../auth/utils/verification-code';
 import { MailService } from '../../mail/mail.service';
 import { CustomerOtpRepository } from '../repositories/customer-otp.repository';
-import { CustomerOtp, ContactType } from '../schemas/customer-otp.schema';
+import { ContactType } from '../schemas/customer-otp.schema';
 import { CUSTOMER_OTP_REPOSITORY } from '../tokens';
 
 const OTP_EXPIRY_MINUTES = 10;
 const MAX_ATTEMPTS = 5;
+const COOLDOWN_MS = 60000;
+const MS_PER_SECOND = 1000;
+const OTP_CODE_LENGTH = 6;
+const MASK_PHONE_MIN_LEN = 4;
+const MASK_VISIBLE_CHARS = 2;
 
 @Injectable()
 export class OtpService {
@@ -62,10 +66,9 @@ export class OtpService {
 
       // التحقق من عدم الإرسال المتكرر (cooldown)
       const timeSinceCreation = Date.now() - existingOtp.createdAt.getTime();
-      const cooldownMs = 60000; // دقيقة واحدة
-      if (timeSinceCreation < cooldownMs) {
+      if (timeSinceCreation < COOLDOWN_MS) {
         const remainingSeconds = Math.ceil(
-          (cooldownMs - timeSinceCreation) / 1000,
+          (COOLDOWN_MS - timeSinceCreation) / MS_PER_SECOND,
         );
         throw new BadRequestException(
           `يرجى الانتظار ${remainingSeconds} ثانية قبل طلب رمز جديد`,
@@ -77,9 +80,11 @@ export class OtpService {
     await this.otpRepo.deleteExpired();
 
     // إنشاء رمز OTP جديد
-    const code = generateNumericCode(6);
+    const code = generateNumericCode(OTP_CODE_LENGTH);
     const codeHash = sha256(code);
-    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+    const expiresAt = new Date(
+      Date.now() + OTP_EXPIRY_MINUTES * 60 * MS_PER_SECOND,
+    );
 
     // حفظ OTP في قاعدة البيانات
     await this.otpRepo.create({
@@ -185,31 +190,8 @@ export class OtpService {
    * إرسال OTP عبر البريد الإلكتروني
    */
   private async sendOtpEmail(email: string, code: string): Promise<void> {
-    const subject = 'رمز التحقق - كليم';
-    const html = `
-      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">رمز التحقق الخاص بك</h2>
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <p style="font-size: 18px; font-weight: bold; color: #007bff; text-align: center; letter-spacing: 2px;">
-            ${code}
-          </p>
-        </div>
-        <p>هذا الرمز صالح لمدة ${OTP_EXPIRY_MINUTES} دقائق فقط.</p>
-        <p>إذا لم تقم بطلب هذا الرمز، يرجى تجاهل هذا البريد الإلكتروني.</p>
-        <hr style="margin: 30px 0;">
-        <p style="color: #666; font-size: 12px;">
-          منصة كليم - خدمة العملاء الذكية
-        </p>
-      </div>
-    `;
-
     try {
-      // استخدام MailService الموجود (قد نحتاج لإضافة دالة جديدة أو استخدام sendRaw)
-      // للوقت الحالي، سنستخدم console.log للاختبار
-      console.log(`Sending OTP email to ${email}: ${code}`);
-
-      // TODO: تنفيذ إرسال البريد الإلكتروني عبر MailService
-      // await this.mailService.sendOtpEmail(email, code, html);
+      await this.mailService.sendVerificationEmail(email, code);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -249,9 +231,8 @@ export class OtpService {
       if (local.length <= 2) return `${local}***@${domain}`;
       return `${local.slice(0, 2)}***@${domain}`;
     } else {
-      // phone
-      if (contact.length <= 4) return '****';
-      return `${contact.slice(0, 2)}****${contact.slice(-2)}`;
+      if (contact.length <= MASK_PHONE_MIN_LEN) return '****';
+      return `${contact.slice(0, MASK_VISIBLE_CHARS)}****${contact.slice(-MASK_VISIBLE_CHARS)}`;
     }
   }
 }

@@ -1,11 +1,12 @@
-// src/modules/customers/repositories/customer.mongo.repository.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
 import { Customer, CustomerDocument } from '../schemas/customer.schema';
 
-import { CustomerRepository } from './customer.repository';
+import { CustomerListFilters, CustomerRepository } from './customer.repository';
+
+const CUSTOMER_SEARCH_LIMIT = 50;
 
 @Injectable()
 export class CustomerMongoRepository implements CustomerRepository {
@@ -57,37 +58,35 @@ export class CustomerMongoRepository implements CustomerRepository {
     return this.customerModel.findOne(query).exec();
   }
 
-  async findAll(merchantId: string, filters?: any): Promise<Customer[]> {
-    const query: any = { merchantId };
+  async findAll(
+    merchantId: string,
+    filters?: CustomerListFilters,
+  ): Promise<Customer[]> {
+    const query = this.buildFilterQuery(merchantId, filters);
+    const sort = this.buildSort(filters);
+    let mongoQuery = this.customerModel.find(query).sort(sort);
+    if (filters?.limit) mongoQuery = mongoQuery.limit(filters.limit);
+    if (filters?.skip) mongoQuery = mongoQuery.skip(filters.skip);
+    return mongoQuery.exec();
+  }
 
-    if (filters?.tags?.length) {
-      query.tags = { $in: filters.tags };
-    }
+  private buildFilterQuery(
+    merchantId: string,
+    filters?: CustomerListFilters,
+  ): Record<string, unknown> {
+    const query: Record<string, unknown> = { merchantId };
+    if (filters?.tags?.length) query.tags = { $in: filters.tags };
+    if (filters?.isBlocked !== undefined) query.isBlocked = filters.isBlocked;
+    if (filters?.signupSource) query.signupSource = filters.signupSource;
+    return query;
+  }
 
-    if (filters?.isBlocked !== undefined) {
-      query.isBlocked = filters.isBlocked;
-    }
-
-    if (filters?.signupSource) {
-      query.signupSource = filters.signupSource;
-    }
-
-    const sort: any = { createdAt: -1 };
+  private buildSort(filters?: CustomerListFilters): Record<string, 1 | -1> {
+    const sort: Record<string, 1 | -1> = { createdAt: -1 };
     if (filters?.sortBy) {
       sort[filters.sortBy] = filters.sortOrder === 'asc' ? 1 : -1;
     }
-
-    let mongoQuery = this.customerModel.find(query).sort(sort);
-
-    if (filters?.limit) {
-      mongoQuery = mongoQuery.limit(filters.limit);
-    }
-
-    if (filters?.skip) {
-      mongoQuery = mongoQuery.skip(filters.skip);
-    }
-
-    return mongoQuery.exec();
+    return sort;
   }
 
   async updateById(
@@ -104,8 +103,11 @@ export class CustomerMongoRepository implements CustomerRepository {
     return !!result;
   }
 
-  async count(merchantId: string, filters?: any): Promise<number> {
-    const query: any = { merchantId };
+  async count(
+    merchantId: string,
+    filters?: CustomerListFilters,
+  ): Promise<number> {
+    const query: Record<string, unknown> = { merchantId };
 
     if (filters?.tags?.length) {
       query.tags = { $in: filters.tags };
@@ -125,9 +127,9 @@ export class CustomerMongoRepository implements CustomerRepository {
   async search(
     merchantId: string,
     query: string,
-    filters?: any,
+    filters?: CustomerListFilters,
   ): Promise<Customer[]> {
-    const searchQuery: any = {
+    const searchQuery: Record<string, unknown> = {
       merchantId,
       $or: [
         { name: { $regex: query, $options: 'i' } },
@@ -143,7 +145,7 @@ export class CustomerMongoRepository implements CustomerRepository {
     return this.customerModel
       .find(searchQuery)
       .sort({ createdAt: -1 })
-      .limit(50)
+      .limit(CUSTOMER_SEARCH_LIMIT)
       .exec();
   }
 }

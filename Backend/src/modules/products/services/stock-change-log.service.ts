@@ -9,6 +9,10 @@ import {
   StockChangeType,
 } from '../schemas/stock-change-log.schema';
 
+const DEFAULT_LIMIT = 20;
+
+const OLD_STOCK_CHANGE_LOG_DAYS = 90;
+
 export interface LogChangeParams {
   merchantId: string;
   productId: string;
@@ -86,7 +90,7 @@ export class StockChangeLogService {
    */
   async getProductHistory(
     productId: string,
-    limit = 50,
+    limit = DEFAULT_LIMIT,
     page = 1,
   ): Promise<StockHistoryResult> {
     const skip = (page - 1) * limit;
@@ -117,7 +121,7 @@ export class StockChangeLogService {
     merchantId: string,
     query: StockHistoryQuery = {},
   ): Promise<StockHistoryResult> {
-    const limit = query.limit ?? 50;
+    const limit = query.limit ?? DEFAULT_LIMIT;
     const page = query.page ?? 1;
     const skip = (page - 1) * limit;
 
@@ -157,7 +161,7 @@ export class StockChangeLogService {
    */
   async getRecentChanges(
     merchantId: string,
-    limit = 10,
+    limit = DEFAULT_LIMIT,
   ): Promise<StockChangeLogDocument[]> {
     return this.model
       .find({ merchantId: new Types.ObjectId(merchantId) })
@@ -169,7 +173,10 @@ export class StockChangeLogService {
   /**
    * حذف سجلات قديمة (للصيانة)
    */
-  async deleteOldLogs(merchantId: string, olderThanDays = 90): Promise<number> {
+  async deleteOldLogs(
+    merchantId: string,
+    olderThanDays = OLD_STOCK_CHANGE_LOG_DAYS,
+  ): Promise<number> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 

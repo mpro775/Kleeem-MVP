@@ -12,13 +12,15 @@ import {
 
 import { I18nMessage } from '../../../common/validators/i18n-validator';
 
+const DEFAULT_STOCK_QUANTITY = 50;
+
 /**
  * DTO لتحديث مخزون منتج واحد
  */
 export class UpdateStockDto {
   @ApiProperty({
     description: 'الكمية الجديدة للمخزون',
-    example: 50,
+    example: DEFAULT_STOCK_QUANTITY,
     minimum: 0,
   })
   @IsNumber({}, I18nMessage('validation.number'))
@@ -56,7 +58,7 @@ export class UpdateStockItemDto {
 
   @ApiProperty({
     description: 'الكمية الجديدة للمخزون',
-    example: 50,
+    example: DEFAULT_STOCK_QUANTITY,
     minimum: 0,
   })
   @IsNumber({}, I18nMessage('validation.number'))

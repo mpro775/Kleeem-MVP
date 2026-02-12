@@ -1,10 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 
+import { MAX_MESSAGE_LENGTH } from '../support.constants';
+
 export class AddTicketReplyDto {
   @ApiProperty({ description: 'نص الرد' })
   @IsString()
-  @MaxLength(5000)
+  @MaxLength(MAX_MESSAGE_LENGTH)
   body!: string;
 
   @ApiPropertyOptional({

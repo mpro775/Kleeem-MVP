@@ -2,7 +2,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MulterModule } from '@nestjs/platform-express';
-import { ScheduleModule } from '@nestjs/schedule';
 
 import { CacheModule } from '../../common/cache/cache.module';
 import { ErrorManagementModule } from '../../common/error-management.module';

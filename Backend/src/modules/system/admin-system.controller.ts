@@ -23,17 +23,19 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { QueryAdminAuditDto } from '../dto/query-admin-audit.dto';
 import {
   AdminAuditService,
   AdminAuditEntry,
-} from '../services/admin-audit.service';
-import { AdminSystemService } from '../services/admin-system.service';
+  ListAdminAuditParams,
+} from '../system/services/admin-audit.service';
+import { AdminSystemService } from '../system/services/admin-system.service';
+import { UserRole } from '../users/schemas/user.schema';
+
+import { QueryAdminAuditDto } from './dto/query-admin-audit.dto';
 import {
   FeatureFlagsService,
   FeatureFlagsDto,
-} from '../services/feature-flags.service';
-import { UserRole } from '../users/schemas/user.schema';
+} from './services/feature-flags.service';
 
 @ApiTags('Admin', 'Admin System')
 @ApiBearerAuth()
@@ -53,14 +55,25 @@ export class AdminSystemController {
   getAuditLog(
     @Query() q: QueryAdminAuditDto,
   ): Promise<{ items: AdminAuditEntry[]; total: number }> {
-    return this.auditService.list({
-      actorId: q.actorId,
-      resource: q.resource,
-      from: q.from,
-      to: q.to,
+    const params: ListAdminAuditParams = {
       limit: q.limit,
       page: q.page,
-    });
+    };
+
+    if (q.actorId !== undefined) {
+      params.actorId = q.actorId;
+    }
+    if (q.resource !== undefined) {
+      params.resource = q.resource;
+    }
+    if (q.from !== undefined) {
+      params.from = q.from;
+    }
+    if (q.to !== undefined) {
+      params.to = q.to;
+    }
+
+    return this.auditService.list(params);
   }
 
   @Get('sessions')
@@ -70,7 +83,19 @@ export class AdminSystemController {
     status: 200,
     description: 'جلسات أدمن مع jti، آخر استخدام، إلخ',
   })
-  async getAdminSessions(@Query('adminId') adminId?: string) {
+  async getAdminSessions(@Query('adminId') adminId?: string): Promise<{
+    sessions: Array<{
+      jti: string;
+      userId: string;
+      role: string;
+      lastUsed: number;
+      createdAt: number;
+      userAgent?: string;
+      ip?: string;
+      email?: string;
+      name?: string;
+    }>;
+  }> {
     return this.systemService.listAdminSessions(adminId);
   }
 
@@ -79,7 +104,7 @@ export class AdminSystemController {
   @ApiParam({ name: 'jti', description: 'معرف الجلسة' })
   @ApiResponse({ status: 200, description: 'تم إلغاء الجلسة' })
   @ApiResponse({ status: 404, description: 'الجلسة غير موجودة' })
-  async revokeSession(@Param('jti') jti: string) {
+  async revokeSession(@Param('jti') jti: string): Promise<{ message: string }> {
     const ok = await this.systemService.revokeSessionByJti(jti);
     if (!ok) throw new NotFoundException('الجلسة غير موجودة أو منتهية');
     return { message: 'تم إلغاء الجلسة' };

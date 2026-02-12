@@ -6,6 +6,8 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { CustomersService } from '../../customers/customers.service';
 
+import type { Customer } from '../../customers/schemas/customer.schema';
+
 export interface CustomerJwtPayload {
   customerId: string;
   merchantId: string;
@@ -18,7 +20,7 @@ export interface CustomerRequestUser {
   customerId: string;
   merchantId: string;
   role: string;
-  customer?: any; // سيتم إضافته في الـ guard
+  customer?: Customer;
 }
 
 @Injectable()

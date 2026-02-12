@@ -101,13 +101,12 @@ export class MerchantsAdminController {
     @Param('id') id: string,
     @Query('limit') limit?: number,
     @Query('page') page?: number,
-  ) {
+  ): ReturnType<MerchantsService['getAuditLog']> {
     if (!id || !Types.ObjectId.isValid(id)) {
       throw new BadRequestException('معرف التاجر غير صالح');
     }
-    const parsedLimit =
-      limit != null && limit !== '' ? Number(limit) : undefined;
-    const parsedPage = page != null && page !== '' ? Number(page) : undefined;
+    const parsedLimit = limit != null ? Number(limit) : undefined;
+    const parsedPage = page != null ? Number(page) : undefined;
     return this.service.getAuditLog(id, parsedLimit, parsedPage);
   }
 

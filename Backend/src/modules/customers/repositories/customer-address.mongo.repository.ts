@@ -11,9 +11,7 @@ import {
 import { CustomerAddressRepository } from './customer-address.repository';
 
 @Injectable()
-export class CustomerAddressMongoRepository
-  implements CustomerAddressRepository
-{
+export class CustomerAddressMongoRepository implements CustomerAddressRepository {
   constructor(
     @InjectModel(CustomerAddress.name)
     private addressModel: Model<CustomerAddressDocument>,

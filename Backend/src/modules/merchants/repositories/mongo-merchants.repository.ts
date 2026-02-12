@@ -44,6 +44,11 @@ const HARD_DELETE_FOR_ADMINS_ONLY = 'الحذف الإجباري للمشرفي�
 const SLUG_RE = /^[a-z](?:[a-z0-9-]{1,48}[a-z0-9])$/;
 const SLUG_MAX = 50;
 
+const HOUR_END_OF_DAY = 23;
+const MINUTE_END_OF_DAY = 59;
+const SECOND_END_OF_DAY = 59;
+const MS_END_OF_DAY = 999;
+
 // ========= Types =========
 type RoleName = 'ADMIN' | 'MERCHANT' | 'MEMBER';
 
@@ -240,7 +245,8 @@ export class MongoMerchantsRepository implements MerchantsRepository {
         updatedSettings;
 
       // Remove currencySettings from dto to prevent double assignment
-      const { currencySettings: _, ...restDto } = dto;
+      const { currencySettings: _cs, ...restDto } = dto;
+      void _cs;
       Object.assign(m, restDto);
     } else {
       // نُسند الحقول المسموح بها فقط
@@ -473,6 +479,15 @@ export class MongoMerchantsRepository implements MerchantsRepository {
     return this.merchantModel.findOne({ userId }).exec();
   }
 
+  private getAdminSortField(
+    sortBy: string,
+  ): 'name' | 'status' | 'updatedAt' | 'createdAt' {
+    if (sortBy === 'name') return 'name';
+    if (sortBy === 'status') return 'status';
+    if (sortBy === 'updatedAt') return 'updatedAt';
+    return 'createdAt';
+  }
+
   // ---------- Admin list & stats ----------
   async listAllAdmin(
     params: ListAllAdminParams,
@@ -502,14 +517,7 @@ export class MongoMerchantsRepository implements MerchantsRepository {
     }
 
     const sortDir = sortOrder === 'asc' ? 1 : -1;
-    const sortField =
-      sortBy === 'name'
-        ? 'name'
-        : sortBy === 'status'
-          ? 'status'
-          : sortBy === 'updatedAt'
-            ? 'updatedAt'
-            : 'createdAt';
+    const sortField = this.getAdminSortField(sortBy);
 
     const [items, total] = await Promise.all([
       this.merchantModel
@@ -592,7 +600,7 @@ export class MongoMerchantsRepository implements MerchantsRepository {
     merchant.active = false;
     merchant.status = 'suspended' as MerchantStatusLiteral;
     merchant.suspension = {
-      reason: reason?.trim() || undefined,
+      ...(reason?.trim() ? { reason: reason.trim() } : {}),
       suspendedAt: new Date(),
       suspendedBy: new Types.ObjectId(actor.userId),
     };
@@ -601,15 +609,24 @@ export class MongoMerchantsRepository implements MerchantsRepository {
   }
 
   async unsuspend(id: string, actor: Actor): Promise<MerchantDocument> {
+    void actor; // Required by interface for audit trail
     const merchant = await this.merchantModel.findById(id);
     if (!merchant) throw new NotFoundException(INVALID_ID_MSG);
     if (!merchant.suspension) throw new BadRequestException('التاجر غير معلّق');
 
-    merchant.active = true;
-    merchant.status = 'active' as MerchantStatusLiteral;
-    merchant.suspension = undefined;
-    await merchant.save();
-    return merchant;
+    const updated = await this.merchantModel
+      .findByIdAndUpdate(
+        id,
+        {
+          $set: { active: true, status: 'active' as MerchantStatusLiteral },
+          $unset: { suspension: '' },
+        } as UpdateQuery<MerchantDocument>,
+        { new: true, runValidators: true },
+      )
+      .exec();
+
+    if (!updated) throw new NotFoundException(INVALID_ID_MSG);
+    return updated;
   }
 
   async getTrendsAdmin(
@@ -621,7 +638,7 @@ export class MongoMerchantsRepository implements MerchantsRepository {
     startDate.setHours(0, 0, 0, 0);
 
     const result = await this.merchantModel
-      .aggregate<{ _id: string; count: number }>([
+      .aggregate<{ date: string; count: number }>([
         {
           $match: {
             deletedAt: null,
@@ -649,13 +666,18 @@ export class MongoMerchantsRepository implements MerchantsRepository {
     const startDate = new Date(from);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(to);
-    endDate.setHours(23, 59, 59, 999);
+    endDate.setHours(
+      HOUR_END_OF_DAY,
+      MINUTE_END_OF_DAY,
+      SECOND_END_OF_DAY,
+      MS_END_OF_DAY,
+    );
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
       return [];
     }
 
     const result = await this.merchantModel
-      .aggregate<{ _id: string; count: number }>([
+      .aggregate<{ date: string; count: number }>([
         {
           $match: {
             deletedAt: null,

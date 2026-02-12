@@ -35,8 +35,6 @@ export class MerchantProvisioningService {
    */
   async create(dto: CreateMerchantDto): Promise<MerchantDocument> {
     const merchant = await this.merchantsRepository.create(dto);
-
-    // Metrics
     this.businessMetrics.incMerchantCreated();
     this.businessMetrics.incN8nWorkflowCreated();
 
@@ -44,86 +42,98 @@ export class MerchantProvisioningService {
     let storefrontCreated = false;
 
     try {
-      // 1) n8n workflow - non-blocking to prevent registration failures
-      try {
-        wfId = await this.n8n.createForMerchant(String(merchant._id));
-        merchant.workflowId = wfId;
-        this.logger.log(
-          `Created n8n workflow ${wfId} for merchant ${merchant._id}`,
-        );
-      } catch (n8nError) {
-        // Log but don't fail - workflow can be created later via ensureWorkflow
-        const n8nErrMsg =
-          n8nError instanceof Error ? n8nError.message : String(n8nError);
-        this.logger.warn(
-          `n8n workflow creation failed for merchant ${merchant._id}: ${n8nErrMsg}. Will retry later.`,
-        );
-      }
+      wfId = await this.tryCreateN8nWorkflow(merchant);
+      if (wfId) merchant.workflowId = wfId;
 
-      // 2) Compile final prompt
       merchant.finalPromptTemplate =
         await this.promptBuilder.compileTemplate(merchant);
       await merchant.save?.();
 
-      // 3) Storefront افتراضي
-      await this.storefrontService.create({
-        merchant: String(merchant._id),
-        primaryColor: '#FF8500',
-        secondaryColor: '#1976d2',
-        buttonStyle: 'rounded',
-        banners: [],
-        featuredProductIds: [],
-        slug: String(merchant._id),
-      });
+      await this.createDefaultStorefront(merchant);
       storefrontCreated = true;
 
       return merchant;
     } catch (err) {
-      // Rollback
-      try {
-        if (wfId) {
-          try {
-            await this.n8n.setActive(wfId, false);
-          } catch {
-            this.logger.warn(`Failed to deactivate workflow ${wfId}`);
-          }
-          try {
-            await this.n8n.delete(wfId);
-          } catch {
-            this.logger.warn(`Failed to delete workflow ${wfId}`);
-          }
-        }
-      } catch {
-        this.logger.warn(`Failed to rollback workflow ${wfId}`);
-      }
-
-      if (storefrontCreated) {
-        try {
-          await this.storefrontService.deleteByMerchant(String(merchant._id));
-        } catch {
-          this.logger.warn(`Failed to delete storefront ${merchant.id}`);
-        }
-      }
-
-      // احذف التاجر الذي أنشأناه للتو
-      try {
-        await this.merchantsRepository.remove(String(merchant._id));
-      } catch {
-        //Ignore
-      }
-
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      const errorStack = err instanceof Error ? err.stack : undefined;
-      this.logger.error(
-        `Merchant initialization failed: ${errorMessage}`,
-        errorStack,
-      );
-      throw new InternalServerErrorException(
-        this.translationService.translate(
-          'merchants.errors.initializationFailed',
-        ),
-      );
+      await this.performRollback(wfId, storefrontCreated, merchant);
+      this.logAndThrowInitializationError(err);
     }
+  }
+
+  private async tryCreateN8nWorkflow(
+    merchant: MerchantDocument,
+  ): Promise<string | null> {
+    try {
+      const wfId = await this.n8n.createForMerchant(String(merchant._id));
+      this.logger.log(
+        `Created n8n workflow ${wfId} for merchant ${String(merchant._id)}`,
+      );
+      return wfId;
+    } catch (n8nError) {
+      const msg =
+        n8nError instanceof Error ? n8nError.message : String(n8nError);
+      this.logger.warn(
+        `n8n workflow creation failed for merchant ${String(merchant._id)}: ${msg}. Will retry later.`,
+      );
+      return null;
+    }
+  }
+
+  private async createDefaultStorefront(
+    merchant: MerchantDocument,
+  ): Promise<void> {
+    await this.storefrontService.create({
+      merchant: String(merchant._id),
+      primaryColor: '#FF8500',
+      secondaryColor: '#1976d2',
+      buttonStyle: 'rounded',
+      banners: [],
+      featuredProductIds: [],
+      slug: String(merchant._id),
+    });
+  }
+
+  private async performRollback(
+    wfId: string | null,
+    storefrontCreated: boolean,
+    merchant: MerchantDocument,
+  ): Promise<void> {
+    if (wfId) {
+      try {
+        await this.n8n.setActive(wfId, false);
+      } catch {
+        this.logger.warn(`Failed to deactivate workflow ${wfId}`);
+      }
+      try {
+        await this.n8n.delete(wfId);
+      } catch {
+        this.logger.warn(`Failed to delete workflow ${wfId}`);
+      }
+    }
+
+    if (storefrontCreated) {
+      try {
+        await this.storefrontService.deleteByMerchant(String(merchant._id));
+      } catch {
+        this.logger.warn(`Failed to delete storefront ${merchant.id}`);
+      }
+    }
+
+    try {
+      await this.merchantsRepository.remove(String(merchant._id));
+    } catch {
+      // Ignore rollback failure
+    }
+  }
+
+  private logAndThrowInitializationError(err: unknown): never {
+    const msg = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    this.logger.error(`Merchant initialization failed: ${msg}`, stack);
+    throw new InternalServerErrorException(
+      this.translationService.translate(
+        'merchants.errors.initializationFailed',
+      ),
+    );
   }
 
   /**

@@ -37,17 +37,30 @@ export class OffersService {
 
   private computeIsActive(offer: OfferInfo): boolean {
     if (!offer?.enabled) return false;
-    const hasValue =
-      offer.newPrice != null ||
-      offer.discountValue != null ||
-      (offer.type === 'buy_x_get_y' &&
-        offer.buyQuantity != null &&
-        offer.getQuantity != null) ||
-      (offer.type === 'quantity_based' &&
-        offer.quantityThreshold != null &&
-        offer.quantityDiscount != null);
+    if (!this.offerHasValue(offer)) return false;
+    return this.offerInDateRange(offer);
+  }
 
-    if (!hasValue) return false;
+  private offerHasValue(offer: OfferInfo): boolean {
+    if (offer.newPrice != null || offer.discountValue != null) return true;
+    if (
+      offer.type === 'buy_x_get_y' &&
+      offer.buyQuantity != null &&
+      offer.getQuantity != null
+    ) {
+      return true;
+    }
+    if (
+      offer.type === 'quantity_based' &&
+      offer.quantityThreshold != null &&
+      offer.quantityDiscount != null
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  private offerInDateRange(offer: OfferInfo): boolean {
     const now = Date.now();
     const s = offer.startAt ? new Date(offer.startAt).getTime() : -Infinity;
     const e = offer.endAt ? new Date(offer.endAt).getTime() : Infinity;
@@ -121,30 +134,49 @@ export class OffersService {
     priceEffective: number;
   } {
     const priceOld = p.offer?.oldPrice ?? p.price ?? null;
-
-    let priceNew = p.offer?.newPrice ?? null;
-
-    if (isActive && priceOld != null && priceNew == null) {
-      if (p.offer?.type === 'percentage' && p.offer.discountValue != null) {
-        priceNew = Math.max(0, priceOld * (1 - p.offer.discountValue / 100));
-      } else if (
-        p.offer?.type === 'fixed_amount' &&
-        p.offer.discountValue != null
-      ) {
-        priceNew = Math.max(0, priceOld - p.offer.discountValue);
-      }
-    }
-
-    const priceEffective =
-      isActive && priceNew != null
-        ? Number(priceNew)
-        : Number(p.price ?? priceNew ?? 0);
+    const priceNew = this.computePriceNewFromOffer(p.offer, isActive, priceOld);
+    const priceEffective = this.computePriceEffective(
+      isActive,
+      priceNew,
+      p.price ?? priceNew ?? 0,
+    );
 
     return {
       priceOld: priceOld ?? null,
       priceNew,
       priceEffective,
     };
+  }
+
+  private computePriceNewFromOffer(
+    offer: OfferInfo | undefined,
+    isActive: boolean,
+    priceOld: number | null,
+  ): number | null {
+    const directNew = offer?.newPrice ?? null;
+    if (directNew != null) return directNew;
+    if (!isActive || priceOld == null) return null;
+
+    const pctVal = offer?.type === 'percentage' ? offer.discountValue : null;
+    if (pctVal != null) {
+      return Math.max(0, priceOld * (1 - pctVal / 100));
+    }
+
+    const fixedVal =
+      offer?.type === 'fixed_amount' ? offer.discountValue : null;
+    if (fixedVal != null) {
+      return Math.max(0, priceOld - fixedVal);
+    }
+
+    return null;
+  }
+
+  private computePriceEffective(
+    isActive: boolean,
+    priceNew: number | null,
+    fallback: number,
+  ): number {
+    return isActive && priceNew != null ? Number(priceNew) : Number(fallback);
   }
 
   // ============ حساب أسعار العرض لجميع العملات ============

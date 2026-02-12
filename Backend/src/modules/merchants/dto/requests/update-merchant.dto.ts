@@ -1,7 +1,7 @@
 import { PartialType } from '@nestjs/swagger';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator';
+import { IsOptional, IsString, ValidateNested } from 'class-validator';
 
 import { CreateMerchantDto } from './create-merchant.dto';
 import { LeadsSettingsDto } from './leads-settings.dto';

@@ -39,6 +39,7 @@ const BASE_36 = 36;
 const RANDOM_MAX = 999;
 const MAX_FILENAME_LENGTH = 180;
 const PRESIGNED_URL_EXPIRY = 3600; // 1 hour in seconds
+const ADMIN_EXPORT_MAX_LIMIT = 5000;
 
 // أنواع للـ attachments
 interface Attachment {
@@ -373,9 +374,58 @@ export class SupportService {
     return ticket;
   }
 
+  /** استخراج قيمة آمنة من حقل اختياري */
+  private safeString(value: unknown): string {
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'boolean') return String(value);
+    return '';
+  }
+
+  /** استخراج معرف التذكرة */
+  private extractTicketId(ticket: SupportTicketEntity): string {
+    const id = (ticket as { _id?: { toString?: () => string } })._id;
+    return id?.toString?.() ?? '';
+  }
+
+  /** استخراج تاريخ الإنشاء بصيغة ISO */
+  private extractCreatedAt(ticket: SupportTicketEntity): string {
+    const createdAt = (ticket as { createdAt?: Date }).createdAt;
+    return createdAt ? new Date(createdAt).toISOString() : '';
+  }
+
+  /** تحويل تذكرة إلى صف CSV */
+  private ticketToCsvRow(t: SupportTicketEntity): string[] {
+    const ticket = t as {
+      ticketNumber?: string;
+      name?: string;
+      email?: string;
+      phone?: string;
+      topic?: string;
+      subject?: string;
+      message?: string;
+      status?: string;
+      source?: string;
+    };
+
+    return [
+      this.extractTicketId(t),
+      this.safeString(ticket.ticketNumber),
+      this.safeString(ticket.name),
+      this.safeString(ticket.email),
+      this.safeString(ticket.phone),
+      this.safeString(ticket.topic),
+      this.safeString(ticket.subject),
+      this.safeString(ticket.message),
+      this.safeString(ticket.status),
+      this.safeString(ticket.source),
+      this.extractCreatedAt(t),
+    ];
+  }
+
   async exportCsv(params: { status?: TicketStatus }): Promise<string> {
     const { items } = await this.listAllAdmin({
-      limit: 5000,
+      limit: ADMIN_EXPORT_MAX_LIMIT,
       page: 1,
       ...params,
     });
@@ -392,21 +442,7 @@ export class SupportService {
       'source',
       'createdAt',
     ];
-    const rows = items.map((t) => [
-      (t as { _id?: { toString?: () => string } })._id?.toString?.() ?? '',
-      (t as { ticketNumber?: string }).ticketNumber ?? '',
-      (t as { name?: string }).name ?? '',
-      (t as { email?: string }).email ?? '',
-      (t as { phone?: string }).phone ?? '',
-      (t as { topic?: string }).topic ?? '',
-      (t as { subject?: string }).subject ?? '',
-      (t as { message?: string }).message ?? '',
-      (t as { status?: string }).status ?? '',
-      (t as { source?: string }).source ?? '',
-      (t as { createdAt?: Date }).createdAt
-        ? new Date((t as { createdAt?: Date }).createdAt!).toISOString()
-        : '',
-    ]);
+    const rows = items.map((t) => this.ticketToCsvRow(t));
     return toCsv(headers, rows);
   }
 

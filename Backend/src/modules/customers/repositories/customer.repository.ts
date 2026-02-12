@@ -1,7 +1,15 @@
-// src/modules/customers/repositories/customer.repository.ts
-import { CustomerDocument } from '../schemas/customer.schema';
-
 import type { Customer } from '../schemas/customer.schema';
+
+export interface CustomerListFilters {
+  tags?: string[];
+  isBlocked?: boolean;
+  signupSource?: 'otp' | 'order' | 'lead' | 'manual';
+  sortBy?: 'createdAt' | 'lastSeenAt' | 'name';
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+  skip?: number;
+  page?: number;
+}
 
 export interface CustomerRepository {
   create(customer: Partial<Customer>): Promise<Customer>;
@@ -20,9 +28,16 @@ export interface CustomerRepository {
     contactType: 'phone' | 'email',
     merchantId: string,
   ): Promise<Customer | null>;
-  findAll(merchantId: string, filters?: any): Promise<Customer[]>;
+  findAll(
+    merchantId: string,
+    filters?: CustomerListFilters,
+  ): Promise<Customer[]>;
   updateById(id: string, update: Partial<Customer>): Promise<Customer | null>;
   deleteById(id: string): Promise<boolean>;
-  count(merchantId: string, filters?: any): Promise<number>;
-  search(merchantId: string, query: string, filters?: any): Promise<Customer[]>;
+  count(merchantId: string, filters?: CustomerListFilters): Promise<number>;
+  search(
+    merchantId: string,
+    query: string,
+    filters?: CustomerListFilters,
+  ): Promise<Customer[]>;
 }
