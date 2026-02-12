@@ -29,7 +29,10 @@ export class SlugResolverService {
       .select('_id')
       .lean();
     if (!m) throw new Error('slug not found or disabled');
-    const merchantId = m._id.toString();
+    const merchantId =
+      m._id instanceof Types.ObjectId
+        ? m._id.toHexString()
+        : String(m._id as { toString?: () => string });
 
     const webchatDefault = await this.channels
       .findOne({
@@ -41,11 +44,16 @@ export class SlugResolverService {
       .select('_id')
       .lean();
 
+    const webchatChannelId =
+      webchatDefault?._id instanceof Types.ObjectId
+        ? webchatDefault._id.toHexString()
+        : webchatDefault?._id
+          ? String(webchatDefault._id as { toString?: () => string })
+          : undefined;
+
     return {
       merchantId,
-      webchatChannelId: webchatDefault?._id
-        ? webchatDefault._id.toString()
-        : undefined,
+      webchatChannelId,
     };
   }
 }

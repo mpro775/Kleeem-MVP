@@ -20,7 +20,9 @@ import { Merchant, MerchantDocument } from '../schemas/merchant.schema';
 import { MerchantChecklistRepository } from './merchant-checklist.repository';
 
 @Injectable()
-export class MongoMerchantChecklistRepository implements MerchantChecklistRepository {
+export class MongoMerchantChecklistRepository
+  implements MerchantChecklistRepository
+{
   constructor(
     @InjectModel(Merchant.name)
     private readonly merchantModel: Model<MerchantDocument>,

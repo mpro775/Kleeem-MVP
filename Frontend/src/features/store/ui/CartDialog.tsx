@@ -829,7 +829,7 @@ export default function CartDialog({
                           {product.name} × {quantity}
                         </Typography>
                         <Typography>
-                          {(product.price * quantity).toFixed(2)} ر.س
+                          {((product.price ?? 0) * quantity).toFixed(2)} ر.س
                         </Typography>
                       </Box>
                     ))}

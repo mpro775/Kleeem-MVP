@@ -23,7 +23,7 @@ export function StockEditCell({
   onSave,
 }: StockEditCellProps) {
   const [localValue, setLocalValue] = useState(value);
-  const [isEditing, setIsEditing] = useState(false);
+  const [, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);

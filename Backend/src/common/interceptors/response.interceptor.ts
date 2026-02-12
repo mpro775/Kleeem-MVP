@@ -21,10 +21,9 @@ export interface ApiResponseData<T = unknown> {
 }
 
 @Injectable()
-export class ResponseInterceptor<T> implements NestInterceptor<
-  T,
-  ApiResponseData<T>
-> {
+export class ResponseInterceptor<T>
+  implements NestInterceptor<T, ApiResponseData<T>>
+{
   intercept(
     context: ExecutionContext,
     next: CallHandler,

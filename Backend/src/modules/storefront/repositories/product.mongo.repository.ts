@@ -13,7 +13,9 @@ import {
 } from './product.repository';
 
 @Injectable()
-export class StorefrontProductMongoRepository implements StorefrontProductRepository {
+export class StorefrontProductMongoRepository
+  implements StorefrontProductRepository
+{
   constructor(
     @InjectModel(Product.name)
     private readonly model: Model<ProductDocument>,

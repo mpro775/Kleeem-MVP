@@ -11,7 +11,9 @@ import {
 import type { AttributeDefinitionsRepository } from './attribute-definitions.repository';
 
 @Injectable()
-export class MongoAttributeDefinitionsRepository implements AttributeDefinitionsRepository {
+export class MongoAttributeDefinitionsRepository
+  implements AttributeDefinitionsRepository
+{
   constructor(
     @InjectModel(AttributeDefinition.name)
     private readonly model: Model<AttributeDefinitionDocument>,

@@ -12,7 +12,9 @@ import {
 import { BackInStockRequestRepository } from './back-in-stock-request.repository';
 
 @Injectable()
-export class BackInStockRequestMongoRepository implements BackInStockRequestRepository {
+export class BackInStockRequestMongoRepository
+  implements BackInStockRequestRepository
+{
   constructor(
     @InjectModel(BackInStockRequest.name)
     private readonly model: Model<BackInStockRequestDocument>,

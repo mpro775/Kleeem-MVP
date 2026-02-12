@@ -45,16 +45,16 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
   const isOutOfStock = availableStock <= 0;
 
   const statusColor =
-    isOutOfStock || product.status === "out_of_stock"
+    isOutOfStock
       ? "error"
-      : product.status === "inactive"
+      : product.status === "draft" || product.status === "archived"
       ? "default"
       : "success";
 
   const statusText =
-    isOutOfStock || product.status === "out_of_stock"
+    isOutOfStock
       ? "منتهي"
-      : product.status === "inactive"
+      : product.status === "draft" || product.status === "archived"
       ? "غير متوفر"
       : "متوفر";
 
@@ -433,7 +433,7 @@ export function ProductCard({ product, onAddToCart, onOpen, viewMode }: Props) {
               e.stopPropagation();
               onAddToCart(product);
             }}
-            disabled={product.status !== "active" || isOutOfStock}
+            disabled={product.status !== "published" || isOutOfStock}
             sx={{
               fontWeight: "bold",
               borderRadius: 2,

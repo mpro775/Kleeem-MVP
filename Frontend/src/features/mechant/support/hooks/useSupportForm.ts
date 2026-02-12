@@ -1,6 +1,6 @@
 // src/features/support/hooks/useSupportForm.ts
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/context/hooks";
 import { useErrorHandler } from "@/shared/errors";
@@ -12,7 +12,15 @@ import {
 } from "../types";
 import { submitSupportTicket } from "../api";
 
-export const useSupportForm = () => {
+export function useSupportForm(): {
+  form: UseFormReturn<AdminContactPayload>;
+  files: FileList | null;
+  setFiles: (files: FileList | null) => void;
+  submitting: boolean;
+  submissionResponse: ContactResponse | null;
+  error: string | null;
+  onSubmit: (values: AdminContactPayload) => Promise<void>;
+} {
   const { user } = useAuth();
   const { handleError } = useErrorHandler();
 
@@ -23,7 +31,7 @@ export const useSupportForm = () => {
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<AdminContactPayload>({
-    resolver: zodResolver(adminContactSchema),
+    resolver: zodResolver(adminContactSchema) as Resolver<AdminContactPayload>,
     defaultValues: {
       name: (user as any)?.name || "",
       email: user?.email || "",
@@ -88,4 +96,4 @@ export const useSupportForm = () => {
     error,
     onSubmit,
   };
-};
+}
