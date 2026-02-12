@@ -18,9 +18,10 @@ export interface InstructionsRepository {
     active?: boolean;
   }): Promise<Instruction & { _id: Types.ObjectId }>;
 
-  findAll(
-    params: FindAllParams,
-  ): Promise<{ items: Array<Instruction & { _id: Types.ObjectId }>; total: number }>;
+  findAll(params: FindAllParams): Promise<{
+    items: Array<Instruction & { _id: Types.ObjectId }>;
+    total: number;
+  }>;
 
   findById(id: string): Promise<(Instruction & { _id: Types.ObjectId }) | null>;
 

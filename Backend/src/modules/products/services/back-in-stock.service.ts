@@ -1,13 +1,20 @@
 // src/modules/products/services/back-in-stock.service.ts
-import { Injectable, Inject, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { Types } from 'mongoose';
 
 import { SmsService } from '../../../common/services/sms.service';
 import { MailService } from '../../mail/mail.service';
-
-import { BackInStockRequest, BackInStockStatus } from '../schemas/back-in-stock-request.schema';
-import { BACK_IN_STOCK_REQUEST_REPOSITORY } from '../tokens';
 import { BackInStockRequestRepository } from '../repositories/back-in-stock-request.repository';
+import {
+  BackInStockRequest,
+  BackInStockStatus,
+} from '../schemas/back-in-stock-request.schema';
+import { BACK_IN_STOCK_REQUEST_REPOSITORY } from '../tokens';
 
 @Injectable()
 export class BackInStockService {
@@ -18,7 +25,7 @@ export class BackInStockService {
     private readonly backInStockRepo: BackInStockRequestRepository,
     private readonly smsService: SmsService,
     private readonly mailService: MailService,
-  ) { }
+  ) {}
 
   /**
    * إنشاء طلب إشعار عند توفر المنتج
@@ -44,7 +51,10 @@ export class BackInStockService {
       customerId,
     );
 
-    if (existingRequest && existingRequest.status === BackInStockStatus.PENDING) {
+    if (
+      existingRequest &&
+      existingRequest.status === BackInStockStatus.PENDING
+    ) {
       throw new BadRequestException('يوجد طلب سابق لهذا المنتج');
     }
 
@@ -62,11 +72,11 @@ export class BackInStockService {
   /**
    * إلغاء طلب إشعار
    */
-  async cancelRequest(
-    merchantId: string,
-    requestId: string,
-  ): Promise<boolean> {
-    const request = await this.backInStockRepo.findByIdAndMerchant(requestId, merchantId);
+  async cancelRequest(merchantId: string, requestId: string): Promise<boolean> {
+    const request = await this.backInStockRepo.findByIdAndMerchant(
+      requestId,
+      merchantId,
+    );
     if (!request) {
       throw new BadRequestException('الطلب غير موجود');
     }
@@ -75,7 +85,10 @@ export class BackInStockService {
       throw new BadRequestException('لا يمكن إلغاء طلب تم إشعاره');
     }
 
-    return this.backInStockRepo.updateStatus(requestId, BackInStockStatus.CANCELLED);
+    return this.backInStockRepo.updateStatus(
+      requestId,
+      BackInStockStatus.CANCELLED,
+    );
   }
 
   /**
@@ -90,7 +103,11 @@ export class BackInStockService {
       throw new BadRequestException('يجب تقديم معرف العميل أو معلومات التواصل');
     }
 
-    return this.backInStockRepo.findByCustomerOrContact(merchantId, customerId, contact);
+    return this.backInStockRepo.findByCustomerOrContact(
+      merchantId,
+      customerId,
+      contact,
+    );
   }
 
   /**
@@ -125,7 +142,8 @@ export class BackInStockService {
         );
         notificationCount++;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         this.logger.error(
           `Failed to send back-in-stock notification for request ${request._id}: ${errorMessage}`,
         );
@@ -152,7 +170,8 @@ export class BackInStockService {
         // TODO: تنفيذ إرسال البريد الإلكتروني
         console.log(`Sending back-in-stock email to ${request.contact}`);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         throw new Error(`Failed to send email notification: ${errorMessage}`);
       }
     } else {

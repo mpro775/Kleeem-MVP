@@ -2,8 +2,8 @@
 import { Injectable } from '@nestjs/common';
 
 import { MerchantsService } from '../merchants/merchants.service';
-import { UsersService } from '../users/users.service';
 import { UsageService } from '../usage/usage.service';
+import { UsersService } from '../users/users.service';
 
 export type DashboardTrendsPeriod = '7d' | '30d';
 

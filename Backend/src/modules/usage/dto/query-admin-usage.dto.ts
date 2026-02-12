@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsOptional,
@@ -8,7 +9,6 @@ import {
   Max,
   IsIn,
 } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class QueryAdminUsageDto {
   @ApiPropertyOptional({

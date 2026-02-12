@@ -1,8 +1,8 @@
 import { Test } from '@nestjs/testing';
 import { Types } from 'mongoose';
 
-import { CategoriesService } from '../categories.service';
 import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
+import { CategoriesService } from '../categories.service';
 
 import type { CategoriesRepository } from '../repositories/categories.repository';
 

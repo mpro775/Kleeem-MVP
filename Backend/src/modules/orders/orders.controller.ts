@@ -19,7 +19,6 @@ import {
   ApiParam,
   ApiBody,
 } from '@nestjs/swagger';
-
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
@@ -46,7 +45,7 @@ export class OrdersController {
   constructor(
     private readonly ordersService: OrdersService,
     private readonly translationService: TranslationService,
-  ) { }
+  ) {}
   @Public()
   @Post()
   @ApiOperation({
@@ -116,7 +115,10 @@ export class OrdersController {
     if (!merchantId) {
       throw new ForbiddenException('analytics.responses.error.noMerchant');
     }
-    const result = await this.ordersService.listOrdersForMerchant(merchantId, dto);
+    const result = await this.ordersService.listOrdersForMerchant(
+      merchantId,
+      dto,
+    );
     return {
       orders: result.items,
       total: result.total,

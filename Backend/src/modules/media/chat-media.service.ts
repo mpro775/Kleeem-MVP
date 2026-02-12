@@ -2,13 +2,13 @@
 import { createReadStream } from 'fs';
 import { unlink } from 'node:fs/promises';
 
-import { Inject, Injectable } from '@nestjs/common';
 import {
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { HOUR_IN_SECONDS } from '../../common/constants/common';
 import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
@@ -22,7 +22,7 @@ function cdnBase() {
 }
 @Injectable()
 export class ChatMediaService {
-  constructor(@Inject(S3_CLIENT_TOKEN) public readonly s3: S3Client) { }
+  constructor(@Inject(S3_CLIENT_TOKEN) public readonly s3: S3Client) {}
 
   private publicUrlFor(_bucket: string, key: string) {
     const base = cdnBase();
@@ -63,8 +63,7 @@ export class ChatMediaService {
     | { storageKey: string; url: string }
     | { storageKey: string; presignedUrl: string }
   > {
-    const bucket =
-      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+    const bucket = process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
     if (!bucket) {
       throw new Error('S3_BUCKET_NAME not configured');
     }

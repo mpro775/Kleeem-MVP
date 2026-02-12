@@ -20,22 +20,23 @@ import {
 } from '@nestjs/swagger';
 import { Types } from 'mongoose';
 
-import { UserRole } from './schemas/user.schema';
-import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
-
 import { AuthService } from '../auth/auth.service';
-import { UsersService } from './users.service';
+
 import { QueryAdminUsersDto } from './dto/query-admin-users.dto';
 import { UpdateUserAdminDto } from './dto/update-user-admin.dto';
-import type { UserLean } from './types';
-import type { UserDocument } from './schemas/user.schema';
+import { UserRole } from './schemas/user.schema';
+import { UsersService } from './users.service';
+
 import type {
   UserAdminLean,
   StatsAdminResult,
 } from './repositories/users.repository';
+import type { UserDocument } from './schemas/user.schema';
+import type { UserLean } from './types';
 
 @ApiTags('Admin', 'Admin Users')
 @ApiBearerAuth()
@@ -76,7 +77,11 @@ export class UsersAdminController {
 
   @Get('export')
   @ApiOperation({ summary: 'تصدير قائمة المستخدمين بصيغة CSV' })
-  @ApiResponse({ status: 200, description: 'ملف CSV', content: { 'text/csv': {} } })
+  @ApiResponse({
+    status: 200,
+    description: 'ملف CSV',
+    content: { 'text/csv': {} },
+  })
   async export(@Query() q: QueryAdminUsersDto): Promise<StreamableFile> {
     const csv = await this.service.exportCsv({
       ...(q.role && { role: q.role }),
@@ -106,7 +111,9 @@ export class UsersAdminController {
   @ApiParam({ name: 'id', description: 'معرف المستخدم' })
   @ApiResponse({ status: 200, description: 'كلمة مرور مؤقتة مُرجعة' })
   @ApiResponse({ status: 404, description: 'المستخدم غير موجود' })
-  resetPassword(@Param('id') id: string): Promise<{ temporaryPassword: string }> {
+  resetPassword(
+    @Param('id') id: string,
+  ): Promise<{ temporaryPassword: string }> {
     if (!id || !Types.ObjectId.isValid(id)) {
       throw new BadRequestException('معرف المستخدم غير صالح');
     }

@@ -11,7 +11,9 @@ export class PublicWidgetThemeDto {
 export class PublicWidgetSettingsResponseDto {
   @ApiProperty() merchantId!: string;
   @ApiPropertyOptional() widgetSlug?: string;
-  @ApiPropertyOptional({ description: 'معرّف التاجر العام (للروابط و webhooks)' })
+  @ApiPropertyOptional({
+    description: 'معرّف التاجر العام (للروابط و webhooks)',
+  })
   publicSlug?: string;
 
   @ApiProperty({ enum: ['bubble', 'iframe', 'bar', 'conversational'] })

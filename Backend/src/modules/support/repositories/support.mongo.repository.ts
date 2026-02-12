@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import type { FilterQuery } from 'mongoose';
 
 import {
   SupportTicket,
@@ -14,6 +13,8 @@ import {
   ListAllAdminParams,
   TicketReplyItem,
 } from './support.repository';
+
+import type { FilterQuery } from 'mongoose';
 
 @Injectable()
 export class SupportMongoRepository implements SupportRepository {
@@ -51,11 +52,7 @@ export class SupportMongoRepository implements SupportRepository {
   ): Promise<SupportTicketEntity | null> {
     if (!Types.ObjectId.isValid(id)) return null;
     return this.model
-      .findByIdAndUpdate(
-        id,
-        { $push: { replies: reply } },
-        { new: true },
-      )
+      .findByIdAndUpdate(id, { $push: { replies: reply } }, { new: true })
       .lean<SupportTicketEntity>()
       .exec();
   }
@@ -67,9 +64,10 @@ export class SupportMongoRepository implements SupportRepository {
   }> {
     const [byStatusAgg, total, resolvedDocs] = await Promise.all([
       this.model
-        .aggregate<{ _id: string; count: number }>([
-          { $group: { _id: '$status', count: { $sum: 1 } } },
-        ])
+        .aggregate<{
+          _id: string;
+          count: number;
+        }>([{ $group: { _id: '$status', count: { $sum: 1 } } }])
         .exec(),
       this.model.countDocuments().exec(),
       this.model
@@ -89,13 +87,16 @@ export class SupportMongoRepository implements SupportRepository {
       const hours = resolvedDocs
         .map((d: { createdAt?: Date; updatedAt?: Date }) => {
           const created = d.createdAt ? new Date(d.createdAt).getTime() : 0;
-          const updated = d.updatedAt ? new Date(d.updatedAt).getTime() : created;
+          const updated = d.updatedAt
+            ? new Date(d.updatedAt).getTime()
+            : created;
           return (updated - created) / (1000 * 60 * 60);
         })
         .filter((h) => h >= 0);
       avgResolutionHours =
         hours.length > 0
-          ? Math.round((hours.reduce((a, b) => a + b, 0) / hours.length) * 10) / 10
+          ? Math.round((hours.reduce((a, b) => a + b, 0) / hours.length) * 10) /
+            10
           : undefined;
     }
 

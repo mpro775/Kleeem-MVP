@@ -2,11 +2,11 @@ import { HttpService } from '@nestjs/axios';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { of } from 'rxjs';
 
+import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 import { SupportService } from '../support.service';
 import { SUPPORT_REPOSITORY } from '../tokens';
 
 import type { SupportRepository } from '../repositories/support.repository';
-import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 
 describe('SupportService', () => {
   let service: SupportService;

@@ -71,12 +71,12 @@ describe('WebhooksModule', () => {
   describe('Schema Configuration', () => {
     it('should register Webhook schema', () => {
       // Verify that the Webhook model is available
-      expect(() => moduleRef.get('WebhookModel')).not.toThrow(); // eslint-disable-line @typescript-eslint/no-unsafe-return
+      expect(() => moduleRef.get('WebhookModel')).not.toThrow();
     });
 
     it('should register Merchant schema', () => {
       // Verify that the Merchant model is available
-      expect(() => moduleRef.get('MerchantModel')).not.toThrow(); // eslint-disable-line @typescript-eslint/no-unsafe-return
+      expect(() => moduleRef.get('MerchantModel')).not.toThrow();
     });
   });
 

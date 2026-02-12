@@ -162,4 +162,3 @@ PromotionSchema.pre('save', function (next) {
 
   next();
 });
-

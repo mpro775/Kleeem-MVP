@@ -27,7 +27,7 @@ export class MerchantProvisioningService {
     private readonly promptBuilder: PromptBuilderService,
     private readonly businessMetrics: BusinessMetrics,
     private readonly translationService: TranslationService,
-  ) { }
+  ) {}
 
   /**
    * إنشاء التاجر + تهيئة الـ n8n + إنشاء Storefront
@@ -48,10 +48,13 @@ export class MerchantProvisioningService {
       try {
         wfId = await this.n8n.createForMerchant(String(merchant._id));
         merchant.workflowId = wfId;
-        this.logger.log(`Created n8n workflow ${wfId} for merchant ${merchant._id}`);
+        this.logger.log(
+          `Created n8n workflow ${wfId} for merchant ${merchant._id}`,
+        );
       } catch (n8nError) {
         // Log but don't fail - workflow can be created later via ensureWorkflow
-        const n8nErrMsg = n8nError instanceof Error ? n8nError.message : String(n8nError);
+        const n8nErrMsg =
+          n8nError instanceof Error ? n8nError.message : String(n8nError);
         this.logger.warn(
           `n8n workflow creation failed for merchant ${merchant._id}: ${n8nErrMsg}. Will retry later.`,
         );

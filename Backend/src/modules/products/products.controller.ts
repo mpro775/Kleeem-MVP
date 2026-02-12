@@ -31,16 +31,13 @@ import {
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { Types } from 'mongoose';
-
-import {
-  ApiCreatedResponse as CommonApiCreatedResponse,
-} from 'src/common/decorators/api-response.decorator';
+import { ApiCreatedResponse as CommonApiCreatedResponse } from 'src/common/decorators/api-response.decorator';
 import {
   CurrentUser,
   CurrentMerchantId,
 } from 'src/common/decorators/current-user.decorator';
-import { PaginationResult } from 'src/common/dto/pagination.dto';
 import { Public } from 'src/common/decorators/public.decorator';
+import { PaginationResult } from 'src/common/dto/pagination.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { TranslationService } from 'src/common/services/translation.service';
 
@@ -54,17 +51,17 @@ import { GetProductsDto } from './dto/get-products.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
 import { ProductSetupConfigDto } from './dto/product-setup-config.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { ProductSetupConfigService } from './product-setup-config.service';
-import { ProductsService } from './products.service';
-import { ProductCsvService } from './services/product-csv.service';
-import { InventoryService } from './services/inventory.service';
-import { StockChangeLogService } from './services/stock-change-log.service';
-import { StockChangeType } from './schemas/stock-change-log.schema';
 import {
   UpdateStockDto,
   BulkUpdateStockDto,
   InventoryQueryDto,
 } from './dto/update-stock.dto';
+import { ProductSetupConfigService } from './product-setup-config.service';
+import { ProductsService } from './products.service';
+import { StockChangeType } from './schemas/stock-change-log.schema';
+import { InventoryService } from './services/inventory.service';
+import { ProductCsvService } from './services/product-csv.service';
+import { StockChangeLogService } from './services/stock-change-log.service';
 
 const MAX_IMAGES = 6;
 
@@ -81,7 +78,7 @@ export class ProductsController {
     private readonly csvService: ProductCsvService,
     private readonly inventoryService: InventoryService,
     private readonly stockChangeLogService: StockChangeLogService,
-  ) { }
+  ) {}
 
   @Post()
   @ApiOperation({
@@ -958,7 +955,8 @@ export class ProductsController {
       const stock = product.stock ?? 0;
       const threshold = product.lowStockThreshold ?? null;
       const isUnlimited = product.isUnlimitedStock ?? false;
-      const isLowStock = !isUnlimited && threshold !== null && stock <= threshold;
+      const isLowStock =
+        !isUnlimited && threshold !== null && stock <= threshold;
       const isOutOfStock = !isUnlimited && stock <= 0;
 
       return {
@@ -1041,7 +1039,8 @@ export class ProductsController {
     @Param('id') id: string,
     @Body() dto: UpdateStockDto,
     @CurrentMerchantId() jwtMerchantId: string | null,
-    @CurrentUser() user: { userId: string; role: string; merchantId: string; name?: string },
+    @CurrentUser()
+    user: { userId: string; role: string; merchantId: string; name?: string },
   ): Promise<ProductResponseDto> {
     if (!jwtMerchantId) {
       throw new ForbiddenException(
@@ -1061,8 +1060,8 @@ export class ProductsController {
 
     // الحصول على المخزون السابق
     const previousStock = dto.variantSku
-      ? product.variants?.find((v) => v.sku === dto.variantSku)?.stock ?? 0
-      : product.stock ?? 0;
+      ? (product.variants?.find((v) => v.sku === dto.variantSku)?.stock ?? 0)
+      : (product.stock ?? 0);
 
     // تحديث المخزون
     const updated = await this.inventoryService.updateStock(
@@ -1113,7 +1112,8 @@ export class ProductsController {
   async bulkUpdateStock(
     @Body() dto: BulkUpdateStockDto,
     @CurrentMerchantId() jwtMerchantId: string | null,
-    @CurrentUser() user: { userId: string; role: string; merchantId: string; name?: string },
+    @CurrentUser()
+    user: { userId: string; role: string; merchantId: string; name?: string },
   ): Promise<{
     success: number;
     failed: number;
@@ -1125,7 +1125,11 @@ export class ProductsController {
       );
     }
 
-    const results: Array<{ productId: string; success: boolean; error?: string }> = [];
+    const results: Array<{
+      productId: string;
+      success: boolean;
+      error?: string;
+    }> = [];
     let successCount = 0;
     let failedCount = 0;
 
@@ -1149,8 +1153,9 @@ export class ProductsController {
 
         // الحصول على المخزون السابق
         const previousStock = item.variantSku
-          ? product.variants?.find((v) => v.sku === item.variantSku)?.stock ?? 0
-          : product.stock ?? 0;
+          ? (product.variants?.find((v) => v.sku === item.variantSku)?.stock ??
+            0)
+          : (product.stock ?? 0);
 
         // تحديث المخزون
         await this.inventoryService.updateStock(
@@ -1300,7 +1305,8 @@ export class ProductsController {
 
     // جلب جميع المنتجات
     const merchantObjectId = new Types.ObjectId(jwtMerchantId);
-    const products = await this.productsService.findAllByMerchant(merchantObjectId);
+    const products =
+      await this.productsService.findAllByMerchant(merchantObjectId);
 
     // بناء CSV
     const headers = [
@@ -1320,9 +1326,16 @@ export class ProductsController {
       const isUnlimited = product.isUnlimitedStock ?? false;
       const stock = product.stock ?? 0;
       const threshold = product.lowStockThreshold ?? '';
-      const isLow = !isUnlimited && threshold !== '' && stock <= Number(threshold);
+      const isLow =
+        !isUnlimited && threshold !== '' && stock <= Number(threshold);
       const isOut = !isUnlimited && stock <= 0;
-      const status = isUnlimited ? 'غير محدود' : isOut ? 'منتهي' : isLow ? 'منخفض' : 'جيد';
+      const status = isUnlimited
+        ? 'غير محدود'
+        : isOut
+          ? 'منتهي'
+          : isLow
+            ? 'منخفض'
+            : 'جيد';
 
       if (product.hasVariants && product.variants) {
         for (const variant of product.variants) {

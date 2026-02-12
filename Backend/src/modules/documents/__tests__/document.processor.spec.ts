@@ -132,11 +132,11 @@ describe('DocumentProcessor', () => {
     await processor.process(job);
 
     // تحديثات الحالة
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(docModel.findByIdAndUpdate).toHaveBeenNthCalledWith(1, docId, {
       status: 'processing',
     });
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(docModel.findByIdAndUpdate).toHaveBeenNthCalledWith(2, docId, {
       status: 'completed',
     });
@@ -147,7 +147,7 @@ describe('DocumentProcessor', () => {
     ).toBe(3);
 
     // upsert تم لعدد القطع
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(vectorService.upsertDocumentChunks).toHaveBeenCalledTimes(1);
     const upsertArg = (
       vectorService.upsertDocumentChunks as unknown as jest.Mock
@@ -173,13 +173,11 @@ describe('DocumentProcessor', () => {
     );
     await processor.process(job);
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(docModel.findByIdAndUpdate).toHaveBeenCalledWith(job.data.docId, {
       status: 'failed',
       errorMessage: 'Document not found in MongoDB',
     });
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(vectorService.upsertDocumentChunks).not.toHaveBeenCalled();
     // لم يُنشأ ملف مؤقت لذا قد لا يُستدعى unlink — لا إلزام هنا.
   });
@@ -212,7 +210,6 @@ describe('DocumentProcessor', () => {
     );
     await processor.process(job);
 
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(vectorService.upsertDocumentChunks).not.toHaveBeenCalled();
     // الحالة failed
     const lastCall = (
@@ -246,10 +243,10 @@ describe('DocumentProcessor', () => {
     await processor.process(job);
 
     // لم يتم upsert
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(vectorService.upsertDocumentChunks).not.toHaveBeenCalled();
     // الحالة failed
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(docModel.findByIdAndUpdate).toHaveBeenCalledWith(
       docId,
       expect.objectContaining({ status: 'failed' }),
@@ -283,11 +280,11 @@ describe('DocumentProcessor', () => {
     expect((mammoth as any).extractRawText).toHaveBeenCalledWith(
       expect.objectContaining({ path: expect.any(String) }),
     );
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(vectorService.embedText).toHaveBeenCalled();
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(vectorService.upsertDocumentChunks).toHaveBeenCalled();
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+
     expect(docModel.findByIdAndUpdate).toHaveBeenCalledWith(docId, {
       status: 'completed',
     });

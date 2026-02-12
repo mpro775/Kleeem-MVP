@@ -19,16 +19,21 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 
-import { UserRole } from '../users/schemas/user.schema';
-import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
-
-import { AdminAuditService, AdminAuditEntry } from '../services/admin-audit.service';
-import { FeatureFlagsService, FeatureFlagsDto } from '../services/feature-flags.service';
-import { AdminSystemService } from '../services/admin-system.service';
 import { QueryAdminAuditDto } from '../dto/query-admin-audit.dto';
+import {
+  AdminAuditService,
+  AdminAuditEntry,
+} from '../services/admin-audit.service';
+import { AdminSystemService } from '../services/admin-system.service';
+import {
+  FeatureFlagsService,
+  FeatureFlagsDto,
+} from '../services/feature-flags.service';
+import { UserRole } from '../users/schemas/user.schema';
 
 @ApiTags('Admin', 'Admin System')
 @ApiBearerAuth()
@@ -61,7 +66,10 @@ export class AdminSystemController {
   @Get('sessions')
   @ApiOperation({ summary: 'هـ.2: قائمة جلسات الأدمن النشطة' })
   @ApiQuery({ name: 'adminId', required: false, description: 'فلترة حسب أدمن' })
-  @ApiResponse({ status: 200, description: 'جلسات أدمن مع jti، آخر استخدام، إلخ' })
+  @ApiResponse({
+    status: 200,
+    description: 'جلسات أدمن مع jti، آخر استخدام، إلخ',
+  })
   async getAdminSessions(@Query('adminId') adminId?: string) {
     return this.systemService.listAdminSessions(adminId);
   }
@@ -93,7 +101,9 @@ export class AdminSystemController {
   ): Promise<{ message: string }> {
     const result = await this.systemService.triggerBackup(user.userId);
     if (!result.success) {
-      throw new ServiceUnavailableException(result.message ?? 'آلية النسخ الاحتياطي غير مُفعّلة');
+      throw new ServiceUnavailableException(
+        result.message ?? 'آلية النسخ الاحتياطي غير مُفعّلة',
+      );
     }
     return { message: result.message ?? 'تم استدعاء النسخ الاحتياطي' };
   }

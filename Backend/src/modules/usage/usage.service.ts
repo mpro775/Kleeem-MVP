@@ -1,6 +1,5 @@
 // src/modules/usage/usage.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { toCsv } from '../../common/utils/csv.utils';
 import { InjectModel } from '@nestjs/mongoose';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -12,6 +11,7 @@ import {
 } from 'src/modules/merchants/schemas/merchant.schema';
 import { PlansService } from 'src/modules/plans/plans.service';
 
+import { toCsv } from '../../common/utils/csv.utils';
 import { Plan } from '../plans/schemas/plan.schema';
 
 // ثوابت لتجنب الأرقام السحرية
@@ -21,6 +21,14 @@ const MS_IN_SECOND = 1000;
 const TIMEZONE_OFFSET_HOURS = 3; // Asia/Aden +03
 const TIMEZONE_OFFSET_MS =
   TIMEZONE_OFFSET_HOURS * MINUTES_IN_HOUR * SECONDS_IN_MINUTE * MS_IN_SECOND;
+
+// ثوابت منطقية إضافية
+const TRENDS_MONTHS_FOR_7D = 3;
+const TRENDS_MONTHS_FOR_30D = 6;
+const USAGE_EXPORT_DEFAULT_LIMIT = 5000;
+const ALERTS_DEFAULT_THRESHOLD_PERCENT = 80;
+const USAGE_IN_MEMORY_SORT_LIMIT = 2000;
+const USAGE_PERCENT_SCALE = 10000;
 
 import {
   UsageCounter,
@@ -85,9 +93,9 @@ export class UsageService {
 
       await session.commitTransaction();
       return { monthKey, messagesUsed: doc.messagesUsed, limit: messageLimit };
-    } catch (e) {
+    } catch (error: unknown) {
       await session.abortTransaction();
-      throw e;
+      throw error;
     } finally {
       await session.endSession();
     }
@@ -166,12 +174,7 @@ export class UsageService {
     total: number;
   }> {
     const key = params.monthKey ?? this.monthKeyFrom();
-    const {
-      limit,
-      page,
-      sortBy = 'messagesUsed',
-      sortOrder = 'desc',
-    } = params;
+    const { limit, page, sortBy = 'messagesUsed', sortOrder = 'desc' } = params;
     const filter = { monthKey: key };
     const sortDir = sortOrder === 'asc' ? 1 : -1;
     const sortField = sortBy === 'merchantId' ? 'merchantId' : 'messagesUsed';
@@ -188,7 +191,11 @@ export class UsageService {
     ]);
 
     const items = rawItems.map(
-      (d: { merchantId: Types.ObjectId; monthKey: string; messagesUsed: number }) => ({
+      (d: {
+        merchantId: Types.ObjectId;
+        monthKey: string;
+        messagesUsed: number;
+      }) => ({
         merchantId: d.merchantId,
         monthKey: d.monthKey,
         messagesUsed: d.messagesUsed,
@@ -210,7 +217,10 @@ export class UsageService {
       .select('messagesUsed')
       .lean()
       .exec();
-    const totalMessagesUsed = docs.reduce((sum, d) => sum + (d.messagesUsed ?? 0), 0);
+    const totalMessagesUsed = docs.reduce(
+      (sum, d) => sum + (d.messagesUsed ?? 0),
+      0,
+    );
     return {
       monthKey: key,
       totalMessagesUsed,
@@ -219,10 +229,11 @@ export class UsageService {
   }
 
   /** ترند استهلاك شهري للأدمن (آخر N أشهر) */
-  async getTrendsAdmin(period: '7d' | '30d'): Promise<
-    { monthKey: string; totalMessagesUsed: number }[]
-  > {
-    const monthsCount = period === '7d' ? 3 : 6;
+  async getTrendsAdmin(
+    period: '7d' | '30d',
+  ): Promise<{ monthKey: string; totalMessagesUsed: number }[]> {
+    const monthsCount =
+      period === '7d' ? TRENDS_MONTHS_FOR_7D : TRENDS_MONTHS_FOR_30D;
     const keys: string[] = [];
     const now = new Date();
     for (let i = 0; i < monthsCount; i++) {
@@ -231,7 +242,7 @@ export class UsageService {
     }
 
     const docs = await this.usageModel
-      .aggregate<{ _id: string; totalMessagesUsed: number }>([
+      .aggregate<{ monthKey: string; totalMessagesUsed: number }>([
         { $match: { monthKey: { $in: keys } } },
         {
           $group: {
@@ -254,11 +265,12 @@ export class UsageService {
   }
 
   async exportCsv(params: { monthKey?: string }): Promise<string> {
-    const { items } = await this.listAllAdminWithLimits({
-      monthKey: params.monthKey,
-      limit: 5000,
+    const listParams = {
+      limit: USAGE_EXPORT_DEFAULT_LIMIT,
       page: 1,
-    });
+      ...(params.monthKey ? { monthKey: params.monthKey } : {}),
+    };
+    const { items } = await this.listAllAdminWithLimits(listParams);
     const headers = [
       'merchantId',
       'merchantName',
@@ -279,6 +291,7 @@ export class UsageService {
   }
 
   /** ج.1: تنبيهات تجار تجاوزوا الحد أو قاربوه */
+  // eslint-disable-next-line complexity
   async getAlertsAdmin(params: {
     monthKey?: string;
     /** نسبة للتجاوز (مثلاً 80 = قارب 80%+) */
@@ -297,7 +310,10 @@ export class UsageService {
     total: number;
   }> {
     const key = params.monthKey ?? this.monthKeyFrom();
-    const threshold = Math.min(100, Math.max(0, params.thresholdPercent ?? 80));
+    const threshold = Math.min(
+      100,
+      Math.max(0, params.thresholdPercent ?? ALERTS_DEFAULT_THRESHOLD_PERCENT),
+    );
     const limit = params.limit ?? 100;
 
     const docs = await this.usageModel
@@ -317,7 +333,10 @@ export class UsageService {
       status: 'exceeded' | 'near';
     }> = [];
 
-    for (const d of docs as Array<{ merchantId: Types.ObjectId; messagesUsed: number }>) {
+    for (const d of docs as Array<{
+      merchantId: Types.ObjectId;
+      messagesUsed: number;
+    }>) {
       const merchant = await this.merchantModel.findById(d.merchantId).lean();
       if (!merchant) continue;
 
@@ -331,25 +350,27 @@ export class UsageService {
       const usagePercent =
         messageLimit > 0 ? (messagesUsed / messageLimit) * 100 : 0;
 
+      const merchantName = (merchant as { name?: string }).name;
+
       if (usagePercent >= 100) {
         result.push({
           merchantId: d.merchantId,
-          merchantName: (merchant as { name?: string }).name,
           monthKey: key,
           messagesUsed,
           messageLimit,
           usagePercent: Math.round(usagePercent * 100) / 100,
           status: 'exceeded',
+          ...(merchantName ? { merchantName } : {}),
         });
       } else if (usagePercent >= threshold) {
         result.push({
           merchantId: d.merchantId,
-          merchantName: (merchant as { name?: string }).name,
           monthKey: key,
           messagesUsed,
           messageLimit,
           usagePercent: Math.round(usagePercent * 100) / 100,
           status: 'near',
+          ...(merchantName ? { merchantName } : {}),
         });
       }
       if (result.length >= limit) break;
@@ -385,12 +406,20 @@ export class UsageService {
     if (fromDate > toDate) {
       return { byMonth: [], summary: { totalMessagesUsed: 0, monthsCount: 0 } };
     }
-    for (let d = new Date(fromDate); d <= toDate; d.setMonth(d.getMonth() + 1)) {
+    for (
+      let d = new Date(fromDate);
+      d <= toDate;
+      d.setMonth(d.getMonth() + 1)
+    ) {
       keys.push(this.monthKeyFrom(d));
     }
 
     const docs = await this.usageModel
-      .aggregate<{ _id: string; totalMessagesUsed: number; merchantCount: number }>([
+      .aggregate<{
+        monthKey: string;
+        totalMessagesUsed: number;
+        merchantCount: number;
+      }>([
         { $match: { monthKey: { $in: keys } } },
         {
           $group: {
@@ -412,12 +441,15 @@ export class UsageService {
       .exec();
 
     const byMonth = docs.map((x) => ({
-      monthKey: x.monthKey ?? x._id,
+      monthKey: x.monthKey,
       totalMessagesUsed: x.totalMessagesUsed ?? 0,
       merchantCount: x.merchantCount ?? 0,
     }));
 
-    const totalMessagesUsed = byMonth.reduce((s, m) => s + m.totalMessagesUsed, 0);
+    const totalMessagesUsed = byMonth.reduce(
+      (s, m) => s + m.totalMessagesUsed,
+      0,
+    );
     return {
       byMonth,
       summary: {
@@ -428,6 +460,7 @@ export class UsageService {
   }
 
   /** ج.4: قائمة استهلاك مع الحد ونسبة الاستهلاك */
+  // eslint-disable-next-line complexity
   async listAllAdminWithLimits(params: {
     monthKey?: string;
     limit: number;
@@ -447,25 +480,21 @@ export class UsageService {
     total: number;
   }> {
     const key = params.monthKey ?? this.monthKeyFrom();
-    const {
-      limit,
-      page,
-      sortBy = 'messagesUsed',
-      sortOrder = 'desc',
-    } = params;
+    const { limit, page, sortBy = 'messagesUsed', sortOrder = 'desc' } = params;
 
     const filter = { monthKey: key };
-    const dbSortField =
-      sortBy === 'merchantId' ? 'merchantId' : 'messagesUsed';
+    const dbSortField = sortBy === 'merchantId' ? 'merchantId' : 'messagesUsed';
     const sortDir = sortOrder === 'asc' ? 1 : -1;
     const needsUsageSort = sortBy === 'usagePercent';
 
     const [rawItems, total] = await Promise.all([
       this.usageModel
         .find(filter)
-        .sort(needsUsageSort ? { messagesUsed: -1 } : { [dbSortField]: sortDir })
+        .sort(
+          needsUsageSort ? { messagesUsed: -1 } : { [dbSortField]: sortDir },
+        )
         .skip(needsUsageSort ? 0 : (page - 1) * limit)
-        .limit(needsUsageSort ? 2000 : limit)
+        .limit(needsUsageSort ? USAGE_IN_MEMORY_SORT_LIMIT : limit)
         .lean()
         .exec(),
       this.usageModel.countDocuments(filter).exec(),
@@ -490,26 +519,27 @@ export class UsageService {
       let messageLimit = 0;
       let isUnlimited = true;
       if (merchant) {
-        const resolved =
-          await this.limitResolver.resolveForMerchant(
-            merchant as unknown as MerchantDocument,
-          );
+        const resolved = await this.limitResolver.resolveForMerchant(
+          merchant as unknown as MerchantDocument,
+        );
         messageLimit = resolved.limit;
         isUnlimited = resolved.isUnlimited;
       }
       const usagePercent =
         !isUnlimited && messageLimit > 0
-          ? Math.round((messagesUsed / messageLimit) * 10000) / 100
+          ? Math.round((messagesUsed / messageLimit) * USAGE_PERCENT_SCALE) /
+            100
           : null;
 
+      const merchantName = (merchant as { name?: string })?.name;
       items.push({
         merchantId: d.merchantId,
-        merchantName: (merchant as { name?: string })?.name,
         monthKey: key,
         messagesUsed,
         messageLimit: isUnlimited ? 0 : messageLimit,
         usagePercent,
         isUnlimited,
+        ...(merchantName ? { merchantName } : {}),
       });
     }
 

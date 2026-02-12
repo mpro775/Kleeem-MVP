@@ -1,5 +1,6 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 
+import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 import { LeadsService } from '../../leads/leads.service';
 import { VectorService } from '../../vector/vector.service';
 import { type StorefrontCategoryRepository } from '../repositories/category.repository';
@@ -15,7 +16,6 @@ import {
   STOREFRONT_PRODUCT_REPOSITORY,
   STOREFRONT_REPOSITORY,
 } from '../tokens';
-import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 
 describe('StorefrontService', () => {
   let service: StorefrontService;

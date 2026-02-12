@@ -1,6 +1,6 @@
 // scripts/debug-verification-token.ts
-import * as mongoose from 'mongoose';
 import { config } from 'dotenv';
+import * as mongoose from 'mongoose';
 
 import { EmailVerificationTokenSchema } from '../src/modules/auth/schemas/email-verification-token.schema';
 
@@ -15,13 +15,18 @@ async function debugVerificationToken() {
     await mongoose.connect(uri);
     console.log('✅ Connected to MongoDB');
 
-    const TokenModel = mongoose.model('EmailVerificationToken', EmailVerificationTokenSchema);
+    const TokenModel = mongoose.model(
+      'EmailVerificationToken',
+      EmailVerificationTokenSchema,
+    );
 
     // Check for the specific user
     const userId = '6915ebef03e789dec987c290';
     console.log(`\n🔍 Looking for verification tokens for userId: ${userId}`);
 
-    const tokens = await TokenModel.find({ userId: new mongoose.Types.ObjectId(userId) })
+    const tokens = await TokenModel.find({
+      userId: new mongoose.Types.ObjectId(userId),
+    })
       .sort({ createdAt: -1 })
       .exec();
 
@@ -37,7 +42,9 @@ async function debugVerificationToken() {
         console.log(`  codeHash: ${token.codeHash}`);
         console.log(`  expiresAt: ${token.expiresAt}`);
         console.log(`  createdAt: ${(token as any).createdAt}`);
-        console.log(`  Is expired: ${token.expiresAt && token.expiresAt.getTime() < Date.now()}`);
+        console.log(
+          `  Is expired: ${token.expiresAt && token.expiresAt.getTime() < Date.now()}`,
+        );
       });
     }
 
@@ -50,9 +57,10 @@ async function debugVerificationToken() {
 
     console.log(`Found ${allTokens.length} total token(s) in database:`);
     allTokens.forEach((token, index) => {
-      console.log(`  ${index + 1}. userId: ${token.userId}, expiresAt: ${token.expiresAt}, expired: ${token.expiresAt && token.expiresAt.getTime() < Date.now()}`);
+      console.log(
+        `  ${index + 1}. userId: ${token.userId}, expiresAt: ${token.expiresAt}, expired: ${token.expiresAt && token.expiresAt.getTime() < Date.now()}`,
+      );
     });
-
   } catch (error) {
     console.error('❌ Error:', error);
   } finally {

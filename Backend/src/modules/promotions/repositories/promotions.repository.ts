@@ -1,5 +1,5 @@
 // src/modules/promotions/repositories/promotions.repository.ts
-import { Promotion } from '../schemas/promotion.schema';
+import type { Promotion } from '../schemas/promotion.schema';
 
 export interface PromotionsRepository {
   create(data: Partial<Promotion>): Promise<Promotion>;
@@ -17,4 +17,3 @@ export interface PromotionsRepository {
   delete(id: string): Promise<boolean>;
   incrementUsage(id: string, discountAmount: number): Promise<Promotion | null>;
 }
-

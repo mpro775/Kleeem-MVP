@@ -5,7 +5,10 @@ import { Model, Types } from 'mongoose';
 
 import { MerchantNotFoundError } from '../../../common/errors/business-errors';
 import { PaginationService } from '../../../common/services/pagination.service';
-import { Merchant, MerchantDocument } from '../../merchants/schemas/merchant.schema';
+import {
+  Merchant,
+  MerchantDocument,
+} from '../../merchants/schemas/merchant.schema';
 import { GetOrdersDto, ListOrdersDto, SortOrder } from '../dto/get-orders.dto';
 import { Order, OrderDocument, OrderProduct } from '../schemas/order.schema';
 import { normalizePhone } from '../utils/phone.util';

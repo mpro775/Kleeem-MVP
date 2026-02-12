@@ -28,7 +28,9 @@ export class GeminiService {
       return { ok: false, message: 'GOOGLE_GEMINI_API_KEY is not set' };
     }
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const model = this.genAI.getGenerativeModel({
+        model: 'gemini-2.5-flash',
+      });
       const result = await model.generateContent('ping');
       if (result?.response?.text()) {
         return { ok: true };

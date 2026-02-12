@@ -4,9 +4,10 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MulterModule } from '@nestjs/platform-express';
 
+import { StorageModule } from '../../common/storage/storage.module';
 import { MailModule } from '../mail/mail.module';
 import { NotificationsModule } from '../notifications/notifications.module';
-import { StorageModule } from '../../common/storage/storage.module';
+
 import { SupportMongoRepository } from './repositories/support.mongo.repository';
 import {
   SupportTicket,

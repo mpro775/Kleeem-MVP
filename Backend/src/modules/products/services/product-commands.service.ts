@@ -24,10 +24,10 @@ import {
   createCurrencyPrice,
 } from '../schemas/currency-price.schema';
 
+import { PriceSyncService } from './price-sync.service';
 import { ProductIndexService } from './product-index.service';
 import { ProductMediaService } from './product-media.service';
 import { ProductValidationService } from './product-validation.service';
-import { PriceSyncService } from './price-sync.service';
 
 import type { Storefront } from '../../storefront/schemas/storefront.schema';
 import type { ProductsRepository } from '../repositories/products.repository';
@@ -139,7 +139,9 @@ function numberMapToCurrencyPriceMap(
  * تدعم الشكل البسيط (number) والموسّع ({amount, isManual})
  */
 function extractPriceNumbers(
-  prices: Record<string, number | { amount: number; isManual?: boolean }> | undefined,
+  prices:
+    | Record<string, number | { amount: number; isManual?: boolean }>
+    | undefined,
 ): Record<string, number> | undefined {
   if (!prices) return undefined;
 
@@ -147,7 +149,11 @@ function extractPriceNumbers(
   for (const [currency, value] of Object.entries(prices)) {
     if (typeof value === 'number') {
       result[currency] = value;
-    } else if (value && typeof value === 'object' && typeof value.amount === 'number') {
+    } else if (
+      value &&
+      typeof value === 'object' &&
+      typeof value.amount === 'number'
+    ) {
       result[currency] = value.amount;
     }
   }
@@ -173,7 +179,7 @@ export class ProductCommandsService {
     private readonly config: ConfigService,
     private readonly validation: ProductValidationService,
     private readonly priceSync: PriceSyncService,
-  ) { }
+  ) {}
 
   /** إنشاء منتج جديد مع outbox + فهرسة + كنس كاش */
   async create(
@@ -215,7 +221,10 @@ export class ProductCommandsService {
     );
 
     // التحقق من الأسعار متعددة العملات (العملة الأساسية مطلوبة)
-    this.validation.normalizePrices(extractPriceNumbers(dto.prices), baseCurrency);
+    this.validation.normalizePrices(
+      extractPriceNumbers(dto.prices),
+      baseCurrency,
+    );
 
     // التحقق من SKU uniqueness
     if (dto.hasVariants && dto.variants && dto.variants.length > 0) {
@@ -473,9 +482,9 @@ export class ProductCommandsService {
       created,
       sf
         ? {
-          ...(sf.slug && { slug: sf.slug }),
-          ...(sf.domain && { domain: sf.domain }),
-        }
+            ...(sf.slug && { slug: sf.slug }),
+            ...(sf.domain && { domain: sf.domain }),
+          }
         : undefined,
       catName?.name ?? null,
     );
@@ -531,10 +540,11 @@ export class ProductCommandsService {
     baseCurrency: Currency,
   ): void {
     if (dto.prices !== undefined) {
-      const { prices: numberPrices, basePrice } = this.validation.normalizePrices(
-        extractPriceNumbers(dto.prices),
-        baseCurrency,
-      );
+      const { prices: numberPrices, basePrice } =
+        this.validation.normalizePrices(
+          extractPriceNumbers(dto.prices),
+          baseCurrency,
+        );
       patch.prices = numberMapToCurrencyPriceMap(numberPrices);
       patch.priceDefault = basePrice;
       patch.currency = baseCurrency;
@@ -609,7 +619,10 @@ export class ProductCommandsService {
       patch.variants = dto.variants.map((variant) => {
         const { prices: variantPrices, ...rest } = variant;
         const normalized = variantPrices
-          ? this.validation.normalizePrices(extractPriceNumbers(variantPrices), baseCurrency)
+          ? this.validation.normalizePrices(
+              extractPriceNumbers(variantPrices),
+              baseCurrency,
+            )
           : null;
 
         if (!normalized) {
@@ -731,9 +744,9 @@ export class ProductCommandsService {
       updated,
       sf
         ? {
-          ...(sf.slug && { slug: sf.slug }),
-          ...(sf.domain && { domain: sf.domain }),
-        }
+            ...(sf.slug && { slug: sf.slug }),
+            ...(sf.domain && { domain: sf.domain }),
+          }
         : undefined,
       catName?.name ?? null,
     );

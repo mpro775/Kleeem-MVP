@@ -1,6 +1,14 @@
 // src/modules/customers/dto/create-customer.dto.ts
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, IsArray, IsObject, IsIn } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsArray,
+  IsObject,
+  IsIn,
+} from 'class-validator';
+
 import { SignupSource } from '../schemas/customer.schema';
 
 export class CreateCustomerDto {

@@ -14,11 +14,15 @@ import {
   ForbiddenException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
 import { CurrentMerchantId } from '../../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
-
 import { StorefrontService } from '../../storefront/storefront.service';
 import { AdvancedTemplateDto } from '../dto/requests/advanced-template.dto';
 import { PreviewPromptDto } from '../dto/requests/preview-prompt.dto';
@@ -43,10 +47,7 @@ export class MerchantPromptController {
     private readonly promptBuilder: PromptBuilderService,
   ) {}
 
-  private assertOwnership(
-    paramId: string,
-    jwtMerchantId: string | null,
-  ): void {
+  private assertOwnership(paramId: string, jwtMerchantId: string | null): void {
     if (!jwtMerchantId) {
       throw new ForbiddenException('معرّف التاجر مطلوب');
     }

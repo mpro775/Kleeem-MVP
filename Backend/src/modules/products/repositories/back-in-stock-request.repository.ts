@@ -1,10 +1,13 @@
 // src/modules/products/repositories/back-in-stock-request.repository.ts
-import { BackInStockRequest } from '../schemas/back-in-stock-request.schema';
+import type { BackInStockRequest } from '../schemas/back-in-stock-request.schema';
 
 export interface BackInStockRequestRepository {
   create(request: Partial<BackInStockRequest>): Promise<BackInStockRequest>;
   findById(id: string): Promise<BackInStockRequest | null>;
-  findByIdAndMerchant(id: string, merchantId: string): Promise<BackInStockRequest | null>;
+  findByIdAndMerchant(
+    id: string,
+    merchantId: string,
+  ): Promise<BackInStockRequest | null>;
   findByProductAndContact(
     merchantId: string,
     productId: string,

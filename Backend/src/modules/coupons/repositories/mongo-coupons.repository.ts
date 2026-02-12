@@ -63,10 +63,7 @@ export class MongoCouponsRepository implements CouponsRepository {
         searchTrimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
         'i',
       );
-      query.$or = [
-        { code: searchRegex },
-        { description: searchRegex },
-      ];
+      query.$or = [{ code: searchRegex }, { description: searchRegex }];
     }
 
     const limit = options.limit || 20;

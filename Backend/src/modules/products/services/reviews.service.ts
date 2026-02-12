@@ -1,10 +1,20 @@
 // src/modules/products/services/reviews.service.ts
-import { Injectable, Inject, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
-
-import { ProductReview, ProductReviewDocument, ProductReviewStatus } from '../schemas/product-review.schema';
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { Types } from 'mongoose';
-import { PRODUCT_REVIEW_REPOSITORY } from '../tokens';
+
 import { ProductReviewRepository } from '../repositories/product-review.repository';
+import {
+  ProductReview,
+  ProductReviewDocument,
+  ProductReviewStatus,
+} from '../schemas/product-review.schema';
+import { PRODUCT_REVIEW_REPOSITORY } from '../tokens';
 
 @Injectable()
 export class ReviewsService {
@@ -13,7 +23,7 @@ export class ReviewsService {
   constructor(
     @Inject(PRODUCT_REVIEW_REPOSITORY)
     private readonly reviewRepo: ProductReviewRepository,
-  ) { }
+  ) {}
 
   /**
    * إنشاء تقييم جديد
@@ -101,14 +111,26 @@ export class ReviewsService {
     reviews: ProductReview[];
     total: number;
   }> {
-    return this.reviewRepo.findAllByProduct(merchantId, productId, page, limit, status);
+    return this.reviewRepo.findAllByProduct(
+      merchantId,
+      productId,
+      page,
+      limit,
+      status,
+    );
   }
 
   /**
    * الموافقة على تقييم
    */
-  async approveReview(merchantId: string, reviewId: string): Promise<ProductReview | null> {
-    const review = await this.reviewRepo.findByIdAndMerchant(reviewId, merchantId);
+  async approveReview(
+    merchantId: string,
+    reviewId: string,
+  ): Promise<ProductReview | null> {
+    const review = await this.reviewRepo.findByIdAndMerchant(
+      reviewId,
+      merchantId,
+    );
     if (!review) {
       throw new BadRequestException('التقييم غير موجود');
     }
@@ -117,14 +139,24 @@ export class ReviewsService {
       throw new BadRequestException('لا يمكن الموافقة على هذا التقييم');
     }
 
-    return this.reviewRepo.updateStatus(reviewId, ProductReviewStatus.APPROVED, new Date());
+    return this.reviewRepo.updateStatus(
+      reviewId,
+      ProductReviewStatus.APPROVED,
+      new Date(),
+    );
   }
 
   /**
    * رفض تقييم
    */
-  async rejectReview(merchantId: string, reviewId: string): Promise<ProductReview | null> {
-    const review = await this.reviewRepo.findByIdAndMerchant(reviewId, merchantId);
+  async rejectReview(
+    merchantId: string,
+    reviewId: string,
+  ): Promise<ProductReview | null> {
+    const review = await this.reviewRepo.findByIdAndMerchant(
+      reviewId,
+      merchantId,
+    );
     if (!review) {
       throw new BadRequestException('التقييم غير موجود');
     }
@@ -133,14 +165,22 @@ export class ReviewsService {
       throw new BadRequestException('لا يمكن رفض هذا التقييم');
     }
 
-    return this.reviewRepo.updateStatus(reviewId, ProductReviewStatus.REJECTED, undefined, new Date());
+    return this.reviewRepo.updateStatus(
+      reviewId,
+      ProductReviewStatus.REJECTED,
+      undefined,
+      new Date(),
+    );
   }
 
   /**
    * حذف تقييم
    */
   async deleteReview(merchantId: string, reviewId: string): Promise<boolean> {
-    const review = await this.reviewRepo.findByIdAndMerchant(reviewId, merchantId);
+    const review = await this.reviewRepo.findByIdAndMerchant(
+      reviewId,
+      merchantId,
+    );
     if (!review) {
       throw new BadRequestException('التقييم غير موجود');
     }
@@ -185,11 +225,14 @@ export class ReviewsService {
       };
     }
 
-    const totalRating = allApprovedReviews.reduce((sum, review) => sum + review.rating, 0);
+    const totalRating = allApprovedReviews.reduce(
+      (sum, review) => sum + review.rating,
+      0,
+    );
     const averageRating = totalRating / allApprovedReviews.length;
 
     const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    allApprovedReviews.forEach(review => {
+    allApprovedReviews.forEach((review) => {
       ratingDistribution[review.rating as keyof typeof ratingDistribution]++;
     });
 

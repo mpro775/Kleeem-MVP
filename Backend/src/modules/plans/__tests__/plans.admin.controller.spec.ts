@@ -4,7 +4,8 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 
 import { PlansAdminController } from '../plans.admin.controller';
 import { PlansService } from '../plans.service';
-import { QueryPlansDto } from '../dto/query-plans.dto';
+
+import type { QueryPlansDto } from '../dto/query-plans.dto';
 
 describe('PlansAdminController', () => {
   let controller: PlansAdminController;

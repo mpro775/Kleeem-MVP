@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsArray,
@@ -7,7 +8,6 @@ import {
   IsEnum,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 const FIELD_TYPES = ['name', 'email', 'phone', 'address', 'custom'] as const;
 

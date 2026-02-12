@@ -3,12 +3,13 @@ import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { Types } from 'mongoose';
 
+import { toCsv } from '../../common/utils/csv.utils';
+
 import { CreateMerchantDto } from './dto/requests/create-merchant.dto';
 import { OnboardingBasicDto } from './dto/requests/onboarding-basic.dto';
 import { PreviewPromptDto } from './dto/requests/preview-prompt.dto';
 import { QuickConfigDto } from './dto/requests/quick-config.dto';
 import { UpdateMerchantDto } from './dto/requests/update-merchant.dto';
-import { toCsv } from '../../common/utils/csv.utils';
 import {
   MerchantsRepository,
   ListAllAdminParams,
@@ -17,8 +18,8 @@ import {
 } from './repositories/merchants.repository';
 import { MerchantDocument } from './schemas/merchant.schema';
 import { QuickConfig } from './schemas/quick-config.schema';
-import { MerchantCacheService } from './services/merchant-cache.service';
 import { MerchantAuditService } from './services/merchant-audit.service';
+import { MerchantCacheService } from './services/merchant-cache.service';
 import { MerchantDeletionService } from './services/merchant-deletion.service';
 import { MerchantProfileService } from './services/merchant-profile.service';
 import { MerchantPromptService } from './services/merchant-prompt.service';
@@ -44,7 +45,7 @@ export class MerchantsService {
     private readonly profileSvc: MerchantProfileService,
     private readonly deletionSvc: MerchantDeletionService,
     private readonly auditSvc: MerchantAuditService,
-  ) { }
+  ) {}
 
   async create(dto: CreateMerchantDto): Promise<MerchantDocument> {
     return this.provisioning.create(dto);
@@ -172,7 +173,9 @@ export class MerchantsService {
     reason?: string,
   ): Promise<MerchantDocument> {
     const updated = await this.merchantsRepository.suspend(id, actor, reason);
-    await this.auditSvc.log(id, 'suspend', actor.userId, { reason }).catch(() => {});
+    await this.auditSvc
+      .log(id, 'suspend', actor.userId, { reason })
+      .catch(() => {});
     await this.invalidateMerchantCache(id);
     return updated;
   }

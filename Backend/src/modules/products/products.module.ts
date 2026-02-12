@@ -16,8 +16,10 @@ import {
   Category,
   CategorySchema,
 } from '../categories/schemas/category.schema';
-import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
+import { ZidModule } from '../integrations/zid/zid.module';
+import { MailModule } from '../mail/mail.module';
 import { MerchantsModule } from '../merchants/merchants.module';
+import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
 import {
   Storefront,
   StorefrontSchema,
@@ -25,47 +27,57 @@ import {
 import { StorefrontModule } from '../storefront/storefront.module';
 import { VectorModule } from '../vector/vector.module';
 
-import { ProductSetupConfigService } from './product-setup-config.service';
-import { ProductsController } from './products.controller';
 import { AttributeDefinitionsController } from './controllers/attribute-definitions.controller';
 import { BackInStockController } from './controllers/back-in-stock.controller';
 import { ReviewsController } from './controllers/reviews.controller';
+import { ProductSetupConfigService } from './product-setup-config.service';
+import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
-import { MongoProductsRepository } from './repositories/mongo-products.repository';
-import { MongoAttributeDefinitionsRepository } from './repositories/mongo-attribute-definitions.repository';
 import { AttributeDefinitionsRepository } from './repositories/attribute-definitions.repository';
 import { BackInStockRequestMongoRepository } from './repositories/back-in-stock-request.mongo.repository';
+import { MongoAttributeDefinitionsRepository } from './repositories/mongo-attribute-definitions.repository';
+import { MongoProductsRepository } from './repositories/mongo-products.repository';
 import { ProductReviewMongoRepository } from './repositories/product-review.mongo.repository';
-import { AttributeDefinitionsService } from './services/attribute-definitions.service';
-import {
-  ProductSetupConfig,
-  ProductSetupConfigSchema,
-} from './schemas/product-setup-config.schema';
 import {
   AttributeDefinition,
   AttributeDefinitionSchema,
 } from './schemas/attribute-definition.schema';
+import {
+  BackInStockRequest,
+  BackInStockRequestSchema,
+} from './schemas/back-in-stock-request.schema';
+import {
+  ProductReview,
+  ProductReviewSchema,
+} from './schemas/product-review.schema';
+import {
+  ProductSetupConfig,
+  ProductSetupConfigSchema,
+} from './schemas/product-setup-config.schema';
 import { Product, ProductSchema } from './schemas/product.schema';
-import { BackInStockRequest, BackInStockRequestSchema } from './schemas/back-in-stock-request.schema';
-import { ProductReview, ProductReviewSchema } from './schemas/product-review.schema';
-import { StockChangeLog, StockChangeLogSchema } from './schemas/stock-change-log.schema';
-import { ProductCommandsService } from './services/product-commands.service';
+import {
+  StockChangeLog,
+  StockChangeLogSchema,
+} from './schemas/stock-change-log.schema';
+import { AttributeDefinitionsService } from './services/attribute-definitions.service';
 import { BackInStockService } from './services/back-in-stock.service';
-import { ReviewsService } from './services/reviews.service';
+import { InventoryService } from './services/inventory.service';
+import { PriceSyncService } from './services/price-sync.service';
+import { ProductCommandsService } from './services/product-commands.service';
 import { ProductCsvService } from './services/product-csv.service';
 import { ProductIndexService } from './services/product-index.service';
 import { ProductMediaService } from './services/product-media.service';
 import { ProductPublicService } from './services/product-public.service';
 import { ProductQueriesService } from './services/product-queries.service';
 import { ProductSyncService } from './services/product-sync.service';
-import { PriceSyncService } from './services/price-sync.service';
 import { ProductValidationService } from './services/product-validation.service';
-import { InventoryService } from './services/inventory.service';
+import { ReviewsService } from './services/reviews.service';
 import { StockChangeLogService } from './services/stock-change-log.service';
+import {
+  BACK_IN_STOCK_REQUEST_REPOSITORY,
+  PRODUCT_REVIEW_REPOSITORY,
+} from './tokens';
 import { ProductsCron } from './utils/products.cron';
-import { BACK_IN_STOCK_REQUEST_REPOSITORY, PRODUCT_REVIEW_REPOSITORY } from './tokens';
-import { ZidModule } from '../integrations/zid/zid.module';
-import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -98,7 +110,12 @@ import { MailModule } from '../mail/mail.module';
     MetricsModule,
     StorageModule,
   ],
-  controllers: [ProductsController, AttributeDefinitionsController, BackInStockController, ReviewsController],
+  controllers: [
+    ProductsController,
+    AttributeDefinitionsController,
+    BackInStockController,
+    ReviewsController,
+  ],
   providers: [
     // Service رشيقة (تستدعي repo/media/index)
     ProductsService,
@@ -156,4 +173,4 @@ import { MailModule } from '../mail/mail.module';
     MongooseModule,
   ],
 })
-export class ProductsModule { }
+export class ProductsModule {}

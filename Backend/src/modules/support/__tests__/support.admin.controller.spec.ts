@@ -1,13 +1,14 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Types } from 'mongoose';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Types } from 'mongoose';
 
+import { QueryAdminSupportDto } from '../dto/query-admin-support.dto';
 import { SupportAdminController } from '../support.admin.controller';
 import { SupportService } from '../support.service';
-import { QueryAdminSupportDto } from '../dto/query-admin-support.dto';
-import { UpdateSupportAdminDto } from '../dto/update-support-admin.dto';
+
+import type { UpdateSupportAdminDto } from '../dto/update-support-admin.dto';
 
 describe('SupportAdminController', () => {
   let controller: SupportAdminController;
@@ -125,10 +126,7 @@ describe('SupportAdminController', () => {
         status: 'resolved',
       } as any);
 
-      const result = await controller.update(
-        mockTicket._id.toString(),
-        dto,
-      );
+      const result = await controller.update(mockTicket._id.toString(), dto);
 
       expect(service.updateAdmin).toHaveBeenCalledWith(
         mockTicket._id.toString(),
@@ -164,14 +162,15 @@ describe('SupportAdminController', () => {
   describe('POST admin/support/:id/replies', () => {
     it('should add reply and return ticket', async () => {
       const dto = { body: 'رد من الدعم', isInternal: false };
-      const updated = { ...mockTicket, replies: [{ authorId: 'admin', body: dto.body }] };
+      const updated = {
+        ...mockTicket,
+        replies: [{ authorId: 'admin', body: dto.body }],
+      };
       mockService.addReplyAdmin.mockResolvedValue(updated as any);
 
-      const result = await controller.addReply(
-        mockTicket._id.toString(),
-        dto,
-        { userId: 'admin-id' },
-      );
+      const result = await controller.addReply(mockTicket._id.toString(), dto, {
+        userId: 'admin-id',
+      });
 
       expect(service.addReplyAdmin).toHaveBeenCalledWith(
         mockTicket._id.toString(),

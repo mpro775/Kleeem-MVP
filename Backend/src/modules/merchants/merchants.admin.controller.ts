@@ -20,17 +20,18 @@ import {
 } from '@nestjs/swagger';
 import { Types } from 'mongoose';
 
-import { UserRole } from '../users/schemas/user.schema';
-import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { UserRole } from '../users/schemas/user.schema';
 
-import { MerchantsService } from './merchants.service';
 import { QueryAdminMerchantsDto } from './dto/query-admin-merchants.dto';
-import { UpdateMerchantAdminDto } from './dto/update-merchant-admin.dto';
 import { SuspendMerchantDto } from './dto/suspend-merchant.dto';
+import { UpdateMerchantAdminDto } from './dto/update-merchant-admin.dto';
+import { MerchantsService } from './merchants.service';
 import { MerchantDocument } from './schemas/merchant.schema';
+
 import type {
   MerchantAdminLean,
   StatsAdminResult,
@@ -73,7 +74,11 @@ export class MerchantsAdminController {
 
   @Get('export')
   @ApiOperation({ summary: 'تصدير قائمة التجار بصيغة CSV' })
-  @ApiResponse({ status: 200, description: 'ملف CSV', content: { 'text/csv': {} } })
+  @ApiResponse({
+    status: 200,
+    description: 'ملف CSV',
+    content: { 'text/csv': {} },
+  })
   async export(@Query() q: QueryAdminMerchantsDto): Promise<StreamableFile> {
     const csv = await this.service.exportCsv({
       ...(q.status && { status: q.status }),
@@ -100,7 +105,8 @@ export class MerchantsAdminController {
     if (!id || !Types.ObjectId.isValid(id)) {
       throw new BadRequestException('معرف التاجر غير صالح');
     }
-    const parsedLimit = limit != null && limit !== '' ? Number(limit) : undefined;
+    const parsedLimit =
+      limit != null && limit !== '' ? Number(limit) : undefined;
     const parsedPage = page != null && page !== '' ? Number(page) : undefined;
     return this.service.getAuditLog(id, parsedLimit, parsedPage);
   }

@@ -1,9 +1,6 @@
 import { createReadStream } from 'fs';
 import { unlink } from 'node:fs/promises';
 
-import { InjectQueue } from '@nestjs/bull';
-import { Injectable, NotFoundException, Logger, Inject } from '@nestjs/common';
-import { Queue } from 'bull';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -11,10 +8,14 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { InjectQueue } from '@nestjs/bull';
+import { Injectable, NotFoundException, Logger, Inject } from '@nestjs/common';
+import { Queue } from 'bull';
+
+import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
 
 import { DocumentsRepository } from './repositories/documents.repository';
 import { DocumentSchemaClass } from './schemas/document.schema';
-import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
 
 @Injectable()
 export class DocumentsService {
@@ -89,8 +90,7 @@ export class DocumentsService {
 
     // ملاحظة: التعليق يقول "ساعة واحدة" لكن القيمة هي 24 ساعة (ضبطناها لتساوي 24 ساعة)
     const expires = 24 * 60 * 60; // 24 ساعة بالثواني
-    const bucket =
-      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+    const bucket = process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
     return getSignedUrl(
       this.s3,
       new GetObjectCommand({ Bucket: bucket, Key: doc.storageKey }),
@@ -102,8 +102,7 @@ export class DocumentsService {
     const doc = await this.repo.findByIdForMerchant(docId, merchantId);
     if (!doc) throw new NotFoundException('Document not found');
 
-    const bucket =
-      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+    const bucket = process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
     if (!bucket) {
       throw new Error('S3_BUCKET_NAME not configured');
     }

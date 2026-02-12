@@ -12,12 +12,12 @@ import { PromotionsService } from '../promotions/promotions.service';
 
 import { CreateOrderDto } from './dto/create-order.dto';
 import { GetOrdersDto, ListOrdersDto } from './dto/get-orders.dto';
-import type { ListOrdersOffsetResult } from './repositories/orders.repository';
 import { OrdersRepository } from './repositories/orders.repository';
 import { Order } from './schemas/order.schema';
 import { PricingService } from './services/pricing.service';
 import { normalizePhone } from './utils/phone.util';
 
+import type { ListOrdersOffsetResult } from './repositories/orders.repository';
 import type {
   CalculatePricingOptions,
   PricingCartItem,
@@ -35,7 +35,7 @@ export class OrdersService {
     private readonly couponsService: CouponsService,
     private readonly promotionsService: PromotionsService,
     private readonly inventoryService: InventoryService,
-  ) { }
+  ) {}
 
   async create(dto: CreateOrderDto, customerId?: string): Promise<Order> {
     const merchantId = dto.merchantId;
@@ -91,8 +91,10 @@ export class OrdersService {
       await this.pricingService.calculateOrderPricing(pricingOptions);
 
     // تحضير بيانات العميل
-    let orderCustomerId = customerId;
-    let customer = dto.customer ? { ...dto.customer, phoneNormalized } : undefined;
+    const orderCustomerId = customerId;
+    let customer = dto.customer
+      ? { ...dto.customer, phoneNormalized }
+      : undefined;
 
     // إذا كان هناك customerId من JWT، احصل على بيانات العميل الحالية
     if (customerId) {
@@ -169,7 +171,8 @@ export class OrdersService {
     opts: { sessionId?: string; phone?: string },
   ): Promise<boolean> {
     if (!opts.sessionId && !opts.phone) return true;
-    const orderPhoneNorm = order.customer?.phoneNormalized ?? normalizePhone(order.customer?.phone);
+    const orderPhoneNorm =
+      order.customer?.phoneNormalized ?? normalizePhone(order.customer?.phone);
     const inputPhoneNorm = opts.phone ? normalizePhone(opts.phone) : undefined;
     const sessionMatch = opts.sessionId && order.sessionId === opts.sessionId;
     const phoneMatch =

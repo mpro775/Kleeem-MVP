@@ -40,10 +40,7 @@ function buildSwaggerDoc(
         : 'API documentation for Kaleem',
     )
     .setVersion('1.0')
-    .addTag(
-      'Admin',
-      'مسارات لوحة الإدارة — تتطلب مصادقة JWT ودور ADMIN',
-    )
+    .addTag('Admin', 'مسارات لوحة الإدارة — تتطلب مصادقة JWT ودور ADMIN')
     .addBearerAuth(
       {
         type: 'http',

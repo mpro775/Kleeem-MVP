@@ -49,8 +49,8 @@ import {
 } from './schemas/merchant-audit-log.schema';
 import { Merchant, MerchantSchema } from './schemas/merchant.schema';
 import { CurrencyService } from './services/currency.service';
-import { MerchantCacheService } from './services/merchant-cache.service';
 import { MerchantAuditService } from './services/merchant-audit.service';
+import { MerchantCacheService } from './services/merchant-cache.service';
 import { MerchantDeletionService } from './services/merchant-deletion.service';
 import { MerchantProfileService } from './services/merchant-profile.service';
 import { MerchantPromptService } from './services/merchant-prompt.service';
@@ -146,4 +146,4 @@ import { PromptVersionService } from './services/prompt-version.service';
     MongooseModule,
   ],
 })
-export class MerchantsModule { }
+export class MerchantsModule {}

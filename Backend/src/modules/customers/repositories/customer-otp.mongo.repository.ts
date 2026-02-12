@@ -3,7 +3,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
-import { CustomerOtp, CustomerOtpDocument } from '../schemas/customer-otp.schema';
+import {
+  CustomerOtp,
+  CustomerOtpDocument,
+} from '../schemas/customer-otp.schema';
+
 import { CustomerOtpRepository } from './customer-otp.repository';
 
 @Injectable()
@@ -48,22 +52,27 @@ export class CustomerOtpMongoRepository implements CustomerOtpRepository {
       .exec();
   }
 
-  async updateAttempts(id: string, attempts: number): Promise<CustomerOtp | null> {
-    return this.otpModel.findByIdAndUpdate(id, { attempts }, { new: true }).exec();
+  async updateAttempts(
+    id: string,
+    attempts: number,
+  ): Promise<CustomerOtp | null> {
+    return this.otpModel
+      .findByIdAndUpdate(id, { attempts }, { new: true })
+      .exec();
   }
 
   async markAsVerified(id: string): Promise<CustomerOtp | null> {
-    return this.otpModel.findByIdAndUpdate(
-      id,
-      { verifiedAt: new Date() },
-      { new: true },
-    ).exec();
+    return this.otpModel
+      .findByIdAndUpdate(id, { verifiedAt: new Date() }, { new: true })
+      .exec();
   }
 
   async deleteExpired(): Promise<number> {
-    const result = await this.otpModel.deleteMany({
-      expiresAt: { $lt: new Date() },
-    }).exec();
+    const result = await this.otpModel
+      .deleteMany({
+        expiresAt: { $lt: new Date() },
+      })
+      .exec();
     return result.deletedCount;
   }
 

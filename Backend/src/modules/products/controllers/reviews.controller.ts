@@ -12,13 +12,18 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 
-import { IdentityGuard } from '../../../common/guards/identity.guard';
-import { CustomerGuard } from '../../../common/guards/customer.guard';
 import { Customer } from '../../../common/decorators/customer.decorator';
+import { CustomerGuard } from '../../../common/guards/customer.guard';
+import { IdentityGuard } from '../../../common/guards/identity.guard';
 import { CustomerRequestUser } from '../../../modules/auth/strategies/customer-jwt.strategy';
-
 import { ReviewsService } from '../services/reviews.service';
 
 @ApiTags('products')
@@ -59,7 +64,8 @@ export class ReviewsController {
   async createReview(
     @Param('id') productId: string,
     @Customer() customer: CustomerRequestUser,
-    @Body() body: {
+    @Body()
+    body: {
       rating: number;
       comment?: string;
       orderId?: string;
@@ -101,7 +107,11 @@ export class ReviewsController {
   @Get(':id/reviews/all')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'الحصول على جميع تقييمات المنتج (للتاجر)' })
-  @ApiQuery({ name: 'status', required: false, enum: ['pending', 'approved', 'rejected'] })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['pending', 'approved', 'rejected'],
+  })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'قائمة جميع تقييمات المنتج' })
@@ -157,7 +167,10 @@ export class ReviewsController {
     @Param('reviewId') reviewId: string,
     @Body('merchantId') merchantId: string,
   ) {
-    const success = await this.reviewsService.deleteReview(merchantId, reviewId);
+    const success = await this.reviewsService.deleteReview(
+      merchantId,
+      reviewId,
+    );
     return { success };
   }
 }

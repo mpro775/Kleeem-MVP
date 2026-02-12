@@ -18,7 +18,7 @@ export interface RequestWithCustomer extends Request {
 export class CustomerGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<RequestWithCustomer>();
     const customer = request.customer;
 
@@ -27,7 +27,12 @@ export class CustomerGuard implements CanActivate {
     }
 
     // التأكد من أن الطلب يحتوي على merchantId صحيح
-    const merchantId = request.params.merchantId || request.body?.merchantId || request.query?.merchantId;
+    const rawMerchantId =
+      request.params.merchantId ??
+      (request.body as { merchantId?: string } | undefined)?.merchantId ??
+      (request.query as { merchantId?: string } | undefined)?.merchantId;
+    const merchantId =
+      typeof rawMerchantId === 'string' ? rawMerchantId : undefined;
     if (merchantId && merchantId !== customer.merchantId) {
       throw new UnauthorizedException('Invalid merchant access');
     }

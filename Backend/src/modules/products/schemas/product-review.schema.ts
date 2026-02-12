@@ -32,7 +32,11 @@ export class ProductReview {
 
   @Prop({
     type: String,
-    enum: [ProductReviewStatus.PENDING, ProductReviewStatus.APPROVED, ProductReviewStatus.REJECTED],
+    enum: [
+      ProductReviewStatus.PENDING,
+      ProductReviewStatus.APPROVED,
+      ProductReviewStatus.REJECTED,
+    ],
     default: ProductReviewStatus.PENDING,
     index: true,
   })

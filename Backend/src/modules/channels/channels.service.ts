@@ -84,15 +84,13 @@ export class ChannelsService {
     return this.repo.listByMerchant(new Types.ObjectId(merchantId), provider);
   }
 
-  async listAllAdmin(
-    params: {
-      merchantId?: string;
-      provider?: ChannelProvider;
-      status?: ChannelStatus;
-      limit: number;
-      page: number;
-    },
-  ): Promise<{ items: ChannelLean[]; total: number }> {
+  async listAllAdmin(params: {
+    merchantId?: string;
+    provider?: ChannelProvider;
+    status?: ChannelStatus;
+    limit: number;
+    page: number;
+  }): Promise<{ items: ChannelLean[]; total: number }> {
     const repoParams: ListAllAdminParams = {
       limit: params.limit,
       page: params.page,

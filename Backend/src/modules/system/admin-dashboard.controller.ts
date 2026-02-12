@@ -7,10 +7,10 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 
-import { UserRole } from '../users/schemas/user.schema';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { UserRole } from '../users/schemas/user.schema';
 
 import {
   AdminDashboardService,
@@ -69,16 +69,15 @@ export class AdminDashboardController {
   }
 
   @Get('trends')
-  @ApiOperation({ summary: 'إحصائيات زمنية للرسم البياني (تجار، مستخدمين، استهلاك)' })
+  @ApiOperation({
+    summary: 'إحصائيات زمنية للرسم البياني (تجار، مستخدمين، استهلاك)',
+  })
   @ApiResponse({
     status: 200,
     description: 'ترند يومي للتجار والمستخدمين، وترند شهري للاستهلاك',
   })
-  getTrends(
-    @Query('period') period?: string,
-  ): Promise<DashboardTrendsDto> {
-    const p: DashboardTrendsPeriod =
-      period === '30d' ? '30d' : '7d';
+  getTrends(@Query('period') period?: string): Promise<DashboardTrendsDto> {
+    const p: DashboardTrendsPeriod = period === '30d' ? '30d' : '7d';
     return this.dashboardService.getTrends(p);
   }
 }

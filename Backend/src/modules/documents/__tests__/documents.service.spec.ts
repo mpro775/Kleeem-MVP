@@ -1,8 +1,8 @@
 import { getQueueToken } from '@nestjs/bull';
 import { Test } from '@nestjs/testing';
 
-import { DocumentsService } from '../documents.service';
 import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
+import { DocumentsService } from '../documents.service';
 
 import type { DocumentsRepository } from '../repositories/documents.repository';
 

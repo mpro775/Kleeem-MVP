@@ -1,8 +1,8 @@
 // src/modules/auth/strategies/customer-jwt.strategy.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { ConfigService } from '@nestjs/config';
 
 import { CustomersService } from '../../customers/customers.service';
 
@@ -22,7 +22,10 @@ export interface CustomerRequestUser {
 }
 
 @Injectable()
-export class CustomerJwtStrategy extends PassportStrategy(Strategy, 'customer-jwt') {
+export class CustomerJwtStrategy extends PassportStrategy(
+  Strategy,
+  'customer-jwt',
+) {
   constructor(
     private config: ConfigService,
     private customersService: CustomersService,
@@ -45,7 +48,10 @@ export class CustomerJwtStrategy extends PassportStrategy(Strategy, 'customer-jw
     }
 
     // التحقق من وجود العميل
-    const customer = await this.customersService.findByIdAndMerchant(customerId, merchantId);
+    const customer = await this.customersService.findByIdAndMerchant(
+      customerId,
+      merchantId,
+    );
     if (!customer) {
       throw new UnauthorizedException('Customer not found');
     }

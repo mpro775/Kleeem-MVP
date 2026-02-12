@@ -1,20 +1,21 @@
 import { unlink } from 'node:fs/promises';
 
 import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import {
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { FilterQuery, Types } from 'mongoose';
 import sharp from 'sharp';
 
+import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
 import { LeadsService } from '../leads/leads.service';
 import {
   MAX_SLUG_LENGTH,
@@ -43,7 +44,6 @@ import {
   STOREFRONT_PRODUCT_REPOSITORY,
   STOREFRONT_REPOSITORY,
 } from './tokens';
-import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
 
 // ========= Types & helpers =========
 type Json = Record<string, unknown>;
@@ -98,7 +98,7 @@ export class StorefrontService {
     private readonly vectorService: VectorService,
     @Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client,
     private readonly leads: LeadsService,
-  ) { }
+  ) {}
 
   // ========= Helpers =========
   private normalizeHex(hex: string): string {
@@ -458,8 +458,7 @@ export class StorefrontService {
     max: number;
   }> {
     const allowed = ['image/png', 'image/jpeg', 'image/webp'] as const;
-    const bucket =
-      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+    const bucket = process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
     if (!bucket) {
       throw new BadRequestException('S3_BUCKET_NAME غير مضبوط.');
     }

@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsOptional,
@@ -7,8 +8,8 @@ import {
   Min,
   Max,
   IsString,
+  IsIn,
 } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { UserRole } from '../schemas/user.schema';
 

@@ -32,12 +32,11 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { IsOptional, IsString } from 'class-validator';
 import { I18nService } from 'nestjs-i18n';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 // ========== Internal imports ==========
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
-
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { TranslationService } from 'src/common/services/translation.service';
 
 import { AuthService } from './auth.service';
@@ -139,7 +138,7 @@ export class AuthController {
     private readonly jwtService: JwtService,
     private readonly translationService: TranslationService,
     private readonly config: ConfigService,
-  ) { }
+  ) {}
 
   // ---------- Register ----------
   @Public()
@@ -522,7 +521,8 @@ export class AuthController {
   @ApiOperation({
     operationId: 'auth_completeOnboarding',
     summary: 'Complete onboarding',
-    description: 'Marks user onboarding as complete and sets firstLogin to false',
+    description:
+      'Marks user onboarding as complete and sets firstLogin to false',
   })
   @ApiOkResponse({ type: AccessOnlyDto })
   @ApiUnauthorizedResponse({ type: ErrorResponse })

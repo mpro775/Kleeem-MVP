@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 import { TokenService } from '../../auth/services/token.service';
-import { UsersService } from '../../users/users.service';
 import { UserRole } from '../../users/schemas/user.schema';
+import { UsersService } from '../../users/users.service';
 
 @Injectable()
 export class AdminSystemService {
@@ -20,7 +20,9 @@ export class AdminSystemService {
     return items.map((u) => String(u._id));
   }
 
-  private async getAdminUserMap(): Promise<Map<string, { email?: string; name?: string }>> {
+  private async getAdminUserMap(): Promise<
+    Map<string, { email?: string; name?: string }>
+  > {
     const { items } = await this.usersService.listAllAdmin({
       role: UserRole.ADMIN,
       limit: 500,
@@ -46,9 +48,7 @@ export class AdminSystemService {
       name?: string;
     }>;
   }> {
-    const adminIds = adminId
-      ? [adminId]
-      : await this.getAdminUserIds();
+    const adminIds = adminId ? [adminId] : await this.getAdminUserIds();
 
     const userMap = await this.getAdminUserMap();
 
@@ -68,17 +68,18 @@ export class AdminSystemService {
       const list = await this.tokenService.listSessionsForUser(uid);
       const userInfo = userMap.get(uid);
       for (const s of list) {
-        sessions.push({
+        const session = {
           jti: s.jti,
           userId: s.userId,
           role: s.role,
           lastUsed: s.lastUsed,
           createdAt: s.createdAt,
-          userAgent: s.userAgent,
-          ip: s.ip,
-          email: userInfo?.email,
-          name: userInfo?.name,
-        });
+          ...(s.userAgent ? { userAgent: s.userAgent } : {}),
+          ...(s.ip ? { ip: s.ip } : {}),
+          ...(userInfo?.email ? { email: userInfo.email } : {}),
+          ...(userInfo?.name ? { name: userInfo.name } : {}),
+        };
+        sessions.push(session);
       }
     }
 
@@ -102,7 +103,8 @@ export class AdminSystemService {
     if (!backupUrl?.trim()) {
       return {
         success: false,
-        message: 'آلية النسخ الاحتياطي غير مُفعّلة (BACKUP_TRIGGER_URL غير معيّن)',
+        message:
+          'آلية النسخ الاحتياطي غير مُفعّلة (BACKUP_TRIGGER_URL غير معيّن)',
       };
     }
 
@@ -110,10 +112,16 @@ export class AdminSystemService {
       const res = await fetch(backupUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ triggeredBy: actorId, at: new Date().toISOString() }),
+        body: JSON.stringify({
+          triggeredBy: actorId,
+          at: new Date().toISOString(),
+        }),
       });
       if (!res.ok) {
-        return { success: false, message: `طلب النسخ الاحتياطي فشل: ${res.status}` };
+        return {
+          success: false,
+          message: `طلب النسخ الاحتياطي فشل: ${res.status}`,
+        };
       }
       return { success: true, message: 'تم استدعاء النسخ الاحتياطي' };
     } catch (e) {

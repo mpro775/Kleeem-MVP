@@ -9,10 +9,10 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 
-import { UserRole } from '../users/schemas/user.schema';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { UserRole } from '../users/schemas/user.schema';
 
 import { AdminReportsService } from './admin-reports.service';
 
@@ -43,13 +43,19 @@ export class AdminReportsController {
       },
     },
   })
-  getMerchantActivity(@Param('merchantId') merchantId: string) {
+  getMerchantActivity(
+    @Param('merchantId') merchantId: string,
+  ): ReturnType<AdminReportsService['getMerchantActivity']> {
     return this.reportsService.getMerchantActivity(merchantId);
   }
 
   @Get('signups')
   @ApiOperation({ summary: 'و.2: تقرير التحويلات/التسجيل' })
-  @ApiQuery({ name: 'from', description: 'من تاريخ YYYY-MM-DD', required: true })
+  @ApiQuery({
+    name: 'from',
+    description: 'من تاريخ YYYY-MM-DD',
+    required: true,
+  })
   @ApiQuery({ name: 'to', description: 'إلى تاريخ YYYY-MM-DD', required: true })
   @ApiResponse({
     status: 200,
@@ -58,7 +64,7 @@ export class AdminReportsController {
   getSignupsReport(
     @Query('from') from: string,
     @Query('to') to: string,
-  ) {
+  ): ReturnType<AdminReportsService['getSignupsReport']> {
     return this.reportsService.getSignupsReport({ from, to });
   }
 
@@ -76,18 +82,23 @@ export class AdminReportsController {
       },
     },
   })
-  getKleemSummary() {
+  getKleemSummary(): ReturnType<AdminReportsService['getKleemSummary']> {
     return this.reportsService.getKleemSummary();
   }
 
   @Get('usage-by-plan')
   @ApiOperation({ summary: 'و.4: تقرير الاستخدام حسب الخطة' })
-  @ApiQuery({ name: 'monthKey', description: 'YYYY-MM (اختياري، افتراضي الشهر الحالي)' })
+  @ApiQuery({
+    name: 'monthKey',
+    description: 'YYYY-MM (اختياري، افتراضي الشهر الحالي)',
+  })
   @ApiResponse({
     status: 200,
     description: 'توزيع التجار على الخطط واستهلاك كل خطة',
   })
-  getUsageByPlan(@Query('monthKey') monthKey?: string) {
+  getUsageByPlan(
+    @Query('monthKey') monthKey?: string,
+  ): ReturnType<AdminReportsService['getUsageByPlan']> {
     return this.reportsService.getUsageByPlan(monthKey);
   }
 }

@@ -1,6 +1,6 @@
 // scripts/debug-user.ts
-import * as mongoose from 'mongoose';
 import { config } from 'dotenv';
+import * as mongoose from 'mongoose';
 
 import { UserSchema } from '../src/modules/users/schemas/user.schema';
 
@@ -43,7 +43,6 @@ async function debugUser() {
 
     // Check if user has password (indicates they went through registration)
     console.log(`  hasPassword: ${!!user.password}`);
-
   } catch (error) {
     console.error('❌ Error:', error);
   } finally {

@@ -1,9 +1,10 @@
 import { Module, forwardRef } from '@nestjs/common';
+
 import { ChannelsModule } from '../../modules/channels/channels.module';
-import { SmsService } from './sms.service';
 
 import { EnvironmentValidatorService } from './environment-validator.service';
 import { PaginationService } from './pagination.service';
+import { SmsService } from './sms.service';
 import { TranslationService } from './translation.service';
 
 @Module({
@@ -24,4 +25,4 @@ import { TranslationService } from './translation.service';
     'EnvironmentValidatorService',
   ],
 })
-export class CommonServicesModule { }
+export class CommonServicesModule {}

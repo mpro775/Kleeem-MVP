@@ -25,7 +25,6 @@ import {
   ApiCreatedResponse,
 } from '@nestjs/swagger';
 import { Types } from 'mongoose';
-
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
 
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';

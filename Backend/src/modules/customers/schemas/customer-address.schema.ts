@@ -21,7 +21,7 @@ export class CustomerAddress {
   @Prop({
     type: String,
     enum: [AddressLabel.HOME, AddressLabel.WORK, AddressLabel.OTHER],
-    default: AddressLabel.OTHER
+    default: AddressLabel.OTHER,
   })
   label!: AddressLabel;
 
@@ -44,7 +44,8 @@ export class CustomerAddress {
   isDefault!: boolean;
 }
 
-export const CustomerAddressSchema = SchemaFactory.createForClass(CustomerAddress);
+export const CustomerAddressSchema =
+  SchemaFactory.createForClass(CustomerAddress);
 
 // فهرس للبحث عن عناوين العميل
 CustomerAddressSchema.index({ customerId: 1, isDefault: -1 });

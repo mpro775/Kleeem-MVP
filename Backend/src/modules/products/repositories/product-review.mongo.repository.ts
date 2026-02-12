@@ -3,7 +3,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
-import { ProductReview, ProductReviewDocument, ProductReviewStatus } from '../schemas/product-review.schema';
+import {
+  ProductReview,
+  ProductReviewDocument,
+  ProductReviewStatus,
+} from '../schemas/product-review.schema';
+
 import { ProductReviewRepository } from './product-review.repository';
 
 @Injectable()
@@ -11,7 +16,7 @@ export class ProductReviewMongoRepository implements ProductReviewRepository {
   constructor(
     @InjectModel(ProductReview.name)
     private readonly model: Model<ProductReviewDocument>,
-  ) { }
+  ) {}
 
   async create(review: Partial<ProductReview>): Promise<ProductReview> {
     const created = await this.model.create(review);
@@ -22,16 +27,24 @@ export class ProductReviewMongoRepository implements ProductReviewRepository {
     return this.model.findById(id).exec();
   }
 
-  async findByIdAndMerchant(id: string, merchantId: string): Promise<ProductReview | null> {
+  async findByIdAndMerchant(
+    id: string,
+    merchantId: string,
+  ): Promise<ProductReview | null> {
     return this.model.findOne({ _id: id, merchantId }).exec();
   }
 
-  async findByCustomerAndProduct(customerId: string, productId: string): Promise<ProductReview | null> {
-    return this.model.findOne({
-      customerId,
-      productId,
-      status: { $ne: ProductReviewStatus.REJECTED }, // لا نعتبر المرفوضة كتقييم موجود
-    }).exec();
+  async findByCustomerAndProduct(
+    customerId: string,
+    productId: string,
+  ): Promise<ProductReview | null> {
+    return this.model
+      .findOne({
+        customerId,
+        productId,
+        status: { $ne: ProductReviewStatus.REJECTED }, // لا نعتبر المرفوضة كتقييم موجود
+      })
+      .exec();
   }
 
   async findApprovedByProduct(
@@ -88,7 +101,10 @@ export class ProductReviewMongoRepository implements ProductReviewRepository {
     return { reviews, total };
   }
 
-  async findAllApprovedByProduct(merchantId: string, productId: string): Promise<ProductReview[]> {
+  async findAllApprovedByProduct(
+    merchantId: string,
+    productId: string,
+  ): Promise<ProductReview[]> {
     return this.model
       .find({
         merchantId,

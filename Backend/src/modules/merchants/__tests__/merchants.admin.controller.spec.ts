@@ -1,13 +1,14 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Types } from 'mongoose';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Types } from 'mongoose';
 
+import { QueryAdminMerchantsDto } from '../dto/query-admin-merchants.dto';
 import { MerchantsAdminController } from '../merchants.admin.controller';
 import { MerchantsService } from '../merchants.service';
-import { QueryAdminMerchantsDto } from '../dto/query-admin-merchants.dto';
-import { UpdateMerchantAdminDto } from '../dto/update-merchant-admin.dto';
+
+import type { UpdateMerchantAdminDto } from '../dto/update-merchant-admin.dto';
 
 describe('MerchantsAdminController', () => {
   let controller: MerchantsAdminController;
@@ -126,7 +127,9 @@ describe('MerchantsAdminController', () => {
 
       const result = await controller.getOne(mockMerchantLean._id.toString());
 
-      expect(service.findOne).toHaveBeenCalledWith(mockMerchantLean._id.toString());
+      expect(service.findOne).toHaveBeenCalledWith(
+        mockMerchantLean._id.toString(),
+      );
       expect(result).toEqual(mockMerchantDoc);
     });
 
@@ -150,7 +153,10 @@ describe('MerchantsAdminController', () => {
 
   describe('PATCH admin/merchants/:id', () => {
     it('should update and return merchant', async () => {
-      const dto: UpdateMerchantAdminDto = { active: false, status: 'suspended' };
+      const dto: UpdateMerchantAdminDto = {
+        active: false,
+        status: 'suspended',
+      };
       mockService.updateAdmin.mockResolvedValue({
         ...mockMerchantDoc,
         ...dto,

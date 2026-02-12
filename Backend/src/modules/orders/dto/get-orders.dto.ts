@@ -69,7 +69,9 @@ export class GetOrdersDto extends CursorDto {
 export class ListOrdersDto {
   @ApiPropertyOptional({ description: 'رقم الصفحة', default: 1, minimum: 1 })
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined && value !== '' ? parseInt(value as string, 10) : 1))
+  @Transform(({ value }) =>
+    value !== undefined && value !== '' ? parseInt(value as string, 10) : 1,
+  )
   @IsInt()
   @Min(1)
   page?: number = 1;
@@ -81,7 +83,9 @@ export class ListOrdersDto {
     maximum: MAX_LIMIT,
   })
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined && value !== '' ? parseInt(value as string, 10) : 20))
+  @Transform(({ value }) =>
+    value !== undefined && value !== '' ? parseInt(value as string, 10) : 20,
+  )
   @IsInt()
   @Min(1)
   @Max(MAX_LIMIT)

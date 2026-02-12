@@ -18,17 +18,17 @@ import {
   ApiParam,
   ApiBody,
 } from '@nestjs/swagger';
+import { Types } from 'mongoose';
 
-import { UserRole } from '../users/schemas/user.schema';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { UserRole } from '../users/schemas/user.schema';
 
+import { BulkIdsDto } from './dto/bulk-ids.dto';
+import { QueryAdminInstructionsDto } from './dto/query-admin-instructions.dto';
 import { InstructionsService } from './instructions.service';
 import { Instruction } from './schemas/instruction.schema';
-import { QueryAdminInstructionsDto } from './dto/query-admin-instructions.dto';
-import { BulkIdsDto } from './dto/bulk-ids.dto';
-import { Types } from 'mongoose';
 
 @ApiTags('Admin', 'Admin Instructions')
 @ApiBearerAuth()
@@ -41,9 +41,7 @@ export class InstructionsAdminController {
   @Get()
   @ApiOperation({ summary: 'قائمة التوجيهات لجميع التجار' })
   @ApiResponse({ status: 200, description: 'قائمة التوجيهات مع الإجمالي' })
-  async list(
-    @Query() q: QueryAdminInstructionsDto,
-  ): Promise<{
+  async list(@Query() q: QueryAdminInstructionsDto): Promise<{
     items: Array<Instruction & { _id: Types.ObjectId }>;
     total: number;
   }> {
@@ -123,7 +121,11 @@ export class InstructionsAdminController {
   async update(
     @Param('id') id: string,
     @Body()
-    body: Partial<{ instruction: string; active: boolean; relatedReplies: string[] }>,
+    body: Partial<{
+      instruction: string;
+      active: boolean;
+      relatedReplies: string[];
+    }>,
   ): Promise<(Instruction & { _id: Types.ObjectId }) | null> {
     const existing = await this.service.findOne(id);
     if (!existing) {

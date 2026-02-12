@@ -31,6 +31,8 @@ export class WorkflowHistoryService {
     workflowId: string,
     version: number,
   ): Promise<WorkflowHistory | null> {
-    return this.workflowHistoryModel.findOne({ workflowId, version }).lean() as unknown as Promise<WorkflowHistory | null>;
+    return this.workflowHistoryModel
+      .findOne({ workflowId, version })
+      .lean() as unknown as Promise<WorkflowHistory | null>;
   }
 }

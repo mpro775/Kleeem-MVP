@@ -7,6 +7,9 @@ import {
   AdminAuditLogDocument,
 } from '../schemas/admin-audit-log.schema';
 
+const ADMIN_AUDIT_DEFAULT_LIMIT = 50;
+const ADMIN_AUDIT_MAX_LIMIT = 100;
+
 export interface AdminAuditEntry {
   _id: Types.ObjectId;
   actorId: Types.ObjectId;
@@ -71,11 +74,16 @@ export class AdminAuditService {
     if (params.resource) filter.resource = params.resource;
     if (params.from || params.to) {
       filter.createdAt = {};
-      if (params.from) (filter.createdAt as Record<string, Date>).$gte = new Date(params.from);
-      if (params.to) (filter.createdAt as Record<string, Date>).$lte = new Date(params.to);
+      if (params.from)
+        (filter.createdAt as Record<string, Date>).$gte = new Date(params.from);
+      if (params.to)
+        (filter.createdAt as Record<string, Date>).$lte = new Date(params.to);
     }
 
-    const limit = Math.min(params.limit ?? 50, 100);
+    const limit = Math.min(
+      params.limit ?? ADMIN_AUDIT_DEFAULT_LIMIT,
+      ADMIN_AUDIT_MAX_LIMIT,
+    );
     const page = params.page ?? 1;
     const skip = (page - 1) * limit;
 
@@ -86,7 +94,7 @@ export class AdminAuditService {
         .skip(skip)
         .limit(limit)
         .lean()
-        .exec() as Promise<AdminAuditEntry[]>,
+        .exec() as unknown as Promise<AdminAuditEntry[]>,
       this.model.countDocuments(filter).exec(),
     ]);
     return { items, total };

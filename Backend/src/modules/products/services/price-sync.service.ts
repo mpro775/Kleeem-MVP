@@ -10,18 +10,18 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
-import { CurrencyService } from '../../merchants/services/currency.service';
 import {
   Merchant,
   MerchantDocument,
 } from '../../merchants/schemas/merchant.schema';
+import { CurrencyService } from '../../merchants/services/currency.service';
 import { Currency } from '../enums/product.enums';
 import {
   CurrencyPrice,
   createCurrencyPrice,
 } from '../schemas/currency-price.schema';
-import { Product, ProductDocument } from '../schemas/product.schema';
 import { ProductVariant } from '../schemas/product-variant.schema';
+import { Product, ProductDocument } from '../schemas/product.schema';
 
 /**
  * خيارات توليد الأسعار
@@ -89,7 +89,7 @@ export class PriceSyncService {
     private readonly merchantModel: Model<MerchantDocument>,
     @Inject(forwardRef(() => CurrencyService))
     private readonly currencyService: CurrencyService,
-  ) { }
+  ) {}
 
   /**
    * توليد أسعار لجميع العملات المدعومة

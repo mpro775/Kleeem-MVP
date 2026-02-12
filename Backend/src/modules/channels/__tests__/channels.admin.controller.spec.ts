@@ -1,14 +1,15 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Types } from 'mongoose';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Types } from 'mongoose';
 
 import { ChannelsAdminController } from '../channels.admin.controller';
 import { ChannelsService } from '../channels.service';
 import { QueryAdminChannelsDto } from '../dto/query-admin-channels.dto';
-import { UpdateChannelDto } from '../dto/update-channel.dto';
 import { ChannelProvider, ChannelStatus } from '../schemas/channel.schema';
+
+import type { UpdateChannelDto } from '../dto/update-channel.dto';
 
 describe('ChannelsAdminController', () => {
   let controller: ChannelsAdminController;
@@ -135,17 +136,22 @@ describe('ChannelsAdminController', () => {
     });
 
     it('should throw when channel not found', async () => {
-      mockService.get.mockRejectedValue(new NotFoundException('Channel not found'));
+      mockService.get.mockRejectedValue(
+        new NotFoundException('Channel not found'),
+      );
 
-      await expect(
-        controller.get('507f1f77bcf86cd799439011'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(controller.get('507f1f77bcf86cd799439011')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('PATCH admin/channels/:id', () => {
     it('should update and return channel', async () => {
-      const dto: UpdateChannelDto = { accountLabel: 'قناة محدثة', enabled: false };
+      const dto: UpdateChannelDto = {
+        accountLabel: 'قناة محدثة',
+        enabled: false,
+      };
       mockService.update.mockResolvedValue({ ...mockChannelDoc, ...dto });
 
       const result = await controller.update(
@@ -173,7 +179,9 @@ describe('ChannelsAdminController', () => {
     it('should call remove with disconnect mode and return result', async () => {
       mockService.remove.mockResolvedValue({ ok: true });
 
-      const result = await controller.disconnect(mockChannelLean._id.toString());
+      const result = await controller.disconnect(
+        mockChannelLean._id.toString(),
+      );
 
       expect(service.remove).toHaveBeenCalledWith(
         mockChannelLean._id.toString(),

@@ -42,9 +42,10 @@ export class MongoInstructionsRepository implements InstructionsRepository {
     };
   }
 
-  async findAll(
-    params: FindAllParams,
-  ): Promise<{ items: Array<Instruction & { _id: Types.ObjectId }>; total: number }> {
+  async findAll(params: FindAllParams): Promise<{
+    items: Array<Instruction & { _id: Types.ObjectId }>;
+    total: number;
+  }> {
     const { merchantId, active, type, limit = 30, page = 1 } = params || {};
     const filter: Record<string, unknown> = {};
     if (merchantId) filter.merchantId = this.toId(merchantId);

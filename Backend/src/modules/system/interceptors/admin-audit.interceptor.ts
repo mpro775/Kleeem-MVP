@@ -4,8 +4,8 @@ import {
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
 import { Request } from 'express';
+import { Observable } from 'rxjs';
 
 import { AdminAuditService } from '../services/admin-audit.service';
 
@@ -21,9 +21,15 @@ export class AdminAuditInterceptor implements NestInterceptor {
   constructor(private readonly auditService: AdminAuditService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const req = context.switchToHttp().getRequest<Request & { user?: { userId?: string; role?: string } }>();
+    const req = context
+      .switchToHttp()
+      .getRequest<Request & { user?: { userId?: string; role?: string } }>();
     const path = req.path ?? req.url;
-    if (!path.startsWith('/admin') || !req.user?.userId || req.user?.role !== 'ADMIN') {
+    if (
+      !path.startsWith('/admin') ||
+      !req.user?.userId ||
+      req.user?.role !== 'ADMIN'
+    ) {
       return next.handle();
     }
 
@@ -35,7 +41,10 @@ export class AdminAuditInterceptor implements NestInterceptor {
         method: req.method,
         path: path.slice(0, 500),
         ip: getClientIp(req),
-        userAgent: typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'].slice(0, 500) : undefined,
+        userAgent:
+          typeof req.headers['user-agent'] === 'string'
+            ? req.headers['user-agent'].slice(0, 500)
+            : undefined,
       })
       .catch(() => {});
 

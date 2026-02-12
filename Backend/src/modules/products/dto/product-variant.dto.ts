@@ -1,5 +1,9 @@
 // src/modules/products/dto/product-variant.dto.ts
-import { ApiProperty, ApiPropertyOptional, ApiPropertyOptions } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiPropertyOptions,
+} from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,

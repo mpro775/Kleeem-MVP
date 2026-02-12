@@ -1,5 +1,5 @@
 // src/modules/customers/repositories/customer-otp.repository.ts
-import { CustomerOtp } from '../schemas/customer-otp.schema';
+import type { CustomerOtp } from '../schemas/customer-otp.schema';
 
 export interface CustomerOtpRepository {
   create(otp: Partial<CustomerOtp>): Promise<CustomerOtp>;

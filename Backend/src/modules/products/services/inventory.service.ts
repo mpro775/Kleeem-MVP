@@ -11,9 +11,10 @@ import { Types } from 'mongoose';
 import { OutOfStockError } from '../../../common/errors/business-errors';
 import { TranslationService } from '../../../common/services/translation.service';
 
+import { BackInStockService } from './back-in-stock.service';
+
 import type { ProductsRepository } from '../repositories/products.repository';
 import type { ProductDocument } from '../schemas/product.schema';
-import { BackInStockService } from './back-in-stock.service';
 
 export interface StockItem {
   productId: string;
@@ -56,7 +57,7 @@ export class InventoryService {
     private readonly repo: ProductsRepository,
     private readonly translationService: TranslationService,
     private readonly backInStockService: BackInStockService,
-  ) { }
+  ) {}
 
   /** تحقق من توفر مجموعة عناصر */
   async checkAvailability(items: StockItem[]): Promise<StockCheckResult> {
@@ -268,7 +269,7 @@ export class InventoryService {
       );
 
       // إرسال إشعارات back-in-stock إذا أصبح المنتج متوفراً
-      if (quantity > 0 && !product.variants![idx].isAvailable) {
+      if (quantity > 0 && !product.variants[idx].isAvailable) {
         try {
           await this.backInStockService.processBackInStockNotifications(
             product.merchantId!.toString(),
@@ -276,7 +277,10 @@ export class InventoryService {
             variantSku,
           );
         } catch (error) {
-          this.logger.error('Failed to process back-in-stock notifications:', error);
+          this.logger.error(
+            'Failed to process back-in-stock notifications:',
+            error,
+          );
         }
       }
 
@@ -304,7 +308,10 @@ export class InventoryService {
           productId,
         );
       } catch (error) {
-        this.logger.error('Failed to process back-in-stock notifications:', error);
+        this.logger.error(
+          'Failed to process back-in-stock notifications:',
+          error,
+        );
       }
     }
 

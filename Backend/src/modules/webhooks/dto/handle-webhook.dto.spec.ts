@@ -20,7 +20,7 @@ function hasKey<T extends string>(
   obj: Record<string, unknown>,
   key: T,
 ): obj is Record<T, unknown> & Record<string, unknown> {
-  return Object.prototype.hasOwnProperty.call(obj, key) as boolean;
+  return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
 describe('HandleWebhookDto', () => {
@@ -295,22 +295,29 @@ describe('HandleWebhookDto', () => {
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
 
-      if (isRecord(dto.payload) && isRecord(dto.payload.product)) {
-        expect(asString(dto.payload.product.name)).toBe('منتج تجريبي');
-        const specs = isRecord(dto.payload.product.specifications)
-          ? dto.payload.product.specifications
-          : undefined;
-        const colors = specs ? asArray<string>(specs.colors) : undefined;
-        expect(colors).toBeDefined();
-        expect(colors?.includes('أسود')).toBe(true);
+      expect(isRecord(dto.payload) && isRecord(dto.payload.product)).toBe(true);
+      if (!isRecord(dto.payload) || !isRecord(dto.payload.product)) {
+        return;
       }
 
-      if (isRecord(dto.payload) && isRecord(dto.payload.changes)) {
-        const current = isRecord(dto.payload.changes.current)
-          ? dto.payload.changes.current
-          : undefined;
-        expect(asNumber(current?.price)).toBe(99.99);
+      const payload = dto.payload;
+      const product = payload.product as Record<string, unknown>;
+      expect(asString(product.name)).toBe('منتج تجريبي');
+      const specs = isRecord(product.specifications)
+        ? product.specifications
+        : undefined;
+      const colors = specs ? asArray<string>(specs.colors) : undefined;
+      expect(colors).toBeDefined();
+      expect(colors?.includes('أسود')).toBe(true);
+
+      expect(isRecord(payload.changes)).toBe(true);
+      if (!isRecord(payload.changes)) {
+        return;
       }
+
+      const changes = payload.changes;
+      const current = isRecord(changes.current) ? changes.current : undefined;
+      expect(asNumber(current?.price)).toBe(99.99);
     });
 
     it('should handle payload with arrays', async () => {
@@ -333,16 +340,20 @@ describe('HandleWebhookDto', () => {
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
 
-      if (isRecord(dto.payload)) {
-        const products = asArray<Record<string, unknown>>(dto.payload.products);
-        expect(products?.length).toBe(3);
-
-        const categories = asArray<string>(dto.payload.categories);
-        expect(categories?.includes('إلكترونيات')).toBe(true);
-
-        const nums = asArray<number>(dto.payload.numbers);
-        expect(nums).toEqual([1, 2, 3, 4, 5]);
+      expect(isRecord(dto.payload)).toBe(true);
+      if (!isRecord(dto.payload)) {
+        return;
       }
+
+      const payload = dto.payload;
+      const products = asArray<Record<string, unknown>>(payload.products);
+      expect(products?.length).toBe(3);
+
+      const categories = asArray<string>(payload.categories);
+      expect(categories?.includes('إلكترونيات')).toBe(true);
+
+      const nums = asArray<number>(payload.numbers);
+      expect(nums).toEqual([1, 2, 3, 4, 5]);
     });
 
     it('should handle payload with mixed data types', async () => {
@@ -371,16 +382,20 @@ describe('HandleWebhookDto', () => {
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
 
-      if (isRecord(dto.payload)) {
-        expect(asString(dto.payload.string)).toBe('نص عربي');
-        expect(asNumber(dto.payload.number)).toBe(42);
-        expect(dto.payload.boolean).toBe(true);
-        expect(dto.payload.null_value).toBeNull();
-
-        const obj = isRecord(dto.payload.object) ? dto.payload.object : {};
-        const deep = isRecord(obj.deep) ? obj.deep : {};
-        expect(asString(deep.deeper)).toBe('العمق');
+      expect(isRecord(dto.payload)).toBe(true);
+      if (!isRecord(dto.payload)) {
+        return;
       }
+
+      const payload = dto.payload;
+      expect(asString(payload.string)).toBe('نص عربي');
+      expect(asNumber(payload.number)).toBe(42);
+      expect(payload.boolean).toBe(true);
+      expect(payload.null_value).toBeNull();
+
+      const obj = isRecord(payload.object) ? payload.object : {};
+      const deep = isRecord(obj.deep) ? obj.deep : {};
+      expect(asString(deep.deeper)).toBe('العمق');
     });
 
     it('should handle very large payload', async () => {
@@ -406,15 +421,17 @@ describe('HandleWebhookDto', () => {
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
 
-      if (isRecord(dto.payload)) {
-        const items = asArray<Record<string, unknown>>(dto.payload.items);
-        expect(items?.length).toBe(1000);
-
-        const md = isRecord(dto.payload.metadata)
-          ? dto.payload.metadata
-          : undefined;
-        expect(asNumber(md?.count)).toBe(1000);
+      expect(isRecord(dto.payload)).toBe(true);
+      if (!isRecord(dto.payload)) {
+        return;
       }
+
+      const payload = dto.payload;
+      const items = asArray<Record<string, unknown>>(payload.items);
+      expect(items?.length).toBe(1000);
+
+      const md = isRecord(payload.metadata) ? payload.metadata : undefined;
+      expect(asNumber(md?.count)).toBe(1000);
     });
 
     it('should handle payload with special characters and emojis', async () => {
@@ -435,11 +452,15 @@ describe('HandleWebhookDto', () => {
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
 
-      if (isRecord(dto.payload)) {
-        expect(asString(dto.payload.message)?.includes('👋')).toBe(true);
-        expect(asString(dto.payload.unicode)).toBe('العربية');
-        expect(asString(dto.payload.html)?.includes('<h1>')).toBe(true);
+      expect(isRecord(dto.payload)).toBe(true);
+      if (!isRecord(dto.payload)) {
+        return;
       }
+
+      const payload = dto.payload;
+      expect(asString(payload.message)?.includes('👋')).toBe(true);
+      expect(asString(payload.unicode)).toBe('العربية');
+      expect(asString(payload.html)?.includes('<h1>')).toBe(true);
     });
 
     it('should handle empty payload object', async () => {
@@ -471,9 +492,13 @@ describe('HandleWebhookDto', () => {
 
       expect(dto.eventType).toBe(data.eventType);
       expect(dto.payload).toEqual(data.payload);
-      if (isRecord(dto.payload) && isRecord(dto.payload.nested)) {
-        expect(asString(dto.payload.nested.value)).toBe('deep');
+
+      expect(isRecord(dto.payload) && isRecord(dto.payload.nested)).toBe(true);
+      if (!isRecord(dto.payload) || !isRecord(dto.payload.nested)) {
+        return;
       }
+
+      expect(asString(dto.payload.nested.value)).toBe('deep');
     });
 
     it('should handle assignment without payload', () => {
@@ -531,10 +556,12 @@ describe('HandleWebhookDto', () => {
       const dto = plainToInstance(HandleWebhookDto, circularObj);
 
       expect(dto.eventType).toBe('circular.test');
-      if (isRecord(dto.payload)) {
-        expect(asString(dto.payload.data)).toBe('value');
-        expect(dto.payload.self).toBe(dto.payload);
+      expect(isRecord(dto.payload)).toBe(true);
+      if (!isRecord(dto.payload)) {
+        return;
       }
+      expect(asString(dto.payload.data)).toBe('value');
+      expect(dto.payload.self).toBe(dto.payload);
     });
 
     it('should handle function in payload', () => {
@@ -551,10 +578,12 @@ describe('HandleWebhookDto', () => {
       const dto = plainToInstance(HandleWebhookDto, data);
 
       expect(dto.eventType).toBe('function.test');
-      if (isRecord(dto.payload)) {
-        expect(asString(dto.payload.normalField)).toBe('value');
-        expect(typeof dto.payload.functionField).toBe('function');
+      expect(isRecord(dto.payload)).toBe(true);
+      if (!isRecord(dto.payload)) {
+        return;
       }
+      expect(asString(dto.payload.normalField)).toBe('value');
+      expect(typeof dto.payload.functionField).toBe('function');
     });
 
     it('should handle Date objects in payload', () => {
@@ -570,11 +599,13 @@ describe('HandleWebhookDto', () => {
 
       const dto = plainToInstance(HandleWebhookDto, data);
 
-      if (isRecord(dto.payload)) {
-        expect(dto.payload.createdAt).toEqual(now);
-        expect(dto.payload.updatedAt).toBeInstanceOf(Date);
-        expect(typeof dto.payload.timestamp).toBe('number');
+      expect(isRecord(dto.payload)).toBe(true);
+      if (!isRecord(dto.payload)) {
+        return;
       }
+      expect(dto.payload.createdAt).toEqual(now);
+      expect(dto.payload.updatedAt).toBeInstanceOf(Date);
+      expect(typeof dto.payload.timestamp).toBe('number');
     });
 
     it('should handle RegExp in payload', () => {
@@ -588,12 +619,14 @@ describe('HandleWebhookDto', () => {
 
       const dto = plainToInstance(HandleWebhookDto, data);
 
-      if (isRecord(dto.payload)) {
-        const pattern = dto.payload.pattern;
-        expect(pattern instanceof RegExp).toBe(true);
-        expect((pattern as RegExp).source).toBe('test.*pattern');
-        expect(asString(dto.payload.simple)).toBe('value');
+      expect(isRecord(dto.payload)).toBe(true);
+      if (!isRecord(dto.payload)) {
+        return;
       }
+      const pattern = dto.payload.pattern;
+      expect(pattern instanceof RegExp).toBe(true);
+      expect((pattern as RegExp).source).toBe('test.*pattern');
+      expect(asString(dto.payload.simple)).toBe('value');
     });
   });
 
@@ -636,17 +669,20 @@ describe('HandleWebhookDto', () => {
       const serialized = JSON.stringify(dto);
       const deserialized = JSON.parse(serialized);
 
-      if (isRecord(deserialized.payload)) {
-        expect(
-          asString(deserialized.payload.quotes)?.includes('"quotes"'),
-        ).toBe(true);
-        expect(
-          asString(deserialized.payload.unicode)?.includes('العربية'),
-        ).toBe(true);
-        expect(asString(deserialized.payload.newlines)?.includes('\n')).toBe(
-          true,
-        );
+      expect(isRecord(deserialized.payload)).toBe(true);
+      if (!isRecord(deserialized.payload)) {
+        return;
       }
+
+      expect(asString(deserialized.payload.quotes)?.includes('"quotes"')).toBe(
+        true,
+      );
+      expect(asString(deserialized.payload.unicode)?.includes('العربية')).toBe(
+        true,
+      );
+      expect(asString(deserialized.payload.newlines)?.includes('\n')).toBe(
+        true,
+      );
     });
 
     it('should handle serialization without payload', () => {
@@ -670,7 +706,6 @@ describe('HandleWebhookDto', () => {
       // These should be type-safe assignments
       dto.eventType = 'string-value';
       dto.payload = { key: 'value' };
-      dto.payload = undefined;
 
       expect(typeof dto.eventType).toBe('string');
     });
@@ -690,11 +725,13 @@ describe('HandleWebhookDto', () => {
 
       expect(errors).toHaveLength(0);
 
-      if (isRecord(dto.payload)) {
-        expect(asString(dto.payload.definedField)).toBe('value');
-        expect(dto.payload.undefinedField).toBeUndefined();
-        expect(dto.payload.nullField).toBeNull();
+      expect(isRecord(dto.payload)).toBe(true);
+      if (!isRecord(dto.payload)) {
+        return;
       }
+      expect(asString(dto.payload.definedField)).toBe('value');
+      expect(dto.payload.undefinedField).toBeUndefined();
+      expect(dto.payload.nullField).toBeNull();
     });
   });
 
@@ -783,9 +820,12 @@ describe('HandleWebhookDto', () => {
 
         expect(errors).toHaveLength(0);
         expect(dto.eventType).toBe(data.eventType);
-        if (isRecord(dto.payload) && hasKey(dto.payload, 'text')) {
-          expect(typeof dto.payload.text).toBe('string');
+
+        expect(isRecord(dto.payload) && hasKey(dto.payload, 'text')).toBe(true);
+        if (!isRecord(dto.payload) || !hasKey(dto.payload, 'text')) {
+          return;
         }
+        expect(typeof dto.payload.text).toBe('string');
       }
     });
 

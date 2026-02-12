@@ -1,6 +1,12 @@
 import { createReadStream } from 'fs';
 import { unlink } from 'node:fs/promises';
 
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { HttpService } from '@nestjs/axios';
 import {
   BadRequestException,
@@ -10,26 +16,22 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Types } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
 
+import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
+import { toCsv } from '../../common/utils/csv.utils';
 import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
+
 import { CreateContactDto } from './dto/create-contact.dto';
-import { toCsv } from '../../common/utils/csv.utils';
 import {
   SupportRepository,
   SupportTicketEntity,
   ListAllAdminParams,
 } from './repositories/support.repository';
 import { SUPPORT_REPOSITORY } from './tokens';
-import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
+
 import type { TicketStatus } from './support.enums';
 
 // ثوابت لتجنب الأرقام السحرية
@@ -70,7 +72,7 @@ export class SupportService {
     @Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client,
     private readonly mailService: MailService,
     private readonly notificationsService: NotificationsService,
-  ) { }
+  ) {}
 
   private generateTicketNumber() {
     const a = Date.now().toString(BASE_36).toUpperCase();
@@ -203,8 +205,7 @@ export class SupportService {
     ticketNumber: string,
     files: Express.Multer.File[],
   ) {
-    const bucket =
-      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+    const bucket = process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
     if (!bucket) {
       throw new InternalServerErrorException('S3_BUCKET_NAME not configured');
     }
@@ -350,10 +351,12 @@ export class SupportService {
     total: number;
     avgResolutionHours?: number;
   }> {
-    return this.repo.statsAdmin?.() ?? {
-      byStatus: {},
-      total: 0,
-    };
+    return (
+      this.repo.statsAdmin?.() ?? {
+        byStatus: {},
+        total: 0,
+      }
+    );
   }
 
   /** قائمة التذاكر للأدمن مع فلترة وترقيم */
@@ -429,7 +432,10 @@ export class SupportService {
           type: 'support_ticket_update',
           title,
           body,
-          data: { ticketId: ticket._id?.toString(), ticketNumber: ticket.ticketNumber },
+          data: {
+            ticketId: ticket._id?.toString(),
+            ticketNumber: ticket.ticketNumber,
+          },
         })
         .catch(() => {});
     } else if (ticket.email) {

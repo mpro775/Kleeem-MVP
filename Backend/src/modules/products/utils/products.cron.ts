@@ -38,7 +38,7 @@ export class ProductsCron {
   @Cron(CronExpression.EVERY_5_MINUTES)
   async publishScheduledProducts(): Promise<void> {
     const now = new Date();
-    
+
     try {
       const res = await this.productModel.updateMany(
         {
@@ -76,7 +76,9 @@ export class ProductsCron {
     try {
       const deletedCount = await this.backInStockService.cleanupOldRequests(90); // 90 يوم
       if (deletedCount > 0) {
-        this.logger.log(`Cleaned up ${deletedCount} old back-in-stock requests`);
+        this.logger.log(
+          `Cleaned up ${deletedCount} old back-in-stock requests`,
+        );
       }
     } catch (error) {
       this.logger.error(

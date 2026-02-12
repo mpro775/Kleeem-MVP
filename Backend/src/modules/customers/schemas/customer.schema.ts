@@ -21,7 +21,11 @@ export class Customer {
   @Prop({ required: true })
   name!: string;
 
-  @Prop({ lowercase: true, sparse: true, index: { unique: true, sparse: true } })
+  @Prop({
+    lowercase: true,
+    sparse: true,
+    index: { unique: true, sparse: true },
+  })
   emailLower?: string;
 
   @Prop({ sparse: true, index: { unique: true, sparse: true } })
@@ -44,8 +48,13 @@ export class Customer {
 
   @Prop({
     type: String,
-    enum: [SignupSource.OTP, SignupSource.ORDER, SignupSource.LEAD, SignupSource.MANUAL],
-    default: SignupSource.MANUAL
+    enum: [
+      SignupSource.OTP,
+      SignupSource.ORDER,
+      SignupSource.LEAD,
+      SignupSource.MANUAL,
+    ],
+    default: SignupSource.MANUAL,
   })
   signupSource!: SignupSource;
 

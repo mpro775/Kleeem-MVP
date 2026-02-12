@@ -90,8 +90,13 @@ export interface MerchantsRepository {
     params: ListAllAdminParams,
   ): Promise<{ items: MerchantAdminLean[]; total: number }>;
   statsAdmin(): Promise<StatsAdminResult>;
-  getTrendsAdmin(period: '7d' | '30d'): Promise<{ date: string; count: number }[]>;
-  getTrendsByDateRange(from: string, to: string): Promise<{ date: string; count: number }[]>;
+  getTrendsAdmin(
+    period: '7d' | '30d',
+  ): Promise<{ date: string; count: number }[]>;
+  getTrendsByDateRange(
+    from: string,
+    to: string,
+  ): Promise<{ date: string; count: number }[]>;
 
   /** تحديث حقول إدارية فقط (active, status) */
   updateAdmin(

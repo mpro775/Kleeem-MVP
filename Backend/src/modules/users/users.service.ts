@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 
 import { UserNotFoundError } from '../../common/errors/business-errors';
 import { TranslationService } from '../../common/services/translation.service';
+import { toCsv } from '../../common/utils/csv.utils';
 
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { GetUsersDto } from './dto/get-users.dto';
@@ -17,7 +18,6 @@ import type {
 } from './repositories/users.repository';
 import type { UserDocument, UserRole } from './schemas/user.schema';
 import type { UserLean } from './types';
-import { toCsv } from '../../common/utils/csv.utils';
 import type { PaginationResult } from '../../common/dto/pagination.dto';
 
 /** util: تحويل آمن إلى ObjectId */
@@ -44,6 +44,8 @@ function defaultPrefs(): NotificationsPrefsDto {
     },
   };
 }
+
+const USERS_EXPORT_LIMIT = 5000;
 
 @Injectable()
 export class UsersService {
@@ -91,11 +93,20 @@ export class UsersService {
     includeDeleted?: boolean;
   }): Promise<string> {
     const { items } = await this.listAllAdmin({
-      limit: 5000,
+      limit: USERS_EXPORT_LIMIT,
       page: 1,
       ...params,
     });
-    const headers = ['id', 'email', 'name', 'role', 'active', 'emailVerified', 'merchantId', 'createdAt'];
+    const headers = [
+      'id',
+      'email',
+      'name',
+      'role',
+      'active',
+      'emailVerified',
+      'merchantId',
+      'createdAt',
+    ];
     const rows = items.map((u) => [
       u._id ?? '',
       u.email ?? '',

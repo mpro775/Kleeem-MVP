@@ -343,7 +343,7 @@ function computeDerived(doc: ProductDocument) {
     if (prices instanceof Map) {
       priceData = prices.get(currency);
     } else if (typeof prices === 'object' && currency in prices) {
-      priceData = (prices as Record<string, CurrencyPrice | number>)[currency];
+      priceData = prices[currency];
     }
 
     if (priceData === undefined) return undefined;

@@ -33,7 +33,10 @@ export class InstructionsService {
     type?: 'auto' | 'manual';
     limit?: number;
     page?: number;
-  }): Promise<{ items: Array<Instruction & { _id: Types.ObjectId }>; total: number }> {
+  }): Promise<{
+    items: Array<Instruction & { _id: Types.ObjectId }>;
+    total: number;
+  }> {
     return this.repo.findAll(params);
   }
 

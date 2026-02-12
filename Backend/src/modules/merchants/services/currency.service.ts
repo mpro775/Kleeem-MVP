@@ -65,7 +65,7 @@ export class CurrencyService {
     @InjectModel(Merchant.name)
     private readonly merchantModel: Model<MerchantDocument>,
     private readonly eventEmitter: EventEmitter2,
-  ) { }
+  ) {}
 
   async convertPrice(
     amount: number,
@@ -529,10 +529,10 @@ type MerchantCurrencySettings = NonNullable<Merchant['currencySettings']>;
 
 type LeanCurrencySettings = Omit<MerchantCurrencySettings, 'exchangeRates'> & {
   exchangeRates?:
-  | Map<string, number>
-  | Record<string, number>
-  | Types.Map<number>
-  | undefined;
+    | Map<string, number>
+    | Record<string, number>
+    | Types.Map<number>
+    | undefined;
 };
 
 type LeanMerchant = Omit<FlattenMaps<MerchantDocument>, 'currencySettings'> & {

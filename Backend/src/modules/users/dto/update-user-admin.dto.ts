@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsOptional,
   IsBoolean,
@@ -7,7 +8,6 @@ import {
   MaxLength,
   ValidateIf,
 } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { UserRole } from '../schemas/user.schema';
 
@@ -40,7 +40,9 @@ export class UpdateUserAdminDto {
     description: 'ربط المستخدم بتاجر (معرف التاجر، أو null لفك الربط)',
   })
   @IsOptional()
-  @ValidateIf((o) => o.merchantId != null && o.merchantId !== '')
+  @ValidateIf(
+    (o: UpdateUserAdminDto) => o.merchantId != null && o.merchantId !== '',
+  )
   @IsMongoId()
   merchantId?: string | null;
 }

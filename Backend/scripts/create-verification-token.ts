@@ -1,9 +1,9 @@
 // scripts/create-verification-token.ts
-import * as mongoose from 'mongoose';
 import { config } from 'dotenv';
+import * as mongoose from 'mongoose';
 
-import { UserSchema } from '../src/modules/users/schemas/user.schema';
 import { EmailVerificationTokenSchema } from '../src/modules/auth/schemas/email-verification-token.schema';
+import { UserSchema } from '../src/modules/users/schemas/user.schema';
 // Inline the required functions to avoid import issues
 const VERIFICATION_CODE_LENGTH = 6;
 
@@ -37,7 +37,10 @@ async function createVerificationToken() {
     console.log('✅ Connected to MongoDB');
 
     const UserModel = mongoose.model('User', UserSchema);
-    const TokenModel = mongoose.model('EmailVerificationToken', EmailVerificationTokenSchema);
+    const TokenModel = mongoose.model(
+      'EmailVerificationToken',
+      EmailVerificationTokenSchema,
+    );
 
     // Find the user
     const email = 'majdmorad1234@gmail.com';
@@ -59,7 +62,7 @@ async function createVerificationToken() {
     // Check if there's already a valid token
     const existingToken = await TokenModel.findOne({
       userId: user._id,
-      expiresAt: { $gt: new Date() }
+      expiresAt: { $gt: new Date() },
     }).exec();
 
     if (existingToken) {
@@ -70,7 +73,7 @@ async function createVerificationToken() {
     // Delete any expired tokens for this user
     await TokenModel.deleteMany({
       userId: user._id,
-      expiresAt: { $lt: new Date() }
+      expiresAt: { $lt: new Date() },
     });
 
     // Generate new verification code
@@ -91,7 +94,6 @@ async function createVerificationToken() {
     console.log(`✅ Created verification token: ${token._id}`);
     console.log(`📧 User can now verify with code: ${verificationCode}`);
     console.log(`⏱️  Token valid until: ${expiresAt}`);
-
   } catch (error) {
     console.error('❌ Error:', error);
   } finally {

@@ -1,11 +1,11 @@
 // src/modules/products/services/product-media.service.ts
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import {
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import sharp from 'sharp';
 
 import {
@@ -34,7 +34,7 @@ function isPositiveInt(n: unknown): n is number {
 
 @Injectable()
 export class ProductMediaService {
-  constructor(@Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client) { }
+  constructor(@Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client) {}
 
   private async publicUrl(bucket: string, key: string): Promise<string> {
     const cdn = (process.env.ASSETS_CDN_BASE_URL || '').replace(/\/+$/, '');

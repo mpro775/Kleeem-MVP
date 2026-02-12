@@ -1,6 +1,6 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsOptional, IsIn, IsInt, Min, Max, IsString } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { TICKET_STATUS_VALUES, type TicketStatus } from '../support.enums';
 

@@ -1,6 +1,7 @@
 // src/modules/customers/dto/verify-otp.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsEnum } from 'class-validator';
+
 import { ContactType } from '../schemas/customer-otp.schema';
 
 export class VerifyOtpDto {

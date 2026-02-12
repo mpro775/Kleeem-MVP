@@ -7,6 +7,7 @@ import * as fsSync from 'fs';
 import * as fsPromises from 'fs/promises';
 import { unlink as unlinkNodeFs } from 'node:fs/promises';
 
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import axios from 'axios';
@@ -23,9 +24,8 @@ import { MediaController } from '../media.controller';
 import { MediaService } from '../media.service';
 
 import type { MediaHandlerDto } from '../dto/media-handler.dto';
+import type { PutObjectCommand } from '@aws-sdk/client-s3';
 import type { Response } from 'express';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
 
 // ====== Mocks ======
 jest.mock('axios', () => ({
@@ -371,7 +371,7 @@ describe('ChatMediaService', () => {
 
   it('يرفع الملف إلى التخزين، ينشئ مفتاح تخزين ثابت، يولد URL موقّت، ويحذف الملف المؤقت', async () => {
     (unlinkNodeFs as jest.Mock).mockResolvedValue(undefined);
-    (s3Mock.send as jest.Mock).mockResolvedValue({});
+    s3Mock.send.mockResolvedValue({});
 
     const out = await service.uploadChatMedia(
       'm_1',
@@ -382,7 +382,7 @@ describe('ChatMediaService', () => {
 
     const expectedKey = `chat-media/m_1/1700000111000-image.png`;
     expect(s3Mock.send).toHaveBeenCalled();
-    const sentCmd = (s3Mock.send as jest.Mock).mock.calls[0][0] as PutObjectCommand;
+    const sentCmd = s3Mock.send.mock.calls[0][0] as PutObjectCommand;
     expect(sentCmd.input).toMatchObject({
       Bucket: 'bucket1',
       Key: expectedKey,

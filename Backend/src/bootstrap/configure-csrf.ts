@@ -84,9 +84,9 @@ export function configureCsrf(app: INestApplication): void {
         );
 
         if (isDangerous) {
-          (r as any).method = 'GET';
+          (r as unknown as { method: string }).method = 'GET';
           csrfMiddleware(r, res, (err) => {
-            (r as any).method = originalMethod;
+            (r as unknown as { method: string }).method = originalMethod;
             next(err);
           });
           return;

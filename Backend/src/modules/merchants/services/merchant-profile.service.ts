@@ -1,3 +1,11 @@
+import * as fs from 'fs/promises';
+
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import {
   Injectable,
   Inject,
@@ -5,13 +13,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import * as fs from 'fs/promises';
+
 import { HOUR_IN_SECONDS } from '../../../common/constants/common';
 import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 import { ChatWidgetService } from '../../chat/chat-widget.service';
@@ -42,7 +44,7 @@ export class MerchantProfileService {
     private readonly chatWidgetService: ChatWidgetService,
     private readonly cacheSvc: MerchantCacheService,
     @Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client,
-  ) { }
+  ) {}
 
   async update(id: string, dto: UpdateMerchantDto): Promise<MerchantDocument> {
     const updated = await this.repo.update(id, dto);
@@ -99,7 +101,6 @@ export class MerchantProfileService {
     merchantId: string,
     file: Express.Multer.File,
   ): Promise<string> {
-
     // 1. تجهيز محتوى الملف (Buffer)
     let fileBody: Buffer;
 
@@ -150,7 +151,6 @@ export class MerchantProfileService {
           this.logger.warn(`Failed to delete temp file: ${file.path}`);
         }
       }
-
     } catch (error) {
       // حل مشكلة TypeScript هنا
       const err = error as Error;
@@ -185,4 +185,3 @@ export class MerchantProfileService {
     return merchant;
   }
 }
-

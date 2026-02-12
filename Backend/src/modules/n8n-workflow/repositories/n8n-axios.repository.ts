@@ -26,7 +26,9 @@ export class N8nAxiosRepository implements N8nClientRepository {
     this.logger.log(
       `[n8n.header]  = ${keyName}: ${apiKey ? apiKey.slice(0, N8N_API_KEY_LENGTH) + '***' : 'MISSING'}`,
     );
-    this.logger.log(`[n8n.keyCheck] Length: ${apiKey.length}, First4: ${apiKey.slice(0, 4)}`);
+    this.logger.log(
+      `[n8n.keyCheck] Length: ${apiKey.length}, First4: ${apiKey.slice(0, 4)}`,
+    );
     this.api = axios.create({
       baseURL: `${baseUrl}`,
       headers: { [keyName]: apiKey },

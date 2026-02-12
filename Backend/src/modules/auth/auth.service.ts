@@ -87,7 +87,7 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly translationService: TranslationService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-  ) { }
+  ) {}
 
   async register(registerDto: RegisterDto): Promise<{
     accessToken: string;
@@ -102,9 +102,14 @@ export class AuthService {
     };
   }> {
     const disableSignup = this.config.get<string>('DISABLE_USER_SIGNUP');
-    if (disableSignup === '1' || disableSignup === 'true' || disableSignup === 'yes') {
+    if (
+      disableSignup === '1' ||
+      disableSignup === 'true' ||
+      disableSignup === 'yes'
+    ) {
       throw new BadRequestException(
-        this.translationService.translate('auth.errors.signupDisabled') ?? 'التسجيل مؤقتاً متوقف',
+        this.translationService.translate('auth.errors.signupDisabled') ??
+          'التسجيل مؤقتاً متوقف',
       );
     }
     this.validateRegistrationData(registerDto);
@@ -392,7 +397,9 @@ export class AuthService {
     email: string,
     code: string,
   ): Promise<UserDocument> {
-    console.log(`[DEBUG] Validating verification for email: ${email}, code: ${code}`);
+    console.log(
+      `[DEBUG] Validating verification for email: ${email}, code: ${code}`,
+    );
 
     const user = await this.repo.findUserByEmailWithPassword(email || '');
     console.log(`[DEBUG] User found: ${!!user}`);
@@ -418,7 +425,9 @@ export class AuthService {
       console.log(`[DEBUG] Hashes match: ${tokenDoc.codeHash === inputHash}`);
       console.log(`[DEBUG] Token expires at: ${tokenDoc.expiresAt}`);
       console.log(`[DEBUG] Current time: ${new Date()}`);
-      console.log(`[DEBUG] Token expired: ${tokenDoc.expiresAt && tokenDoc.expiresAt.getTime() < Date.now()}`);
+      console.log(
+        `[DEBUG] Token expired: ${tokenDoc.expiresAt && tokenDoc.expiresAt.getTime() < Date.now()}`,
+      );
     }
 
     if (!tokenDoc || tokenDoc.codeHash !== sha256(code || '')) {
@@ -701,7 +710,9 @@ export class AuthService {
    * إعادة تعيين كلمة مرور من الأدمن (يكوّن كلمة مؤقتة ويعيدها).
    * للأدمن فقط - يُستدعى من POST /admin/users/:id/reset-password
    */
-  async adminResetPassword(userId: string): Promise<{ temporaryPassword: string }> {
+  async adminResetPassword(
+    userId: string,
+  ): Promise<{ temporaryPassword: string }> {
     const user = await this.repo.findUserByIdWithPassword(userId);
     if (!user) {
       throw new BadRequestException(
@@ -775,7 +786,9 @@ export class AuthService {
       this.config.get<string>('DISABLE_MERCHANT_SIGNUP') === 'true'
     ) {
       throw new BadRequestException(
-        this.translationService.translate('auth.errors.merchantSignupDisabled') ?? 'إنشاء حسابات تجار جدد مؤقتاً متوقف',
+        this.translationService.translate(
+          'auth.errors.merchantSignupDisabled',
+        ) ?? 'إنشاء حسابات تجار جدد مؤقتاً متوقف',
       );
     }
     if (!user.emailVerified) {
@@ -877,4 +890,3 @@ export class AuthService {
     };
   }
 }
-

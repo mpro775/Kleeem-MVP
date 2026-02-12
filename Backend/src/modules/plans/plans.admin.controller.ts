@@ -25,11 +25,11 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
-import { UserRole } from '../users/schemas/user.schema';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { ParseObjectIdPipe } from '../../common/pipes/parse-objectid.pipe';
+import { UserRole } from '../users/schemas/user.schema';
 
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { QueryPlansDto } from './dto/query-plans.dto';
@@ -82,9 +82,7 @@ export class PlansAdminController {
       },
     },
   })
-  findAll(
-    @Query() q: QueryPlansDto,
-  ): Promise<{
+  findAll(@Query() q: QueryPlansDto): Promise<{
     items: PlanEntity[];
     total: number;
     page: number;
@@ -134,7 +132,9 @@ export class PlansAdminController {
   @Patch(':id/active')
   @ApiOperation({ summary: 'تفعيل/تعطيل خطة' })
   @ApiParam({ name: 'id', type: 'string' })
-  @ApiBody({ schema: { type: 'object', properties: { isActive: { type: 'boolean' } } } })
+  @ApiBody({
+    schema: { type: 'object', properties: { isActive: { type: 'boolean' } } },
+  })
   @ApiOkResponse({ description: 'تم التحديث' })
   setActive(
     @Param('id', ParseObjectIdPipe) id: string,

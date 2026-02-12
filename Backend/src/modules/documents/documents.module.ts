@@ -4,8 +4,8 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MulterModule } from '@nestjs/platform-express';
 
-import { VectorModule } from '../vector/vector.module';
 import { StorageModule } from '../../common/storage/storage.module';
+import { VectorModule } from '../vector/vector.module';
 
 import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';

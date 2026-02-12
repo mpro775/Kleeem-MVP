@@ -3,17 +3,26 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
-import { BackInStockRequest, BackInStockRequestDocument, BackInStockStatus } from '../schemas/back-in-stock-request.schema';
+import {
+  BackInStockRequest,
+  BackInStockRequestDocument,
+  BackInStockStatus,
+} from '../schemas/back-in-stock-request.schema';
+
 import { BackInStockRequestRepository } from './back-in-stock-request.repository';
 
 @Injectable()
-export class BackInStockRequestMongoRepository implements BackInStockRequestRepository {
+export class BackInStockRequestMongoRepository
+  implements BackInStockRequestRepository
+{
   constructor(
     @InjectModel(BackInStockRequest.name)
     private readonly model: Model<BackInStockRequestDocument>,
   ) {}
 
-  async create(request: Partial<BackInStockRequest>): Promise<BackInStockRequest> {
+  async create(
+    request: Partial<BackInStockRequest>,
+  ): Promise<BackInStockRequest> {
     const created = await this.model.create(request);
     return created.toObject();
   }
@@ -22,7 +31,10 @@ export class BackInStockRequestMongoRepository implements BackInStockRequestRepo
     return this.model.findById(id).exec();
   }
 
-  async findByIdAndMerchant(id: string, merchantId: string): Promise<BackInStockRequest | null> {
+  async findByIdAndMerchant(
+    id: string,
+    merchantId: string,
+  ): Promise<BackInStockRequest | null> {
     return this.model.findOne({ _id: id, merchantId }).exec();
   }
 
@@ -100,18 +112,24 @@ export class BackInStockRequestMongoRepository implements BackInStockRequestRepo
     status: string,
     notifiedAt: Date,
   ): Promise<boolean> {
-    const result = await this.model.findByIdAndUpdate(id, {
-      status,
-      notifiedAt,
-    }).exec();
+    const result = await this.model
+      .findByIdAndUpdate(id, {
+        status,
+        notifiedAt,
+      })
+      .exec();
     return !!result;
   }
 
   async deleteOldRequests(cutoffDate: Date): Promise<number> {
-    const result = await this.model.deleteMany({
-      createdAt: { $lt: cutoffDate },
-      status: { $in: [BackInStockStatus.NOTIFIED, BackInStockStatus.CANCELLED] },
-    }).exec();
+    const result = await this.model
+      .deleteMany({
+        createdAt: { $lt: cutoffDate },
+        status: {
+          $in: [BackInStockStatus.NOTIFIED, BackInStockStatus.CANCELLED],
+        },
+      })
+      .exec();
     return result.deletedCount;
   }
 }

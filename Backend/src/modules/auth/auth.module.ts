@@ -8,12 +8,12 @@ import { PassportModule } from '@nestjs/passport';
 
 import { CommonServicesModule } from '../../common/services/common-services.module';
 import { MetricsModule } from '../../metrics/metrics.module';
+import { CustomersModule } from '../customers/customers.module';
 import { MailModule } from '../mail/mail.module';
 import { MerchantsModule } from '../merchants/merchants.module';
 import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema'; // ← استيراد الـ schema
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { UsersModule } from '../users/users.module';
-import { CustomersModule } from '../customers/customers.module';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -29,8 +29,8 @@ import {
 } from './schemas/password-reset-token.schema';
 import { CookieService } from './services/cookie.service';
 import { TokenService } from './services/token.service';
-import { JwtStrategy } from './strategies/jwt.strategy';
 import { CustomerJwtStrategy } from './strategies/customer-jwt.strategy';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -82,4 +82,4 @@ import { CustomerJwtStrategy } from './strategies/customer-jwt.strategy';
   ],
   exports: [AuthService, TokenService, CookieService],
 })
-export class AuthModule { }
+export class AuthModule {}

@@ -264,7 +264,10 @@ export class Merchant {
         type: [
           {
             key: String,
-            fieldType: { type: String, enum: ['name', 'email', 'phone', 'address', 'custom'] },
+            fieldType: {
+              type: String,
+              enum: ['name', 'email', 'phone', 'address', 'custom'],
+            },
             label: String,
             placeholder: String,
             required: { type: Boolean, default: false },

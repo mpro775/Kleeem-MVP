@@ -2,24 +2,25 @@
 import { promises as fs, createReadStream } from 'fs';
 
 import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import {
   Injectable,
   BadRequestException,
   InternalServerErrorException,
   Logger,
   Inject,
 } from '@nestjs/common';
-import {
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Types } from 'mongoose';
 import sharp from 'sharp';
 import slugify from 'slugify';
 
 // ============ Internal imports ============
 import { CategoryNotFoundError } from '../../common/errors/business-errors';
+import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
 
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { MoveCategoryDto } from './dto/move-category.dto';
@@ -27,7 +28,6 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoriesRepository } from './repositories/categories.repository';
 
 import type { Category, CategoryDocument } from './schemas/category.schema';
-import { S3_CLIENT_TOKEN } from '../../common/storage/s3-client.provider';
 
 // ============ Constants ============
 const BYTES_PER_MB = 1_048_576;
@@ -91,7 +91,7 @@ export class CategoriesService {
   constructor(
     @Inject('CategoriesRepository') private readonly repo: CategoriesRepository,
     @Inject(S3_CLIENT_TOKEN) private readonly s3: S3Client,
-  ) { }
+  ) {}
 
   // -------- path/ancestors calculation --------
   private async computePathAncestors(
@@ -479,7 +479,9 @@ export class CategoriesService {
     }
 
     const bucket = (
-      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || ''
+      process.env.S3_BUCKET_NAME ||
+      process.env.MINIO_BUCKET ||
+      ''
     ).trim();
     if (!bucket)
       throw new InternalServerErrorException('S3_BUCKET_NAME not configured');

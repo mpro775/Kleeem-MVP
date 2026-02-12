@@ -1,13 +1,14 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Types } from 'mongoose';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Types } from 'mongoose';
 
+import { QueryAdminInstructionsDto } from '../dto/query-admin-instructions.dto';
 import { InstructionsAdminController } from '../instructions.admin.controller';
 import { InstructionsService } from '../instructions.service';
-import { QueryAdminInstructionsDto } from '../dto/query-admin-instructions.dto';
-import { BulkIdsDto } from '../dto/bulk-ids.dto';
+
+import type { BulkIdsDto } from '../dto/bulk-ids.dto';
 
 describe('InstructionsAdminController', () => {
   let controller: InstructionsAdminController;
@@ -99,7 +100,9 @@ describe('InstructionsAdminController', () => {
       const result = await controller.getOne(mockInstruction._id.toString());
 
       expect(result).toEqual(mockInstruction);
-      expect(service.findOne).toHaveBeenCalledWith(mockInstruction._id.toString());
+      expect(service.findOne).toHaveBeenCalledWith(
+        mockInstruction._id.toString(),
+      );
     });
 
     it('should throw NotFoundException when instruction not found', async () => {
@@ -144,7 +147,9 @@ describe('InstructionsAdminController', () => {
 
       const result = await controller.remove(mockInstruction._id.toString());
 
-      expect(service.remove).toHaveBeenCalledWith(mockInstruction._id.toString());
+      expect(service.remove).toHaveBeenCalledWith(
+        mockInstruction._id.toString(),
+      );
       expect(result).toEqual(mockInstruction);
     });
 
@@ -160,10 +165,7 @@ describe('InstructionsAdminController', () => {
   describe('POST admin/instructions/bulk-activate', () => {
     it('should activate multiple instructions and return updated count', async () => {
       const dto: BulkIdsDto = {
-        ids: [
-          '507f1f77bcf86cd799439011',
-          '507f1f77bcf86cd799439012',
-        ],
+        ids: ['507f1f77bcf86cd799439011', '507f1f77bcf86cd799439012'],
       };
       mockService.activate
         .mockResolvedValueOnce(mockInstruction)
@@ -179,10 +181,7 @@ describe('InstructionsAdminController', () => {
   describe('POST admin/instructions/bulk-deactivate', () => {
     it('should deactivate multiple instructions and return updated count', async () => {
       const dto: BulkIdsDto = {
-        ids: [
-          '507f1f77bcf86cd799439011',
-          '507f1f77bcf86cd799439012',
-        ],
+        ids: ['507f1f77bcf86cd799439011', '507f1f77bcf86cd799439012'],
       };
       mockService.deactivate
         .mockResolvedValueOnce(mockInstruction)

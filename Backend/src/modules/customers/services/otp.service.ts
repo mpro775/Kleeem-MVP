@@ -7,16 +7,17 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { MailService } from '../../mail/mail.service';
 import { SmsService } from '../../../common/services/sms.service';
-import { normalizePhone } from '../../../common/utils/phone.util';
 import { normalizeEmail } from '../../../common/utils/email.util';
-
-import { CUSTOMER_OTP_REPOSITORY } from '../tokens';
+import { normalizePhone } from '../../../common/utils/phone.util';
+import {
+  generateNumericCode,
+  sha256,
+} from '../../auth/utils/verification-code';
+import { MailService } from '../../mail/mail.service';
 import { CustomerOtpRepository } from '../repositories/customer-otp.repository';
 import { CustomerOtp, ContactType } from '../schemas/customer-otp.schema';
-
-import { generateNumericCode, sha256 } from '../../auth/utils/verification-code';
+import { CUSTOMER_OTP_REPOSITORY } from '../tokens';
 
 const OTP_EXPIRY_MINUTES = 10;
 const MAX_ATTEMPTS = 5;
@@ -31,7 +32,7 @@ export class OtpService {
     private readonly smsService: SmsService,
     @Inject(CUSTOMER_OTP_REPOSITORY)
     private readonly otpRepo: CustomerOtpRepository,
-  ) { }
+  ) {}
 
   /**
    * إرسال OTP للعميل
@@ -54,16 +55,20 @@ export class OtpService {
     if (existingOtp) {
       // التحقق من عدم تجاوز الحد الأقصى للمحاولات
       if (existingOtp.attempts >= MAX_ATTEMPTS) {
-        throw new BadRequestException('تم تجاوز الحد الأقصى للمحاولات. يرجى المحاولة لاحقاً');
+        throw new BadRequestException(
+          'تم تجاوز الحد الأقصى للمحاولات. يرجى المحاولة لاحقاً',
+        );
       }
 
       // التحقق من عدم الإرسال المتكرر (cooldown)
       const timeSinceCreation = Date.now() - existingOtp.createdAt.getTime();
       const cooldownMs = 60000; // دقيقة واحدة
       if (timeSinceCreation < cooldownMs) {
-        const remainingSeconds = Math.ceil((cooldownMs - timeSinceCreation) / 1000);
+        const remainingSeconds = Math.ceil(
+          (cooldownMs - timeSinceCreation) / 1000,
+        );
         throw new BadRequestException(
-          `يرجى الانتظار ${remainingSeconds} ثانية قبل طلب رمز جديد`
+          `يرجى الانتظار ${remainingSeconds} ثانية قبل طلب رمز جديد`,
         );
       }
     }
@@ -96,7 +101,7 @@ export class OtpService {
     }
 
     this.logger.log(
-      `OTP sent to ${this.maskContact(contact, contactType)} via ${contactType} for merchant ${merchantId}`
+      `OTP sent to ${this.maskContact(contact, contactType)} via ${contactType} for merchant ${merchantId}`,
     );
   }
 
@@ -132,7 +137,10 @@ export class OtpService {
     const inputHash = sha256(code);
     if (inputHash !== otpRecord.codeHash) {
       // زيادة عدد المحاولات
-      await this.otpRepo.updateAttempts(otpRecord._id!.toString(), otpRecord.attempts + 1);
+      await this.otpRepo.updateAttempts(
+        otpRecord._id!.toString(),
+        otpRecord.attempts + 1,
+      );
       throw new BadRequestException('رمز التحقق غير صحيح');
     }
 
@@ -145,7 +153,7 @@ export class OtpService {
     await this.otpRepo.markAsVerified(otpRecord._id!.toString());
 
     this.logger.log(
-      `OTP verified for ${this.maskContact(contact, contactType)} via ${contactType} for merchant ${merchantId}`
+      `OTP verified for ${this.maskContact(contact, contactType)} via ${contactType} for merchant ${merchantId}`,
     );
 
     // إرجاع معلومات العميل (سيتم إنشاؤه لاحقاً في الخدمة الرئيسية)
@@ -202,22 +210,31 @@ export class OtpService {
 
       // TODO: تنفيذ إرسال البريد الإلكتروني عبر MailService
       // await this.mailService.sendOtpEmail(email, code, html);
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to send OTP email to ${email}: ${errorMessage}`);
-      throw new BadRequestException('فشل في إرسال رمز التحقق عبر البريد الإلكتروني');
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to send OTP email to ${email}: ${errorMessage}`,
+      );
+      throw new BadRequestException(
+        'فشل في إرسال رمز التحقق عبر البريد الإلكتروني',
+      );
     }
   }
 
   /**
    * إرسال OTP عبر SMS
    */
-  private async sendOtpSms(phone: string, merchantId: string, code: string): Promise<void> {
+  private async sendOtpSms(
+    phone: string,
+    merchantId: string,
+    code: string,
+  ): Promise<void> {
     try {
       await this.smsService.sendOtpSms(phone, merchantId, code);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to send OTP SMS to ${phone}: ${errorMessage}`);
       throw new BadRequestException('فشل في إرسال رمز التحقق عبر SMS');
     }

@@ -77,7 +77,7 @@ export class MongoMerchantsRepository implements MerchantsRepository {
   constructor(
     @InjectModel(Merchant.name)
     private readonly merchantModel: Model<MerchantDocument>,
-  ) { }
+  ) {}
 
   // ---------- Create ----------
   async create(createDto: CreateMerchantDto): Promise<MerchantDocument> {
@@ -502,7 +502,14 @@ export class MongoMerchantsRepository implements MerchantsRepository {
     }
 
     const sortDir = sortOrder === 'asc' ? 1 : -1;
-    const sortField = sortBy === 'name' ? 'name' : sortBy === 'status' ? 'status' : sortBy === 'updatedAt' ? 'updatedAt' : 'createdAt';
+    const sortField =
+      sortBy === 'name'
+        ? 'name'
+        : sortBy === 'status'
+          ? 'status'
+          : sortBy === 'updatedAt'
+            ? 'updatedAt'
+            : 'createdAt';
 
     const [items, total] = await Promise.all([
       this.merchantModel
@@ -528,7 +535,10 @@ export class MongoMerchantsRepository implements MerchantsRepository {
       this.merchantModel.countDocuments(baseMatch).exec(),
       this.merchantModel.countDocuments({ ...baseMatch, active: true }).exec(),
       this.merchantModel
-        .aggregate<{ _id: string; count: number }>([
+        .aggregate<{
+          _id: string;
+          count: number;
+        }>([
           { $match: baseMatch },
           { $group: { _id: '$status', count: { $sum: 1 } } },
         ])
@@ -593,8 +603,7 @@ export class MongoMerchantsRepository implements MerchantsRepository {
   async unsuspend(id: string, actor: Actor): Promise<MerchantDocument> {
     const merchant = await this.merchantModel.findById(id);
     if (!merchant) throw new NotFoundException(INVALID_ID_MSG);
-    if (!merchant.suspension)
-      throw new BadRequestException('التاجر غير معلّق');
+    if (!merchant.suspension) throw new BadRequestException('التاجر غير معلّق');
 
     merchant.active = true;
     merchant.status = 'active' as MerchantStatusLiteral;

@@ -221,14 +221,15 @@ export class AnalyticsService {
       count: channelsUsage.find((c) => c.channel === ch)?.count || 0,
     }));
 
-    const [csat, frt, missingOpen, paidOrders, revenue, productsCount] = await Promise.all([
-      this.repo.getCsat(mId, start, end),
-      this.repo.getFirstResponseTimeSec(mId, start, end),
-      this.repo.countMissingOpen(mId),
-      this.repo.countPaidOrders(mId, start, end),
-      this.repo.sumNonCanceledSales(mId, start, end),
-      this.repo.countProducts(mId),
-    ]);
+    const [csat, frt, missingOpen, paidOrders, revenue, productsCount] =
+      await Promise.all([
+        this.repo.getCsat(mId, start, end),
+        this.repo.getFirstResponseTimeSec(mId, start, end),
+        this.repo.countMissingOpen(mId),
+        this.repo.countPaidOrders(mId, start, end),
+        this.repo.sumNonCanceledSales(mId, start, end),
+        this.repo.countProducts(mId),
+      ]);
     const aov =
       paidOrders > 0 ? Number((revenue / paidOrders).toFixed(2)) : null;
 

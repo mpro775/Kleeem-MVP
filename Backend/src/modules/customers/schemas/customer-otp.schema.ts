@@ -24,7 +24,7 @@ export class CustomerOtp {
   @Prop({
     type: String,
     enum: [ContactType.PHONE, ContactType.EMAIL],
-    required: true
+    required: true,
   })
   contactType!: ContactType;
 

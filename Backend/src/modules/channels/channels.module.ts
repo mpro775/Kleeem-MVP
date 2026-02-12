@@ -38,6 +38,11 @@ import { WhatsappCloudService } from './whatsapp-cloud.service';
     EvolutionService,
     WhatsappCloudService,
   ],
-  exports: [ChannelsService, ChannelsDispatcherService, 'ChannelsRepository', WhatsappCloudService],
+  exports: [
+    ChannelsService,
+    ChannelsDispatcherService,
+    'ChannelsRepository',
+    WhatsappCloudService,
+  ],
 })
-export class ChannelsModule { }
+export class ChannelsModule {}

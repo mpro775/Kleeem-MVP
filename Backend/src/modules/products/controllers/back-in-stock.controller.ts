@@ -11,11 +11,15 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
-import { IdentityGuard } from '../../../common/guards/identity.guard';
 import { CustomerGuard } from '../../../common/guards/customer.guard';
-
+import { IdentityGuard } from '../../../common/guards/identity.guard';
 import { BackInStockService } from '../services/back-in-stock.service';
 
 @ApiTags('products')
@@ -29,7 +33,8 @@ export class BackInStockController {
   @ApiResponse({ status: 201, description: 'تم إنشاء الطلب بنجاح' })
   @ApiResponse({ status: 400, description: 'بيانات غير صحيحة أو طلب مكرر' })
   async createRequest(
-    @Body() body: {
+    @Body()
+    body: {
       merchantId: string;
       productId: string;
       variantId?: string;
@@ -68,7 +73,10 @@ export class BackInStockController {
     @Param('id') requestId: string,
     @Body('merchantId') merchantId: string,
   ) {
-    const success = await this.backInStockService.cancelRequest(merchantId, requestId);
+    const success = await this.backInStockService.cancelRequest(
+      merchantId,
+      requestId,
+    );
     return { success };
   }
 

@@ -1,6 +1,6 @@
-import { ConfigService } from '@nestjs/config';
-
 import { GeminiService } from '../gemini.service';
+
+import type { ConfigService } from '@nestjs/config';
 
 const mockGenerateContent = jest.fn();
 
@@ -37,7 +37,10 @@ describe('GeminiService', () => {
       process.env.GOOGLE_GEMINI_API_KEY = '';
       const service = createService();
       const result = await service.checkHealth();
-      expect(result).toEqual({ ok: false, message: 'GOOGLE_GEMINI_API_KEY is not set' });
+      expect(result).toEqual({
+        ok: false,
+        message: 'GOOGLE_GEMINI_API_KEY is not set',
+      });
     });
 
     it('should return ok: true when Gemini responds with text', async () => {

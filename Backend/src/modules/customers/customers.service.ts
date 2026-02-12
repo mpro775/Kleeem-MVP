@@ -3,17 +3,21 @@ import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Types } from 'mongoose';
 
-import { CUSTOMER_REPOSITORY } from './tokens';
-import { CustomerRepository } from './repositories/customer.repository';
-import { Customer, SignupSource } from './schemas/customer.schema';
-import { ContactType } from './schemas/customer-otp.schema';
-import { OtpService } from './services/otp.service';
-import { normalizePhone } from '../../common/utils/phone.util';
 import { normalizeEmail } from '../../common/utils/email.util';
+import { normalizePhone } from '../../common/utils/phone.util';
 import { LeadsService } from '../leads/leads.service';
-import { CustomerAddress, AddressLabel } from './schemas/customer-address.schema';
-import { CUSTOMER_ADDRESS_REPOSITORY } from './tokens';
+
 import { CustomerAddressRepository } from './repositories/customer-address.repository';
+import { CustomerRepository } from './repositories/customer.repository';
+import {
+  CustomerAddress,
+  AddressLabel,
+} from './schemas/customer-address.schema';
+import { ContactType } from './schemas/customer-otp.schema';
+import { Customer, SignupSource } from './schemas/customer.schema';
+import { OtpService } from './services/otp.service';
+import { CUSTOMER_ADDRESS_REPOSITORY } from './tokens';
+import { CUSTOMER_REPOSITORY } from './tokens';
 
 @Injectable()
 export class CustomersService {
@@ -25,7 +29,7 @@ export class CustomersService {
     private readonly otpService: OtpService,
     private readonly jwtService: JwtService,
     private readonly leadsService: LeadsService,
-  ) { }
+  ) {}
 
   /**
    * إرسال OTP للعميل
@@ -71,16 +75,25 @@ export class CustomersService {
     if (!customer) {
       // إنشاء عميل جديد
       customer = await this.createCustomer(merchantId, contact, contactType, {
-        name: additionalData?.name || `عميل ${contactType === ContactType.EMAIL ? 'بريد إلكتروني' : 'هاتف'}`,
+        name:
+          additionalData?.name ||
+          `عميل ${contactType === ContactType.EMAIL ? 'بريد إلكتروني' : 'هاتف'}`,
         signupSource: additionalData?.signupSource || SignupSource.OTP,
-        ...(additionalData?.metadata ? { metadata: additionalData.metadata } : {}),
+        ...(additionalData?.metadata
+          ? { metadata: additionalData.metadata }
+          : {}),
       });
     } else {
       // تحديث lastSeenAt للعميل الموجود
       await this.updateLastSeen(customer._id!.toString());
 
       // تحويل leads المرتبطة بنفس معلومات التواصل
-      await this.convertRelatedLeads(merchantId, contact, contactType, customer._id!.toString());
+      await this.convertRelatedLeads(
+        merchantId,
+        contact,
+        contactType,
+        customer._id!.toString(),
+      );
     }
 
     // إنشاء JWT token للعميل
@@ -102,9 +115,15 @@ export class CustomersService {
     merchantId: string,
   ): Promise<Customer | null> {
     if (contactType === ContactType.EMAIL) {
-      return this.customerRepo.findByEmailLower(normalizeEmail(contact)!, merchantId);
+      return this.customerRepo.findByEmailLower(
+        normalizeEmail(contact)!,
+        merchantId,
+      );
     } else {
-      return this.customerRepo.findByPhoneNormalized(normalizePhone(contact)!, merchantId);
+      return this.customerRepo.findByPhoneNormalized(
+        normalizePhone(contact)!,
+        merchantId,
+      );
     }
   }
 
@@ -154,7 +173,10 @@ export class CustomersService {
   /**
    * إنشاء JWT token للعميل
    */
-  private async generateCustomerToken(customer: Customer, merchantId: string): Promise<string> {
+  private async generateCustomerToken(
+    customer: Customer,
+    merchantId: string,
+  ): Promise<string> {
     const payload = {
       customerId: customer._id!.toString(),
       merchantId,
@@ -175,7 +197,10 @@ export class CustomersService {
   /**
    * البحث عن العميل بالمعرف والتاجر
    */
-  async findByIdAndMerchant(id: string, merchantId: string): Promise<Customer | null> {
+  async findByIdAndMerchant(
+    id: string,
+    merchantId: string,
+  ): Promise<Customer | null> {
     return this.customerRepo.findByIdAndMerchant(id, merchantId);
   }
 
@@ -188,7 +213,10 @@ export class CustomersService {
     updates: Partial<Customer>,
   ): Promise<Customer | null> {
     // التحقق من أن العميل ينتمي للتاجر
-    const customer = await this.customerRepo.findByIdAndMerchant(customerId, merchantId);
+    const customer = await this.customerRepo.findByIdAndMerchant(
+      customerId,
+      merchantId,
+    );
     if (!customer) {
       throw new BadRequestException('العميل غير موجود أو لا ينتمي لهذا التاجر');
     }
@@ -199,8 +227,15 @@ export class CustomersService {
   /**
    * إضافة تاج للعميل
    */
-  async addTag(merchantId: string, customerId: string, tag: string): Promise<Customer | null> {
-    const customer = await this.customerRepo.findByIdAndMerchant(customerId, merchantId);
+  async addTag(
+    merchantId: string,
+    customerId: string,
+    tag: string,
+  ): Promise<Customer | null> {
+    const customer = await this.customerRepo.findByIdAndMerchant(
+      customerId,
+      merchantId,
+    );
     if (!customer) {
       throw new BadRequestException('العميل غير موجود أو لا ينتمي لهذا التاجر');
     }
@@ -216,13 +251,20 @@ export class CustomersService {
   /**
    * حذف تاج من العميل
    */
-  async removeTag(merchantId: string, customerId: string, tag: string): Promise<Customer | null> {
-    const customer = await this.customerRepo.findByIdAndMerchant(customerId, merchantId);
+  async removeTag(
+    merchantId: string,
+    customerId: string,
+    tag: string,
+  ): Promise<Customer | null> {
+    const customer = await this.customerRepo.findByIdAndMerchant(
+      customerId,
+      merchantId,
+    );
     if (!customer) {
       throw new BadRequestException('العميل غير موجود أو لا ينتمي لهذا التاجر');
     }
 
-    const updatedTags = customer.tags.filter(t => t !== tag);
+    const updatedTags = customer.tags.filter((t) => t !== tag);
     return this.customerRepo.updateById(customerId, { tags: updatedTags });
   }
 
@@ -250,7 +292,11 @@ export class CustomersService {
       return this.findAllForMerchant(merchantId, filters);
     }
 
-    const customers = await this.customerRepo.search(merchantId, query.trim(), filters);
+    const customers = await this.customerRepo.search(
+      merchantId,
+      query.trim(),
+      filters,
+    );
     return {
       customers,
       total: customers.length,
@@ -302,7 +348,10 @@ export class CustomersService {
   /**
    * تحديث إحصائيات العميل
    */
-  async updateCustomerStats(customerId: string, orderTotal: number): Promise<void> {
+  async updateCustomerStats(
+    customerId: string,
+    orderTotal: number,
+  ): Promise<void> {
     const customer = await this.customerRepo.findById(customerId);
     if (!customer) return;
 
@@ -332,11 +381,15 @@ export class CustomersService {
       );
 
       if (lead && lead._id) {
-        await this.leadsService.convertLeadToCustomer(lead._id.toString(), customerId);
+        await this.leadsService.convertLeadToCustomer(
+          lead._id.toString(),
+          customerId,
+        );
       }
     } catch (error) {
       // لا نتوقف عن إنشاء العميل بسبب فشل تحويل leads
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       console.error('Error converting related leads:', errorMessage);
     }
   }
@@ -344,9 +397,15 @@ export class CustomersService {
   /**
    * إدارة عناوين العملاء
    */
-  async getCustomerAddresses(merchantId: string, customerId: string): Promise<CustomerAddress[]> {
+  async getCustomerAddresses(
+    merchantId: string,
+    customerId: string,
+  ): Promise<CustomerAddress[]> {
     // التحقق من أن العميل ينتمي للتاجر
-    const customer = await this.customerRepo.findByIdAndMerchant(customerId, merchantId);
+    const customer = await this.customerRepo.findByIdAndMerchant(
+      customerId,
+      merchantId,
+    );
     if (!customer) {
       throw new BadRequestException('العميل غير موجود');
     }
@@ -367,7 +426,10 @@ export class CustomersService {
     },
   ): Promise<CustomerAddress> {
     // التحقق من أن العميل ينتمي للتاجر
-    const customer = await this.customerRepo.findByIdAndMerchant(customerId, merchantId);
+    const customer = await this.customerRepo.findByIdAndMerchant(
+      customerId,
+      merchantId,
+    );
     if (!customer) {
       throw new BadRequestException('العميل غير موجود');
     }
@@ -387,8 +449,14 @@ export class CustomersService {
   ): Promise<CustomerAddress | null> {
     // التحقق من ملكية العنوان
     const address = await this.addressRepo.findById(addressId);
-    if (!address || address.customerId.toString() !== customerId || address.merchantId !== merchantId) {
-      throw new BadRequestException('العنوان غير موجود أو لا ينتمي لهذا العميل');
+    if (
+      !address ||
+      address.customerId.toString() !== customerId ||
+      address.merchantId !== merchantId
+    ) {
+      throw new BadRequestException(
+        'العنوان غير موجود أو لا ينتمي لهذا العميل',
+      );
     }
 
     return this.addressRepo.updateById(addressId, updates);
@@ -401,8 +469,14 @@ export class CustomersService {
   ): Promise<boolean> {
     // التحقق من ملكية العنوان
     const address = await this.addressRepo.findById(addressId);
-    if (!address || address.customerId.toString() !== customerId || address.merchantId !== merchantId) {
-      throw new BadRequestException('العنوان غير موجود أو لا ينتمي لهذا العميل');
+    if (
+      !address ||
+      address.customerId.toString() !== customerId ||
+      address.merchantId !== merchantId
+    ) {
+      throw new BadRequestException(
+        'العنوان غير موجود أو لا ينتمي لهذا العميل',
+      );
     }
 
     return this.addressRepo.deleteById(addressId);
@@ -415,8 +489,14 @@ export class CustomersService {
   ): Promise<void> {
     // التحقق من ملكية العنوان
     const address = await this.addressRepo.findById(addressId);
-    if (!address || address.customerId.toString() !== customerId || address.merchantId !== merchantId) {
-      throw new BadRequestException('العنوان غير موجود أو لا ينتمي لهذا العميل');
+    if (
+      !address ||
+      address.customerId.toString() !== customerId ||
+      address.merchantId !== merchantId
+    ) {
+      throw new BadRequestException(
+        'العنوان غير موجود أو لا ينتمي لهذا العميل',
+      );
     }
 
     return this.addressRepo.setDefault(customerId, addressId);

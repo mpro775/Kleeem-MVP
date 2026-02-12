@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
 import { Customer, CustomerDocument } from '../schemas/customer.schema';
+
 import { CustomerRepository } from './customer.repository';
 
 @Injectable()
@@ -21,15 +22,24 @@ export class CustomerMongoRepository implements CustomerRepository {
     return this.customerModel.findById(id).exec();
   }
 
-  async findByIdAndMerchant(id: string, merchantId: string): Promise<Customer | null> {
+  async findByIdAndMerchant(
+    id: string,
+    merchantId: string,
+  ): Promise<Customer | null> {
     return this.customerModel.findOne({ _id: id, merchantId }).exec();
   }
 
-  async findByEmailLower(emailLower: string, merchantId: string): Promise<Customer | null> {
+  async findByEmailLower(
+    emailLower: string,
+    merchantId: string,
+  ): Promise<Customer | null> {
     return this.customerModel.findOne({ emailLower, merchantId }).exec();
   }
 
-  async findByPhoneNormalized(phoneNormalized: string, merchantId: string): Promise<Customer | null> {
+  async findByPhoneNormalized(
+    phoneNormalized: string,
+    merchantId: string,
+  ): Promise<Customer | null> {
     return this.customerModel.findOne({ phoneNormalized, merchantId }).exec();
   }
 
@@ -80,8 +90,13 @@ export class CustomerMongoRepository implements CustomerRepository {
     return mongoQuery.exec();
   }
 
-  async updateById(id: string, update: Partial<Customer>): Promise<Customer | null> {
-    return this.customerModel.findByIdAndUpdate(id, update, { new: true }).exec();
+  async updateById(
+    id: string,
+    update: Partial<Customer>,
+  ): Promise<Customer | null> {
+    return this.customerModel
+      .findByIdAndUpdate(id, update, { new: true })
+      .exec();
   }
 
   async deleteById(id: string): Promise<boolean> {
@@ -107,7 +122,11 @@ export class CustomerMongoRepository implements CustomerRepository {
     return this.customerModel.countDocuments(query).exec();
   }
 
-  async search(merchantId: string, query: string, filters?: any): Promise<Customer[]> {
+  async search(
+    merchantId: string,
+    query: string,
+    filters?: any,
+  ): Promise<Customer[]> {
     const searchQuery: any = {
       merchantId,
       $or: [
@@ -121,6 +140,10 @@ export class CustomerMongoRepository implements CustomerRepository {
       searchQuery.tags = { $in: filters.tags };
     }
 
-    return this.customerModel.find(searchQuery).sort({ createdAt: -1 }).limit(50).exec();
+    return this.customerModel
+      .find(searchQuery)
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .exec();
   }
 }

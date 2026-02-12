@@ -8,6 +8,7 @@ import {
   PromotionDocument,
   PromotionStatus,
 } from '../schemas/promotion.schema';
+
 import { PromotionsRepository } from './promotions.repository';
 
 @Injectable()

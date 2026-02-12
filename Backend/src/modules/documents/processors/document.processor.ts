@@ -5,9 +5,9 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { Readable } from 'stream';
 
+import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { InjectModel } from '@nestjs/mongoose';
 import { Job } from 'bull';
 import ExcelJS from 'exceljs';
@@ -229,8 +229,7 @@ export class DocumentProcessor {
   // =================== Private helpers ===================
 
   private getBucketName(): string {
-    const bucket =
-      process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
+    const bucket = process.env.S3_BUCKET_NAME || process.env.MINIO_BUCKET || '';
     if (!bucket) throw new Error('S3_BUCKET_NAME not configured');
     return bucket;
   }

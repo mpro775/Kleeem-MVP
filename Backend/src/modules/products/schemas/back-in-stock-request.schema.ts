@@ -31,7 +31,11 @@ export class BackInStockRequest {
 
   @Prop({
     type: String,
-    enum: [BackInStockStatus.PENDING, BackInStockStatus.NOTIFIED, BackInStockStatus.CANCELLED],
+    enum: [
+      BackInStockStatus.PENDING,
+      BackInStockStatus.NOTIFIED,
+      BackInStockStatus.CANCELLED,
+    ],
     default: BackInStockStatus.PENDING,
     index: true,
   })
@@ -41,9 +45,15 @@ export class BackInStockRequest {
   notifiedAt?: Date;
 }
 
-export const BackInStockRequestSchema = SchemaFactory.createForClass(BackInStockRequest);
+export const BackInStockRequestSchema =
+  SchemaFactory.createForClass(BackInStockRequest);
 
 // فهارس للبحث السريع
-BackInStockRequestSchema.index({ merchantId: 1, productId: 1, variantId: 1, status: 1 });
+BackInStockRequestSchema.index({
+  merchantId: 1,
+  productId: 1,
+  variantId: 1,
+  status: 1,
+});
 BackInStockRequestSchema.index({ merchantId: 1, contact: 1 });
 BackInStockRequestSchema.index({ merchantId: 1, customerId: 1 });

@@ -5,11 +5,15 @@ import { Model, Types } from 'mongoose';
 import { PaginationService } from '../../../common/services/pagination.service';
 import { GetProductsDto, SortOrder } from '../dto/get-products.dto';
 import { Currency } from '../enums/product.enums';
-import { CurrencyPrice, createCurrencyPrice } from '../schemas/currency-price.schema';
+import {
+  CurrencyPrice,
+  createCurrencyPrice,
+} from '../schemas/currency-price.schema';
+import { Product, ProductDocument } from '../schemas/product.schema';
+
 import type { PaginationResult } from '../../../common/dto/pagination.dto';
 import type { ProductLean } from '../types';
 import type { ClientSession, FilterQuery } from 'mongoose';
-import { Product, ProductDocument } from '../schemas/product.schema';
 
 type StringArrayRecord = Record<string, string[]>;
 
@@ -57,9 +61,9 @@ function toProductLean(p: unknown): ProductLean {
   );
   const attributes: ProductLean['attributes'] = attributesRecord
     ? Object.entries(attributesRecord).map(([keySlug, valueSlugs]) => ({
-      keySlug,
-      valueSlugs,
-    }))
+        keySlug,
+        valueSlugs,
+      }))
     : undefined;
 
   const rawPrices = (p as { prices?: unknown }).prices;
@@ -69,7 +73,11 @@ function toProductLean(p: unknown): ProductLean {
       if (typeof k === 'string') {
         if (typeof v === 'number' && Number.isFinite(v) && v >= 0) {
           prices.set(k, createCurrencyPrice(v));
-        } else if (isObject(v) && 'amount' in v && typeof v.amount === 'number') {
+        } else if (
+          isObject(v) &&
+          'amount' in v &&
+          typeof v.amount === 'number'
+        ) {
           prices.set(k, v as unknown as CurrencyPrice);
         }
       }
@@ -103,7 +111,7 @@ export class MongoProductsRepository {
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
     private readonly pagination: PaginationService,
-  ) { }
+  ) {}
 
   async startSession(): Promise<ClientSession> {
     return this.productModel.db.startSession();

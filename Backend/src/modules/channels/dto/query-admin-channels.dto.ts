@@ -8,10 +8,7 @@ import {
   IsMongoId,
 } from 'class-validator';
 
-import {
-  ChannelProvider,
-  ChannelStatus,
-} from '../schemas/channel.schema';
+import { ChannelProvider, ChannelStatus } from '../schemas/channel.schema';
 
 export class QueryAdminChannelsDto {
   @IsOptional()

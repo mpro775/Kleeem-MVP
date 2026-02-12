@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 
-import { QueryKleemMissingResponsesDto } from '../analytics/dto/query-kleem-missing-responses.dto';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { QueryKleemMissingResponsesDto } from '../analytics/dto/query-kleem-missing-responses.dto';
 import { ChannelsService } from '../channels/channels.service';
 import { MerchantsService } from '../merchants/merchants.service';
 import { MessageService } from '../messaging/message.service';
@@ -103,7 +103,9 @@ export class AdminReportsService {
     missingResolved: number;
     missingTotal: number;
   }> {
-    const baseDto = (resolved: 'true' | 'false'): QueryKleemMissingResponsesDto =>
+    const baseDto = (
+      resolved: 'true' | 'false',
+    ): QueryKleemMissingResponsesDto =>
       Object.assign(new QueryKleemMissingResponsesDto(), {
         limit: 1,
         page: 1,
@@ -145,7 +147,11 @@ export class AdminReportsService {
       { merchantCount: number; totalMessages: number }
     >();
     for (const item of items) {
-      const tier = item.isUnlimited ? 'unlimited' : (item.messageLimit ? `limit_${item.messageLimit}` : 'free');
+      const tier = item.isUnlimited
+        ? 'unlimited'
+        : item.messageLimit
+          ? `limit_${item.messageLimit}`
+          : 'free';
       const existing = planMap.get(tier) ?? {
         merchantCount: 0,
         totalMessages: 0,

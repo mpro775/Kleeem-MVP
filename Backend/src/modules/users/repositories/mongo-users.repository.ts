@@ -25,6 +25,10 @@ import type { FilterQuery, QueryOptions } from 'mongoose';
 const SELECT_SAFE = '-password -__v' as const;
 const SORT_ASC = 1 as const;
 const SORT_DESC = -1 as const;
+const END_OF_DAY_HOUR = 23;
+const END_OF_DAY_MINUTE = 59;
+const END_OF_DAY_SECOND = 59;
+const END_OF_DAY_MILLISECOND = 999;
 
 /** أشكال النتائج من .lean() قبل التطبيع */
 type RawLeanUser = Omit<User, 'password' | 'merchantId'> & {
@@ -196,7 +200,13 @@ export class MongoUsersRepository implements UsersRepository {
 
     const sortDir = sortOrder === 'asc' ? 1 : -1;
     const sortField =
-      sortBy === 'name' ? 'name' : sortBy === 'email' ? 'email' : sortBy === 'updatedAt' ? 'updatedAt' : 'createdAt';
+      sortBy === 'name'
+        ? 'name'
+        : sortBy === 'email'
+          ? 'email'
+          : sortBy === 'updatedAt'
+            ? 'updatedAt'
+            : 'createdAt';
 
     const [docs, total] = await Promise.all([
       this.userModel
@@ -211,7 +221,8 @@ export class MongoUsersRepository implements UsersRepository {
     ]);
 
     const items: UserAdminLean[] = docs.map((u) => ({
-      _id: (u._id as { toString?: () => string })?.toString?.() ?? String(u._id),
+      _id:
+        (u._id as { toString?: () => string })?.toString?.() ?? String(u._id),
       email: u.email,
       name: u.name,
       role: u.role,
@@ -237,7 +248,10 @@ export class MongoUsersRepository implements UsersRepository {
       this.userModel.countDocuments(baseMatch).exec(),
       this.userModel.countDocuments({ ...baseMatch, active: true }).exec(),
       this.userModel
-        .aggregate<{ _id: string; count: number }>([
+        .aggregate<{
+          _id: string;
+          count: number;
+        }>([
           { $match: baseMatch },
           { $group: { _id: '$role', count: { $sum: 1 } } },
         ])
@@ -334,7 +348,12 @@ export class MongoUsersRepository implements UsersRepository {
     const startDate = new Date(from);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(to);
-    endDate.setHours(23, 59, 59, 999);
+    endDate.setHours(
+      END_OF_DAY_HOUR,
+      END_OF_DAY_MINUTE,
+      END_OF_DAY_SECOND,
+      END_OF_DAY_MILLISECOND,
+    );
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
       return [];
     }

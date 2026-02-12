@@ -7,11 +7,11 @@ import { CouponsModule } from '../coupons/coupons.module';
 import { CustomersModule } from '../customers/customers.module';
 import { ZidModule } from '../integrations/zid/zid.module';
 import { LeadsModule } from '../leads/leads.module';
-import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
 import { MerchantsModule } from '../merchants/merchants.module';
+import { Merchant, MerchantSchema } from '../merchants/schemas/merchant.schema';
+import { ProductsModule } from '../products/products.module';
 import { Product, ProductSchema } from '../products/schemas/product.schema';
 import { PromotionsModule } from '../promotions/promotions.module';
-import { ProductsModule } from '../products/products.module';
 
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
@@ -47,4 +47,4 @@ import { PricingService } from './services/pricing.service';
   controllers: [OrdersController],
   exports: [OrdersService, PricingService],
 })
-export class OrdersModule { }
+export class OrdersModule {}

@@ -3,8 +3,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { RedisModule } from '@nestjs-modules/ioredis';
 
 import { CacheModule } from '../../common/cache/cache.module';
-import { AuthModule } from '../auth/auth.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { AuthModule } from '../auth/auth.module';
 import { ChannelsModule } from '../channels/channels.module';
 import { MerchantsModule } from '../merchants/merchants.module';
 import { MessagingModule } from '../messaging/message.module';
@@ -18,10 +18,13 @@ import { AdminReportsController } from './admin-reports.controller';
 import { AdminReportsService } from './admin-reports.service';
 import { AdminSystemController } from './admin-system.controller';
 import { HealthController } from './health.controller';
+import {
+  AdminAuditLog,
+  AdminAuditLogSchema,
+} from './schemas/admin-audit-log.schema';
 import { AdminAuditService } from './services/admin-audit.service';
 import { AdminSystemService } from './services/admin-system.service';
 import { FeatureFlagsService } from './services/feature-flags.service';
-import { AdminAuditLog, AdminAuditLogSchema } from './schemas/admin-audit-log.schema';
 
 @Module({
   imports: [

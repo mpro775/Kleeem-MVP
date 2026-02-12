@@ -29,7 +29,6 @@ import {
 } from 'src/common/decorators/current-user.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
-
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { TranslationService } from 'src/common/services/translation.service';
 
@@ -135,7 +134,7 @@ export class AnalyticsController {
   constructor(
     private readonly analytics: AnalyticsService,
     private readonly translationService: TranslationService,
-  ) { }
+  ) {}
 
   /** نظرة عامة */
   @Get('overview')
@@ -393,7 +392,13 @@ export class AnalyticsController {
   @ApiQuery({
     name: 'type',
     required: false,
-    enum: ['all', 'missing_response', 'unavailable_product', 'missing', 'kleem'],
+    enum: [
+      'all',
+      'missing_response',
+      'unavailable_product',
+      'missing',
+      'kleem',
+    ],
     example: 'all',
   })
   @ApiQuery({ name: 'search', required: false, type: String, example: 'سعر' })

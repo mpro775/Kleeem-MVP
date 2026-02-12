@@ -1,13 +1,13 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Types } from 'mongoose';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Types } from 'mongoose';
 
 import { MerchantAuditService } from '../../merchants/services/merchant-audit.service';
+import { QueryAdminUsageDto } from '../dto/query-admin-usage.dto';
 import { UsageAdminController } from '../usage.admin.controller';
 import { UsageService } from '../usage.service';
-import { QueryAdminUsageDto } from '../dto/query-admin-usage.dto';
 
 describe('UsageAdminController', () => {
   let controller: UsageAdminController;
@@ -67,7 +67,14 @@ describe('UsageAdminController', () => {
       query.limit = 30;
       query.page = 1;
       const expected = {
-        items: [{ ...mockUsageItem, messageLimit: 1000, usagePercent: 15, isUnlimited: false }],
+        items: [
+          {
+            ...mockUsageItem,
+            messageLimit: 1000,
+            usagePercent: 15,
+            isUnlimited: false,
+          },
+        ],
         total: 1,
       };
       mockService.listAllAdminWithLimits.mockResolvedValue(expected);
@@ -85,7 +92,10 @@ describe('UsageAdminController', () => {
       query.monthKey = '2025-01';
       query.limit = 20;
       query.page = 2;
-      mockService.listAllAdminWithLimits.mockResolvedValue({ items: [], total: 0 });
+      mockService.listAllAdminWithLimits.mockResolvedValue({
+        items: [],
+        total: 0,
+      });
 
       await controller.list(query);
 

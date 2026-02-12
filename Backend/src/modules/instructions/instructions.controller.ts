@@ -125,7 +125,10 @@ export class InstructionsController {
     @Query('active') active?: string,
     @Query('limit') limit = '30',
     @Query('page') page = '1',
-  ): Promise<{ items: Array<Instruction & { _id: Types.ObjectId }>; total: number }> {
+  ): Promise<{
+    items: Array<Instruction & { _id: Types.ObjectId }>;
+    total: number;
+  }> {
     // إن مرّر merchantId بالاستعلام يجب أن يكون ADMIN أو يطابق JWT
     const merchantId = qMerchantId ?? jwtMerchantId;
     if (!merchantId) {

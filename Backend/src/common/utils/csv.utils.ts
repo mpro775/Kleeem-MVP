@@ -1,8 +1,18 @@
 /** تهريب قيمة للـ CSV */
 function escapeCsvValue(val: unknown): string {
   if (val == null) return '';
-  const s = String(val);
-  if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+  const s =
+    typeof val === 'string'
+      ? val
+      : typeof val === 'object'
+        ? JSON.stringify(val)
+        : String(val as string | number | boolean | symbol | bigint);
+  if (
+    s.includes(',') ||
+    s.includes('"') ||
+    s.includes('\n') ||
+    s.includes('\r')
+  ) {
     return `"${s.replace(/"/g, '""')}"`;
   }
   return s;

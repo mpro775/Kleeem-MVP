@@ -1,5 +1,5 @@
-import { IsOptional, IsIn, IsMongoId, ValidateIf } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsIn, IsMongoId, ValidateIf } from 'class-validator';
 
 import { TICKET_STATUS_VALUES, type TicketStatus } from '../support.enums';
 

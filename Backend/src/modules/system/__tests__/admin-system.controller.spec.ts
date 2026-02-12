@@ -1,6 +1,5 @@
 import { NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 
@@ -122,7 +121,9 @@ describe('AdminSystemController', () => {
         message: 'تم استدعاء النسخ الاحتياطي',
       });
 
-      const result = await controller.triggerBackup({ userId: 'admin-1' } as any);
+      const result = await controller.triggerBackup({
+        userId: 'admin-1',
+      } as any);
 
       expect(systemService.triggerBackup).toHaveBeenCalledWith('admin-1');
       expect(result).toEqual({ message: 'تم استدعاء النسخ الاحتياطي' });

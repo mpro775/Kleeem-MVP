@@ -37,7 +37,6 @@ import {
 } from '@nestjs/swagger';
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
-
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
@@ -51,6 +50,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { OutboxService } from 'src/common/outbox/outbox.service';
 import { TranslationService } from 'src/common/services/translation.service';
+
 import { CatalogService } from '../catalog/catalog.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
@@ -103,7 +103,7 @@ export class MerchantsController {
     private readonly catalog: CatalogService,
     private readonly outbox: OutboxService,
     private readonly translationService: TranslationService,
-  ) { }
+  ) {}
 
   @Post()
   @ApiOperation({
@@ -214,7 +214,9 @@ export class MerchantsController {
       : (merchant as unknown as Record<string, unknown>);
 
     let email: string | undefined;
-    const userId = (merchant.userId as { toString?: () => string })?.toString?.();
+    const userId = (
+      merchant.userId as { toString?: () => string }
+    )?.toString?.();
     if (userId) {
       const user = await this.userModel
         .findById(userId)
@@ -615,7 +617,7 @@ export class MerchantsController {
         exchange: 'catalog.sync',
         routingKey: 'requested',
       })
-      .catch(() => { });
+      .catch(() => {});
 
     await this.notifications.notifyUser(userId, {
       type: 'catalog.sync.queued',

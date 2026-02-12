@@ -1,12 +1,12 @@
 import { Test } from '@nestjs/testing';
 
+import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 import { Product } from '../../products/schemas/product.schema';
 import { CategoriesController } from '../categories.controller';
 import { CategoriesModule } from '../categories.module';
 import { CategoriesService } from '../categories.service';
 import { MongoCategoriesRepository } from '../repositories/mongo-categories.repository';
 import { Category } from '../schemas/category.schema';
-import { S3_CLIENT_TOKEN } from '../../../common/storage/s3-client.provider';
 
 describe('CategoriesModule', () => {
   let module: any;

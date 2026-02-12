@@ -162,7 +162,7 @@ export class ProductCsvService {
     private readonly productModel: Model<ProductDocument>,
     private readonly validation: ProductValidationService,
     private readonly translationService: TranslationService,
-  ) { }
+  ) {}
 
   /**
    * تصدير المنتجات إلى CSV
@@ -311,10 +311,8 @@ export class ProductCsvService {
 
     const price = this.parsePrice(row.price);
     const baseCurrency = Currency.YER;
-    const { prices: normalizedPrices, basePrice } = this.validation.normalizePrices(
-      { [baseCurrency]: price },
-      baseCurrency,
-    );
+    const { prices: normalizedPrices, basePrice } =
+      this.validation.normalizePrices({ [baseCurrency]: price }, baseCurrency);
 
     // Convert Map<string, number> to Map<string, CurrencyPrice>
     const prices = new Map<string, CurrencyPrice>();

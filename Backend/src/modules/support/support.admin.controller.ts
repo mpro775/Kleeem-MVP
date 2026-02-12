@@ -20,16 +20,17 @@ import {
 } from '@nestjs/swagger';
 import { Types } from 'mongoose';
 
-import { UserRole } from '../users/schemas/user.schema';
-import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { UserRole } from '../users/schemas/user.schema';
 
-import { SupportService } from './support.service';
 import { AddTicketReplyDto } from './dto/add-ticket-reply.dto';
 import { QueryAdminSupportDto } from './dto/query-admin-support.dto';
 import { UpdateSupportAdminDto } from './dto/update-support-admin.dto';
+import { SupportService } from './support.service';
+
 import type { SupportTicketEntity } from './repositories/support.repository';
 
 @ApiTags('Admin', 'Admin Support')
@@ -70,7 +71,11 @@ export class SupportAdminController {
 
   @Get('export')
   @ApiOperation({ summary: 'تصدير قائمة التذاكر بصيغة CSV' })
-  @ApiResponse({ status: 200, description: 'ملف CSV', content: { 'text/csv': {} } })
+  @ApiResponse({
+    status: 200,
+    description: 'ملف CSV',
+    content: { 'text/csv': {} },
+  })
   async export(@Query() q: QueryAdminSupportDto): Promise<StreamableFile> {
     const csv = await this.service.exportCsv({
       ...(q.status && { status: q.status }),

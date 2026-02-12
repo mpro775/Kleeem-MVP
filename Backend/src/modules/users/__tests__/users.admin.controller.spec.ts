@@ -1,15 +1,16 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Types } from 'mongoose';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Types } from 'mongoose';
 
 import { AuthService } from '../../auth/auth.service';
+import { QueryAdminUsersDto } from '../dto/query-admin-users.dto';
+import { UserRole } from '../schemas/user.schema';
 import { UsersAdminController } from '../users.admin.controller';
 import { UsersService } from '../users.service';
-import { QueryAdminUsersDto } from '../dto/query-admin-users.dto';
-import { UpdateUserAdminDto } from '../dto/update-user-admin.dto';
-import { UserRole } from '../schemas/user.schema';
+
+import type { UpdateUserAdminDto } from '../dto/update-user-admin.dto';
 
 describe('UsersAdminController', () => {
   let controller: UsersAdminController;
@@ -38,7 +39,11 @@ describe('UsersAdminController', () => {
     total: 50,
     activeCount: 45,
     inactiveCount: 5,
-    byRole: { [UserRole.ADMIN]: 2, [UserRole.MERCHANT]: 30, [UserRole.MEMBER]: 18 },
+    byRole: {
+      [UserRole.ADMIN]: 2,
+      [UserRole.MERCHANT]: 30,
+      [UserRole.MEMBER]: 18,
+    },
   };
 
   const mockService = {

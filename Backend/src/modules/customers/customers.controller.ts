@@ -13,26 +13,33 @@ import {
   BadRequestException,
   Delete,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
-import { IdentityGuard } from '../../common/guards/identity.guard';
-import { CustomerGuard } from '../../common/guards/customer.guard';
 import { Customer as CurrentUser } from '../../common/decorators/customer.decorator';
+import { CustomerGuard } from '../../common/guards/customer.guard';
+import { IdentityGuard } from '../../common/guards/identity.guard';
 import { CustomerRequestUser } from '../../modules/auth/strategies/customer-jwt.strategy';
+
 import { CustomersService } from './customers.service';
-import { SendOtpDto } from './dto/send-otp.dto';
-import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
-import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { GetCustomersDto } from './dto/get-customers.dto';
-import { Customer, SignupSource } from './schemas/customer.schema';
+import { SendOtpDto } from './dto/send-otp.dto';
+import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ContactType } from './schemas/customer-otp.schema';
+import { Customer, SignupSource } from './schemas/customer.schema';
 
 @ApiTags('customers')
 @Controller('customers')
 export class CustomersController {
-  constructor(private readonly customersService: CustomersService) { }
+  constructor(private readonly customersService: CustomersService) {}
 
   // ========== OTP Endpoints ==========
 
@@ -136,7 +143,11 @@ export class CustomersController {
     @Body('merchantId') merchantId: string,
   ) {
     if (query.search) {
-      return this.customersService.searchCustomers(merchantId, query.search, query);
+      return this.customersService.searchCustomers(
+        merchantId,
+        query.search,
+        query,
+      );
     }
     return this.customersService.findAllForMerchant(merchantId, query);
   }
@@ -151,7 +162,10 @@ export class CustomersController {
     @Param('id') customerId: string,
     @Body('merchantId') merchantId: string,
   ) {
-    const customer = await this.customersService.findByIdAndMerchant(customerId, merchantId);
+    const customer = await this.customersService.findByIdAndMerchant(
+      customerId,
+      merchantId,
+    );
     if (!customer) {
       throw new BadRequestException('العميل غير موجود');
     }
@@ -164,9 +178,7 @@ export class CustomersController {
   @ApiOperation({ summary: 'إنشاء عميل جديد يدوياً' })
   @ApiResponse({ status: 201, description: 'تم إنشاء العميل بنجاح' })
   @ApiResponse({ status: 400, description: 'بيانات غير صحيحة' })
-  async createCustomer(
-    @Body() dto: CreateCustomerDto,
-  ) {
+  async createCustomer(@Body() dto: CreateCustomerDto) {
     return this.customersService.createManualCustomer(dto.merchantId, dto);
   }
 
@@ -212,7 +224,11 @@ export class CustomersController {
     @Param('id') customerId: string,
     @Body() body: { merchantId: string; tag: string },
   ) {
-    return this.customersService.removeTag(body.merchantId, customerId, body.tag);
+    return this.customersService.removeTag(
+      body.merchantId,
+      customerId,
+      body.tag,
+    );
   }
 
   // ========== Storefront APIs ==========
@@ -263,7 +279,8 @@ export class CustomersController {
   @ApiResponse({ status: 201, description: 'تم إضافة العنوان بنجاح' })
   async addCustomerAddress(
     @Param('id') customerId: string,
-    @Body() body: {
+    @Body()
+    body: {
       merchantId: string;
       label: string;
       country: string;
@@ -289,7 +306,8 @@ export class CustomersController {
   async updateCustomerAddress(
     @Param('id') customerId: string,
     @Param('addressId') addressId: string,
-    @Body() body: {
+    @Body()
+    body: {
       merchantId: string;
       label?: string;
       country?: string;
@@ -348,7 +366,8 @@ export class CustomersController {
   @ApiResponse({ status: 201, description: 'تم إضافة العنوان بنجاح' })
   async addMyAddress(
     @CurrentUser() customer: CustomerRequestUser,
-    @Body() addressData: {
+    @Body()
+    addressData: {
       label: string;
       country: string;
       city: string;
@@ -372,7 +391,8 @@ export class CustomersController {
   async updateMyAddress(
     @CurrentUser() customer: CustomerRequestUser,
     @Param('addressId') addressId: string,
-    @Body() updates: {
+    @Body()
+    updates: {
       label?: string;
       country?: string;
       city?: string;

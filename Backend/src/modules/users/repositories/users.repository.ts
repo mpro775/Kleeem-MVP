@@ -74,8 +74,13 @@ export interface UsersRepository {
     params: ListAllAdminParams,
   ): Promise<{ items: UserAdminLean[]; total: number }>;
   statsAdmin(): Promise<StatsAdminResult>;
-  getTrendsAdmin(period: '7d' | '30d'): Promise<{ date: string; count: number }[]>;
-  getTrendsByDateRange(from: string, to: string): Promise<{ date: string; count: number }[]>;
+  getTrendsAdmin(
+    period: '7d' | '30d',
+  ): Promise<{ date: string; count: number }[]>;
+  getTrendsByDateRange(
+    from: string,
+    to: string,
+  ): Promise<{ date: string; count: number }[]>;
   updateAdmin(
     id: Types.ObjectId,
     dto: {

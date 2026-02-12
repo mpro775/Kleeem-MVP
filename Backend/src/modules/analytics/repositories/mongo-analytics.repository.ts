@@ -530,7 +530,7 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
       category: string;
     }>,
   ): Promise<KleemMissingResponseDocument> {
-    const updated = await this.kleemMissingModel
+    const updated = (await this.kleemMissingModel
       .findByIdAndUpdate(
         id,
         {
@@ -546,8 +546,8 @@ export class MongoAnalyticsRepository implements AnalyticsRepository {
         },
         { new: true },
       )
-      .lean() as unknown as KleemMissingResponseDocument;
-    return updated!;
+      .lean()) as unknown as KleemMissingResponseDocument;
+    return updated;
   }
 
   async bulkResolveKleem(ids: string[]): Promise<{ updated: number }> {

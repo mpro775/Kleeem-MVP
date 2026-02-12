@@ -1,5 +1,4 @@
 import { Test } from '@nestjs/testing';
-
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 
@@ -68,7 +67,10 @@ describe('AdminReportsController', () => {
       };
       mockReportsService.getSignupsReport.mockResolvedValue(mock);
 
-      const result = await controller.getSignupsReport('2025-02-01', '2025-02-10');
+      const result = await controller.getSignupsReport(
+        '2025-02-01',
+        '2025-02-10',
+      );
 
       expect(service.getSignupsReport).toHaveBeenCalledWith({
         from: '2025-02-01',
@@ -97,7 +99,15 @@ describe('AdminReportsController', () => {
   describe('GET admin/reports/usage-by-plan', () => {
     it('should return usage by plan from service', async () => {
       const mock = {
-        byPlan: [{ planName: 'limit_1000', tier: 'limit_1000', merchantCount: 10, totalMessagesUsed: 5000, avgMessagesPerMerchant: 500 }],
+        byPlan: [
+          {
+            planName: 'limit_1000',
+            tier: 'limit_1000',
+            merchantCount: 10,
+            totalMessagesUsed: 5000,
+            avgMessagesPerMerchant: 500,
+          },
+        ],
         summary: { totalMerchants: 10, totalMessagesUsed: 5000 },
       };
       mockReportsService.getUsageByPlan.mockResolvedValue(mock);
@@ -109,7 +119,10 @@ describe('AdminReportsController', () => {
     });
 
     it('should call service without monthKey when omitted', async () => {
-      mockReportsService.getUsageByPlan.mockResolvedValue({ byPlan: [], summary: { totalMerchants: 0, totalMessagesUsed: 0 } });
+      mockReportsService.getUsageByPlan.mockResolvedValue({
+        byPlan: [],
+        summary: { totalMerchants: 0, totalMessagesUsed: 0 },
+      });
 
       await controller.getUsageByPlan(undefined);
 

@@ -83,7 +83,9 @@ export class PublicChatWidgetController {
         message: 'لم يتم العثور على ودجة بهذا الـ slug',
       });
 
-    const publicSlug = await this.svc.getMerchantPublicSlug(settings.merchantId);
+    const publicSlug = await this.svc.getMerchantPublicSlug(
+      settings.merchantId,
+    );
 
     // تطبيع لتوافق DTO (مثال على خريطة بسيطة من السكيمة إلى DTO)
     return {

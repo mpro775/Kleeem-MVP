@@ -14,6 +14,7 @@ import {
   ChannelDocument,
   ChannelProvider,
 } from '../schemas/channel.schema';
+import { ChannelStatus } from '../schemas/channel.schema';
 
 import {
   ChannelsRepository,
@@ -22,7 +23,6 @@ import {
   ListAllAdminParams,
   StatsAdminResult,
 } from './channels.repository';
-import { ChannelStatus } from '../schemas/channel.schema';
 
 @Injectable()
 export class MongoChannelsRepository implements ChannelsRepository {
@@ -144,13 +144,19 @@ export class MongoChannelsRepository implements ChannelsRepository {
     const [total, byProvider, byStatus] = await Promise.all([
       this.model.countDocuments(baseMatch).exec(),
       this.model
-        .aggregate<{ _id: string; count: number }>([
+        .aggregate<{
+          _id: string;
+          count: number;
+        }>([
           { $match: baseMatch },
           { $group: { _id: '$provider', count: { $sum: 1 } } },
         ])
         .exec(),
       this.model
-        .aggregate<{ _id: string; count: number }>([
+        .aggregate<{
+          _id: string;
+          count: number;
+        }>([
           { $match: baseMatch },
           { $group: { _id: '$status', count: { $sum: 1 } } },
         ])
@@ -173,12 +179,19 @@ export class MongoChannelsRepository implements ChannelsRepository {
     };
   }
 
-  async countByMerchant(merchantId: Types.ObjectId): Promise<ChannelsCountByMerchant> {
-    const filter: FilterQuery<ChannelDocument> = { merchantId, deletedAt: null };
+  async countByMerchant(
+    merchantId: Types.ObjectId,
+  ): Promise<ChannelsCountByMerchant> {
+    const filter: FilterQuery<ChannelDocument> = {
+      merchantId,
+      deletedAt: null,
+    };
     const [total, enabled, connected] = await Promise.all([
       this.model.countDocuments(filter).exec(),
       this.model.countDocuments({ ...filter, enabled: true }).exec(),
-      this.model.countDocuments({ ...filter, status: ChannelStatus.CONNECTED }).exec(),
+      this.model
+        .countDocuments({ ...filter, status: ChannelStatus.CONNECTED })
+        .exec(),
     ]);
     return { total, enabled, connected };
   }

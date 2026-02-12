@@ -25,7 +25,6 @@ import {
 } from '@nestjs/swagger';
 import * as bcrypt from 'bcrypt';
 import { Types } from 'mongoose';
-
 import {
   ApiSuccessResponse,
   ApiCreatedResponse as CommonApiCreatedResponse,
@@ -60,7 +59,7 @@ export class UsersController {
     private readonly usersService: UsersService,
     @InjectModel(User.name) private readonly userModel: Model<User>,
     private readonly translationService: TranslationService,
-  ) { }
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -181,9 +180,9 @@ export class UsersController {
     const passwordOwnerId = isAdmin && !isSelf ? actorId : id;
     const passwordOwner = passwordOwnerId
       ? await this.userModel
-        .findById(toObjectId(passwordOwnerId))
-        .select('+password')
-        .exec()
+          .findById(toObjectId(passwordOwnerId))
+          .select('+password')
+          .exec()
       : null;
 
     if (!passwordOwner?.password) {

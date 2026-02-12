@@ -18,23 +18,23 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { Types } from 'mongoose';
+import { HydratedDocument } from 'mongoose';
 
-import { UserRole } from '../users/schemas/user.schema';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { UserRole } from '../users/schemas/user.schema';
+import { ChannelLean } from '../webhooks/repositories/channel.repository';
 
 import { ChannelsService } from './channels.service';
-import { UpdateChannelDto } from './dto/update-channel.dto';
 import { QueryAdminChannelsDto } from './dto/query-admin-channels.dto';
+import { UpdateChannelDto } from './dto/update-channel.dto';
+import { StatsAdminResult } from './repositories/channels.repository';
 import {
   Channel,
   ChannelProvider,
   ChannelStatus,
 } from './schemas/channel.schema';
-import { HydratedDocument } from 'mongoose';
-import { ChannelLean } from '../webhooks/repositories/channel.repository';
-import { StatsAdminResult } from './repositories/channels.repository';
 
 @ApiTags('Admin', 'Admin Channels')
 @ApiBearerAuth()
@@ -78,9 +78,7 @@ export class ChannelsAdminController {
   @ApiParam({ name: 'id', description: 'معرف القناة' })
   @ApiResponse({ status: 200, description: 'تفاصيل القناة' })
   @ApiResponse({ status: 404, description: 'القناة غير موجودة' })
-  get(
-    @Param('id') id: string,
-  ): Promise<HydratedDocument<Channel>> {
+  get(@Param('id') id: string): Promise<HydratedDocument<Channel>> {
     if (!id || !Types.ObjectId.isValid(id)) {
       throw new BadRequestException('معرف القناة غير صالح');
     }

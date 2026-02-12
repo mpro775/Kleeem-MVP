@@ -1,7 +1,16 @@
 // src/modules/customers/dto/get-customers.dto.ts
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsArray, IsBoolean, IsIn, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsArray,
+  IsBoolean,
+  IsIn,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
 
 export class GetCustomersDto {
   @ApiPropertyOptional({
