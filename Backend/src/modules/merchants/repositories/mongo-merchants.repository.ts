@@ -529,7 +529,7 @@ export class MongoMerchantsRepository implements MerchantsRepository {
           'name userId status active deletedAt publicSlug subscription createdAt updatedAt',
         )
         .lean()
-        .exec() as Promise<MerchantAdminLean[]>,
+        .exec() as unknown as Promise<MerchantAdminLean[]>,
       this.merchantModel.countDocuments(filter).exec(),
     ]);
 

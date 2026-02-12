@@ -59,7 +59,7 @@ export class UsageAdminController {
     total: number;
   }> {
     const params = {
-      monthKey: q.monthKey,
+      ...(q.monthKey && { monthKey: q.monthKey }),
       limit: q.limit ?? 30,
       page: q.page ?? 1,
       sortBy: q.sortBy ?? 'messagesUsed',
@@ -80,10 +80,11 @@ export class UsageAdminController {
     @Query('limit') limit?: number,
   ): ReturnType<UsageService['getAlertsAdmin']> {
     return this.usageService.getAlertsAdmin({
-      monthKey: monthKey || undefined,
-      thresholdPercent:
-        thresholdPercent != null ? Number(thresholdPercent) : undefined,
-      limit: limit != null ? Number(limit) : undefined,
+      ...(monthKey && { monthKey }),
+      ...(thresholdPercent != null && {
+        thresholdPercent: Number(thresholdPercent),
+      }),
+      ...(limit != null && { limit: Number(limit) }),
     });
   }
 

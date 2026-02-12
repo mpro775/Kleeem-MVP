@@ -131,7 +131,7 @@ export class MongoChannelsRepository implements ChannelsRepository {
         .skip((page - 1) * limit)
         .limit(limit)
         .lean()
-        .exec() as Promise<ChannelLean[]>,
+        .exec() as unknown as Promise<ChannelLean[]>,
       this.model.countDocuments(filter).exec(),
     ]);
 

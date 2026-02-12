@@ -91,7 +91,7 @@ export class PublicChatWidgetController {
     return {
       merchantId: settings.merchantId,
       widgetSlug: settings.widgetSlug as string,
-      publicSlug: publicSlug ?? undefined,
+      ...(publicSlug != null && { publicSlug }),
       embedMode: settings.embedMode,
       theme: {
         headerBgColor: settings.headerBgColor,

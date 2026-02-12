@@ -120,7 +120,9 @@ export class IntegrationsController {
       return { productSource: 'internal', skipped: true };
     }
 
-    const { sallaInteg, zidInteg } = await this.getIntegrations(merchant._id);
+    const { sallaInteg, zidInteg } = await this.getIntegrations(
+      new Types.ObjectId(merchant._id as string),
+    );
     const sallaConnected = this.isConnected(sallaInteg as Integration);
     const zidConnected = this.isConnected(zidInteg as Integration);
 

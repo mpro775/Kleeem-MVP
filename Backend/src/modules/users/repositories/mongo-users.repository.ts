@@ -43,6 +43,30 @@ function toObjectId(id: string | Types.ObjectId): Types.ObjectId {
   return id instanceof Types.ObjectId ? id : new Types.ObjectId(id);
 }
 
+/** تحويل ObjectId/string إلى string آمن */
+function toIdString(value: unknown): string {
+  const v = value as { toString?: () => string };
+  return v?.toString?.() ?? String(value);
+}
+
+/** يطبع RawLeanUser إلى UserAdminLean لقائمة الأدمن */
+function rawToAdminLean(u: RawLeanUser): UserAdminLean {
+  const merchantIdStr = u.merchantId ? toIdString(u.merchantId) : undefined;
+  return {
+    _id: toIdString(u._id),
+    email: u.email,
+    name: u.name,
+    role: u.role,
+    ...(typeof u.active === 'boolean' && { active: u.active }),
+    ...(typeof u.emailVerified === 'boolean' && {
+      emailVerified: u.emailVerified,
+    }),
+    ...(merchantIdStr !== undefined && { merchantId: merchantIdStr }),
+    ...(u.createdAt !== undefined && { createdAt: u.createdAt }),
+    ...(u.updatedAt !== undefined && { updatedAt: u.updatedAt }),
+  };
+}
+
 /** يطبع UserLean من RawLeanUser بتسلسل المعرفات */
 function normalizeLean(u: RawLeanUser): UserLean {
   const result = {
@@ -220,21 +244,7 @@ export class MongoUsersRepository implements UsersRepository {
       this.userModel.countDocuments(filter).exec(),
     ]);
 
-    const items: UserAdminLean[] = docs.map((u) => ({
-      _id:
-        (u._id as { toString?: () => string })?.toString?.() ?? String(u._id),
-      email: u.email,
-      name: u.name,
-      role: u.role,
-      active: u.active,
-      emailVerified: u.emailVerified,
-      merchantId: u.merchantId
-        ? ((u.merchantId as { toString?: () => string })?.toString?.() ??
-          String(u.merchantId))
-        : undefined,
-      createdAt: u.createdAt,
-      updatedAt: u.updatedAt,
-    }));
+    const items: UserAdminLean[] = docs.map(rawToAdminLean);
 
     return { items, total };
   }
@@ -325,7 +335,7 @@ export class MongoUsersRepository implements UsersRepository {
     };
 
     const result = await this.userModel
-      .aggregate<{ _id: string; count: number }>([
+      .aggregate<{ date: string; count: number }>([
         { $match: baseMatch },
         {
           $group: {
@@ -364,7 +374,7 @@ export class MongoUsersRepository implements UsersRepository {
     };
 
     const result = await this.userModel
-      .aggregate<{ _id: string; count: number }>([
+      .aggregate<{ date: string; count: number }>([
         { $match: baseMatch },
         {
           $group: {

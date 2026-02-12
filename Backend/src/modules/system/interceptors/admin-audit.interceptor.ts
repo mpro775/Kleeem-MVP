@@ -34,17 +34,19 @@ export class AdminAuditInterceptor implements NestInterceptor {
     }
 
     const action = `${req.method} ${path}`;
+    const ip = getClientIp(req);
+    const userAgent =
+      typeof req.headers['user-agent'] === 'string'
+        ? req.headers['user-agent'].slice(0, 500)
+        : undefined;
     this.auditService
       .log({
         actorId: req.user.userId,
         action: action.slice(0, 200),
         method: req.method,
         path: path.slice(0, 500),
-        ip: getClientIp(req),
-        userAgent:
-          typeof req.headers['user-agent'] === 'string'
-            ? req.headers['user-agent'].slice(0, 500)
-            : undefined,
+        ...(ip && { ip }),
+        ...(userAgent && { userAgent }),
       })
       .catch(() => {});
 
