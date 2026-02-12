@@ -23,7 +23,7 @@ import {
   ApiCreatedResponse,
   ApiExtraModels,
 } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsMongoId } from 'class-validator';
+import { IsEnum, IsOptional, IsMongoId } from 'class-validator';
 // ================== Internal imports ==================
 import { ErrorResponse } from 'src/common/dto/error-response.dto';
 

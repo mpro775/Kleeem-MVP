@@ -94,28 +94,17 @@ export class MongoAuthRepository implements AuthRepository {
     codeHash: string;
     expiresAt: Date;
   }): Promise<EmailVerificationTokenDocument> {
-    console.log(
-      `[DEBUG] Creating verification token for userId: ${data.userId}, expiresAt: ${data.expiresAt}`,
-    );
     const token = await this.tokenModel.create(data);
-    console.log(`[DEBUG] Created token with id: ${token._id}`);
     return token;
   }
 
   async latestEmailVerificationTokenByUser(
     userId: Types.ObjectId,
   ): Promise<EmailVerificationTokenDocument | null> {
-    console.log(`[DEBUG] Looking for verification token for userId: ${userId}`);
     const token = await this.tokenModel
       .findOne({ userId })
       .sort({ createdAt: -1 })
       .exec();
-    console.log(`[DEBUG] Found token: ${!!token}`);
-    if (token) {
-      console.log(
-        `[DEBUG] Token details: id=${token._id}, expiresAt=${token.expiresAt}, createdAt=${(token as any).createdAt || 'N/A'}`,
-      );
-    }
     return token;
   }
 

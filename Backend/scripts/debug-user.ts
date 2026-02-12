@@ -30,14 +30,14 @@ async function debugUser() {
     }
 
     console.log('✅ User found:');
-    console.log(`  _id: ${user._id}`);
+    console.log(`  _id: ${user._id?.toString() ?? 'N/A'}`);
     console.log(`  email: ${user.email}`);
     console.log(`  name: ${user.name}`);
     console.log(`  role: ${user.role}`);
     console.log(`  active: ${user.active}`);
     console.log(`  emailVerified: ${user.emailVerified}`);
     console.log(`  firstLogin: ${user.firstLogin}`);
-    console.log(`  merchantId: ${user.merchantId}`);
+    console.log(`  merchantId: ${user.merchantId?.toString() ?? 'N/A'}`);
     console.log(`  createdAt: ${(user as any).createdAt}`);
     console.log(`  updatedAt: ${(user as any).updatedAt}`);
 

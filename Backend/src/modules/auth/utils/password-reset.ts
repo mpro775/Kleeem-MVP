@@ -1,5 +1,6 @@
 import { randomBytes, createHash } from 'crypto';
 
+import { MS_PER_SECOND } from 'src/common/cache/constant';
 import {
   PASSWORD_RESET_TOKEN_LENGTH,
   SECONDS_PER_MINUTE,
@@ -15,10 +16,7 @@ export function sha256(input: string): string {
 }
 export function minutesFromNow(mins: number): Date {
   const now = Date.now();
-  const milliseconds = mins * SECONDS_PER_MINUTE * 1000; // Convert to milliseconds
+  const milliseconds = mins * SECONDS_PER_MINUTE * MS_PER_SECOND; // Convert to milliseconds
   const futureTime = now + milliseconds;
-  console.log(
-    `[DEBUG] password-reset minutesFromNow(${mins}): now=${new Date(now)}, future=${new Date(futureTime)}, diff=${milliseconds}ms`,
-  );
   return new Date(futureTime);
 }

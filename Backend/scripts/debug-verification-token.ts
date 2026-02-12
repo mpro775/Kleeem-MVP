@@ -37,10 +37,10 @@ async function debugVerificationToken() {
     } else {
       tokens.forEach((token, index) => {
         console.log(`\nToken ${index + 1}:`);
-        console.log(`  _id: ${token._id}`);
-        console.log(`  userId: ${token.userId}`);
-        console.log(`  codeHash: ${token.codeHash}`);
-        console.log(`  expiresAt: ${token.expiresAt}`);
+        console.log(`  _id: ${token._id?.toString()}`);
+        console.log(`  userId: ${token.userId?.toString() ?? 'N/A'}`);
+        console.log(`  codeHash: ${token.codeHash ?? 'N/A'}`);
+        console.log(`  expiresAt: ${token.expiresAt?.toString() ?? 'N/A'}`);
         console.log(`  createdAt: ${(token as any).createdAt}`);
         console.log(
           `  Is expired: ${token.expiresAt && token.expiresAt.getTime() < Date.now()}`,
@@ -58,7 +58,7 @@ async function debugVerificationToken() {
     console.log(`Found ${allTokens.length} total token(s) in database:`);
     allTokens.forEach((token, index) => {
       console.log(
-        `  ${index + 1}. userId: ${token.userId}, expiresAt: ${token.expiresAt}, expired: ${token.expiresAt && token.expiresAt.getTime() < Date.now()}`,
+        `  ${index + 1}. userId: ${token.userId?.toString() ?? 'N/A'}, expiresAt: ${token.expiresAt?.toString() ?? 'N/A'}, expired: ${token.expiresAt && token.expiresAt.getTime() < Date.now()}`,
       );
     });
   } catch (error) {

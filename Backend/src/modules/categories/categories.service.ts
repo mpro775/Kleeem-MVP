@@ -263,6 +263,32 @@ export class CategoriesService {
     cat.parent = newParent;
   }
 
+  private applyFieldUpdates(
+    cat: CategoryDocument,
+    dto: UpdateCategoryDto,
+  ): void {
+    const mappings: Array<{
+      key: keyof UpdateCategoryDto;
+      fallback?: string | string[];
+    }> = [
+      { key: 'name' },
+      { key: 'description', fallback: '' },
+      { key: 'image', fallback: '' },
+      { key: 'keywords', fallback: [] },
+      { key: 'seoTitle', fallback: '' },
+      { key: 'seoDescription', fallback: '' },
+      { key: 'icon', fallback: '' },
+    ];
+    for (const { key, fallback } of mappings) {
+      const val = dto[key];
+      if (val !== undefined) {
+        const catRecord = cat as unknown as Record<string, unknown>;
+        catRecord[key as string] =
+          fallback !== undefined ? (val ?? fallback) : val;
+      }
+    }
+  }
+
   async update(
     id: string,
     merchantId: string,
@@ -272,7 +298,6 @@ export class CategoriesService {
     const cat = await this.repo.findByIdForMerchant(id, mId);
     if (!cat) throw new CategoryNotFoundError(id);
 
-    // حماية من تعديل merchantId في DTO
     if (Object.prototype.hasOwnProperty.call(dto, 'merchantId')) {
       delete dto.merchantId;
     }
@@ -281,14 +306,7 @@ export class CategoriesService {
       await this.updateParent(cat, dto.parent, mId);
     }
 
-    if (dto.name !== undefined) cat.name = dto.name;
-    if (dto.description !== undefined) cat.description = dto.description ?? '';
-    if (dto.image !== undefined) cat.image = dto.image ?? '';
-    if (dto.keywords !== undefined) cat.keywords = dto.keywords ?? [];
-    if (dto.seoTitle !== undefined) cat.seoTitle = dto.seoTitle ?? '';
-    if (dto.seoDescription !== undefined)
-      cat.seoDescription = dto.seoDescription ?? '';
-    if (dto.icon !== undefined) cat.icon = dto.icon ?? '';
+    this.applyFieldUpdates(cat, dto);
 
     await cat.save();
     return cat;
