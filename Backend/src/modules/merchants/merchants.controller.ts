@@ -323,15 +323,6 @@ export class MerchantsController {
     });
   }
 
-  @Get('prompt/advanced-template')
-  async getAdvancedTemplate(
-    @Param('id') id: string,
-  ): Promise<{ template: string; note?: string }> {
-    return this.svc.getAdvancedTemplateForEditor(id, {
-      productName: 'منتج تجريبي',
-    });
-  }
-
   @Post(':id/logo')
   @ApiOperation({
     summary: 'i18n:merchants.operations.uploadLogo.summary',

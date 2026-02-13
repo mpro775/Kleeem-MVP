@@ -9,9 +9,9 @@
 
 | البند         | الوصف                                                                                                              |
 | ------------- | ------------------------------------------------------------------------------------------------------------------ |
-| **النطاق**    | مصادقة مستخدم لوحة التحكم: `/auth/*` (تسجيل، دخول، تحقق بريد، كلمة مرور، جلسة، خروج) ومسارات محمية بـ JwtAuthGuard |
+| **النطاق**    | مصادقة مستخدم لوحة التحكم: `/auth/*` (تسجيل، دخول، تحقق بريد، كلمة مرور، جلسة، خروج) ومسارات محمية بـ JwtAuthGuard؛ عمليات المستخدمين `/users/*` |
 | **غير مشمول** | مصادقة عميل المتجر (OTP عبر `/customers/otp/*`)                                                                    |
-| **المراجع**   | `Backend: auth.controller.ts`, `auth.service.ts`, `jwt.strategy.ts`                                                |
+| **المراجع**   | `Backend: auth.controller.ts`, `auth.service.ts`, `jwt.strategy.ts`, `users.controller.ts`                       |
 
 ---
 
@@ -42,6 +42,11 @@
 11. **تحديث التوكن (Refresh)** — استصدار accessToken جديد باستخدام refreshToken.
 12. **تسجيل الخروج (Logout)** — إبطال الجلسة الحالية ومسح cookies.
 13. **تسجيل الخروج من كل الأجهزة (Logout all)** — إبطال كل جلسات المستخدم.
+14. **تفاصيل مستخدم (Get user)** — GET `/users/:id` — الملف الشخصي أو أدمن (assertOwnProfileOrAdmin).
+15. **تحديث الملف الشخصي (Update profile)** — PUT `/users/:id` — تحديث اسم/هاتف/بريد (assertOwnProfileOrAdmin).
+16. **إشعاراتي — جلب** — GET `/users/:id/notifications` — تفضيلات الإشعارات.
+17. **إشعاراتي — تحديث** — PUT `/users/:id/notifications` — تحديث تفضيلات الإشعارات.
+18. **حذف الحساب بكلمة المرور** — POST `/users/:id/delete` — حذف آمن مع تأكيد كلمة المرور (ذاتي أو أدمن).
 
 ---
 
@@ -407,8 +412,8 @@
 
 | المعرّف       | العنوان                                                | الخطوات                                          | النتيجة المتوقعة | الأولوية |
 | ------------- | ------------------------------------------------------ | ------------------------------------------------ | ---------------- | -------- |
-| MAUTH-OUT-002 | طلب بدون accessToken                                   | 401                                              | عالي             |
-| MAUTH-OUT-003 | إرسال refreshToken لشخص آخر (لا يطابق المستخدم الحالي) | إن كان التحقق مفعّلاً: 401 (invalid token owner) | متوسط            |
+| MAUTH-OUT-002 | طلب بدون accessToken | طلب بدون Authorization: Bearer | 401 | عالي |
+| MAUTH-OUT-003 | إرسال refreshToken لشخص آخر | refreshToken لا يطابق المستخدم الحالي (sub !== userId) | 401 (invalid token owner) | متوسط |
 
 ---
 
@@ -431,7 +436,186 @@
 
 | المعرّف          | العنوان        | الخطوات | النتيجة المتوقعة | الأولوية |
 | ---------------- | -------------- | ------- | ---------------- | -------- |
-| MAUTH-OUTALL-002 | عدم إرسال توكن | 401     | عالي             |
+| MAUTH-OUTALL-002 | عدم إرسال توكن | طلب بدون Authorization: Bearer | 401 | عالي |
+
+---
+
+### العملية 14: تفاصيل مستخدم (Get user)
+
+**الـ API:** `GET /users/:id`  
+**التوثيق:** `Authorization: Bearer <accessToken>`.  
+**الصلاحيات:** المستخدم يصل لملفه فقط (id = userId) أو أن يكون أدمن.
+
+| المعرّف              | MAUTH-USR-003                                                                 |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **العنوان**          | جلب ملف المستخدم الحالي                                                       |
+| **الخطوات**          | GET /users/:id حيث id = userId من JWT.                                       |
+| **النتيجة المتوقعة** | 200، `UserLean` للمستخدم.                                                     |
+| **الأولوية**         | حرج                                                                          |
+
+| المعرّف              | MAUTH-USR-004                                                                 |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **العنوان**          | أدمن يجلب ملف مستخدم آخر                                                      |
+| **الخطوات**          | GET /users/:id مع JWT أدمن و id ≠ userId.                                     |
+| **النتيجة المتوقعة** | 200، تفاصيل المستخدم المطلوب.                                                 |
+| **الأولوية**         | عالي                                                                         |
+
+| المعرّف          | MAUTH-USR-005                                                                 |
+| ---------------- | ----------------------------------------------------------------------------- |
+| **العنوان**      | مستخدم عادي يحاول الوصول لملف غيره                                             |
+| **الخطوات**      | GET /users/:otherId مع JWT تاجر (ليس أدمن) و otherId ≠ userId.                 |
+| **النتيجة المتوقعة** | 400 (صلاحيات غير كافية)                                                     |
+| **الأولوية**     | حرج                                                                          |
+
+---
+
+### العملية 15: تحديث الملف الشخصي (Update profile)
+
+**الـ API:** `PUT /users/:id`  
+**Body:** `UpdateUserDto` — name؟، phone؟، email؟، role؟، firstLogin؟.  
+**الصلاحيات:** assertOwnProfileOrAdmin.
+
+| المعرّف              | MAUTH-USR-008                                                                 |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **العنوان**          | المستخدم يحدّث اسمه وهاتفه                                                    |
+| **الخطوات**          | PUT /users/:id بـ `{ name: "اسم جديد", phone: "+966501234567" }` حيث id = userId. |
+| **النتيجة المتوقعة** | 200، مستخدم محدث.                                                             |
+| **الأولوية**         | حرج                                                                          |
+
+| المعرّف          | MAUTH-USR-009                                                                 |
+| ---------------- | ----------------------------------------------------------------------------- |
+| **العنوان**      | اسم أقصر من 3 أحرف                                                            |
+| **الخطوات**      | PUT بـ `{ name: "ab" }`.                                                      |
+| **النتيجة المتوقعة** | 400 (تحقق minLength)                                                        |
+| **الأولوية**     | متوسط                                                                        |
+
+---
+
+### العملية 16 و 17: إشعاراتي (Notifications)
+
+**جلب:** `GET /users/:id/notifications`  
+**تحديث:** `PUT /users/:id/notifications`  
+**Body (تحديث):** `NotificationsPrefsDto` — channels؟ (inApp، email، telegram، whatsapp)، topics؟ (syncFailed، syncCompleted، webhookFailed، embeddingsCompleted، missingResponsesDigest)، quietHours؟ (enabled، start، end، timezone).
+
+| المعرّف              | MAUTH-USR-010                                                                 |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **العنوان**          | جلب تفضيلات الإشعارات                                                         |
+| **الخطوات**          | GET /users/:id/notifications (assertOwnProfileOrAdmin).                       |
+| **النتيجة المتوقعة** | 200، `NotificationsPrefsDto`.                                                 |
+| **الأولوية**         | عالي                                                                         |
+
+| المعرّف              | MAUTH-USR-011                                                                 |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **العنوان**          | تحديث تفضيلات الإشعارات                                                       |
+| **الخطوات**          | PUT /users/:id/notifications بـ `{ channels: { inApp: true, email: false }, topics: { missingResponsesDigest: "weekly" } }`. |
+| **النتيجة المتوقعة** | 200، تفضيلات محدثة.                                                           |
+| **الأولوية**         | عالي                                                                         |
+
+---
+
+### العملية 18: حذف الحساب بكلمة المرور (Delete with password)
+
+**الـ API:** `POST /users/:id/delete`  
+**Body:** `{ "confirmPassword": string }`.  
+**الصلاحيات:** المستخدم لحسابه (isSelf) أو أدمن لحساب آخر. عند الأدمن: يُتحقق من كلمة مرور الأدمن نفسه.
+
+| المعرّف              | MAUTH-USR-012                                                                 |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **العنوان**          | المستخدم يحذف حسابه بكلمة مرور صحيحة                                          |
+| **الخطوات**          | POST /users/:id/delete بـ `{ confirmPassword: "كلمة المرور الحالية" }` حيث id = userId. |
+| **النتيجة المتوقعة** | 200، الحساب مُحذوف (ناعم أو فعلي بحسب التنفيذ).                               |
+| **الأولوية**         | حرج                                                                          |
+
+| المعرّف              | MAUTH-USR-013                                                                 |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **العنوان**          | كلمة مرور التأكيد خاطئة                                                       |
+| **الخطوات**          | POST بـ confirmPassword غير صحيحة.                                            |
+| **النتيجة المتوقعة** | 400 (بيانات الدخول غير صحيحة).                                                |
+| **الأولوية**         | حرج                                                                          |
+
+| المعرّف          | MAUTH-USR-014                                                                 |
+| ---------------- | ----------------------------------------------------------------------------- |
+| **العنوان**      | حساب SSO بدون كلمة مرور                                                       |
+| **الخطوات**      | حذف مستخدم مسجّل عبر SSO (password = null).                                   |
+| **النتيجة المتوقعة** | 400 (بيانات الدخول غير صحيحة — يلزم OTP بدلاً)                             |
+| **الأولوية**     | عالي                                                                         |
+
+| المعرّف          | MAUTH-USR-015                                                                 |
+| ---------------- | ----------------------------------------------------------------------------- |
+| **العنوان**      | مستخدم عادي يحاول حذف حساب غيره                                               |
+| **الخطوات**      | POST /users/:otherId/delete مع id ≠ userId و role ≠ ADMIN.                    |
+| **النتيجة المتوقعة** | 400 (صلاحيات غير كافية)                                                     |
+| **الأولوية**     | حرج                                                                          |
+
+---
+
+## 4.1) التكاملات المرتبطة بإنشاء التاجر (n8n workflow + Storefront)
+
+> عند **verify-email** أو **ensure-merchant** (أول مرة)، يُنشأ التاجر عبر `MerchantProvisioningService` الذي يشغّل: إنشاء التاجر في DB → إنشاء workflow في n8n → تجميع finalPromptTemplate → إنشاء Storefront افتراضي.  
+> **ملاحظة:** فشل n8n لا يوقف إنشاء التاجر (workflowId يبقى null). فشل Storefront يسبب rollback كامل.
+
+| البند | الوصف |
+|--------|--------|
+| **المراجع** | `merchant-provisioning.service.ts`, `n8n-workflow.service.ts`, `storefront.service.ts` |
+| **مسارات الاستعادة** | `POST /merchants/:id/workflow/ensure`, `POST /n8n/workflows/me/ensure` |
+
+### السيناريو السعيد (تهيئة كاملة)
+
+| المعرّف | MAUTH-INT-001 |
+|----------|----------------|
+| **العنوان** | تهيئة كاملة ناجحة — تاجر + workflowId + storefront |
+| **المتطلبات** | n8n و Storefront يعملان، verify-email أو ensure-merchant (أول مرة) |
+| **الخطوات** | 1. تنفيذ verify-email أو ensure-merchant (مستخدم بدون تاجر). 2. التحقق من إنشاء التاجر في DB مع workflowId و storefront. |
+| **النتيجة المتوقعة** | 200، user.merchantId معبّأ. التاجر له workflowId في DB؛ Storefront موجود. |
+| **الأولوية** | حرج |
+
+### تاجر بدون workflowId (فشل n8n أثناء التهيئة)
+
+| المعرّف | MAUTH-INT-002 |
+|----------|----------------|
+| **العنوان** | فشل n8n أثناء التهيئة — التاجر يُنشأ بدون workflowId |
+| **المتطلبات** | n8n معطّل أو يُرجع خطأ (انقطاع شبكة، N8N_API_KEY خاطئ، إلخ) |
+| **الخطوات** | 1. تنفيذ verify-email أو ensure-merchant (مستخدم بدون تاجر). 2. التحقق من إنشاء التاجر في DB. 3. التحقق من أن merchant.workflowId = null أو غير موجود. |
+| **النتيجة المتوقعة** | 200 (verify/ensure ينجح). التاجر موجود، storefront موجود، workflowId = null. تحذير في الـ logs: "n8n workflow creation failed... Will retry later." |
+| **الأولوية** | عالي |
+
+### استعادة workflow (ensure-workflow)
+
+| المعرّف | MAUTH-INT-003 |
+|----------|----------------|
+| **العنوان** | استعادة workflow ناجحة — تاجر بدون workflowId، n8n يعمل |
+| **المتطلبات** | تاجر موجود بدون workflowId، n8n يعمل، JWT تاجر صالح |
+| **الخطوات** | 1. تسجيل دخول تاجر بدون workflowId. 2. POST /merchants/:id/workflow/ensure أو POST /n8n/workflows/me/ensure (حسب المسار المُعرّف). |
+| **النتيجة المتوقعة** | 200، `{ "workflowId": "..." }`. التاجر يُحدّث بـ workflowId في DB. |
+| **الأولوية** | عالي |
+
+### فشل ensure-workflow (n8n still down)
+
+| المعرّف | MAUTH-INT-004 |
+|----------|----------------|
+| **العنوان** | فشل ensure-workflow عند استمرار مشكلة n8n |
+| **الخطوات** | 1. تاجر بدون workflowId. 2. n8n معطّل أو يُرجع خطأ. 3. POST ensure-workflow. |
+| **النتيجة المتوقعة** | 5xx أو خطأ من n8n API (مثلاً HttpException: "n8n API ... failed"). |
+| **الأولوية** | عالي |
+
+### فشل Storefront → rollback كامل
+
+| المعرّف | MAUTH-INT-005 |
+|----------|----------------|
+| **العنوان** | فشل إنشاء Storefront أثناء التهيئة — rollback كامل |
+| **المتطلبات** | Storefront service أو تبعياته معطّلة أو تُرجع خطأ |
+| **الخطوات** | 1. إيقاف أو تعطيل خدمة Storefront (أو محاكاة فشل). 2. تنفيذ verify-email أو ensure-merchant (مستخدم بدون تاجر). |
+| **النتيجة المتوقعة** | 500 (InternalServerError). التاجر مُحذوف (rollback). لا workflow ولا storefront. |
+| **الأولوية** | عالي |
+
+### سلوك الدردشة عند عدم وجود workflowId
+
+| المعرّف | MAUTH-INT-006 |
+|----------|----------------|
+| **العنوان** | محاولة استخدام الدردشة/المحادثات بدون workflowId |
+| **الخطوات** | 1. تاجر بدون workflowId. 2. إرسال رسالة دردشة (ويب شات، واتساب، إلخ). |
+| **النتيجة المتوقعة** | حسب التصميم: خطأ أو رسالة توضيحية (مثلاً "Workflow غير مُهيأ"). |
+| **الأولوية** | متوسط |
 
 ---
 
@@ -439,9 +623,9 @@
 
 | الأولوية  | الحالات (أمثلة)                                                                                                                                                                                                                                                                                                                                          |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **حرج**   | MAUTH-REG-001, MAUTH-REG-003؛ MAUTH-LOGIN-001, MAUTH-LOGIN-003, MAUTH-LOGIN-004؛ MAUTH-VERIFY-001, MAUTH-VERIFY-002؛ MAUTH-FORGOT-001؛ MAUTH-RESET-001, MAUTH-RESET-003؛ MAUTH-ENSURE-001, MAUTH-ENSURE-002, MAUTH-ENSURE-003, MAUTH-ENSURE-004؛ MAUTH-CHG-001, MAUTH-CHG-002, MAUTH-CHG-005؛ MAUTH-REF-001, MAUTH-REF-002, MAUTH-REF-003؛ MAUTH-OUT-001 |
-| **عالي**  | باقي سيناريوهات التسجيل والدخول والتحقق والكلمة والـ ensure والـ refresh والـ logout مع التركيز على التحقق من البيانات والصلاحيات والحدود                                                                                                                                                                                                                |
-| **متوسط** | التباينات، حدود الطلبات (Throttle)، وحالات حدية نادرة                                                                                                                                                                                                                                                                                                    |
+| **حرج**   | MAUTH-REG-001, MAUTH-REG-003؛ MAUTH-LOGIN-001, MAUTH-LOGIN-003, MAUTH-LOGIN-004؛ MAUTH-VERIFY-001, MAUTH-VERIFY-002؛ MAUTH-FORGOT-001؛ MAUTH-RESET-001, MAUTH-RESET-003؛ MAUTH-ENSURE-001, MAUTH-ENSURE-002, MAUTH-ENSURE-003, MAUTH-ENSURE-004؛ MAUTH-CHG-001, MAUTH-CHG-002, MAUTH-CHG-005؛ MAUTH-REF-001, MAUTH-REF-002, MAUTH-REF-003؛ MAUTH-OUT-001؛ MAUTH-USR-003, MAUTH-USR-005, MAUTH-USR-008, MAUTH-USR-012, MAUTH-USR-013, MAUTH-USR-015؛ MAUTH-INT-001 |
+| **عالي**  | باقي سيناريوهات التسجيل والدخول والتحقق والكلمة والـ ensure والـ refresh والـ logout؛ MAUTH-USR-003 إلى MAUTH-USR-005، MAUTH-USR-008 إلى MAUTH-USR-011، MAUTH-USR-014؛ MAUTH-INT-002، MAUTH-INT-003، MAUTH-INT-004، MAUTH-INT-005 |
+| **متوسط** | التباينات، حدود الطلبات (Throttle)، وحالات حدية نادرة؛ MAUTH-USR-009؛ MAUTH-INT-006 |
 
 **ترتيب مقترح للتنفيذ:**
 
@@ -450,9 +634,11 @@
 3. إعادة إرسال التحقق + التحقق من البريد.
 4. نسق استعادة كلمة المرور: forgot → validate → reset.
 5. Ensure merchant (مع/بدون تاجر، ومعطّل، وتوكن).
-6. Onboarding complete.
-7. تغيير كلمة المرور.
-8. Refresh و Logout و Logout all.
+6. **التكاملات:** تهيئة كاملة (MAUTH-INT-001)، تاجر بدون workflowId (MAUTH-INT-002)، ensure-workflow (MAUTH-INT-003)، فشل n8n/storefront (MAUTH-INT-004، MAUTH-INT-005).
+7. Onboarding complete.
+8. تغيير كلمة المرور.
+9. Refresh و Logout و Logout all.
+10. **عمليات المستخدمين:** تفاصيل، تحديث ملف، إشعاراتي، حذف بكلمة المرور.
 
 ---
 
@@ -473,6 +659,8 @@
 | MAUTH-REF-001 – 006    | تحديث التوكن                 |         |         |
 | MAUTH-OUT-001 – 003    | تسجيل الخروج                 |         |         |
 | MAUTH-OUTALL-001 – 002 | تسجيل الخروج من كل الأجهزة   |         |         |
+| MAUTH-USR-003 – 015    | عمليات المستخدمين (Users)   |         |         |
+| MAUTH-INT-001 – 006    | التكاملات (n8n + Storefront) |         |         |
 
 ---
 
@@ -485,7 +673,9 @@
 - **بعد الدخول:** `POST /api/auth/ensure-merchant`، `POST /api/auth/onboarding-complete`، `POST /api/auth/change-password` — تتطلب Bearer token.
 - **الجلسة:** `POST /api/auth/refresh` (قد يتطلب CSRF)، `POST /api/auth/logout`، `POST /api/auth/logout-all`.
 - **كلمة المرور:** الحد الأدنى 8 أحرف؛ تأكيد كلمة المرور يجب أن يطابق الحقل الأصلي في register/change-password/reset-password.
+- **المستخدمون:** `GET /api/users/:id`، `PUT /api/users/:id`، `GET /api/users/:id/notifications`، `PUT /api/users/:id/notifications`، `POST /api/users/:id/delete` — تتطلب JWT؛ assertOwnProfileOrAdmin للوصول لملف مستخدم آخر.
+- **التكاملات:** تهيئة التاجر تشمل n8n workflow + Storefront. فشل n8n لا يوقف إنشاء التاجر (workflowId يبقى null). استعادة workflow: `POST /merchants/:id/workflow/ensure` أو `POST /n8n/workflows/me/ensure`.
 
 ---
 
-_آخر تحديث: فبراير 2025 — إصدار 1.0_
+_آخر تحديث: فبراير 2025 — إصدار 1.1_

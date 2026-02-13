@@ -59,6 +59,57 @@
 - حالات اختبار يدوي لمصادقة لوحة التحكم (تسجيل، دخول، تحقق بريد، استعادة كلمة المرور، ensure-merchant، onboarding، تغيير كلمة المرور، refresh، logout)
 - سيناريوهات سعيدة، تباينات، وسلبيات/حدود لكل عملية
 
+### 📝 [دليل الاختبار اليدوي — التجار](./manual-testing-merchants.md)
+
+- حالات اختبار يدوي لعمليات التاجر (merchants + merchant-prompt) — بدون عمليات الأدمن
+- slug، عرض، تحديث، حذف، استعادة، checklist، leads، شعار، onboarding، workflow، مصدر المنتجات، quick-config، قالب متقدّم، معاينة، final-prompt
+
+### 📝 [دليل الاختبار اليدوي — واجهة المتجر](./manual-testing-storefront.md)
+
+- حالات اختبار يدوي لإعدادات واجهة المتجر (storefront)
+- جلب، تحديث، slug، بنرات، طلباتي، قالب CSS المميّز
+
+### 📝 [دليل الاختبار اليدوي — المنتجات والفئات](./manual-testing-products-categories.md)
+
+- حالات اختبار يدوي للمنتجات والفئات (Products & Categories)
+- التركيز على التكاملات (ProductIndexService، Catalog sync، Salla/Zid) والفيكتور (Pinecone embeddings، البحث الدلالي)
+
+### 📝 [دليل الاختبار اليدوي — القنوات](./manual-testing-channels.md)
+
+- حالات اختبار يدوي للقنوات (Channels) — كل قناة تكامل مع مزود خارجي
+- التركيز على التكاملات: WhatsApp Cloud (Meta)، WhatsApp QR (Evolution)، Telegram، Webchat
+
+### 📝 [دليل الاختبار اليدوي — الرسائل والدردشة والوسائط](./manual-testing-messaging-chat-media.md)
+
+- حالات اختبار يدوي لـ Messaging، Chat، Media (أقسام أساسية)
+- التركيز على التكاملات: ChatGateway، Gemini، Deepgram، Tesseract، S3/MinIO
+
+### 📝 [دليل الاختبار اليدوي — المستندات والتوجيهات والمعرفة](./manual-testing-documents-faq-instructions-knowledge.md)
+
+- حالات اختبار يدوي لـ Documents، FAQ، Instructions، Knowledge (أقسام حرجة)
+- التركيز على التكاملات والتداخل: Vector/Pinecone، Bull، Outbox، Gemini، PromptBuilder
+
+### 📝 [دليل الاختبار اليدوي — الكوبونات والعروض](./manual-testing-coupons-promotions-offers.md)
+
+- حالات اختبار يدوي لـ Coupons، Promotions، Offers (أقسام مهمة)
+- التركيز على التكاملات: Orders/PricingService، PromotionsCron
+
+### 📝 [دليل الاختبار اليدوي — العملاء المحتملون والعملاء](./manual-testing-leads-customers.md)
+
+- حالات اختبار يدوي لـ Leads و Customers (تحويل lead→customer، OTP، العناوين، التاجات، إحصائيات الطلبات)
+
+### 📝 [دليل الاختبار اليدوي — الطلبات](./manual-testing-orders.md)
+
+- حالات اختبار يدوي لـ Orders (إنشاء، قائمة، طلباتي، تحديث الحالة، التكاملات: Pricing، Inventory، Coupons، Leads، Customers)
+
+### 📝 [دليل الاختبار اليدوي — كليم](./manual-testing-kleem.md)
+
+- حالات اختبار يدوي لـ Kleem Bot بالكامل (Chat، Webhooks، Bot Prompts، Sandbox، FAQ، Bot Chats، Settings، N8n، Vector، Intent)
+
+### 📝 [دليل الاختبار اليدوي — الدعم والإشعارات](./manual-testing-support-notifications.md)
+
+- حالات اختبار يدوي لـ Support (نموذج تواصل، تذكرة التاجر) و Notifications (قائمة، وضع كمقروء، تجريبي)
+
 ## هيكل المحتوى
 
 ### 💻 ممارسات التطوير
@@ -99,6 +150,17 @@
 | **استراتيجية الاختبار**             | [TESTING_STRATEGY.md](./TESTING_STRATEGY.md)                         | نهج الاختبار الشامل                      |
 | **الاختبار اليدوي — مصادقة العميل** | [manual-testing-customer-auth.md](./manual-testing-customer-auth.md) | حالات اختبار OTP/JWT للعميل              |
 | **الاختبار اليدوي — مصادقة التاجر** | [manual-testing-merchant-auth.md](./manual-testing-merchant-auth.md) | حالات اختبار تسجيل/دخول/كلمة مرور للتاجر |
+| **الاختبار اليدوي — التجار**       | [manual-testing-merchants.md](./manual-testing-merchants.md)         | حالات اختبار merchants + prompt (بدون أدمن) |
+| **الاختبار اليدوي — واجهة المتجر** | [manual-testing-storefront.md](./manual-testing-storefront.md)       | حالات اختبار storefront (إعدادات، بنرات، طلباتي) |
+| **الاختبار اليدوي — المنتجات والفئات** | [manual-testing-products-categories.md](./manual-testing-products-categories.md) | حالات اختبار Products & Categories (تكاملات، Vector) |
+| **الاختبار اليدوي — القنوات** | [manual-testing-channels.md](./manual-testing-channels.md) | حالات اختبار Channels (تكاملات WhatsApp، Telegram، Webchat) |
+| **الاختبار اليدوي — الرسائل والدردشة والوسائط** | [manual-testing-messaging-chat-media.md](./manual-testing-messaging-chat-media.md) | حالات اختبار Messaging، Chat، Media (ChatGateway، Gemini، Deepgram، S3) |
+| **الاختبار اليدوي — المستندات والتوجيهات والمعرفة** | [manual-testing-documents-faq-instructions-knowledge.md](./manual-testing-documents-faq-instructions-knowledge.md) | حالات اختبار Documents، FAQ، Instructions، Knowledge (Vector، Bull، Gemini، التداخل) |
+| **الاختبار اليدوي — الكوبونات والعروض** | [manual-testing-coupons-promotions-offers.md](./manual-testing-coupons-promotions-offers.md) | حالات اختبار Coupons، Promotions، Offers (Orders، PricingService، Cron) |
+| **دليل الاختبار اليدوي — العملاء المحتملون والعملاء** | [manual-testing-leads-customers.md](./manual-testing-leads-customers.md) | حالات اختبار Leads، Customers (تحويل، OTP، عناوين، تاجات) |
+| **دليل الاختبار اليدوي — الطلبات** | [manual-testing-orders.md](./manual-testing-orders.md) | حالات اختبار Orders (إنشاء، قائمة، طلباتي، Pricing، Inventory) |
+| **دليل الاختبار اليدوي — كليم** | [manual-testing-kleem.md](./manual-testing-kleem.md) | حالات اختبار Kleem Bot (Chat، Prompts، FAQ، Sandbox، N8n، Vector) |
+| **دليل الاختبار اليدوي — الدعم والإشعارات** | [manual-testing-support-notifications.md](./manual-testing-support-notifications.md) | حالات اختبار Support، Notifications |
 | **اختبارات الأداء**                 | [perf/](./perf/)                                                     | سكريبتات اختبار الأداء                   |
 
 ## روابط مفيدة
